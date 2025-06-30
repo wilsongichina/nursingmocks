@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const steps = [
     {
@@ -68,6 +69,21 @@ export default function HowItWorksSection() {
     },
   ];
 
+  const scrollToStep = (stepIndex: number) => {
+    setActiveStep(stepIndex);
+
+    // Scroll to the step after a short delay to ensure state update
+    setTimeout(() => {
+      const stepElement = stepRefs.current[stepIndex];
+      if (stepElement) {
+        stepElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, 100);
+  };
+
   return (
     <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -110,6 +126,9 @@ export default function HowItWorksSection() {
                               : "border-gray-200 bg-white"
                           }`}
                           onClick={() => setActiveStep(index)}
+                          ref={(el) => {
+                            stepRefs.current[index] = el;
+                          }}
                         >
                           <div className="flex items-center mb-4">
                             <div
@@ -163,6 +182,9 @@ export default function HowItWorksSection() {
                               : "border-gray-200 bg-white"
                           }`}
                           onClick={() => setActiveStep(index)}
+                          ref={(el) => {
+                            stepRefs.current[index] = el;
+                          }}
                         >
                           <div className="flex items-center mb-4">
                             <div
@@ -193,6 +215,9 @@ export default function HowItWorksSection() {
                         : "border-gray-200 bg-white"
                     }`}
                     onClick={() => setActiveStep(index)}
+                    ref={(el) => {
+                      stepRefs.current[index] = el;
+                    }}
                   >
                     <div className="flex items-center mb-4">
                       <div
@@ -221,7 +246,7 @@ export default function HowItWorksSection() {
             {steps.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setActiveStep(index)}
+                onClick={() => scrollToStep(index)}
                 className={`w-3 h-3 rounded-full transition-all duration-200 ${
                   index === activeStep
                     ? "bg-blue-600 scale-125"
@@ -251,7 +276,7 @@ export default function HowItWorksSection() {
                   Get Started Today
                 </button>
                 <button className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                  Learn More
+                  Buy Exact Teas - $99
                 </button>
               </div>
             </div>

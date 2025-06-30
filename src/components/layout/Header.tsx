@@ -54,7 +54,7 @@ export default function Header({ className = "" }: HeaderProps) {
           </nav>
           <div className="hidden md:flex items-center space-x-4">
             <button className="gradient-button text-white px-6 py-2 rounded-lg font-bold">
-              Get Started
+              Get a Free Quote
             </button>
           </div>
           {/* Mobile menu button */}

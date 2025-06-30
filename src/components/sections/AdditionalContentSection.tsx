@@ -15,7 +15,10 @@ export default function AdditionalContentSection() {
             Searching for pay someone to take my teas exam for me? We get it.
             Teas exams sometimes feel like an overwhelming beast, especially
             when juggling work and school, and you just wish for a little extra
-            help to tame it, even at a small price.
+            help to tame it, even at a small price. That's where we come in.
+            Whether you are cramming last minute or just need someone to guide
+            you through months of prep, our Teas exams help services are here to
+            save the day!
           </p>
         </div>
 
@@ -36,7 +39,7 @@ export default function AdditionalContentSection() {
                 low grades? Let us help you raise them. No time for taking the
                 Teas exams? Worry less; We've got you.
               </p>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-600 mb-6 leading-relaxed">
                 You can count on us as we have worked with thousands of students
                 across the globe, and we have sufficient U.S.-based
                 professionals. We understand that current life is so demanding,
@@ -44,6 +47,16 @@ export default function AdditionalContentSection() {
                 you can't take them anymore. Smart students (like you) always
                 choose to pay someone to take their online classes and exams for
                 them.
+              </p>
+              <p className="text-gray-600 leading-relaxed">
+                Why us? Our Teas exams support team is made of seasoned
+                professionals who have been there and done that. So, we are not
+                just throwing random advice at you; we know exactly what works.
+                We have years of experience, and the help and services we offer
+                assure you peace of mind. It allows you to relax and focus
+                better on your work, knowing you got a good grade, but with less
+                hassle, just like a ton of students who have aced their Teas
+                exam with our help.
               </p>
             </div>
 
@@ -124,12 +137,9 @@ export default function AdditionalContentSection() {
                 Join thousands of students who have successfully passed the TEAS
                 exam with our proven approach.
               </p>
-              <a
-                href="/contact"
-                className="block w-full bg-gray-900 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-              >
+              <button className="block w-full bg-gray-900 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
                 Get Started Today
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -157,7 +167,10 @@ export default function AdditionalContentSection() {
                     deadlines and pressure to do better in terms of grades. When
                     your inbox is flooded with reminders, and the stress from
                     exams and work comes in, you can count on us, and at a small
-                    fee, we take this load off your shoulders.
+                    fee, we take this load off your shoulders. See, with us, we
+                    don't just aim to make the work easier for you by taking the
+                    TEAS exam on your behalf; we also want to ensure you get the
+                    best score.
                   </p>
                   <p className="text-gray-600 mb-4 leading-relaxed">
                     We understand that exam performance has a direct impact on
@@ -170,7 +183,10 @@ export default function AdditionalContentSection() {
                     share with us all the necessary information about your TEAS
                     exams. This will help us assign your exam to the right
                     specialist who will be certain to give you quality work and
-                    the best results.
+                    the best results. Rest assured, your progress is vital to
+                    us, and that's why we have our support team ready and
+                    available any time of the day to give you updates on your
+                    exam.
                   </p>
                 </div>
               </div>
@@ -207,7 +223,10 @@ export default function AdditionalContentSection() {
                     professionals with a proven track record of success. We
                     ensure you get the best by meticulously matching you with
                     the perfect tutor based on your academic background and area
-                    of expertise.
+                    of expertise. They are reputable professionals from renowned
+                    universities, and they are available to handle even tasks
+                    with close deadlines without compromising the quality or the
+                    score.
                   </p>
                 </div>
               </div>
@@ -237,24 +256,21 @@ export default function AdditionalContentSection() {
                     class easily distance you from your dreams. But we come as a
                     solution to this problem, with only a small price to pay.
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-gray-900 mb-2">
-                        Expert Assistance
-                      </h4>
-                      <p className="text-gray-600 text-sm">
-                        Tap into proven strategies and insights
-                      </p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-gray-900 mb-2">
-                        Stress Relief
-                      </h4>
-                      <p className="text-gray-600 text-sm">
-                        Avoid overwhelming study pressure
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-gray-600 mb-4 leading-relaxed">
+                    You get expert assistance, which means you tap into proven
+                    strategies and insights that will undoubtedly boost your
+                    performance on your TEAS exams. Also, by paying someone to
+                    do this exam for you, you are investing in professional help
+                    and avoiding the pressure of studying, which can be quite
+                    overwhelming.
+                  </p>
+                  <p className="text-gray-600 leading-relaxed">
+                    You do not need to deal with the stress of trying to master
+                    the materials when you are already feeling burned out from
+                    days/nights at work. We are here and always available to do
+                    all the hard work for you while you rest and re-energize for
+                    the next shift.
+                  </p>
                 </div>
               </div>
             </div>
@@ -282,14 +298,20 @@ export default function AdditionalContentSection() {
                     could just hit a button and someone handle it for you, rest
                     easy because now, you can! All you need to do is share your
                     online coursework with us, and our qualified and
-                    professional MSN tutors will do all the heavy lifting.
+                    professional MSN tutors will do all the heavy lifting. You
+                    don't need to spend so much on books; you can just let us
+                    take care of your online TEAS tests and have more time to
+                    spend with your loved ones.
                   </p>
                   <p className="text-gray-200 leading-relaxed">
                     With us, there are no gimmicks or games. We do not take
                     lightly the trust you have in us. Here, you get a tutor and
                     a partner in your academic success. The assigned tutor will
                     take your online TEAS exams and ensure you achieve the score
-                    needed to advance in your nursing career.
+                    needed to advance in your nursing career. They understand
+                    the exam's format and use their extensive knowledge to
+                    navigate the questions effectively to ensure you get that
+                    coveted score of 90 and above.
                   </p>
                 </div>
               </div>
@@ -318,7 +340,8 @@ export default function AdditionalContentSection() {
                     consideration to ensure you get the score we promise. First,
                     our tutors work on a schedule, and while they have proven
                     expertise in TEAS material, it's essential to provide all
-                    that your class needs.
+                    that your class needs. Also, entrust us with your class as
+                    early as possible to ease the path to good scores.
                   </p>
                   <div className="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-500">
                     <h4 className="font-semibold text-blue-900 mb-2">
@@ -329,7 +352,9 @@ export default function AdditionalContentSection() {
                       you with the best of our services. Online exams can vary,
                       and therefore, depending on the nature of the task/exam,
                       we will need ample time to take your online class and give
-                      you the best score.
+                      you the best score. But if you need a quick order, contact
+                      us and fill out our quote. We will only accept it if there
+                      is enough time to handle it before its deadline.
                     </p>
                   </div>
                 </div>
@@ -350,21 +375,18 @@ export default function AdditionalContentSection() {
                 Absolutely! Our team has qualified professionals ready to take
                 your ream TEAS exams for you. They are knowledgeable of these
                 exams' content and format; hence, you can be sure they will
-                deliver exceptional results.
+                deliver exceptional results. We prioritize your success and
+                maintaining high ethical standards, so have no doubt in our
+                support. Wait no more; reach out today and let us help you
+                achieve that high score you need.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a
-                  href="/contact"
-                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors shadow-lg"
-                >
+                <button className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors shadow-lg">
                   Get Started Today
-                </a>
-                <a
-                  href="/services"
-                  className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-                >
+                </button>
+                <button className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
                   Learn More
-                </a>
+                </button>
               </div>
             </div>
           </div>

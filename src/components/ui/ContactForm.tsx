@@ -72,7 +72,7 @@ export default function ContactForm({
       <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
         {title}
       </h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Name Field */}
           <div>
@@ -141,20 +141,15 @@ export default function ContactForm({
             >
               Budget
             </label>
-            <select
+            <input
+              type="text"
               id="budget"
               name="budget"
               value={formData.budget}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="">Select your budget range</option>
-              <option value="under-100">Under $100</option>
-              <option value="100-200">$100 - $200</option>
-              <option value="200-300">$200 - $300</option>
-              <option value="300-500">$300 - $500</option>
-              <option value="500-plus">$500+</option>
-            </select>
+              placeholder="Enter your budget "
+            />
           </div>
 
           {/* Services Field */}
