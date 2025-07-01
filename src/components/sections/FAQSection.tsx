@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface FAQItem {
   question: string;
@@ -122,9 +123,12 @@ export default function FAQSection() {
             exam assistance services and how we can help you achieve your
             nursing school goals.
           </p>
-          <button className="bg-yellow-500 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-400 transition-colors">
+          <Link
+            href="/contact"
+            className="bg-yellow-500 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-400 transition-colors"
+          >
             Contact Us Today
-          </button>
+          </Link>
         </div>
       </div>
     </section>

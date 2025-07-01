@@ -5,6 +5,7 @@ import FeaturesSection from "@/components/sections/FeaturesSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import AdditionalContentSection from "@/components/sections/AdditionalContentSection";
 import FAQSection from "@/components/sections/FAQSection";
+import ClientWhatsAppPopup from "@/components/ui/ClientWhatsAppPopup";
 
 export const metadata: Metadata = {
   title: "Pay Someone to Take My Teas Exam for Me | Teas Gurus",
@@ -73,6 +74,7 @@ export default function HomePage() {
       <HowItWorksSection />
       <AdditionalContentSection />
       <FAQSection />
+      <ClientWhatsAppPopup />
     </Layout>
   );
 }

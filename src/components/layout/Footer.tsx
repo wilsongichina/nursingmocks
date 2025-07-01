@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -74,7 +75,8 @@ export default function Footer() {
               </p>
               {/* Social Media Icons */}
               <div className="flex space-x-4">
-                <button
+                <Link
+                  href="https://facebook.com"
                   className="text-gray-400 hover:text-white transition-colors"
                   aria-label="Facebook"
                 >
@@ -90,8 +92,9 @@ export default function Footer() {
                       clipRule="evenodd"
                     />
                   </svg>
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="https://tiktok.com"
                   className="text-gray-400 hover:text-white transition-colors"
                   aria-label="TikTok"
                 >
@@ -103,8 +106,9 @@ export default function Footer() {
                   >
                     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
                   </svg>
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="https://instagram.com"
                   className="text-gray-400 hover:text-white transition-colors"
                   aria-label="Instagram"
                 >
@@ -120,8 +124,9 @@ export default function Footer() {
                       clipRule="evenodd"
                     />
                   </svg>
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="https://linkedin.com"
                   className="text-gray-400 hover:text-white transition-colors"
                   aria-label="LinkedIn"
                 >
@@ -137,7 +142,7 @@ export default function Footer() {
                       clipRule="evenodd"
                     />
                   </svg>
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -145,19 +150,36 @@ export default function Footer() {
               <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     Home
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/services"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     Services
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/prices"
+                    className="hover:text-white transition-colors text-left"
+                  >
+                    Prices
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/about"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     About Us
-                  </button>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -166,19 +188,36 @@ export default function Footer() {
               <h4 className="text-lg font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/about"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     About Us
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/faqs"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     FAQS
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/how-it-works"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     How it Works
-                  </button>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/contact"
+                    className="hover:text-white transition-colors text-left"
+                  >
+                    Contact
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -187,24 +226,36 @@ export default function Footer() {
               <h4 className="text-lg font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/guarantees"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     Guarantees
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/privacy-policy"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     Privacy Policy
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
-                    Terms & Conditions
-                  </button>
+                  <Link
+                    href="/terms-of-service"
+                    className="hover:text-white transition-colors text-left"
+                  >
+                    Terms of Service
+                  </Link>
                 </li>
                 <li>
-                  <button className="hover:text-white transition-colors text-left">
+                  <Link
+                    href="/money-back-guarantee"
+                    className="hover:text-white transition-colors text-left"
+                  >
                     Money Back Guarantee
-                  </button>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -213,8 +264,13 @@ export default function Footer() {
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>
               &copy; 2025 TEAS Gurus. All rights reserved. |{" "}
-              <button className="hover:text-white">Privacy Policy</button> |{" "}
-              <button className="hover:text-white">Terms of Service</button>
+              <Link href="/privacy-policy" className="hover:text-white">
+                Privacy Policy
+              </Link>{" "}
+              |{" "}
+              <Link href="/terms-of-service" className="hover:text-white">
+                Terms of Service
+              </Link>
             </p>
           </div>
         </div>

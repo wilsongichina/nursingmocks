@@ -1,4 +1,5 @@
 import ContactForm from "../ui/ContactForm";
+import Link from "next/link";
 
 export default function HeroSection() {
   return (
@@ -19,12 +20,18 @@ export default function HeroSection() {
               Teas Exam, Tests, Quizzes and More…
             </h2>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors">
+              <Link
+                href="/services"
+                className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors text-center"
+              >
                 Download Eng Set
-              </button>
-              <button className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
+              </Link>
+              <Link
+                href="/contact"
+                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors text-center"
+              >
                 But Exact Teas - $99
-              </button>
+              </Link>
             </div>
           </div>
 

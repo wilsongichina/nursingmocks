@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import ContactForm from "@/components/ui/ContactForm";
+import Breadcrumb from "@/components/ui/Breadcrumb";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title:
@@ -76,14 +78,40 @@ export default function ServicesPage() {
     <Layout>
       {/* Hero Section */}
       <section className="gradient-bg text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            TEAS Exam Services
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-            Comprehensive TEAS exam preparation services designed to help you
-            achieve your target score and get into your dream nursing school.
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb */}
+          <div className="mb-8">
+            <Breadcrumb />
+          </div>
+
+          <div className="text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+              <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+              We are Teas Gurus
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+              Our Services
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+              Comprehensive TEAS exam services designed to help you succeed.
+              From full exam taking to targeted practice tests, we have
+              everything you need to achieve your goals.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/contact"
+                className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+              >
+                Get Started
+              </Link>
+              <Link
+                href="/prices"
+                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                View Pricing
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

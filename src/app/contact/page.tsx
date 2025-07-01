@@ -1,17 +1,19 @@
 import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import ContactForm from "@/components/ui/ContactForm";
+import Breadcrumb from "@/components/ui/Breadcrumb";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Contact TEAS Gurus - Get Expert TEAS Exam Help | TEAS Gurus",
+  title: "Contact Us - TEAS Gurus",
   description:
-    "Contact TEAS Gurus for expert TEAS exam preparation help. Get personalized study plans, practice tests, and tutoring services. We're here to help you succeed.",
+    "Get in touch with TEAS Gurus for personalized TEAS exam support. Contact us for quotes, questions, or to start your exam preparation journey.",
   keywords:
-    "contact TEAS Gurus, TEAS exam help, TEAS tutoring contact, TEAS study consultation",
+    "contact TEAS Gurus, TEAS exam help contact, get quote, TEAS support, nursing exam assistance",
   openGraph: {
-    title: "Contact TEAS Gurus - Get Expert TEAS Exam Help",
+    title: "Contact Us - TEAS Gurus",
     description:
-      "Contact TEAS Gurus for expert TEAS exam preparation help. Get personalized study plans, practice tests, and tutoring services.",
+      "Get in touch with TEAS Gurus for personalized TEAS exam support and quotes.",
     url: "https://teasgurus.com/contact",
   },
   alternates: {
@@ -24,12 +26,37 @@ export default function ContactPage() {
     <Layout>
       {/* Hero Section */}
       <section className="gradient-bg text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">Contact Us</h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-            Ready to start your TEAS exam preparation journey? Get in touch with
-            our expert team for personalized guidance and support.
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb */}
+          <div className="mb-8">
+            <Breadcrumb />
+          </div>
+
+          <div className="text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+              <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+              We are Teas Gurus
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold mb-6">Contact Us</h1>
+            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+              Ready to start your TEAS exam journey? Get in touch with us for
+              personalized support, quotes, and expert guidance.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="#contact-form"
+                className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+              >
+                Send Message
+              </Link>
+              <Link
+                href="/services"
+                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                Our Services
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

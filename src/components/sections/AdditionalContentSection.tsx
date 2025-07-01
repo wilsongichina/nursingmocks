@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function AdditionalContentSection() {
   return (
     <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
@@ -137,9 +139,12 @@ export default function AdditionalContentSection() {
                 Join thousands of students who have successfully passed the TEAS
                 exam with our proven approach.
               </p>
-              <button className="block w-full bg-gray-900 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+              <Link
+                href="/contact"
+                className="block w-full bg-gray-900 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+              >
                 Get Started Today
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -381,12 +386,18 @@ export default function AdditionalContentSection() {
                 achieve that high score you need.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors shadow-lg">
+                <Link
+                  href="/contact"
+                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors shadow-lg"
+                >
                   Get Started Today
-                </button>
-                <button className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
+                </Link>
+                <Link
+                  href="/services"
+                  className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+                >
                   Learn More
-                </button>
+                </Link>
               </div>
             </div>
           </div>
