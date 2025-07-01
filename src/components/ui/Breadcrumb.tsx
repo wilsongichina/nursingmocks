@@ -20,7 +20,7 @@ export default function Breadcrumb() {
     }
 
     let currentPath = "";
-    segments.forEach((segment, index) => {
+    segments.forEach((segment) => {
       currentPath += `/${segment}`;
 
       // Convert segment to readable label

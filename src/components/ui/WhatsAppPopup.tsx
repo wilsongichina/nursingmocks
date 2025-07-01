@@ -42,7 +42,7 @@ export default function WhatsAppPopup() {
     }, 300);
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
+  const handleBackdropClick = () => {
     // Close when clicking the backdrop
     handleClose();
   };
