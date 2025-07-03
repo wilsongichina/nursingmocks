@@ -5,15 +5,15 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Contact Us - TEAS Gurus",
+  title: "Contact TeasGurus | Get Help with Your TEAS Exam Today",
   description:
-    "Get in touch with TEAS Gurus for personalized TEAS exam support. Contact us for quotes, questions, or to start your exam preparation journey.",
+    "Have questions or need help with your TEAS exam? Contact TeasGurus for expert support, real ATI TEAS questions, and professional exam-taking services. We're here to assist you 24/7.",
   keywords:
     "contact TEAS Gurus, TEAS exam help contact, get quote, TEAS support, nursing exam assistance",
   openGraph: {
-    title: "Contact Us - TEAS Gurus",
+    title: "Contact TeasGurus | Get Help with Your TEAS Exam Today",
     description:
-      "Get in touch with TEAS Gurus for personalized TEAS exam support and quotes.",
+      "Have questions or need help with your TEAS exam? Contact TeasGurus for expert support, real ATI TEAS questions, and professional exam-taking services. We're here to assist you 24/7.",
     url: "https://teasgurus.com/contact",
   },
   alternates: {
@@ -101,7 +101,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">Email</p>
-                        <p className="text-gray-600">support@teasgurus.com</p>
+                        <p className="text-gray-600">teasgurus@gmail.com</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-4">
@@ -122,7 +122,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">Phone</p>
-                        <p className="text-gray-600">1-800-TEAS-GURU</p>
+                        <p className="text-gray-600">1-579-501-1983</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-4">
@@ -143,10 +143,9 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">
-                          Business Hours
+                          Availability
                         </p>
-                        <p className="text-gray-600">Mon-Fri: 9AM-6PM EST</p>
-                        <p className="text-gray-600">Weekend: 10AM-4PM EST</p>
+                        <p className="text-gray-600">24/7 Support</p>
                       </div>
                     </div>
                   </div>

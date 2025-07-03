@@ -5,16 +5,15 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title:
-    "TEAS Exam Services - Practice Tests, Study Materials & Tutoring | TEAS Gurus",
+  title: "Services | Teas Exams Services – TeasGurus",
   description:
-    "Comprehensive TEAS exam services including practice tests, study materials, expert tutoring, and personalized study plans. Master all four TEAS sections with our proven approach.",
+    "Get guaranteed TEAS exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your TEAS test from start to finish.",
   keywords:
     "TEAS services, TEAS practice tests, TEAS study materials, TEAS tutoring, TEAS exam help, nursing school preparation",
   openGraph: {
-    title: "TEAS Exam Services - Practice Tests, Study Materials & Tutoring",
+    title: "Services | Teas Exams Services – TeasGurus",
     description:
-      "Comprehensive TEAS exam services including practice tests, study materials, expert tutoring, and personalized study plans.",
+      "Get guaranteed TEAS exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your TEAS test from start to finish.",
     url: "https://teasgurus.com/services",
   },
   alternates: {
@@ -25,52 +24,64 @@ export const metadata: Metadata = {
 export default function ServicesPage() {
   const services = [
     {
-      title: "TEAS Practice Tests",
+      icon: "➗",
+      title:
+        "ATI TEAS Math Questions — Let Us Take It for You and Get Real Questions",
       description:
-        "Full-length practice tests that mirror the actual TEAS exam format and difficulty level.",
+        "Are you worried about changing numbers or solving hard equations? Our math experts can take your TEAS math test for you and give you the same kinds of questions that are on the real test.",
       features: [
-        "Timed practice tests",
-        "Detailed explanations",
-        "Performance analytics",
-        "Progress tracking",
+        "Full support for math, algebra, reading data, and taking measurements",
+        "Real ATI TEAS Math Questions with answers and explanations",
+        "We have professionals who take the test for you, either online or in person",
+        "100% privacy, and if you're not happy, you can get your money back",
       ],
-      price: "Starting at $29.99",
+      callToAction:
+        "👉 We give you ATI TEAS Math Questions or take the test for you.",
     },
     {
-      title: "Study Materials",
+      icon: "🔬",
+      title:
+        "ATI TEAS Science Questions — We Take the Test and Share Real Exam Content",
       description:
-        "Comprehensive study guides, flashcards, and video lessons covering all TEAS exam topics.",
+        "Don't worry about dealing with hard anatomy and chemistry. We'll take the TEAS science test for you, and we'll give you access to the real questions so you can study and understand them ahead of time.",
       features: [
-        "2,000+ practice questions",
-        "Video tutorials",
-        "Study guides",
-        "Mobile app access",
+        "Covers biology, chemistry, human anatomy & physiology, and scientific reasoning",
+        "Get ATI TEAS Science Questions with the correct answers",
+        "MSN-level tutors take the test for you in complete safety",
+        "Transparent service and flexible payment options",
       ],
-      price: "Starting at $49.99",
+      callToAction:
+        "👉 We give you ATI TEAS Science Questions or do the science part for you.",
     },
     {
-      title: "Expert Tutoring",
+      icon: "📘",
+      title:
+        "ATI TEAS English Questions — We Handle the Test and Provide the Real Questions",
       description:
-        "One-on-one tutoring sessions with certified nursing educators and TEAS exam specialists.",
+        "Are you stressed out about grammar? Not only will our team take the TEAS English section for you, but they will also give you the real, current questions that are on the test.",
       features: [
-        "Personalized sessions",
-        "Flexible scheduling",
-        "Expert instructors",
-        "Progress monitoring",
+        "Includes spelling, punctuation, sentence structure, and word meaning",
+        "Access the exact ATI TEAS English Questions that appeared on past exams",
+        "We handle tests in person or remotely with 100% privacy",
+        "Guaranteed score improvement or your money back",
       ],
-      price: "Starting at $75/hour",
+      callToAction:
+        "👉 We give you ATI TEAS English Questions and or care of the whole test for you.",
     },
     {
-      title: "Study Plans",
+      icon: "📖",
+      title:
+        "ATI TEAS Reading Questions — We Take the Test and Share Real Passages",
       description:
-        "Customized study plans tailored to your timeline, strengths, and target score.",
+        "Are you having trouble with reading comprehension? Our experts will help you with the TEAS Reading section and give you the real questions and passages that will be on the test.",
       features: [
-        "Personalized planning",
-        "Adaptive learning",
-        "Milestone tracking",
-        "24/7 support",
+        "Focus on paragraph structure, inference skills, and passage analysis",
+        "Exact ATI TEAS Reading Questions and answers provided",
+        "Exams handled by experienced tutors with proven success",
+        "Safe, secure, and results-focused exam assistance",
       ],
-      price: "Starting at $99.99",
+      callToAction:
+        "👉 We give you ATI TEAS Reading Questions and take the reading test for you.",
     },
   ];
 
@@ -129,24 +140,32 @@ export default function ServicesPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8">
             {services.map((service, index) => (
               <div
                 key={index}
-                className="bg-white rounded-lg shadow-lg p-8 hover-lift"
+                className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300"
               >
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  {service.title}
-                </h3>
-                <p className="text-gray-600 mb-6">{service.description}</p>
-                <ul className="space-y-2 mb-6">
+                <div className="flex items-start space-x-4 mb-6">
+                  <div className="text-4xl">{service.icon}</div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                      {service.title}
+                    </h3>
+                    <p className="text-gray-600 mb-6 leading-relaxed">
+                      {service.description}
+                    </p>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-6">
                   {service.features.map((feature, featureIndex) => (
                     <li
                       key={featureIndex}
-                      className="flex items-center text-gray-700"
+                      className="flex items-start text-gray-700"
                     >
                       <svg
-                        className="w-5 h-5 text-green-500 mr-3"
+                        className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -156,17 +175,30 @@ export default function ServicesPage() {
                           clipRule="evenodd"
                         />
                       </svg>
-                      {feature}
+                      <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600 mb-4">
-                    {service.price}
+
+                <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                  <p className="text-lg font-semibold text-blue-900">
+                    {service.callToAction}
                   </p>
-                  <button className="gradient-button text-white px-6 py-3 rounded-lg font-semibold">
-                    Get Started
-                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link
+                    href="/contact"
+                    className="bg-yellow-500 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-400 transition-colors text-center"
+                  >
+                    Get a Quote
+                  </Link>
+                  <Link
+                    href="/services"
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
+                  >
+                    Buy Exact Teas - $99
+                  </Link>
                 </div>
               </div>
             ))}

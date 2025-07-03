@@ -10,8 +10,8 @@ export default function FeaturesSection() {
             Results From Previous Teas Exams
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            Exam Results We Have Scored for Students Clients have consistently
-            given Teas Gurus good feedback for the many years that we have been
+            Exam Results We Have Scored for Students have consistently given
+            Teas Gurus good feedback for the many years that we have been
             helping students with Teas Exams. One of the main reasons we have
             helped people finish degree programs and not just exams is because
             of this. You can have more faith in our "do my teas exam service"

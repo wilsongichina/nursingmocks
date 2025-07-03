@@ -105,7 +105,7 @@ export default function RootLayout({
               logo: "https://teasgurus.com/teas-gurus-logo.png",
               contactPoint: {
                 "@type": "ContactPoint",
-                telephone: "1-800-TEAS-GURU",
+                telephone: "1-579-501-1983",
                 contactType: "customer service",
                 availableLanguage: "English",
               },

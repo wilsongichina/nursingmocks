@@ -147,44 +147,6 @@ export default function Footer() {
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <Link
-                    href="/"
-                    className="hover:text-white transition-colors text-left"
-                  >
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/services"
-                    className="hover:text-white transition-colors text-left"
-                  >
-                    Services
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/prices"
-                    className="hover:text-white transition-colors text-left"
-                  >
-                    Prices
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/about"
-                    className="hover:text-white transition-colors text-left"
-                  >
-                    About Us
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
               <h4 className="text-lg font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>
@@ -263,14 +225,9 @@ export default function Footer() {
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>
-              &copy; 2025 TEAS Gurus. All rights reserved. |{" "}
-              <Link href="/privacy-policy" className="hover:text-white">
-                Privacy Policy
-              </Link>{" "}
-              |{" "}
-              <Link href="/terms-of-service" className="hover:text-white">
-                Terms of Service
-              </Link>
+              Disclaimer: Copyright © 2025 Teas Gurus. All rights reserved. We
+              offer assistance on remote/online teas exams. Feel free to contact
+              us.
             </p>
           </div>
         </div>

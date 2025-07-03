@@ -57,7 +57,7 @@ export default function WhatsAppPopup() {
     const message = encodeURIComponent(
       "Hi! I need help with my TEAS exam. Can you provide more information about your services?"
     );
-    const whatsappUrl = `https://wa.me/+1234567890?text=${message}`;
+    const whatsappUrl = `https://wa.me/+15795011983?text=${message}`;
     window.open(whatsappUrl, "_blank");
     handleClose();
   };

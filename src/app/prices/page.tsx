@@ -5,15 +5,15 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Pricing - TEAS Gurus",
+  title: "Pricing | Take My TEAS Exam Cost – TeasGurus",
   description:
-    "Get transparent pricing for our TEAS exam services. Choose from our flexible payment plans and take advantage of our discount offers for comprehensive study plans.",
+    "Explore our pricing for TEAS exam services including Math, Science, Reading & English help. Affordable rates to take your TEAS test or get real ATI TEAS practice question",
   keywords:
     "TEAS exam pricing, TEAS services cost, payment plans, discounts, affordable TEAS prep",
   openGraph: {
-    title: "Pricing - TEAS Gurus",
+    title: "Pricing | Take My TEAS Exam Cost – TeasGurus",
     description:
-      "Get transparent pricing for our TEAS exam services with flexible payment plans and discount offers.",
+      "Explore our pricing for TEAS exam services including Math, Science, Reading & English help. Affordable rates to take your TEAS test or get real ATI TEAS practice question",
     url: "https://teasgurus.com/prices",
   },
   alternates: {
@@ -168,7 +168,7 @@ export default function PricesPage() {
               </Link>
             </div>
 
-            {/* Full TEAS Taking Service */}
+            {/* Take My Teas Exam Service */}
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-300">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -187,10 +187,16 @@ export default function PricesPage() {
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Full TEAS Taking Service
+                  <Link
+                    href="/"
+                    className="text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    Take My Teas Exam
+                  </Link>{" "}
+                  Service
                 </h3>
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  Starting from $500
+                  Starting from $600
                 </div>
               </div>
               <ul className="space-y-3 mb-8">
@@ -224,17 +230,17 @@ export default function PricesPage() {
                 </li>
                 <li className="flex items-center text-gray-600">
                   <svg
-                    className="w-5 h-5 text-green-500 mr-3"
+                    className="w-5 h-5 text-red-500 mr-3"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  Flexible Payment Plans Available
+                  No Payment Plans Available
                 </li>
               </ul>
               <Link

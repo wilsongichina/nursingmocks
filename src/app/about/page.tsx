@@ -5,16 +5,15 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title:
-    "About TEAS Gurus - Expert TEAS Exam Preparation Services | TEAS Gurus",
+  title: "About TeasGurus | Trusted TEAS Exam Help & Expert Support",
   description:
-    "Learn about TEAS Gurus, the leading provider of TEAS exam preparation services. Our expert team helps nursing students achieve their target scores with proven strategies and comprehensive support.",
+    "Learn about TeasGurus—your trusted partner for TEAS exam success. We provide expert real ATI TEAS questions, and professional test-taking services tailored for nursing students.",
   keywords:
     "about TEAS Gurus, TEAS exam preparation company, nursing school preparation, TEAS tutoring experts",
   openGraph: {
-    title: "About TEAS Gurus - Expert TEAS Exam Preparation Services",
+    title: "About TeasGurus | Trusted TEAS Exam Help & Expert Support",
     description:
-      "Learn about TEAS Gurus, the leading provider of TEAS exam preparation services. Our expert team helps nursing students achieve their target scores.",
+      "Learn about TeasGurus—your trusted partner for TEAS exam success. We provide expert real ATI TEAS questions, and professional test-taking services tailored for nursing students.",
     url: "https://teasgurus.com/about",
   },
   alternates: {
@@ -132,13 +131,13 @@ export default function AboutPage() {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                We guarantee At least a 90
+                We guarantee At least a 85
               </h3>
               <p className="text-gray-600 leading-relaxed">
                 With education, no one wants to play games with their money (I
                 know I don't). So, why don't you invest in our services, where
                 you get your money's worth and more? Our review section speaks
-                for us with a 90% average score. Describing our team as
+                for us with a 85% average score. Describing our team as
                 "perfect" would be an understatement.
               </p>
             </div>

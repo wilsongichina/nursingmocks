@@ -1,0 +1,87 @@
+export default function FAQPageSchema() {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "How much should I pay someone to take my online TEAS exam Reddit?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "As per various Reddit discussions, the cost of hiring someone to take your online TEAS exam can go up to $500. However, pricing may vary depending on the tutor's qualifications, success rate, and exam complexity.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Can I pay someone to take my remote TEAS exam?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes. You can pay someone to take your remote TEAS exams. Our support team will guide you, and one of our professional MSN tutors will take the exam on your behalf, with complete discretion.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Where can I pay someone to take my TEAS entrance exam?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Online platforms like Teas Gurus are the most convenient and secure option for hiring someone to take your TEAS entrance exam. We offer 24/7 access, confidentiality, and reliability.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "How much should I pay someone to take my online TEAS exam?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "While some services charge up to $500, TeasGurus offers affordable pricing at $400 per exam. We provide a secure test environment, no hidden fees, and an optional payment plan with a money-back guarantee.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Is Teas Gurus legit?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes. Teas Gurus is a legitimate service provider with verified student testimonials, a proven success record, and transparent payment and service policies.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Is Teas Gurus legit and does it have enough exam takers?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Absolutely. Teas Gurus is 100% legit and has helped thousands of students. We have a large pool of qualified exam takers ready to assist with your TEAS tests.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Can I take my TEAS exam online or remotely?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes. The TEAS exam can be taken online or remotely through platforms like ATI. We recommend remote proctoring for convenience and flexibility, and we can help manage the process for you.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "How do you properly take the TEAS exam?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Register through ATI's official site, choose the remote option, and install AnyDesk to give our team access for setup. We'll handle the test with bypass software to ensure smooth, secure proctoring while you relax.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Are there legit TEAS taker experts?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes, Teas Gurus has a team of experienced TEAS experts who offer professional assistance, resources, and exam-taking support to help you pass with confidence.",
+              },
+            },
+          ],
+        }),
+      }}
+    />
+  );
+}

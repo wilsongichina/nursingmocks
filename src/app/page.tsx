@@ -6,6 +6,7 @@ import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import AdditionalContentSection from "@/components/sections/AdditionalContentSection";
 import FAQSection from "@/components/sections/FAQSection";
 import ClientWhatsAppPopup from "@/components/ui/ClientWhatsAppPopup";
+import SchemaScripts from "@/components/ui/SchemaScripts";
 
 export const metadata: Metadata = {
   title: "Pay Someone to Take My Teas Exam for Me | Teas Gurus",
@@ -68,6 +69,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <Layout>
+      <SchemaScripts />
       <HeroSection />
       {/* <TrustIndicators /> */}
       <FeaturesSection />

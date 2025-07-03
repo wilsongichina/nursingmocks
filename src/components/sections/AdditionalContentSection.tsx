@@ -109,24 +109,29 @@ export default function AdditionalContentSection() {
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Why Us?</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Our Teas exams support team is made of seasoned professionals
-                who have been there and done that. So, we are not just throwing
-                random advice at you; we know exactly what works. We have years
-                of experience, and the help and services we offer assure you
-                peace of mind.
+                And get this: we provide affordable Teas help that won’t drain
+                your wallet. Top that off with our exceptionally high success
+                rate, and you have yourself a service team you can count on to
+                help pass your Teas exam. Furthermore, you get 100% Refund if we
+                deliver anything short of our promises. With us, you have
+                nothing loose! Here is what you can expect from us:
               </p>
               <div className="space-y-3">
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                  <span className="text-gray-700">Years of experience</span>
+                  <span className="text-gray-700">High-quality work</span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                  <span className="text-gray-700">Proven track record</span>
+                  <span className="text-gray-700">
+                    Well-researched material
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                  <span className="text-gray-700">Peace of mind guarantee</span>
+                  <span className="text-gray-700">
+                    High score, at least 90.
+                  </span>
                 </div>
               </div>
             </div>

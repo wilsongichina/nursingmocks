@@ -4,22 +4,20 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 
 const gradeImages = [
-  { src: "/grade/grade1.webp", alt: "Grade 1" },
-  { src: "/grade/grade11.jpg", alt: "Grade 11" },
-  { src: "/grade/grade2.webp", alt: "Grade 2" },
-  { src: "/grade/grade22.jpg", alt: "Grade 22" },
-  { src: "/grade/grade3.webp", alt: "Grade 3" },
-  { src: "/grade/grade33.jpg", alt: "Grade 33" },
-  { src: "/grade/grade4.webp", alt: "Grade 4" },
-  { src: "/grade/grade4.jpg", alt: "Grade 4" },
-  { src: "/grade/grade5.webp", alt: "Grade 5" },
-  { src: "/grade/grade55.jpg", alt: "Grade 55" },
-  { src: "/grade/grade6.webp", alt: "Grade 6" },
-  { src: "/grade/grade66.jpg", alt: "Grade 66" },
-  { src: "/grade/grade7.webp", alt: "Grade 7" },
-  { src: "/grade/grade77.jpg", alt: "Grade 77" },
-  { src: "/grade/grade8.webp", alt: "Grade 8" },
-  { src: "/grade/grade88.jpg", alt: "Grade 88" },
+  { src: "/grade/Take My Teas Exam Result 90.jpg", alt: "TEAS Exam Result 90" },
+  {
+    src: "/grade/Take My Teas Exam Result - 90.jpg",
+    alt: "TEAS Exam Result 90",
+  },
+  { src: "/grade/Take My Teas Exam Result 89.jpg", alt: "TEAS Exam Result 89" },
+  {
+    src: "/grade/Take My Teas Exam for Me - 96.png",
+    alt: "TEAS Exam Result 96",
+  },
+  { src: "/grade/Take My Teas Exam Result 86.jpg", alt: "TEAS Exam Result 86" },
+  { src: "/grade/Take My Teas Exam for Me 90.png", alt: "TEAS Exam Result 90" },
+  { src: "/grade/Take My Teas Exam Result 87.jpg", alt: "TEAS Exam Result 87" },
+  { src: "/grade/Take My Teas Exam Result 85.jpg", alt: "TEAS Exam Result 85" },
 ];
 
 export default function GradeSlider() {

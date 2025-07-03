@@ -1,0 +1,29 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "TEAS Gurus",
+  "description": "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
+  "url": "https://teasgurus.com/",
+  "logo": "https://teasgurus.com/teas-gurus-logo.png",
+  "sameAs": [
+    "https://www.instagram.com/teasgurus",
+	"https://www.tiktok.com/@teas.gurus",
+    "www.youtube.com/@TeasGurus",
+    "https://www.linkedin.com/company/teasgurus/"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "1-579-501-1983",
+    "contactType": "customer service",
+    "availableLanguage": "English"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": {
+      "@type": "Country",
+      "name": "US"
+    }
+  }
+}
+</script>

@@ -4,17 +4,18 @@ import ContactForm from "@/components/ui/ContactForm";
 import FAQSection from "@/components/sections/FAQSection";
 import Link from "next/link";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import FAQPageSchema from "@/components/ui/FAQPageSchema";
 
 export const metadata: Metadata = {
-  title: "Frequently Asked Questions - TEAS Exam Help | TEAS Gurus",
+  title: "Frequently Asked Questions | TEAS Exam Help & Services – TeasGurus",
   description:
-    "Find answers to common questions about our TEAS exam services. Learn about our process, guarantees, pricing, and how we help students pass the TEAS exam.",
+    "Got questions about our TEAS exam services? TeasGurus explains everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
   keywords:
     "TEAS exam FAQ, TEAS exam questions, TEAS exam help, TEAS exam process questions, TEAS exam service FAQ",
   openGraph: {
-    title: "Frequently Asked Questions - TEAS Exam Help | TEAS Gurus",
+    title: "Frequently Asked Questions | TEAS Exam Help & Services – TeasGurus",
     description:
-      "Find answers to common questions about our TEAS exam services. Learn about our process, guarantees, pricing, and how we help students pass the TEAS exam.",
+      "Got questions about our TEAS exam services? TeasGurus explains everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
     url: "https://teasgurus.com/faqs",
   },
   alternates: {
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
 export default function FAQPage() {
   return (
     <Layout>
+      <FAQPageSchema />
       {/* Hero Section */}
       <section className="gradient-bg text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -104,7 +106,7 @@ export default function FAQPage() {
               </p>
               <div className="text-center">
                 <Link
-                  href="https://wa.me/1234567890"
+                  href="https://wa.me/15795011983"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors inline-flex items-center"

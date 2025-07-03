@@ -108,7 +108,10 @@ export default function HowItWorksSection() {
         {/* Interactive Timeline */}
         <div className="relative">
           {/* Timeline Line */}
-          <div className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
+          <div
+            className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-600"
+            style={{ height: "calc(100% - 8rem)" }}
+          ></div>
 
           {/* Steps */}
           <div className="space-y-12 lg:space-y-0">
@@ -239,27 +242,6 @@ export default function HowItWorksSection() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="mt-16 text-center">
-          <div className="flex justify-center space-x-2 mb-4">
-            {steps.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => scrollToStep(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                  index === activeStep
-                    ? "bg-blue-600 scale-125"
-                    : "bg-gray-300 hover:bg-gray-400"
-                }`}
-                aria-label={`Go to step ${index + 1}`}
-              />
-            ))}
-          </div>
-          <p className="text-gray-600">
-            Step {activeStep + 1} of {steps.length}
-          </p>
         </div>
 
         {/* Call to Action */}
