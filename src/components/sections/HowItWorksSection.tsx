@@ -70,21 +70,6 @@ export default function HowItWorksSection() {
     },
   ];
 
-  const scrollToStep = (stepIndex: number) => {
-    setActiveStep(stepIndex);
-
-    // Scroll to the step after a short delay to ensure state update
-    setTimeout(() => {
-      const stepElement = stepRefs.current[stepIndex];
-      if (stepElement) {
-        stepElement.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }
-    }, 100);
-  };
-
   return (
     <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

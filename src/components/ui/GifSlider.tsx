@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 
 const gifs = [
@@ -58,11 +59,10 @@ export default function GifSlider() {
           {/* Main GIF Display */}
           <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-white">
             <div className="relative w-full h-96 md:h-[500px] lg:h-[600px] bg-gray-100 flex items-center justify-center">
-              <img
+              <Image
                 src={gifs[currentIndex].src}
                 alt={gifs[currentIndex].alt}
-                className="max-w-full max-h-full object-contain"
-              />
+              ></Image>
             </div>
 
             {/* Navigation Arrows */}
