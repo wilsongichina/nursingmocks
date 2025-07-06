@@ -36,6 +36,10 @@ export default function Breadcrumb() {
         "privacy-policy": "Privacy Policy",
         "terms-of-service": "Terms of Service",
         "money-back-guarantee": "Money Back Guarantee",
+        maths: "TEAS Math",
+        english: "TEAS English",
+        science: "TEAS Science",
+        reading: "TEAS Reading",
       };
 
       if (labelMap[segment]) {
@@ -56,7 +60,7 @@ export default function Breadcrumb() {
 
   return (
     <nav
-      className="flex items-center  text-sm text-white mb-4"
+      className="flex items-center text-sm text-white/80 mb-4"
       aria-label="Breadcrumb"
     >
       {breadcrumbs.map((item, index) => (
@@ -82,7 +86,7 @@ export default function Breadcrumb() {
           ) : (
             <Link
               href={item.href}
-              className="hover:text-blue-200 transition-colors"
+              className="hover:text-white transition-colors"
             >
               {item.label}
             </Link>

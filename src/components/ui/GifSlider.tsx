@@ -126,7 +126,7 @@ export default function GifSlider() {
                 }`}
               >
                 <div className="w-24 h-20 md:w-32 md:h-24 relative overflow-hidden rounded-lg">
-                  <img
+                  <Image
                     src={gif.src}
                     alt={gif.alt}
                     className="w-full h-full object-cover"
