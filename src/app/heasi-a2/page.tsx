@@ -14,14 +14,14 @@ export const metadata: Metadata = {
     title: "Hesi A2 | Hesi A2 Exam Services – TeasGurus",
     description:
       "Get guaranteed Hesi A2 exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your Hesi A2 test from start to finish.",
-    url: "https://teasgurus.com/services",
+    url: "https://teasgurus.com/heasi-a2",
   },
   alternates: {
-    canonical: "/services",
+    canonical: "/heasi-a2",
   },
 };
 
-export default function ServicesPage() {
+export default function HesiA2Page() {
   const services = [
     {
       icon: "➗",
@@ -199,7 +199,7 @@ export default function ServicesPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Buy Exact Teas - $99
+                    Buy Now
                   </Link>
                 </div>
               </div>
@@ -208,19 +208,19 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="bg-gray-50 py-20">
+      {/* Contact Form Section */}
+      <section className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Ready to Start Your Hesi A2 Journey?
+              Ready to Get Started?
             </h2>
             <p className="text-xl text-gray-600">
-              Contact us to learn more about our services and get personalized
-              recommendations.
+              Contact us today to discuss your Hesi A2 exam needs and get
+              personalized support.
             </p>
           </div>
-          <ContactForm title="Get Your Free Consultation" />
+          <ContactForm title="Get Your Hesi A2 Support" />
         </div>
       </section>
     </Layout>

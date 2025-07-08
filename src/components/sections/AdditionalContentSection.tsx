@@ -398,7 +398,7 @@ export default function AdditionalContentSection() {
                   Get Started Today
                 </Link>
                 <Link
-                  href="/services"
+                  href="/heasi-a2"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
                 >
                   Learn More
