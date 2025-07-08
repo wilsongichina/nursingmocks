@@ -14,10 +14,10 @@ export const metadata: Metadata = {
     title: "Hesi A2 | Hesi A2 Exam Services – TeasGurus",
     description:
       "Get guaranteed Hesi A2 exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your Hesi A2 test from start to finish.",
-    url: "https://teasgurus.com/heasi-a2",
+    url: "https://teasgurus.com/hesi-a2",
   },
   alternates: {
-    canonical: "/heasi-a2",
+    canonical: "/hesi-a2",
   },
 };
 

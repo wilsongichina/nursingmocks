@@ -117,7 +117,7 @@ export default function ThankYouPage() {
             <div className="mt-8 pt-8 border-t border-gray-200">
               <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600">
                 <Link
-                  href="/heasi-a2"
+                  href="/hesi-a2"
                   className="hover:text-green-600 transition-colors"
                 >
                   Our Services

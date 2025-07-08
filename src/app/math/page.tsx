@@ -201,7 +201,7 @@ export default function MathPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/heasi-a2"
+                href="/hesi-a2"
                 className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
               >
                 Our Services
@@ -417,7 +417,7 @@ export default function MathPage() {
                   </p>
                   <div className="space-y-4">
                     <Link
-                      href="/heasi-a2"
+                      href="/hesi-a2"
                       className="block w-full bg-yellow-400 text-blue-900 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-yellow-300 transition-colors text-center"
                     >
                       Our Services
@@ -570,7 +570,7 @@ export default function MathPage() {
                     Contact Us
                   </Link>
                   <Link
-                    href="/heasi-a2"
+                    href="/hesi-a2"
                     className="block w-full border-2 border-white text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors text-center"
                   >
                     Our Services
@@ -597,7 +597,7 @@ export default function MathPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  href="/heasi-a2"
+                  href="/hesi-a2"
                   className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   Our Services

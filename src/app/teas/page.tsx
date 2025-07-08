@@ -54,7 +54,7 @@ export default function TEASPage() {
                 Get a Free Quote
               </Link>
               <Link
-                href="/heasi-a2"
+                href="/hesi-a2"
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
               >
                 Buy Now - $99
@@ -350,7 +350,7 @@ export default function TEASPage() {
                   Get a Free Quote
                 </Link>
                 <Link
-                  href="/heasi-a2"
+                  href="/hesi-a2"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   Buy Now - $99
