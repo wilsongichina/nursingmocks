@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import emailjs from "@emailjs/browser";
 
 interface ContactFormData {
   name: string;
@@ -20,6 +22,7 @@ export default function ContactForm({
   className = "",
   title = "Get In Touch With Us",
 }: ContactFormProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
@@ -30,7 +33,6 @@ export default function ContactForm({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -49,43 +51,52 @@ export default function ContactForm({
     setIsSubmitting(true);
 
     try {
-      // For now, simulate email sending (replace with EmailJS when configured)
-      console.log("Form submitted:", {
-        to: "azmeerhamasali@gmail.com",
-        from: formData.email,
-        name: formData.name,
-        phone: formData.phone,
-        budget: formData.budget,
+      // EmailJS configuration
+      const serviceId =
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "service_b9tsxyr";
+      const templateId =
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "template_d5ezllr";
+      const publicKey =
+        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "Ia1zPxTbve95JxQan";
+
+      // Prepare email template parameters
+      const templateParams = {
+        to_email: "teasgurus@gmail.com",
+        from_name: formData.name,
+        from_email: formData.email,
+        phone: formData.phone || "Not provided",
+        budget: formData.budget || "Not provided",
         services: formData.services,
         message: formData.message,
-      });
+        subject: "New Contact Form Submission - TEAS Gurus",
+        reply_to: formData.email,
+        submission_time: new Date().toLocaleString(),
+      };
 
-      // Simulate email sending delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Send email using EmailJS
+      const result = await emailjs.send(
+        serviceId,
+        templateId,
+        templateParams,
+        publicKey
+      );
 
-      // Show success message
-      setIsSubmitted(true);
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        budget: "",
-        services: "",
-        message: "",
-      });
+      if (result.status === 200) {
+        // Reset form data
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          budget: "",
+          services: "",
+          message: "",
+        });
 
-      // TODO: Replace with actual EmailJS implementation
-      // const templateParams = {
-      //   to_email: 'azmeerhamasali@gmail.com',
-      //   from_name: formData.name,
-      //   from_email: formData.email,
-      //   phone: formData.phone || 'Not provided',
-      //   budget: formData.budget || 'Not provided',
-      //   services: formData.services,
-      //   message: formData.message,
-      //   subject: 'New Contact Form Submission - TEAS Gurus'
-      // };
-      // const result = await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams, 'YOUR_PUBLIC_KEY');
+        // Redirect to thank you page
+        router.push("/thank-you");
+      } else {
+        throw new Error("Failed to send email");
+      }
     } catch (error) {
       console.error("Error sending form:", error);
       alert("There was an error sending your message. Please try again.");
@@ -93,56 +104,6 @@ export default function ContactForm({
       setIsSubmitting(false);
     }
   };
-
-  if (isSubmitted) {
-    return (
-      <div className={`bg-white rounded-lg shadow-lg p-8 ${className}`}>
-        <div className="text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Thank You for Your Purchase!
-          </h3>
-          <div className="text-gray-600 space-y-4 text-left max-w-2xl mx-auto">
-            <p>
-              We truly appreciate your decision to purchase our exact TEAS
-              practice questions. You can access these questions by checking the
-              email you provided during checkout.
-            </p>
-            <p>
-              Please make sure to check your spam or junk folder if you do not
-              see the email in your main inbox.
-            </p>
-            <p>
-              If you need any assistance or have any questions, don't hesitate
-              to reach out to us via WhatsApp or through the contact form on our
-              website.
-            </p>
-            <p>
-              Thank you once again for choosing us, and we wish you the best of
-              luck in your TEAS preparation!
-            </p>
-            <p className="font-semibold text-gray-800">
-              Thanks again for getting in touch!
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={`bg-white rounded-lg shadow-lg p-8 ${className}`}>

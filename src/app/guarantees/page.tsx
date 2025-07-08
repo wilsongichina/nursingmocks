@@ -67,88 +67,100 @@ export default function GuaranteesPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="prose prose-lg max-w-none">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Service Quality Guarantee
+              GUARANTEES
             </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              TEAS Gurus guarantees the highest quality of educational
-              assistance and exam preparation services. We are committed to
-              providing comprehensive support that meets your academic needs and
-              helps you achieve your goals.
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+              What We Promise You
+            </h3>
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              You're not just paying for a service when you choose Teas Gurus;
+              you're also trusting us with your future. And we really mean it.
+            </p>
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              This is what we promise:
             </p>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Professional Support Guarantee
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We guarantee professional, reliable, and timely support throughout
-              your TEAS exam preparation journey. Our team of experts is
-              dedicated to providing you with the guidance and assistance you
-              need to succeed.
-            </p>
+            <div className="space-y-8">
+              <div className="bg-white border-l-4 border-blue-500 p-6 rounded-lg shadow-sm">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  Best Scores, All the Time
+                </h4>
+                <p className="text-gray-600 leading-relaxed">
+                  We want to get at least 85% on every TEAS. No excuses, no
+                  shortcuts.
+                </p>
+              </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Educational Excellence Guarantee
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We guarantee that our educational materials and support services
-              are designed to enhance your understanding of TEAS exam content.
-              Our approach focuses on legitimate educational improvement and
-              comprehensive preparation.
-            </p>
+              <div className="bg-white border-l-4 border-green-500 p-6 rounded-lg shadow-sm">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  We will keep your privacy safe.
+                </h4>
+                <p className="text-gray-600 leading-relaxed">
+                  No one else will know about it. No one, not your school or the
+                  testing site, will ever know that you got help. We keep it
+                  completely private.
+                </p>
+              </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Customer Satisfaction Guarantee
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Your satisfaction is our priority. We guarantee to address your
-              concerns promptly and work diligently to ensure you are completely
-              satisfied with our services and support.
-            </p>
+              <div className="bg-white border-l-4 border-yellow-500 p-6 rounded-lg shadow-sm">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  We Get There On Time
+                </h4>
+                <p className="text-gray-600 leading-relaxed">
+                  Your test will happen exactly when it is supposed to. We can
+                  help you with your exam at any time of day or night, no matter
+                  where you are.
+                </p>
+              </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Confidentiality Guarantee
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We guarantee the confidentiality and security of your personal
-              information and academic records. Your privacy is protected
-              throughout our service relationship.
-            </p>
+              <div className="bg-white border-l-4 border-red-500 p-6 rounded-lg shadow-sm">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  Guarantee of a refund
+                </h4>
+                <p className="text-gray-600 leading-relaxed">
+                  You will get a full refund if we don't deliver what we
+                  promised, whether that means missing the deadline or not
+                  reaching the target score. No problems, no stress.
+                </p>
+              </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Continuous Support Guarantee
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We guarantee ongoing support and assistance throughout your TEAS
-              exam preparation process. Our team is available to help you
-              navigate challenges and achieve your academic goals.
-            </p>
+              <div className="bg-white border-l-4 border-purple-500 p-6 rounded-lg shadow-sm">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  You'll Always Know What's Going On
+                </h4>
+                <p className="text-gray-600 leading-relaxed">
+                  We'll keep you up to date at every step, so you won't be left
+                  in the dark.
+                </p>
+              </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Quality Assurance Guarantee
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We guarantee that all our services meet the highest standards of
-              quality and professionalism. Our commitment to excellence ensures
-              that you receive the best possible support for your TEAS exam
-              preparation.
-            </p>
+              <div className="bg-white border-l-4 border-indigo-500 p-6 rounded-lg shadow-sm">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  Easy and Safe Setup
+                </h4>
+                <p className="text-gray-600 leading-relaxed">
+                  We set everything up for you quickly, safely, and without any
+                  tech problems using safe, remote tools like AnyDesk.
+                </p>
+              </div>
+            </div>
 
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Commitment to Success
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We are committed to your success and guarantee to provide the
-              resources, support, and guidance you need to achieve your TEAS
-              exam goals. Your academic journey is our priority.
-            </p>
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-8 mt-12 border-l-4 border-blue-500">
+              <p className="text-gray-800 text-lg leading-relaxed">
+                In the end, your success is our success. We'll take care of your
+                TEAS exam so you can focus on what's most important: your future
+                as a nurse.
+              </p>
+            </div>
 
             <div className="bg-green-50 rounded-lg p-6 mt-8">
-              <p className="text-green-800 font-semibold mb-2">Our Promise:</p>
+              <p className="text-green-800 font-semibold mb-2">
+                Our Commitment:
+              </p>
               <p className="text-green-700">
-                We guarantee to provide exceptional educational support services
-                that help you prepare effectively for your TEAS exam while
-                maintaining the highest standards of professionalism and
-                integrity.
+                We are committed to your success and satisfaction. Our
+                guarantees are designed to protect your investment and ensure
+                you receive the value you expect from our services.
               </p>
             </div>
 
@@ -166,19 +178,19 @@ export default function GuaranteesPage() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-white shadow-2xl">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4">
-                Questions About Our Guarantees?
+                Ready to Trust Us With Your Future?
               </h2>
               <p className="text-xl mb-8 opacity-90 leading-relaxed">
-                We're committed to transparency and want to ensure you
-                understand our guarantees and commitments. Contact us if you
-                need clarification on any points.
+                Our comprehensive guarantees ensure you have nothing to lose.
+                Start your TEAS exam journey with confidence knowing we stand
+                behind every promise.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/contact"
                   className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Contact Us
+                  Get Started Today
                 </Link>
                 <Link
                   href="/money-back-guarantee"
@@ -197,7 +209,7 @@ export default function GuaranteesPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Need More Information?
+              Questions About Our Guarantees?
             </h2>
             <p className="text-xl text-gray-600">
               Our team is here to help you understand our guarantees and address

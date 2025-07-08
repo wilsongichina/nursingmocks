@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getSupportPageContent,
   uploadSupportPageContent,
+  getAllPages,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import AnchorTextEditor from "@/components/ui/AnchorTextEditor";
 
 interface SupportPageContent {
   meta: {
@@ -38,6 +40,9 @@ export default function EditSupportPage({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [editablePageId, setEditablePageId] = useState("");
+  const [editableServiceId, setEditableServiceId] = useState("");
+  const [availableServices, setAvailableServices] = useState<string[]>([]);
   const [resolvedParams, setResolvedParams] = useState<{
     serviceId: string;
     pageId: string;
@@ -47,9 +52,27 @@ export default function EditSupportPage({
     const resolveParams = async () => {
       const resolved = await params;
       setResolvedParams(resolved);
+      setEditablePageId(resolved.pageId);
+      setEditableServiceId(resolved.serviceId);
     };
     resolveParams();
   }, [params]);
+
+  const loadAvailableServices = useCallback(async () => {
+    try {
+      const result = await getAllPages();
+      if (result.success && result.data) {
+        const serviceIds = Object.keys(result.data);
+        setAvailableServices(serviceIds);
+      }
+    } catch (err) {
+      console.error("Error loading available services:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAvailableServices();
+  }, [loadAvailableServices]);
 
   const loadSupportPageContent = useCallback(async () => {
     if (!resolvedParams) return;
@@ -165,22 +188,37 @@ export default function EditSupportPage({
   }, [loadSupportPageContent]);
 
   const handleSave = async () => {
-    if (!content) return;
+    if (!content || !resolvedParams) return;
 
     try {
       setSaving(true);
       setError("");
       setSuccess("");
 
+      // Use the new service ID and page ID if they have changed
+      const targetServiceId = editableServiceId || resolvedParams.serviceId;
+      const targetPageId = editablePageId || resolvedParams.pageId;
+
       const result = await uploadSupportPageContent(
-        resolvedParams!.serviceId,
-        resolvedParams!.pageId,
+        targetServiceId,
+        targetPageId,
         content
       );
 
       if (result.success) {
         setSuccess("Support page updated successfully!");
         setTimeout(() => setSuccess(""), 3000);
+
+        // If either the service ID or page ID changed, redirect to the new URL
+        if (
+          (editableServiceId &&
+            editableServiceId !== resolvedParams.serviceId) ||
+          (editablePageId && editablePageId !== resolvedParams.pageId)
+        ) {
+          setTimeout(() => {
+            window.location.href = `/admin/supportpages/${targetServiceId}/${targetPageId}`;
+          }, 1500);
+        }
       } else {
         setError(result.message || "Failed to save support page");
       }
@@ -366,6 +404,55 @@ export default function EditSupportPage({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Content */}
           <div className="space-y-6">
+            {/* Page Settings */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">
+                Page Settings
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Service
+                  </label>
+                  <select
+                    value={editableServiceId}
+                    onChange={(e) => setEditableServiceId(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900"
+                  >
+                    {availableServices.map((service) => (
+                      <option key={service} value={service}>
+                        {service.charAt(0).toUpperCase() + service.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select the service this support page belongs to.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Page Slug (URL)
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">
+                      /{editableServiceId}/
+                    </span>
+                    <input
+                      type="text"
+                      value={editablePageId}
+                      onChange={(e) => setEditablePageId(e.target.value)}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                      placeholder="page-slug"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This will change the URL of the page. Use lowercase letters,
+                    numbers, and hyphens only.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Hero Section */}
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
@@ -415,16 +502,13 @@ export default function EditSupportPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
+                  <AnchorTextEditor
                     value={content.hero.description}
-                    onChange={(e) =>
-                      updateContent("hero.description", e.target.value)
+                    onChange={(value) =>
+                      updateContent("hero.description", value)
                     }
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    label="Description"
                     placeholder="Page description"
                   />
                 </div>

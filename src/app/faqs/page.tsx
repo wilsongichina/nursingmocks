@@ -13,9 +13,9 @@ export const metadata: Metadata = {
   keywords:
     "TEAS exam FAQ, TEAS exam questions, TEAS exam help, TEAS exam process questions, TEAS exam service FAQ",
   openGraph: {
-    title: "Frequently Asked Questions | TEAS Exam Help & Services – TeasGurus",
+    title: "FAQs | Pay Someone to Take My TEAS Exam – Teas Gurus",
     description:
-      "Got questions about our TEAS exam services? TeasGurus explains everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
+      "Got questions about hiring someone to take your TEAS exam? Find answers on proctored exams, security, payment, refund policy, and what to expect from our team.",
     url: "https://teasgurus.com/faqs",
   },
   alternates: {
@@ -172,10 +172,10 @@ export default function FAQPage() {
                   Get Started Today
                 </Link>
                 <Link
-                  href="/services"
+                  href="/contact"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Buy Exact Teas - $99
+                  Learn More
                 </Link>
               </div>
             </div>

@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import ContactForm from "@/components/ui/ContactForm";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import AboutPageSchema from "@/components/ui/AboutPageSchema";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -11,9 +12,9 @@ export const metadata: Metadata = {
   keywords:
     "about TEAS Gurus, TEAS exam preparation company, nursing school preparation, TEAS tutoring experts",
   openGraph: {
-    title: "About TeasGurus | Trusted TEAS Exam Help & Expert Support",
+    title: "About Teas Gurus | Trusted Professionals for TEAS Exam Help",
     description:
-      "Learn about TeasGurus—your trusted partner for TEAS exam success. We provide expert real ATI TEAS questions, and professional test-taking services tailored for nursing students.",
+      "Get to know Teas Gurus — the platform where students find reliable, experienced experts to take their ATI TEAS exams. Learn who we are and why students choose us.",
     url: "https://teasgurus.com/about",
   },
   alternates: {
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <Layout>
+      <AboutPageSchema />
       {/* Hero Section */}
       <section className="gradient-bg text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,7 +55,7 @@ export default function AboutPage() {
                 Get Started
               </Link>
               <Link
-                href="/services"
+                href="/contact"
                 className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
                 Our Services
@@ -248,10 +250,10 @@ export default function AboutPage() {
                   Get Started Today
                 </Link>
                 <Link
-                  href="/services"
+                  href="/contact"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Buy Exact Teas - $99
+                  Learn More
                 </Link>
               </div>
             </div>

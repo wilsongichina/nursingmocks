@@ -5,15 +5,15 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Services | Teas Exams Services – TeasGurus",
+  title: "Hesi A2 | Hesi A2 Exam Services – TeasGurus",
   description:
-    "Get guaranteed TEAS exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your TEAS test from start to finish.",
+    "Get guaranteed Hesi A2 exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your Hesi A2 test from start to finish.",
   keywords:
-    "TEAS services, TEAS practice tests, TEAS study materials, TEAS tutoring, TEAS exam help, nursing school preparation",
+    "Hesi A2 services, Hesi A2 practice tests, Hesi A2 study materials, Hesi A2 tutoring, Hesi A2 exam help, nursing school preparation",
   openGraph: {
-    title: "Services | Teas Exams Services – TeasGurus",
+    title: "Hesi A2 | Hesi A2 Exam Services – TeasGurus",
     description:
-      "Get guaranteed TEAS exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your TEAS test from start to finish.",
+      "Get guaranteed Hesi A2 exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your Hesi A2 test from start to finish.",
     url: "https://teasgurus.com/services",
   },
   alternates: {
@@ -26,62 +26,62 @@ export default function ServicesPage() {
     {
       icon: "➗",
       title:
-        "ATI TEAS Math Questions — Let Us Take It for You and Get Real Questions",
+        "Hesi A2 Math Questions — Let Us Take It for You and Get Real Questions",
       description:
-        "Are you worried about changing numbers or solving hard equations? Our math experts can take your TEAS math test for you and give you the same kinds of questions that are on the real test.",
+        "Are you worried about changing numbers or solving hard equations? Our math experts can take your Hesi A2 math test for you and give you the same kinds of questions that are on the real test.",
       features: [
         "Full support for math, algebra, reading data, and taking measurements",
-        "Real ATI TEAS Math Questions with answers and explanations",
+        "Real Hesi A2 Math Questions with answers and explanations",
         "We have professionals who take the test for you, either online or in person",
         "100% privacy, and if you're not happy, you can get your money back",
       ],
       callToAction:
-        "👉 We give you ATI TEAS Math Questions or take the test for you.",
+        "👉 We give you Hesi A2 Math Questions or take the test for you.",
     },
     {
       icon: "🔬",
       title:
-        "ATI TEAS Science Questions — We Take the Test and Share Real Exam Content",
+        "Hesi A2 Science Questions — We Take the Test and Share Real Exam Content",
       description:
-        "Don't worry about dealing with hard anatomy and chemistry. We'll take the TEAS science test for you, and we'll give you access to the real questions so you can study and understand them ahead of time.",
+        "Don't worry about dealing with hard anatomy and chemistry. We'll take the Hesi A2 science test for you, and we'll give you access to the real questions so you can study and understand them ahead of time.",
       features: [
         "Covers biology, chemistry, human anatomy & physiology, and scientific reasoning",
-        "Get ATI TEAS Science Questions with the correct answers",
+        "Get Hesi A2 Science Questions with the correct answers",
         "MSN-level tutors take the test for you in complete safety",
         "Transparent service and flexible payment options",
       ],
       callToAction:
-        "👉 We give you ATI TEAS Science Questions or do the science part for you.",
+        "👉 We give you Hesi A2 Science Questions or do the science part for you.",
     },
     {
       icon: "📘",
       title:
-        "ATI TEAS English Questions — We Handle the Test and Provide the Real Questions",
+        "Hesi A2 English Questions — We Handle the Test and Provide the Real Questions",
       description:
-        "Are you stressed out about grammar? Not only will our team take the TEAS English section for you, but they will also give you the real, current questions that are on the test.",
+        "Are you stressed out about grammar? Not only will our team take the Hesi A2 English section for you, but they will also give you the real, current questions that are on the test.",
       features: [
         "Includes spelling, punctuation, sentence structure, and word meaning",
-        "Access the exact ATI TEAS English Questions that appeared on past exams",
+        "Access the exact Hesi A2 English Questions that appeared on past exams",
         "We handle tests in person or remotely with 100% privacy",
         "Guaranteed score improvement or your money back",
       ],
       callToAction:
-        "👉 We give you ATI TEAS English Questions and or care of the whole test for you.",
+        "👉 We give you Hesi A2 English Questions and or care of the whole test for you.",
     },
     {
       icon: "📖",
       title:
-        "ATI TEAS Reading Questions — We Take the Test and Share Real Passages",
+        "Hesi A2 Reading Questions — We Take the Test and Share Real Passages",
       description:
-        "Are you having trouble with reading comprehension? Our experts will help you with the TEAS Reading section and give you the real questions and passages that will be on the test.",
+        "Are you having trouble with reading comprehension? Our experts will help you with the Hesi A2 Reading section and give you the real questions and passages that will be on the test.",
       features: [
         "Focus on paragraph structure, inference skills, and passage analysis",
-        "Exact ATI TEAS Reading Questions and answers provided",
+        "Exact Hesi A2 Reading Questions and answers provided",
         "Exams handled by experienced tutors with proven success",
         "Safe, secure, and results-focused exam assistance",
       ],
       callToAction:
-        "👉 We give you ATI TEAS Reading Questions and take the reading test for you.",
+        "👉 We give you Hesi A2 Reading Questions and take the reading test for you.",
     },
   ];
 
@@ -101,10 +101,10 @@ export default function ServicesPage() {
               We are Teas Gurus
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              Our Services
+              Hesi A2 Services
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
-              Comprehensive TEAS exam services designed to help you succeed.
+              Comprehensive Hesi A2 exam services designed to help you succeed.
               From full exam taking to targeted practice tests, we have
               everything you need to achieve your goals.
             </p>
@@ -131,7 +131,7 @@ export default function ServicesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Our Comprehensive Services
+              Our Comprehensive Hesi A2 Services
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Choose the service that best fits your learning style and
@@ -194,8 +194,10 @@ export default function ServicesPage() {
                     Get a Quote
                   </Link>
                   <Link
-                    href="/services"
+                    href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9"
                     className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     Buy Exact Teas - $99
                   </Link>
@@ -211,7 +213,7 @@ export default function ServicesPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Ready to Start Your TEAS Journey?
+              Ready to Start Your Hesi A2 Journey?
             </h2>
             <p className="text-xl text-gray-600">
               Contact us to learn more about our services and get personalized

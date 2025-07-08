@@ -13,50 +13,36 @@ export default function FAQSection() {
 
   const faqs: FAQItem[] = [
     {
+      question: "What credentials do your TEAS exam specialists possess?",
+      answer:
+        "Our highly skilled professionals with solid academic backgrounds in health sciences are our TEAS exam experts. Many have obtained a Doctor of Nursing Practice (DNP), and the majority have degrees in Allied Health. We are able to provide more than just basic tutoring thanks to these credentials, which enable us to guarantee high scores with genuine academic insight. Our staff has received specialized training in time management, proctored platforms, and test-taking strategies. They are fully aware of what to anticipate and how to function under duress. Each expert is carefully chosen by us based on their experience, academic credentials, and track record of assisting students in passing the ATI TEAS exam.",
+    },
+    {
       question:
-        "How much should I pay someone to take my online teas exam Reddit?",
+        "How can the security and confidentiality of a student's exam be guaranteed?",
       answer:
-        "As per various discussions held on Reddit, the cost of hiring someone to take your online TEAS test, as most clients suggest, can go up to $500. However, you may find these prices varying. This is because it depends on the tutor's qualification, their success rate, and the complexity of your exams.",
+        "Security and confidentiality are very important to us. Your identity is fully protected when working with Teas Gurus. No personal information about the students they are helping is ever given to our exam takers. They see it as just another exam that needs to be passed in a discrete and professional manner. To ensure that your data is secure from the first message to the end result, we employ private access systems, secure login processes, and encrypted communication. You can rest assured that your privacy will be completely protected, and neither your school nor the testing platform will ever be aware that you received assistance. Our professional promise is that.",
     },
     {
-      question: "Can I pay someone to take my remote teas exam?",
+      question: "What occurs if I'm not happy with the outcomes?",
       answer:
-        "Yes. You can pay someone to take your remote TEAS exams. Our support team will guide you on how to go about it, or you can fill out our quote and share the details needed. One of our qualified and professional MSN tutors will take your place and handle the test for you. They are ready to help with the whole exam, ensure you get the best score, and have more time for fun stuff. Don't worry; we handle everything discreetly.",
+        "We place a great deal of importance on your satisfaction. Even though the majority of our clients are ecstatic about their high scores, we recognize that unexpected events do occur. We provide a complete money-back guarantee in the extremely unlikely event that you're not satisfied with your outcomes. This implies that you will receive a complete refund without any complexities or fine print. We implemented this policy to demonstrate our appreciation for your confidence and investment. It's a commitment to accountability rather than merely a promise. We completely support the idea that we only succeed when you do.",
     },
     {
-      question: "Where can I pay someone to take my teas entrance exam?",
+      question:
+        "Even if I'm not in the US, can I still get help with the TEAS exam?",
       answer:
-        "There is no better place to pay someone to take your TEAS entrance exam than online. Online helpers are the solution you need as they are convenient in the sense that they are accessible anytime and from anywhere. They are also confidential to ensure your location is concealed to avoid raising any red flags with your institution. Plus, they are reliable and offer a variety of services.",
+        "Indeed! Anywhere in the world, you can get professional TEAS exam assistance. Teas Gurus is a worldwide service that works around the clock to accommodate students' needs in all time zones. We can help you whether you're studying in the UK, Canada, Australia, Africa, or Asia. All you need is a laptop or desktop computer and a reliable internet connection because our system is fully online. No matter where you are, we will walk you through every step once you get in touch with us. Our services have been successfully utilized by students from more than 20 countries. Even though it is midnight your time, we are only a message away.",
     },
     {
-      question: "How much should I pay someone to take my online teas exam?",
+      question: "Can I retake the TEAS exam for free?",
       answer:
-        "While take my teas exam services charge upwards of $500 to take an online TEAS exam, we strongly believe in considerable and affordable pricing. Therefore, we only charge $400 per exam, with a full money-back guarantee, a secure testing environment, and no hidden charges. We also offer a payment plan where you can make an initial partial payment to get our team started and make a full payment after the results.",
+        "Unfortunately, there is a cost associated with retaking the TEAS exam. The exam fee is the same whether you are taking it for the first time or again, and you will need to pay it through ATI Testing or your test center. This can be discouraging, particularly if you failed by a slim margin. Because of this, we advise students to do things correctly the first time, and our team assists you in doing just that. When you use Teas Gurus, you're investing in outcomes that save you money, time, and stress by removing the need for pricey retakes. You're not just paying someone to take your test.",
     },
     {
-      question: "Is Teas Gurus legit?",
+      question: "What TEAS score is regarded as passing?",
       answer:
-        "Yes. If you are looking for a legitimate online helper, Teas Guru ought to be your first choice. We have a credible record and previous students' testimonials to attest to our credibility. And that's not all. We are an open book, and our policies on payment and services are clear, so you know what to expect and exactly what you are paying for.",
-    },
-    {
-      question: "Is our Teas Gurus Legit? Does it have enough exam takers?",
-      answer:
-        "Our TEAS Gurus are 100% legit. We have been around for many years, and during that time, our teams have acquired a ton of experience through helping and interacting with thousands of students. We have a ton of exam takers, sufficient if you may, so there is always someone ready and available to help you with your TEAS tests.",
-    },
-    {
-      question: "Can I take my teas exam online or remotely?",
-      answer:
-        "Usually, you can take your TEAS exam online or remotely. But today, as learning institutions embrace technological advancement, many testing centers, ATI included, offer remote proctoring options. We recommend taking it remotely because, let's be honest, it's convenient, as you can take it from anywhere and anytime with your computer. It also allows you to hire a classtaker (like Teas Gurus) and alleviate the pressure and stress of meeting deadlines. It's the perfect way to have a good work-life balance if you ask me.",
-    },
-    {
-      question: "How do you properly take the teas exam?",
-      answer:
-        "If you are searching for take my teas test for me, we are here to help. First, you need to register online using the official ATI testing website, select 'I am preparing for or taking the TEAS' and click on 'exam registration.' Go for the 'remote online option, and choose a suitable exam date and time. Complete and confirm your details and payment information. The next step is to ensure that you have computer access by downloading and installing AnyDesk. Once it's installed, copy and share the code with us. This will help us access your device and install the respondus bypass software. This software is ideal for smooth proctoring without tampering with your test responses. Also, before the actual exam, do a dry run test to ensure that the bypass software works properly. Lastly, on exam day, it will appear as if you are taking the exam while our professionals manage the process remotely. Once the exam is done, your result will be available, and payment will be made in full.",
-    },
-    {
-      question: "Are There Legit Teas Takers Experts?",
-      answer:
-        "Yes, Teas Gurus Is!! Our team of experts offers professional assistance and resources to help you pass your exams.",
+        "Depending on your school's requirements, a passing score on the TEAS test can vary, but it usually hovers around 65%. While some nursing programs may accept a lower score, others may require a minimum of 70% or even 75% for admission. But why settle for less? Our professionals at Teas Gurus routinely receive scores of 85% and higher, and many of our clients end up in the 90th percentile. Therefore, we help you stand out as a top applicant rather than just meeting the cutoff. Our goal is to get you recognized for your excellence, so don't worry about merely 'passing.'",
     },
   ];
 
@@ -68,10 +54,12 @@ export default function FAQSection() {
     <section className="py-20 bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">FAQS</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Frequently Asked Questions
+          </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Get answers to the most common questions about our TEAS exam
-            services.
+            services and how we can help you succeed.
           </p>
         </div>
 

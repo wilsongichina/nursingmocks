@@ -206,11 +206,22 @@ export default function EditServicePage({
   };
 
   const updateContent = (path: string, value: string) => {
-    if (!content) return;
+    console.log("updateContent called - path:", path, "value:", value);
+
+    if (!content) {
+      console.log("updateContent - no content available");
+      return;
+    }
 
     const keys = path.split(".");
+    console.log("updateContent - keys:", keys);
+
     setContent((prev) => {
-      if (!prev) return prev;
+      if (!prev) {
+        console.log("updateContent - prev is null");
+        return prev;
+      }
+
       const newContent = { ...prev };
       let current: any = newContent;
 
@@ -218,17 +229,43 @@ export default function EditServicePage({
         current = current[keys[i]];
       }
 
+      console.log(
+        "updateContent - setting",
+        keys[keys.length - 1],
+        "to",
+        value
+      );
       current[keys[keys.length - 1]] = value;
+
+      console.log("updateContent - new content:", newContent);
       return newContent;
     });
   };
 
   const updateArrayContent = (path: string, index: number, value: any) => {
-    if (!content) return;
+    console.log(
+      "updateArrayContent called - path:",
+      path,
+      "index:",
+      index,
+      "value:",
+      value
+    );
+
+    if (!content) {
+      console.log("updateArrayContent - no content available");
+      return;
+    }
 
     const keys = path.split(".");
+    console.log("updateArrayContent - keys:", keys);
+
     setContent((prev) => {
-      if (!prev) return prev;
+      if (!prev) {
+        console.log("updateArrayContent - prev is null");
+        return prev;
+      }
+
       const newContent = { ...prev };
       let current: any = newContent;
 
@@ -236,7 +273,10 @@ export default function EditServicePage({
         current = current[keys[i]];
       }
 
+      console.log("updateArrayContent - setting index", index, "to", value);
       current[index] = value;
+
+      console.log("updateArrayContent - new content:", newContent);
       return newContent;
     });
   };

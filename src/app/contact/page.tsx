@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import ContactForm from "@/components/ui/ContactForm";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import ContactPageSchema from "@/components/ui/ContactPageSchema";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -11,9 +12,9 @@ export const metadata: Metadata = {
   keywords:
     "contact TEAS Gurus, TEAS exam help contact, get quote, TEAS support, nursing exam assistance",
   openGraph: {
-    title: "Contact TeasGurus | Get Help with Your TEAS Exam Today",
+    title: "Contact Teas Gurus | Reach Out for TEAS Exam Help",
     description:
-      "Have questions or need help with your TEAS exam? Contact TeasGurus for expert support, real ATI TEAS questions, and professional exam-taking services. We're here to assist you 24/7.",
+      "Need assistance or ready to get started? Contact Teas Gurus today. Our support team is available 24/7 to guide you through the process or answer any questions.",
     url: "https://teasgurus.com/contact",
   },
   alternates: {
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <Layout>
+      <ContactPageSchema />
       {/* Hero Section */}
       <section className="gradient-bg text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,10 +52,10 @@ export default function ContactPage() {
                 Send Message
               </Link>
               <Link
-                href="/services"
+                href="/contact"
                 className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
-                Our Services
+                Learn More
               </Link>
             </div>
           </div>

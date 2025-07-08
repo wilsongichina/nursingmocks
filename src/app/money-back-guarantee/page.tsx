@@ -68,84 +68,90 @@ export default function MoneyBackGuaranteePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="prose prose-lg max-w-none">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Our Money Back Guarantee
+              Money Back Guarantee Policy
             </h2>
             <p className="text-gray-600 mb-6 leading-relaxed">
-              We guarantee that you will achieve at least a 90% score on your
-              TEAS exam. If you don't reach this score, we will provide a full
-              refund or retake the exam at no additional cost.
+              Students may be able to get their money back if:
             </p>
+            <ul className="list-disc pl-6 mb-6 text-gray-600 space-y-2">
+              <li>
+                Even after five tries to fix things, the original requirements
+                were still not met.
+              </li>
+              <li>
+                Our exam helper didn't meet the deadline we agreed on in the
+                first agreement.
+              </li>
+            </ul>
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+              <p className="text-yellow-800 font-semibold">Important:</p>
+              <p className="text-yellow-700">
+                Students must give detailed feedback about the problems in order
+                to start a refund request. Our team will look over and audit the
+                case after it has been submitted to see if it meets the
+                requirements.
+              </p>
+            </div>
 
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Pay After Success Model
+              Non-Eligibility for Refunds
             </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Our unique pay-after-success model means you only pay once you
-              achieve your desired results. This eliminates the risk and ensures
-              you get value for your investment.
+            <p className="text-gray-600 mb-4 leading-relaxed">
+              There will be no refunds in the following situations:
             </p>
+            <ul className="list-disc pl-6 mb-6 text-gray-600 space-y-2">
+              <li>
+                The student doesn't give complete or accurate initial
+                information, which leads to bad results.
+              </li>
+              <li>
+                The student changes the work that was given to them and gets bad
+                results.
+              </li>
+              <li>
+                The student doesn't answer questions or requests for
+                clarification right away, which causes delays.
+              </li>
+              <li>After placing the order, the student changes their mind.</li>
+              <li>
+                The student asks for more work or changes the original scope
+                after the work is done, but they don't have to pay again.
+              </li>
+              <li>
+                Claims are made without giving people time to make changes or
+                ask questions.
+              </li>
+            </ul>
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+              <p className="text-blue-800 font-semibold">Note:</p>
+              <p className="text-blue-700">
+                Any changes or additions to the original instructions will cost
+                more. If these charges aren't paid, we won't be responsible for
+                any problems that come up.
+              </p>
+            </div>
 
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Guarantee Eligibility
+              Transaction Charges & Refund Process
             </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Our money back guarantee is available in the following
-              circumstances: failure to achieve the guaranteed score, service
-              cancellation before exam commencement, or technical issues
-              preventing service delivery.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Refund Process
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              To request a refund under our money back guarantee, contact our
-              support team within 30 days of service completion. We will review
-              your case and process eligible refunds within 5-7 business days.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Non-Refundable Items
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Consultation fees, administrative costs, and any services that
-              have been fully completed and delivered as promised are generally
-              non-refundable.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Partial Refunds
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              In cases where partial services have been completed, we may offer
-              a partial refund based on the percentage of services not delivered
-              or the extent of the issue.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Dispute Resolution
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              If you disagree with a refund decision, you may request a review
-              by our management team. We are committed to fair and transparent
-              resolution of all disputes.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Contact Information
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              For refund requests or questions about our money back guarantee,
-              please contact our customer support team through our contact form,
-              email, or WhatsApp chat.
-            </p>
+            <ul className="list-disc pl-6 mb-6 text-gray-600 space-y-2">
+              <li>
+                All approved refunds are subject to a 15% transaction fee.
+              </li>
+              <li>
+                If you want a refund, please email our support team. We'll help
+                you through a quick and easy process for resolving your issue.
+              </li>
+            </ul>
 
             <div className="bg-green-50 rounded-lg p-6 mt-8">
-              <p className="text-green-800 font-semibold mb-2">Our Promise:</p>
+              <p className="text-green-800 font-semibold mb-2">
+                Our Commitment:
+              </p>
               <p className="text-green-700">
-                We are committed to your success and satisfaction. Our money
-                back guarantee is designed to protect your investment and ensure
-                you receive the value you expect from our services.
+                We are committed to providing quality service and ensuring your
+                satisfaction. Our money back guarantee is designed to protect
+                your investment while maintaining fair and transparent policies.
               </p>
             </div>
 
@@ -163,19 +169,19 @@ export default function MoneyBackGuaranteePage() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-white shadow-2xl">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4">
-                Confident in Our Money Back Guarantee?
+                Need to Request a Refund?
               </h2>
               <p className="text-xl mb-8 opacity-90 leading-relaxed">
-                Our pay-after-success model and comprehensive money back
-                guarantee ensure you have nothing to lose. Start your TEAS exam
-                journey with confidence.
+                Our support team is here to help you through the refund process.
+                Contact us with detailed feedback about any issues you've
+                experienced.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/contact"
                   className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Get Started Today
+                  Contact Support
                 </Link>
                 <Link
                   href="/how-it-works"

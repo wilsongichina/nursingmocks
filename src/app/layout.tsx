@@ -114,9 +114,10 @@ export default function RootLayout({
                 addressCountry: "US",
               },
               sameAs: [
-                "https://www.facebook.com/teasgurus",
-                "https://twitter.com/teasgurus",
+                "https://instagram.com/teasgurus",
                 "https://www.linkedin.com/company/teasgurus",
+                "https://tiktok.com/@teas.gurus",
+                "https://www.youtube.com/@teasgurus",
               ],
             }),
           }}

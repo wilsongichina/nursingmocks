@@ -7,10 +7,10 @@
   "url": "https://teasgurus.com/",
   "logo": "https://teasgurus.com/teas-gurus-logo.png",
   "sameAs": [
-    "https://www.instagram.com/teasgurus",
-	"https://www.tiktok.com/@teas.gurus",
-    "www.youtube.com/@TeasGurus",
-    "https://www.linkedin.com/company/teasgurus/"
+    "https://instagram.com/teasgurus",
+    "https://www.linkedin.com/company/teasgurus",
+    "https://tiktok.com/@teas.gurus",
+    "https://www.youtube.com/@teasgurus"
   ],
   "contactPoint": {
     "@type": "ContactPoint",

@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Pay Someone to Take My teas Exam for Me | Teas Gurus",
+    title: "Take My TEAS Exam for Me | Secure TEAS Help Online – Teas Gurus",
     description:
-      "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
+      "Need help with your ATI TEAS exam? Hire a trusted expert to take your TEAS test online or proctored. Guaranteed scores, 100% confidentiality, and secure support.",
     url: "https://www.teasgurus.com",
     siteName: "Teas Gurus",
     images: [

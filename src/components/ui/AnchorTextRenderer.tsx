@@ -11,12 +11,17 @@ export default function AnchorTextRenderer({
 }: AnchorTextRendererProps) {
   // Parse markdown links and convert them to JSX
   const renderTextWithLinks = (text: string) => {
+    // Debug: log the text to see what we're working with
+    console.log("AnchorTextRenderer received text:", text);
+
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     const parts = [];
     let lastIndex = 0;
     let match;
 
     while ((match = linkRegex.exec(text)) !== null) {
+      console.log("Found link:", match[1], "->", match[2]);
+
       // Add text before the link
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
@@ -41,6 +46,7 @@ export default function AnchorTextRenderer({
       parts.push(text.substring(lastIndex));
     }
 
+    console.log("Rendered parts:", parts);
     return parts.length > 0 ? parts : text;
   };
 

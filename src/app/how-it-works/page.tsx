@@ -2,19 +2,20 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import ContactForm from "@/components/ui/ContactForm";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
+import HowItWorksPageSchema from "@/components/ui/HowItWorksPageSchema";
 import Link from "next/link";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "How It Works - TEAS Exam Process | TEAS Gurus",
+  title: "How It Works | Pay a Pro to Take Your TEAS Exam – Teas Gurus",
   description:
-    "Learn how our 6-step TEAS exam process works. From registration to payment, discover how TEAS Gurus helps you pass your nursing entrance exam with guaranteed results.",
+    "Learn exactly how Teas Gurus matches you with a verified expert to take your TEAS exam online. Our process is simple, secure, and designed for results.",
   keywords:
     "how TEAS exam works, TEAS exam process, TEAS exam steps, TEAS exam procedure, TEAS exam taking service",
   openGraph: {
-    title: "How It Works - TEAS Exam Process | TEAS Gurus",
+    title: "How It Works | Pay a Pro to Take Your TEAS Exam – Teas Gurus",
     description:
-      "Learn how our 6-step TEAS exam process works. From registration to payment, discover how TEAS Gurus helps you pass your nursing entrance exam.",
+      "Learn exactly how Teas Gurus matches you with a verified expert to take your TEAS exam online. Our process is simple, secure, and designed for results",
     url: "https://teasgurus.com/how-it-works",
   },
   alternates: {
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
 export default function HowItWorksPage() {
   return (
     <Layout>
+      <HowItWorksPageSchema />
       {/* Hero Section */}
       <section className="gradient-bg text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -55,10 +57,10 @@ export default function HowItWorksPage() {
                 Get Started Today
               </Link>
               <Link
-                href="/services"
+                href="/contact"
                 className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
-                View Our Services
+                Learn More
               </Link>
             </div>
           </div>
@@ -165,10 +167,10 @@ export default function HowItWorksPage() {
                   Get Started Today
                 </Link>
                 <Link
-                  href="/services"
+                  href="/contact"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Buy Exact Teas - $99
+                  Learn More
                 </Link>
               </div>
             </div>
