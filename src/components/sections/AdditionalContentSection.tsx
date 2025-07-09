@@ -218,8 +218,8 @@ export default function AdditionalContentSection() {
                 <h2 className="text-3xl font-bold mb-4 text-white">
                   Teas Exam Takers by Top Qualified MSN Tutors
                 </h2>
-                <div className="prose prose-lg max-w-none prose-invert">
-                  <p className="text-gray-200 mb-4 leading-relaxed">
+                <div className="max-w-none">
+                  <p className="text-white mb-4 leading-relaxed">
                     Every day, we get inquiries from students all over the
                     country enquiring about our services with questions like
                     "Can I hire someone to take my TEAS tests?", "How can
@@ -302,7 +302,7 @@ export default function AdditionalContentSection() {
                   Take My Teas Test for Me by Qualified and Professional MSN
                   Tutors
                 </h2>
-                <div className="prose prose-lg max-w-none prose-invert">
+                <div className="max-w-none">
                   <p className="text-gray-200 mb-4 leading-relaxed">
                     If you feel stressed about your TEAS exam or ever wish you
                     could just hit a button and someone handle it for you, rest

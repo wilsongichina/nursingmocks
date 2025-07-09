@@ -194,7 +194,7 @@ export default function HesiA2Page() {
                     Get a Quote
                   </Link>
                   <Link
-                    href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9"
+                    href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=https://teasgurus.com/teas/thank-you&cancel_url=https://teasgurus.com/teas"
                     className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
                     target="_blank"
                     rel="noopener noreferrer"

@@ -247,7 +247,7 @@ export default function HowItWorksSection() {
                   Get Started Today
                 </Link>
                 <Link
-                  href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9"
+                  href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=https://teasgurus.com/teas/thank-you&cancel_url=https://teasgurus.com/teas"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   target="_blank"
                   rel="noopener noreferrer"

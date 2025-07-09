@@ -1,10 +1,8 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
+import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
-import { getSupportPageContent } from "@/lib/firestore-operations";
+import { getAllSupportPages } from "@/lib/firestore-operations";
 
 interface SupportPageContent {
   meta: {
@@ -26,137 +24,121 @@ interface SupportPageContent {
   content: string;
 }
 
-export default function SupportPage({
-  params,
-}: {
+interface PageProps {
   params: Promise<{ serviceId: string; pageId: string }>;
-}) {
-  const [content, setContent] = useState<SupportPageContent | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [resolvedParams, setResolvedParams] = useState<{
-    serviceId: string;
-    pageId: string;
-  } | null>(null);
+}
 
-  useEffect(() => {
-    const resolveParams = async () => {
-      const resolved = await params;
-      setResolvedParams(resolved);
-    };
-    resolveParams();
-  }, [params]);
+// Generate static params at build time
+export async function generateStaticParams() {
+  try {
+    const result = await getAllSupportPages();
 
-  const loadSupportPageContent = useCallback(async () => {
-    if (!resolvedParams) return;
+    if (result.success && result.data) {
+      const pages = result.data;
+      const params: Array<{ serviceId: string; pageId: string }> = [];
 
-    try {
-      setLoading(true);
-      const result = await getSupportPageContent(
-        resolvedParams.serviceId,
-        resolvedParams.pageId
-      );
-
-      if (result.success && result.data) {
-        setContent(result.data as SupportPageContent);
-
-        // Update page metadata
-        const pageData = result.data as SupportPageContent;
-        document.title =
-          pageData.meta?.title || `${resolvedParams.pageId} - TEAS Gurus`;
-
-        // Update meta description
-        let metaDescription = document.querySelector(
-          'meta[name="description"]'
-        );
-        if (!metaDescription) {
-          metaDescription = document.createElement("meta");
-          metaDescription.setAttribute("name", "description");
-          document.head.appendChild(metaDescription);
+      // Extract all possible serviceId/pageId combinations
+      Object.keys(pages).forEach((serviceId) => {
+        const servicePages = pages[serviceId];
+        if (servicePages && typeof servicePages === "object") {
+          Object.keys(servicePages).forEach((pageId) => {
+            params.push({ serviceId, pageId });
+          });
         }
-        metaDescription.setAttribute(
-          "content",
-          pageData.meta?.description || ""
-        );
+      });
 
-        // Update meta keywords
-        let metaKeywords = document.querySelector('meta[name="keywords"]');
-        if (!metaKeywords) {
-          metaKeywords = document.createElement("meta");
-          metaKeywords.setAttribute("name", "keywords");
-          document.head.appendChild(metaKeywords);
-        }
-        metaKeywords.setAttribute("content", pageData.meta?.keywords || "");
+      return params;
+    }
+  } catch (error) {
+    console.error("Error generating static params:", error);
+  }
 
-        // Update Open Graph tags
-        let ogTitle = document.querySelector('meta[property="og:title"]');
-        if (!ogTitle) {
-          ogTitle = document.createElement("meta");
-          ogTitle.setAttribute("property", "og:title");
-          document.head.appendChild(ogTitle);
-        }
-        ogTitle.setAttribute("content", pageData.meta?.ogTitle || "");
+  // Return some default pages if Firestore is not available during build
+  return [
+    { serviceId: "teas", pageId: "math" },
+    { serviceId: "teas", pageId: "science" },
+    { serviceId: "teas", pageId: "reading" },
+    { serviceId: "teas", pageId: "english" },
+  ];
+}
 
-        let ogDescription = document.querySelector(
-          'meta[property="og:description"]'
-        );
-        if (!ogDescription) {
-          ogDescription = document.createElement("meta");
-          ogDescription.setAttribute("property", "og:description");
-          document.head.appendChild(ogDescription);
-        }
-        ogDescription.setAttribute(
-          "content",
-          pageData.meta?.ogDescription || ""
-        );
+// Generate metadata for each page
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const resolvedParams = await params;
 
-        let ogImage = document.querySelector('meta[property="og:image"]');
-        if (!ogImage) {
-          ogImage = document.createElement("meta");
-          ogImage.setAttribute("property", "og:image");
-          document.head.appendChild(ogImage);
-        }
-        ogImage.setAttribute(
-          "content",
-          pageData.meta?.ogImage || "/teas-gurus-logo.png"
-        );
+  try {
+    const result = await getAllSupportPages();
 
-        // Update canonical URL
-        let canonicalLink = document.querySelector('link[rel="canonical"]');
-        if (!canonicalLink) {
-          canonicalLink = document.createElement("link");
-          canonicalLink.setAttribute("rel", "canonical");
-          document.head.appendChild(canonicalLink);
-        }
-        canonicalLink.setAttribute(
-          "href",
-          pageData.meta?.canonicalUrl ||
-            `https://teasgurus.com/${resolvedParams.serviceId}/${resolvedParams.pageId}`
-        );
+    if (result.success && result.data) {
+      const pages = result.data;
+      const pageData = pages[resolvedParams.serviceId]?.[resolvedParams.pageId];
+
+      if (pageData) {
+        return {
+          title:
+            pageData.meta?.title || `${resolvedParams.pageId} - TEAS Gurus`,
+          description: pageData.meta?.description || "",
+          keywords: pageData.meta?.keywords || "",
+          openGraph: {
+            title:
+              pageData.meta?.ogTitle ||
+              pageData.meta?.title ||
+              `${resolvedParams.pageId} - TEAS Gurus`,
+            description:
+              pageData.meta?.ogDescription || pageData.meta?.description || "",
+            url:
+              pageData.meta?.canonicalUrl ||
+              `https://teasgurus.com/${resolvedParams.serviceId}/${resolvedParams.pageId}`,
+            images: [
+              {
+                url: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+                width: 1200,
+                height: 630,
+                alt:
+                  pageData.meta?.title ||
+                  `${resolvedParams.pageId} - TEAS Gurus`,
+              },
+            ],
+          },
+          alternates: {
+            canonical:
+              pageData.meta?.canonicalUrl ||
+              `/${resolvedParams.serviceId}/${resolvedParams.pageId}`,
+          },
+        };
       }
-    } catch (err) {
-      console.error("Error loading support page content:", err);
-    } finally {
-      setLoading(false);
     }
-  }, [resolvedParams]);
+  } catch (error) {
+    console.error("Error generating metadata:", error);
+  }
 
-  useEffect(() => {
-    if (resolvedParams) {
-      loadSupportPageContent();
+  // Fallback metadata
+  return {
+    title: `${resolvedParams.pageId} - TEAS Gurus`,
+    description: `Get help with your ${resolvedParams.pageId} TEAS exam preparation.`,
+    alternates: {
+      canonical: `/${resolvedParams.serviceId}/${resolvedParams.pageId}`,
+    },
+  };
+}
+
+export default async function SupportPage({ params }: PageProps) {
+  const resolvedParams = await params;
+
+  let content: SupportPageContent | null = null;
+
+  try {
+    const result = await getAllSupportPages();
+
+    if (result.success && result.data) {
+      const pages = result.data;
+      content =
+        pages[resolvedParams.serviceId]?.[resolvedParams.pageId] || null;
     }
-  }, [resolvedParams, loadSupportPageContent]);
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading content...</p>
-          </div>
-        </div>
-      </Layout>
-    );
+  } catch (error) {
+    console.error("Error loading support page content:", error);
   }
 
   if (!content) {
@@ -185,7 +167,7 @@ export default function SupportPage({
   return (
     <Layout>
       {/* Schema Script */}
-      {content.schema && (
+      {content?.schema && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -205,16 +187,18 @@ export default function SupportPage({
           <div className="text-center">
             <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-              {content.hero.badge}
+              {content?.hero?.badge || "TEAS Exam Help"}
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              {content.hero.title}
+              {content?.hero?.title || `${resolvedParams.pageId} - TEAS Gurus`}
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
-              {content.hero.subtitle}
+              {content?.hero?.subtitle ||
+                `Get expert help with your ${resolvedParams.pageId} TEAS exam preparation.`}
             </p>
             <p className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
-              {content.hero.description}
+              {content?.hero?.description ||
+                "Our experienced tutors are here to help you succeed in your TEAS exam."}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -246,7 +230,7 @@ export default function SupportPage({
                   style={{
                     color: "#111827",
                   }}
-                  dangerouslySetInnerHTML={{ __html: content.content }}
+                  dangerouslySetInnerHTML={{ __html: content?.content || "" }}
                 />
               </div>
             </div>
@@ -295,7 +279,7 @@ export default function SupportPage({
                   Get Started Today
                 </Link>
                 <Link
-                  href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9"
+                  href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=https://teasgurus.com/teas/thank-you&cancel_url=https://teasgurus.com/teas"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   target="_blank"
                   rel="noopener noreferrer"

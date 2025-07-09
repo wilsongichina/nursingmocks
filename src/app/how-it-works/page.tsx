@@ -7,15 +7,15 @@ import Link from "next/link";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "How It Works | Pay a Pro to Take Your TEAS Exam – Teas Gurus",
+  title: "How It Works | Pay a Pro to Take Your TEAS Exam",
   description:
-    "Learn exactly how Teas Gurus matches you with a verified expert to take your TEAS exam online. Our process is simple, secure, and designed for results.",
+    "Learn exactly how we match you with a verified expert to take your TEAS exam online. Our process is simple, secure, and designed for results.",
   keywords:
     "how TEAS exam works, TEAS exam process, TEAS exam steps, TEAS exam procedure, TEAS exam taking service",
   openGraph: {
-    title: "How It Works | Pay a Pro to Take Your TEAS Exam – Teas Gurus",
+    title: "How It Works | Pay a Pro to Take Your TEAS Exam",
     description:
-      "Learn exactly how Teas Gurus matches you with a verified expert to take your TEAS exam online. Our process is simple, secure, and designed for results",
+      "Learn exactly how we match you with a verified expert to take your TEAS exam online. Our process is simple, secure, and designed for results",
     url: "https://teasgurus.com/how-it-works",
   },
   alternates: {

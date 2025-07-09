@@ -6,18 +6,30 @@ import Image from "next/image";
 const gradeImages = [
   { src: "/grade/Take My Teas Exam Result 90.jpg", alt: "TEAS Exam Result 90" },
   {
-    src: "/grade/Take My Teas Exam Result - 90.jpg",
+    src: "/grade/Take My Teas Exam Result-90.jpg",
     alt: "TEAS Exam Result 90",
   },
-  { src: "/grade/Take My Teas Exam Result 89.jpg", alt: "TEAS Exam Result 89" },
+  {
+    src: "/grade/Take My Teas Exam Result 89.jpeg",
+    alt: "TEAS Exam Result 89",
+  },
   {
     src: "/grade/Take My Teas Exam for Me - 96.png",
     alt: "TEAS Exam Result 96",
   },
   { src: "/grade/Take My Teas Exam Result 86.jpg", alt: "TEAS Exam Result 86" },
-  { src: "/grade/Take My Teas Exam for Me 90.png", alt: "TEAS Exam Result 90" },
-  { src: "/grade/Take My Teas Exam Result 87.jpg", alt: "TEAS Exam Result 87" },
-  { src: "/grade/Take My Teas Exam Result 85.jpg", alt: "TEAS Exam Result 85" },
+  {
+    src: "/grade/Take My Teas Exam for Me 90.jpeg",
+    alt: "TEAS Exam Result 90",
+  },
+  {
+    src: "/grade/Take My Teas Exam Result 87.jpeg",
+    alt: "TEAS Exam Result 87",
+  },
+  {
+    src: "/grade/Take My Teas Exam Result 85.jpeg",
+    alt: "TEAS Exam Result 85",
+  },
 ];
 
 export default function GradeSlider() {

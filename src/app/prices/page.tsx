@@ -6,13 +6,13 @@ import PricesPageSchema from "@/components/ui/PricesPageSchema";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Pricing | Take My TEAS Exam Cost – TeasGurus",
+  title: "Pricing | Take My TEAS Exam Cost",
   description:
     "Explore our pricing for TEAS exam services including Math, Science, Reading & English help. Affordable rates to take your TEAS test or get real ATI TEAS practice question",
   keywords:
     "TEAS exam pricing, TEAS services cost, payment plans, discounts, affordable TEAS prep",
   openGraph: {
-    title: "TEAS Exam Help Pricing | Affordable & Transparent – Teas Gurus",
+    title: "TEAS Exam Help Pricing | Affordable & Transparent",
     description:
       "Explore our pricing plans for TEAS exam services. No hidden fees. Choose the package that fits your exam, urgency, and goals. Pay securely and confidently.",
     url: "https://teasgurus.com/prices",

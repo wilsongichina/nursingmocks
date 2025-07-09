@@ -7,13 +7,13 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import FAQPageSchema from "@/components/ui/FAQPageSchema";
 
 export const metadata: Metadata = {
-  title: "Frequently Asked Questions | TEAS Exam Help & Services – TeasGurus",
+  title: "Frequently Asked Questions | TEAS Exam Help & Services",
   description:
-    "Got questions about our TEAS exam services? TeasGurus explains everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
+    "Got questions about our TEAS exam services? We explain everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
   keywords:
     "TEAS exam FAQ, TEAS exam questions, TEAS exam help, TEAS exam process questions, TEAS exam service FAQ",
   openGraph: {
-    title: "FAQs | Pay Someone to Take My TEAS Exam – Teas Gurus",
+    title: "FAQs | Pay Someone to Take My TEAS Exam",
     description:
       "Got questions about hiring someone to take your TEAS exam? Find answers on proctored exams, security, payment, refund policy, and what to expect from our team.",
     url: "https://teasgurus.com/faqs",
