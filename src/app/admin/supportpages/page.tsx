@@ -6,6 +6,7 @@ import {
   uploadSupportPageContent,
   deleteSupportPageContent,
   getAllPages,
+  testFirebaseConnection,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -33,6 +34,14 @@ export default function SupportPagesPage() {
   const [newPageTitle, setNewPageTitle] = useState("");
 
   useEffect(() => {
+    // Test Firebase connection first
+    testFirebaseConnection().then((result) => {
+      console.log("Firebase connection test result:", result);
+      if (!result.success) {
+        setError(`Firebase connection failed: ${result.message}`);
+      }
+    });
+
     loadSupportPages();
     loadAvailableServices();
   }, []);
@@ -44,14 +53,40 @@ export default function SupportPagesPage() {
 
       const result = await getAllSupportPages();
 
+      console.log("Support pages result:", result);
+
       if (result.success && result.data) {
-        const pagesList = Object.keys(result.data).map((id) => ({
-          id,
-          ...result.data[id],
-        }));
+        console.log("Support pages data structure:", result.data);
+        const pagesList: SupportPage[] = [];
+
+        // Handle the nested structure: { serviceId: { pageId: pageData } }
+        Object.keys(result.data).forEach((serviceId) => {
+          const servicePages = result.data[serviceId];
+          console.log(`Service ${serviceId} pages:`, servicePages);
+          if (servicePages && typeof servicePages === "object") {
+            Object.keys(servicePages).forEach((pageId) => {
+              const pageData = servicePages[pageId];
+              console.log(`Page ${pageId} data:`, pageData);
+              pagesList.push({
+                id: `${serviceId}_${pageId}`,
+                serviceId,
+                pageId,
+                ...pageData,
+              });
+            });
+          }
+        });
+
+        console.log("Final pages list:", pagesList);
         setSupportPages(pagesList);
+
+        // If no pages found, show a helpful message
+        if (pagesList.length === 0) {
+          console.log("No support pages found in the database");
+        }
       } else {
-        setError("Failed to load support pages");
+        setError(result.message || "Failed to load support pages");
+        console.error("Failed to load support pages:", result.message);
       }
     } catch (err) {
       setError("Failed to load support pages");

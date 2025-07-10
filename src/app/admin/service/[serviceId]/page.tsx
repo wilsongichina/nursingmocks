@@ -5,8 +5,8 @@ import {
   getServiceContent,
   uploadServiceContent,
 } from "@/lib/firestore-operations";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
-import AnchorTextEditor from "@/components/ui/AnchorTextEditor";
 
 interface ServiceContent {
   meta: {
@@ -109,58 +109,163 @@ export default function EditServicePage({
       if (result.success && result.data) {
         // Ensure meta and schema objects are properly initialized with default values if missing
         const serviceData = result.data as ServiceContent;
+
+        // Default cards for What to Expect section
+        const defaultWhatToExpectCards = [
+          {
+            title: "Professional Service",
+            icon: "star",
+            content: [
+              "Our experienced team ensures your exam is handled professionally and confidentially.",
+            ],
+          },
+          {
+            title: "Guaranteed Results",
+            icon: "check-circle",
+            content: [
+              "We provide a money-back guarantee if you're not satisfied with our service.",
+            ],
+          },
+        ];
+
+        // Default cards for Most Common Questions section
+        const defaultMostCommonCards = [
+          {
+            title: "How does the process work?",
+            content: [
+              "We handle your exam from start to finish, ensuring confidentiality and quality results.",
+            ],
+          },
+          {
+            title: "What if I'm not satisfied?",
+            content: [
+              "We offer a money-back guarantee to ensure your complete satisfaction.",
+            ],
+          },
+        ];
+
+        // Default sections for Best Way section
+        const defaultStudyGuideSections = [
+          {
+            title: "Expert Preparation",
+            icon: "academic-cap",
+            content:
+              "Our team prepares thoroughly for your specific exam requirements.",
+          },
+          {
+            title: "Secure Process",
+            icon: "shield-check",
+            content:
+              "Your information and exam process are kept completely confidential and secure.",
+          },
+          {
+            title: "Proven Methods",
+            icon: "chart-bar",
+            content:
+              "We use tested strategies and proven methods to ensure your success.",
+          },
+          {
+            title: "24/7 Support",
+            icon: "phone",
+            content:
+              "Round-the-clock support available to answer your questions and concerns.",
+          },
+        ];
+
+        // Default cards for Privacy & Pricing section
+        const defaultPrivacyPricingCards = [
+          {
+            title: "Competitive Pricing",
+            icon: "currency-dollar",
+            content:
+              "Competitive pricing with transparent costs and no hidden fees.",
+          },
+          {
+            title: "Flexible Payment",
+            icon: "credit-card",
+            content: "Flexible payment options available to suit your needs.",
+          },
+        ];
+
+        // Default FAQ questions
+        const defaultFAQQuestions = [
+          {
+            question: "How does the exam process work?",
+            paragraphs: [
+              "Our process is simple and secure. We handle your exam from start to finish, ensuring confidentiality and quality results. Our experienced team takes care of everything while you focus on your other responsibilities.",
+            ],
+            additionalParagraphs: [],
+          },
+          {
+            question: "Is this service legitimate and safe?",
+            paragraphs: [
+              "Yes, our service is completely legitimate and safe. We maintain strict confidentiality protocols and use secure methods to protect your information. We have helped thousands of students successfully achieve their goals.",
+            ],
+            additionalParagraphs: [],
+          },
+          {
+            question: "What if I'm not satisfied with the results?",
+            paragraphs: [
+              "We offer a comprehensive money-back guarantee. If you're not completely satisfied with our service or results, we will refund your payment. Your satisfaction is our top priority.",
+            ],
+            additionalParagraphs: [],
+          },
+          {
+            question: "How quickly can you complete my exam?",
+            paragraphs: [
+              "We offer flexible timing options to meet your needs. Standard completion is within 24-48 hours, but we can accommodate urgent requests. Contact us to discuss your specific timeline requirements.",
+            ],
+            additionalParagraphs: [],
+          },
+        ];
+
         const initializedContent = {
           ...serviceData,
           meta: {
-            title:
-              serviceData.meta?.title ||
-              `ATI TEAS ${resolvedParams.serviceId} Questions - Practice Tests & Study Guide`,
-            description:
-              serviceData.meta?.description ||
-              `Master TEAS ${resolvedParams.serviceId.toLowerCase()} with our comprehensive practice tests, study guides, and expert tips. Get ready for the 2025 TEAS exam with focused ${resolvedParams.serviceId.toLowerCase()} preparation.`,
-            keywords:
-              serviceData.meta?.keywords ||
-              `TEAS ${resolvedParams.serviceId.toLowerCase()}, ATI TEAS ${resolvedParams.serviceId.toLowerCase()} questions, TEAS ${resolvedParams.serviceId.toLowerCase()} practice test, TEAS ${resolvedParams.serviceId.toLowerCase()} study guide, 2025 TEAS exam, nursing school entrance exam`,
-            ogTitle:
-              serviceData.meta?.ogTitle ||
-              `ATI TEAS ${resolvedParams.serviceId} Questions - Complete Practice & Study Guide`,
-            ogDescription:
-              serviceData.meta?.ogDescription ||
-              `Comprehensive TEAS ${resolvedParams.serviceId.toLowerCase()} preparation with practice tests, study materials, and expert guidance for nursing school success.`,
-            ogImage: serviceData.meta?.ogImage || `/teas-gurus-logo.png`,
-            canonicalUrl:
-              serviceData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.serviceId.toLowerCase()}`,
+            ...serviceData.meta,
           },
-          schema:
-            serviceData.schema ||
-            `{
-  "@context": "https://schema.org",
-  "@type": "EducationalOrganization",
-  "name": "TEAS Gurus",
-  "description": "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
-  "url": "https://teasgurus.com/",
-  "logo": "https://teasgurus.com/teas-gurus-logo.png",
-  "sameAs": [
-    "https://www.instagram.com/teasgurus",
-    "https://www.tiktok.com/@teas.gurus",
-    "www.youtube.com/@TeasGurus",
-    "https://www.linkedin.com/company/teasgurus/"
-  ],
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "telephone": "1-579-501-1983",
-    "contactType": "customer service",
-    "availableLanguage": "English"
-  },
-  "address": {
-    "@type": "PostalAddress",
-    "addressCountry": {
-      "@type": "Country",
-      "name": "US"
-    }
-  }
-}`,
+          schema: serviceData.schema ?? "",
+          hero: {
+            ...serviceData.hero,
+          },
+          trustIndicators: serviceData.trustIndicators ?? [],
+          whatToExpect: {
+            ...serviceData.whatToExpect,
+            cards:
+              serviceData.whatToExpect?.cards?.length > 0
+                ? serviceData.whatToExpect.cards
+                : defaultWhatToExpectCards,
+          },
+          mostCommonQuestions: {
+            ...serviceData.mostCommonQuestions,
+            cards:
+              serviceData.mostCommonQuestions?.cards?.length > 0
+                ? serviceData.mostCommonQuestions.cards
+                : defaultMostCommonCards,
+          },
+          studyGuide: {
+            ...serviceData.studyGuide,
+            sections: (() => {
+              const existing = serviceData.studyGuide?.sections ?? [];
+              if (existing.length >= 4) return existing;
+              // Fill up to 4 with defaults
+              return [
+                ...existing,
+                ...defaultStudyGuideSections.slice(existing.length, 4),
+              ];
+            })(),
+          },
+          privacyPricing:
+            serviceData.privacyPricing?.length > 0
+              ? serviceData.privacyPricing
+              : defaultPrivacyPricingCards,
+          faq: {
+            ...serviceData.faq,
+            questions:
+              serviceData.faq?.questions?.length > 0
+                ? serviceData.faq.questions
+                : defaultFAQQuestions,
+          },
         };
         setContent(initializedContent);
       } else {
@@ -243,40 +348,37 @@ export default function EditServicePage({
   };
 
   const updateArrayContent = (path: string, index: number, value: any) => {
-    console.log(
-      "updateArrayContent called - path:",
-      path,
-      "index:",
-      index,
-      "value:",
-      value
-    );
-
     if (!content) {
-      console.log("updateArrayContent - no content available");
+      console.log("❌ No content available for update");
       return;
     }
 
-    const keys = path.split(".");
-    console.log("updateArrayContent - keys:", keys);
-
     setContent((prev) => {
-      if (!prev) {
-        console.log("updateArrayContent - prev is null");
-        return prev;
-      }
+      if (!prev) return prev;
 
-      const newContent = { ...prev };
+      const keys = path.split(".");
+      const newContent = JSON.parse(JSON.stringify(prev)); // Deep clone
       let current: any = newContent;
 
       for (let i = 0; i < keys.length - 1; i++) {
+        if (!current || typeof current !== "object") {
+          console.error(
+            `Path ${keys.slice(0, i + 1).join(".")} is not an object`
+          );
+          return prev;
+        }
         current = current[keys[i]];
       }
 
-      console.log("updateArrayContent - setting index", index, "to", value);
-      current[index] = value;
+      const lastKey = keys[keys.length - 1];
+      if (!current || !Array.isArray(current[lastKey])) {
+        console.error(`Path ${path} is not an array`);
+        return prev;
+      }
 
-      console.log("updateArrayContent - new content:", newContent);
+      // Update the item at the specified index
+      current[lastKey][index] = value;
+      console.log("✅ Updated", path, "at index", index);
       return newContent;
     });
   };
@@ -284,17 +386,31 @@ export default function EditServicePage({
   const addArrayItem = (path: string, newItem: any) => {
     if (!content) return;
 
-    const keys = path.split(".");
     setContent((prev) => {
       if (!prev) return prev;
-      const newContent = { ...prev };
+
+      const keys = path.split(".");
+      const newContent = JSON.parse(JSON.stringify(prev)); // Deep clone
       let current: any = newContent;
 
       for (let i = 0; i < keys.length - 1; i++) {
+        if (!current || typeof current !== "object") {
+          console.error(
+            `Path ${keys.slice(0, i + 1).join(".")} is not an object`
+          );
+          return prev;
+        }
         current = current[keys[i]];
       }
 
-      current.push(newItem);
+      const lastKey = keys[keys.length - 1];
+      if (!current || !Array.isArray(current[lastKey])) {
+        console.error(`Path ${path} is not an array`);
+        return prev;
+      }
+
+      // Add the new item to the array
+      current[lastKey].push(newItem);
       return newContent;
     });
   };
@@ -302,17 +418,35 @@ export default function EditServicePage({
   const removeArrayItem = (path: string, index: number) => {
     if (!content) return;
 
-    const keys = path.split(".");
     setContent((prev) => {
       if (!prev) return prev;
-      const newContent = { ...prev };
+
+      const keys = path.split(".");
+      const newContent = JSON.parse(JSON.stringify(prev)); // Deep clone
       let current: any = newContent;
 
       for (let i = 0; i < keys.length - 1; i++) {
+        if (!current || typeof current !== "object") {
+          console.error(
+            `Path ${keys.slice(0, i + 1).join(".")} is not an object`
+          );
+          return prev;
+        }
         current = current[keys[i]];
       }
 
-      current.splice(index, 1);
+      const lastKey = keys[keys.length - 1];
+      if (!current || !Array.isArray(current[lastKey])) {
+        console.error(`Path ${path} is not an array`);
+        return prev;
+      }
+
+      // Create a new array without the item at the specified index
+      const newArray = current[lastKey].filter(
+        (_: any, i: number) => i !== index
+      );
+      current[lastKey] = newArray;
+
       return newContent;
     });
   };
@@ -775,21 +909,20 @@ export default function EditServicePage({
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Subtitle
               </label>
-              <input
-                type="text"
+              <RichTextEditor
                 value={content.hero.subtitle}
-                onChange={(e) => updateContent("hero.subtitle", e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                placeholder="Enter subtitle"
+                onChange={(value) => updateContent("hero.subtitle", value)}
+                placeholder="Enter subtitle with rich formatting..."
               />
             </div>
             <div className="md:col-span-2">
-              <AnchorTextEditor
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Description
+              </label>
+              <RichTextEditor
                 value={content.hero.description}
                 onChange={(value) => updateContent("hero.description", value)}
-                rows={4}
-                label="Description"
-                placeholder="Enter detailed description"
+                placeholder="Enter detailed description with rich formatting..."
               />
             </div>
           </div>
@@ -846,7 +979,7 @@ export default function EditServicePage({
           <div className="space-y-4">
             {content.trustIndicators.map((indicator, index) => (
               <div
-                key={index}
+                key={`trust-indicator-${index}`}
                 className="flex gap-4 items-center p-6 border border-gray-200 rounded-xl bg-gray-50"
               >
                 <div className="flex-1">
@@ -980,32 +1113,34 @@ export default function EditServicePage({
               />
             </div>
             <div className="md:col-span-2">
-              <AnchorTextEditor
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Subtitle
+              </label>
+              <RichTextEditor
                 value={content.whatToExpect.subtitle}
                 onChange={(value) =>
                   updateContent("whatToExpect.subtitle", value)
                 }
-                rows={2}
-                label="Subtitle"
-                placeholder="Subtitle"
+                placeholder="Enter subtitle with rich formatting..."
               />
             </div>
             <div className="md:col-span-2">
-              <AnchorTextEditor
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Footer
+              </label>
+              <RichTextEditor
                 value={content.whatToExpect.footer}
                 onChange={(value) =>
                   updateContent("whatToExpect.footer", value)
                 }
-                rows={2}
-                label="Footer"
-                placeholder="Footer"
+                placeholder="Enter footer content with rich formatting..."
               />
             </div>
           </div>
           <div className="space-y-4">
             {content.whatToExpect.cards.map((card, cardIndex) => (
               <div
-                key={cardIndex}
+                key={`what-to-expect-card-${cardIndex}`}
                 className="border border-gray-200 rounded-xl p-6 bg-gray-50 mb-2"
               >
                 <div className="flex gap-4 items-center mb-4">
@@ -1061,8 +1196,14 @@ export default function EditServicePage({
                 </div>
                 <div className="space-y-2">
                   {card.content.map((contentItem, contentIndex) => (
-                    <div key={contentIndex} className="space-y-2">
-                      <AnchorTextEditor
+                    <div
+                      key={`content-item-${cardIndex}-${contentIndex}`}
+                      className="space-y-2"
+                    >
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Content Item {contentIndex + 1}
+                      </label>
+                      <RichTextEditor
                         value={contentItem}
                         onChange={(value) => {
                           const newContent = [...card.content];
@@ -1072,8 +1213,7 @@ export default function EditServicePage({
                             content: newContent,
                           });
                         }}
-                        rows={2}
-                        placeholder="Content item"
+                        placeholder="Enter content with rich formatting..."
                       />
                       <button
                         onClick={() => {
@@ -1211,21 +1351,22 @@ export default function EditServicePage({
               />
             </div>
             <div className="md:col-span-2">
-              <AnchorTextEditor
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Subtitle
+              </label>
+              <RichTextEditor
                 value={content.mostCommonQuestions.subtitle}
                 onChange={(value) =>
                   updateContent("mostCommonQuestions.subtitle", value)
                 }
-                rows={2}
-                label="Subtitle"
-                placeholder="Subtitle"
+                placeholder="Enter subtitle with rich formatting..."
               />
             </div>
           </div>
           <div className="space-y-4">
             {content.mostCommonQuestions.cards.map((card, cardIndex) => (
               <div
-                key={cardIndex}
+                key={`most-common-card-${cardIndex}`}
                 className="border border-gray-200 rounded-xl p-6 bg-gray-50 mb-2"
               >
                 <div className="flex gap-4 items-center mb-4">
@@ -1268,8 +1409,14 @@ export default function EditServicePage({
                 </div>
                 <div className="space-y-2">
                   {card.content.map((contentItem, contentIndex) => (
-                    <div key={contentIndex} className="space-y-2">
-                      <AnchorTextEditor
+                    <div
+                      key={`most-common-content-${cardIndex}-${contentIndex}`}
+                      className="space-y-2"
+                    >
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Content Item {contentIndex + 1}
+                      </label>
+                      <RichTextEditor
                         value={contentItem}
                         onChange={(value) => {
                           const newContent = [...card.content];
@@ -1280,8 +1427,7 @@ export default function EditServicePage({
                             { ...card, content: newContent }
                           );
                         }}
-                        rows={2}
-                        placeholder="Content item"
+                        placeholder="Enter content with rich formatting..."
                       />
                       <button
                         onClick={() => {
@@ -1337,7 +1483,7 @@ export default function EditServicePage({
                         d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                       />
                     </svg>
-                    Add Content
+                    <span>Add Content</span>
                   </button>
                 </div>
               </div>
@@ -1422,21 +1568,22 @@ export default function EditServicePage({
               />
             </div>
             <div>
-              <AnchorTextEditor
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Subtitle
+              </label>
+              <RichTextEditor
                 value={content.studyGuide.subtitle}
                 onChange={(value) =>
                   updateContent("studyGuide.subtitle", value)
                 }
-                rows={2}
-                label="Subtitle"
-                placeholder="Subtitle"
+                placeholder="Enter subtitle with rich formatting..."
               />
             </div>
           </div>
           <div className="space-y-4">
             {content.studyGuide.sections.map((section, sectionIndex) => (
               <div
-                key={sectionIndex}
+                key={`study-guide-section-${sectionIndex}`}
                 className="border border-gray-200 rounded-xl p-6 bg-gray-50 mb-2"
               >
                 <div className="flex gap-4 items-center mb-4">
@@ -1492,23 +1639,27 @@ export default function EditServicePage({
                     <span>Remove</span>
                   </button>
                 </div>
-                <AnchorTextEditor
-                  value={section.content}
-                  onChange={(value) =>
-                    updateArrayContent("studyGuide.sections", sectionIndex, {
-                      ...section,
-                      content: value,
-                    })
-                  }
-                  rows={3}
-                  placeholder="Section content"
-                />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Section Content
+                  </label>
+                  <RichTextEditor
+                    value={section.content}
+                    onChange={(value) =>
+                      updateArrayContent("studyGuide.sections", sectionIndex, {
+                        ...section,
+                        content: value,
+                      })
+                    }
+                    placeholder="Enter section content with rich formatting..."
+                  />
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Pricing Section (privacyPricing) */}
+        {/* Privacy & Pricing Section */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center">
@@ -1527,12 +1678,14 @@ export default function EditServicePage({
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Pricing</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Privacy & Pricing
+              </h2>
             </div>
             <button
               onClick={() =>
                 addArrayItem("privacyPricing", {
-                  title: "New Card",
+                  title: "New Pricing Item",
                   icon: "dollar",
                   content: "Pricing content",
                 })
@@ -1556,9 +1709,9 @@ export default function EditServicePage({
             </button>
           </div>
           <div className="space-y-4">
-            {content.privacyPricing.map((card, cardIndex) => (
+            {(content.privacyPricing ?? []).map((card, cardIndex) => (
               <div
-                key={cardIndex}
+                key={`privacy-pricing-card-${cardIndex}`}
                 className="border border-gray-200 rounded-xl p-6 bg-gray-50 mb-2"
               >
                 <div className="flex gap-4 items-center mb-4">
@@ -1610,17 +1763,21 @@ export default function EditServicePage({
                     <span>Remove</span>
                   </button>
                 </div>
-                <AnchorTextEditor
-                  value={card.content}
-                  onChange={(value) =>
-                    updateArrayContent("privacyPricing", cardIndex, {
-                      ...card,
-                      content: value,
-                    })
-                  }
-                  rows={2}
-                  placeholder="Pricing content"
-                />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Card Content
+                  </label>
+                  <RichTextEditor
+                    value={card.content}
+                    onChange={(value) =>
+                      updateArrayContent("privacyPricing", cardIndex, {
+                        ...card,
+                        content: value,
+                      })
+                    }
+                    placeholder="Enter pricing content with rich formatting..."
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -1687,12 +1844,13 @@ export default function EditServicePage({
               />
             </div>
             <div>
-              <AnchorTextEditor
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Section Subtitle
+              </label>
+              <RichTextEditor
                 value={content.faq.subtitle}
                 onChange={(value) => updateContent("faq.subtitle", value)}
-                rows={2}
-                label="Section Subtitle"
-                placeholder="FAQ section subtitle"
+                placeholder="Enter FAQ subtitle with rich formatting..."
               />
             </div>
           </div>
@@ -1700,7 +1858,7 @@ export default function EditServicePage({
           <div className="space-y-6">
             {content.faq.questions.map((question, questionIndex) => (
               <div
-                key={questionIndex}
+                key={`faq-question-${questionIndex}`}
                 className="border border-gray-200 rounded-xl p-6 bg-gray-50"
               >
                 <div className="flex gap-4 items-start mb-4">
@@ -1758,8 +1916,14 @@ export default function EditServicePage({
                     Answer Paragraphs:
                   </h4>
                   {question.paragraphs.map((paragraph, paragraphIndex) => (
-                    <div key={paragraphIndex} className="space-y-2">
-                      <AnchorTextEditor
+                    <div
+                      key={`faq-paragraph-${questionIndex}-${paragraphIndex}`}
+                      className="space-y-2"
+                    >
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Answer Paragraph {paragraphIndex + 1}
+                      </label>
+                      <RichTextEditor
                         value={paragraph}
                         onChange={(value) => {
                           const newParagraphs = [...question.paragraphs];
@@ -1769,8 +1933,7 @@ export default function EditServicePage({
                             paragraphs: newParagraphs,
                           });
                         }}
-                        rows={3}
-                        placeholder="Answer paragraph"
+                        placeholder="Enter answer paragraph with rich formatting..."
                       />
                       <button
                         onClick={() => {

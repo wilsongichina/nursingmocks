@@ -32,7 +32,7 @@ export default function AnchorTextRenderer({
         <Link
           key={match.index}
           href={match[2]}
-          className="text-blue-600 hover:text-blue-800 underline transition-colors"
+          className="anchor-link text-blue-700 hover:text-blue-900 underline decoration-2 decoration-blue-500 hover:decoration-blue-700 transition-all duration-200 font-medium"
         >
           {match[1]}
         </Link>

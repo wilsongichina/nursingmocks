@@ -192,13 +192,26 @@ export const deleteServiceContent = async (serviceId: string) => {
 // Get all support pages from Firestore
 export const getAllSupportPages = async () => {
   try {
+    console.log("Fetching support pages from Firestore...");
     const querySnapshot = await getDocs(collection(db, "supportPages"));
+    console.log("Query snapshot size:", querySnapshot.size);
+
     const pages: any = {};
 
     querySnapshot.forEach((doc) => {
-      pages[doc.id] = doc.data();
+      console.log("Document ID:", doc.id, "Data:", doc.data());
+      const docData = doc.data();
+      const serviceId = docData.serviceId || doc.id.split("_")[0];
+      const pageId = docData.pageId || doc.id.split("_")[1];
+
+      if (!pages[serviceId]) {
+        pages[serviceId] = {};
+      }
+
+      pages[serviceId][pageId] = docData;
     });
 
+    console.log("Processed pages structure:", pages);
     return {
       success: true,
       data: pages,
@@ -296,6 +309,31 @@ export const deleteSupportPageContent = async (
     return {
       success: false,
       message: `Failed to delete ${serviceId}/${pageId} content: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Test function to verify Firebase connection
+export const testFirebaseConnection = async () => {
+  try {
+    console.log("Testing Firebase connection...");
+    const querySnapshot = await getDocs(collection(db, "pages"));
+    console.log(
+      "Successfully connected to Firebase. Pages collection size:",
+      querySnapshot.size
+    );
+    return {
+      success: true,
+      message: "Firebase connection successful",
+      pagesCount: querySnapshot.size,
+    };
+  } catch (error) {
+    console.error("Firebase connection test failed:", error);
+    return {
+      success: false,
+      message: `Firebase connection failed: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };

@@ -35,15 +35,12 @@ export default function AnchorTextEditor({
   const parseAnchorLinks = (
     text: string
   ): { text: string; links: AnchorLink[] } => {
-    console.log("parseAnchorLinks - Input text:", text);
-
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     const links: AnchorLink[] = [];
     let match;
     let cleanText = text;
 
     while ((match = linkRegex.exec(text)) !== null) {
-      console.log("parseAnchorLinks - Found link:", match[1], "->", match[2]);
       links.push({
         text: match[1],
         url: match[2],
@@ -52,17 +49,12 @@ export default function AnchorTextEditor({
 
     // Remove markdown links from clean text
     cleanText = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
-    console.log("parseAnchorLinks - Clean text:", cleanText);
-    console.log("parseAnchorLinks - Found links:", links);
 
     return { text: cleanText, links };
   };
 
   // Convert text with anchor links to markdown format
   const convertToMarkdown = (text: string, links: AnchorLink[]): string => {
-    console.log("convertToMarkdown - Input text:", text);
-    console.log("convertToMarkdown - Input links:", links);
-
     let result = text;
 
     // Sort links by length (longest first) to avoid partial matches
@@ -75,15 +67,8 @@ export default function AnchorTextEditor({
       const escapedText = link.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(`\\b${escapedText}\\b`, "g");
       result = result.replace(regex, `[${link.text}](${link.url})`);
-      console.log(
-        "convertToMarkdown - Replaced",
-        link.text,
-        "with",
-        `[${link.text}](${link.url})`
-      );
     });
 
-    console.log("convertToMarkdown - Final result:", result);
     return result;
   };
 
@@ -94,14 +79,10 @@ export default function AnchorTextEditor({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
 
-    console.log("handleTextSelection - start:", start, "end:", end);
-
     if (start !== end) {
       // Get the selected text from the display text (clean text without markdown)
       const { text: cleanText } = parseAnchorLinks(value);
       const selected = cleanText.substring(start, end);
-      console.log("handleTextSelection - selected text:", selected);
-      console.log("handleTextSelection - cleanText:", cleanText);
 
       setSelectedText(selected);
       setAnchorText(selected); // Auto-populate the anchor text field
@@ -111,16 +92,14 @@ export default function AnchorTextEditor({
   };
 
   const handleAddAnchor = () => {
-    if (!anchorText || !anchorUrl) return;
+    console.log("🔗 Adding anchor link:", anchorText, "->", anchorUrl);
 
-    console.log("handleAddAnchor - anchorText:", anchorText);
-    console.log("handleAddAnchor - anchorUrl:", anchorUrl);
-    console.log("handleAddAnchor - selectedText:", selectedText);
-    console.log("handleAddAnchor - cursorPosition:", cursorPosition);
+    if (!anchorText || !anchorUrl) {
+      console.log("❌ Missing text or URL");
+      return;
+    }
 
     const { text: cleanText, links } = parseAnchorLinks(value);
-    console.log("handleAddAnchor - cleanText:", cleanText);
-    console.log("handleAddAnchor - existing links:", links);
 
     // Create the markdown link
     const markdownLink = `[${anchorText}](${anchorUrl})`;
@@ -130,19 +109,13 @@ export default function AnchorTextEditor({
       const beforeSelection = cleanText.substring(0, cursorPosition.start);
       const afterSelection = cleanText.substring(cursorPosition.end);
       const newValue = beforeSelection + markdownLink + afterSelection;
-      console.log(
-        "AnchorTextEditor - Adding link with selected text:",
-        newValue
-      );
+      console.log("✅ Adding link with selected text:", newValue);
       onChange(newValue);
     } else {
       // If no text is selected, just add the link to existing links
       const newLinks = [...links, { text: anchorText, url: anchorUrl }];
       const newValue = convertToMarkdown(cleanText, newLinks);
-      console.log(
-        "AnchorTextEditor - Adding link without selection:",
-        newValue
-      );
+      console.log("✅ Adding link without selection:", newValue);
       onChange(newValue);
     }
 
@@ -167,10 +140,10 @@ export default function AnchorTextEditor({
 
   const { text: displayText, links } = parseAnchorLinks(value);
 
-  // Debug logging
-  console.log("AnchorTextEditor - Received value:", value);
-  console.log("AnchorTextEditor - Parsed displayText:", displayText);
-  console.log("AnchorTextEditor - Parsed links:", links);
+  // Debug logging - only show when links are found
+  if (links.length > 0) {
+    console.log("📋 Found", links.length, "links in content");
+  }
 
   return (
     <div className="space-y-4">
@@ -185,16 +158,8 @@ export default function AnchorTextEditor({
           ref={textareaRef}
           value={displayText}
           onChange={(e) => {
-            console.log(
-              "AnchorTextEditor - Textarea onChange:",
-              e.target.value
-            );
             const { links } = parseAnchorLinks(value);
             const newValue = convertToMarkdown(e.target.value, links);
-            console.log(
-              "AnchorTextEditor - New value after conversion:",
-              newValue
-            );
             onChange(newValue);
           }}
           onMouseUp={handleTextSelection}
@@ -209,7 +174,7 @@ export default function AnchorTextEditor({
       {links.length > 0 && (
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Anchor Links:
+            Anchor Links ({links.length}):
           </h4>
           <div className="space-y-2">
             {links.map((link, index) => (
@@ -324,7 +289,10 @@ export default function AnchorTextEditor({
 
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={handleAddAnchor}
+                onClick={() => {
+                  console.log("🖱️ Add Link button clicked");
+                  handleAddAnchor();
+                }}
                 disabled={!anchorText || !anchorUrl}
                 className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

@@ -267,11 +267,6 @@ body {
   margin-bottom: 0.5rem;
 }
 
-[contenteditable="true"] a {
-  color: #2563eb !important; /* text-blue-600 */
-  text-decoration: underline;
-}
-
 [contenteditable="true"] strong,
 [contenteditable="true"] b {
   color: #111827 !important; /* text-gray-900 */
@@ -379,6 +374,128 @@ body {
 }
 
 .prose u {
+  color: #111827 !important; /* text-gray-900 */
+  text-decoration: underline;
+}
+
+/* Anchor Link Styles - High specificity to override other styles */
+.anchor-link {
+  color: #1d4ed8 !important; /* text-blue-700 */
+  text-decoration: underline !important;
+  text-decoration-color: #3b82f6 !important; /* decoration-blue-500 */
+  text-decoration-thickness: 2px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.anchor-link:hover {
+  color: #1e40af !important; /* text-blue-900 */
+  text-decoration-color: #1d4ed8 !important; /* decoration-blue-700 */
+}
+
+/* Rich Text Content Styles */
+.rich-text-content {
+  color: #111827; /* text-gray-900 */
+}
+
+.rich-text-content h1 {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: bold;
+  font-size: 2.25rem !important; /* text-4xl */
+  line-height: 2.5rem !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.rich-text-content h2 {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: bold;
+  font-size: 1.875rem !important; /* text-3xl */
+  line-height: 2.25rem !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.rich-text-content h3 {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: bold;
+  font-size: 1.5rem !important; /* text-2xl */
+  line-height: 2rem !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.rich-text-content h4 {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: bold;
+  font-size: 1.25rem !important; /* text-xl */
+  line-height: 1.75rem !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.rich-text-content h5 {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: bold;
+  font-size: 1.125rem !important; /* text-lg */
+  line-height: 1.75rem !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.rich-text-content h6 {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: bold;
+  font-size: 1rem !important; /* text-base */
+  line-height: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.rich-text-content p {
+  color: #111827 !important; /* text-gray-900 */
+  margin-bottom: 1rem;
+}
+
+.rich-text-content ul,
+.rich-text-content ol {
+  color: #111827 !important; /* text-gray-900 */
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.rich-text-content li {
+  color: #111827 !important; /* text-gray-900 */
+  margin-bottom: 0.5rem;
+}
+
+.rich-text-content a {
+  color: #1d4ed8 !important; /* text-blue-700 */
+  text-decoration: underline !important;
+  text-decoration-color: #3b82f6 !important; /* decoration-blue-500 */
+  text-decoration-thickness: 2px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.rich-text-content a:hover {
+  color: #1e40af !important; /* text-blue-900 */
+  text-decoration-color: #1d4ed8 !important; /* decoration-blue-700 */
+}
+
+.rich-text-content strong,
+.rich-text-content b {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: bold;
+}
+
+.rich-text-content em,
+.rich-text-content i {
+  color: #111827 !important; /* text-gray-900 */
+  font-style: italic;
+}
+
+.rich-text-content u {
   color: #111827 !important; /* text-gray-900 */
   text-decoration: underline;
 }

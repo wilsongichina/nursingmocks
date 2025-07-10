@@ -18,22 +18,6 @@ export default function PricesPageSchema() {
                 "https://tiktok.com/@teas.gurus",
                 "https://www.youtube.com/@teasgurus",
               ],
-              openingHoursSpecification: [
-                {
-                  "@type": "OpeningHoursSpecification",
-                  dayOfWeek: [
-                    "Monday",
-                    "Tuesday",
-                    "Wednesday",
-                    "Thursday",
-                    "Friday",
-                    "Saturday",
-                    "Sunday",
-                  ],
-                  opens: "00:00",
-                  closes: "23:59",
-                },
-              ],
             },
             {
               "@type": "WebSite",
@@ -51,7 +35,7 @@ export default function PricesPageSchema() {
               url: "https://teasgurus.com/prices",
               name: "Pricing | Take My TEAS Exam Cost – TeasGurus",
               description:
-                "Explore our pricing for TEAS exam services including Math, Science, Reading & English help. Affordable rates to take your TEAS test or get real ATI TEAS practice question",
+                "Explore our pricing for TEAS exam services including Math, Science, Reading & English help. Affordable rates to take your TEAS test or get real ATI TEAS practice questions.",
               isPartOf: {
                 "@id": "https://teasgurus.com/#website",
               },
@@ -88,8 +72,7 @@ export default function PricesPageSchema() {
               description:
                 "Get access to real TEAS exams and quizzes with a fast turnaround time. Guaranteed 88% score.",
               provider: {
-                "@type": "Organization",
-                name: "Teas Gurus",
+                "@id": "https://teasgurus.com/#organization",
               },
               offers: {
                 "@type": "Offer",
@@ -97,10 +80,6 @@ export default function PricesPageSchema() {
                 priceCurrency: "USD",
                 url: "https://teasgurus.com/prices",
                 availability: "https://schema.org/InStock",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "TEAS Tests & Quizzes",
-                },
               },
             },
             {
@@ -110,8 +89,7 @@ export default function PricesPageSchema() {
               description:
                 "Let our experts take your full ATI TEAS exam for you with regular progress updates and a guaranteed 88%+ score.",
               provider: {
-                "@type": "Organization",
-                name: "Teas Gurus",
+                "@id": "https://teasgurus.com/#organization",
               },
               offers: {
                 "@type": "Offer",
@@ -119,10 +97,6 @@ export default function PricesPageSchema() {
                 priceCurrency: "USD",
                 url: "https://teasgurus.com/prices",
                 availability: "https://schema.org/InStock",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Take My TEAS Exam Service",
-                },
               },
             },
             {
@@ -132,8 +106,7 @@ export default function PricesPageSchema() {
               description:
                 "Hire us to take your full TEAS course. Guaranteed A or B. Includes status updates and payment plans.",
               provider: {
-                "@type": "Organization",
-                name: "Teas Gurus",
+                "@id": "https://teasgurus.com/#organization",
               },
               offers: {
                 "@type": "Offer",
@@ -141,10 +114,6 @@ export default function PricesPageSchema() {
                 priceCurrency: "USD",
                 url: "https://teasgurus.com/prices",
                 availability: "https://schema.org/InStock",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Full Classes",
-                },
               },
             },
           ],

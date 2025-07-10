@@ -18,28 +18,6 @@ export default function SchemaScripts() {
                 "https://tiktok.com/@teas.gurus",
                 "https://www.youtube.com/@teasgurus",
               ],
-              contactPoint: {
-                "@type": "ContactPoint",
-                contactType: "Customer Support",
-                telephone: "+1-579-501-1983",
-                email: "teasgurus@gmail.com",
-                url: "https://teasgurus.com/contact",
-                availableLanguage: "English",
-                hoursAvailable: {
-                  "@type": "OpeningHoursSpecification",
-                  dayOfWeek: [
-                    "Monday",
-                    "Tuesday",
-                    "Wednesday",
-                    "Thursday",
-                    "Friday",
-                    "Saturday",
-                    "Sunday",
-                  ],
-                  opens: "00:00",
-                  closes: "23:59",
-                },
-              },
             },
             {
               "@type": "WebSite",
@@ -64,58 +42,162 @@ export default function SchemaScripts() {
               about: {
                 "@id": "https://teasgurus.com/#organization",
               },
+              breadcrumb: {
+                "@id": "https://teasgurus.com/#breadcrumb",
+              },
               inLanguage: "en",
             },
             {
+              "@type": "BreadcrumbList",
+              "@id": "https://teasgurus.com/#breadcrumb",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item: "https://teasgurus.com/",
+                },
+              ],
+            },
+            {
+              "@type": "Service",
+              "@id": "https://teasgurus.com/#pay-someone",
+              serviceType: "Pay Someone to Take My TEAS Exam",
+              provider: { "@id": "https://teasgurus.com/#organization" },
+              areaServed: { "@type": "Country", name: "United States" },
+              description:
+                "Looking to pay someone to take your TEAS exam online? Teas Gurus connects you with qualified ATI TEAS exam takers who ensure top scores in Reading, Math, Science, and English. We guarantee confidentiality and success when you pay someone to take your TEAS test through us.",
+              availableChannel: {
+                "@type": "ServiceChannel",
+                serviceUrl: "https://teasgurus.com/",
+                availableLanguage: "English",
+              },
+            },
+            {
+              "@type": "Service",
+              "@id": "https://teasgurus.com/#take-my-exam",
+              serviceType: "Take My TEAS Exam",
+              provider: { "@id": "https://teasgurus.com/#organization" },
+              areaServed: { "@type": "Country", name: "United States" },
+              description:
+                "Need someone to take your TEAS exam? Teas Gurus offers expert ATI TEAS exam takers who will handle your online or proctored TEAS test professionally. If you're searching for 'take my TEAS exam' services, we provide a reliable and secure solution.",
+              availableChannel: {
+                "@type": "ServiceChannel",
+                serviceUrl: "https://teasgurus.com/",
+                availableLanguage: "English",
+              },
+            },
+            {
+              "@type": "Service",
+              "@id": "https://teasgurus.com/#take-my-exam-for-me",
+              serviceType: "Take My TEAS Exam for Me",
+              provider: { "@id": "https://teasgurus.com/#organization" },
+              areaServed: { "@type": "Country", name: "United States" },
+              description:
+                "Want a professional to take your TEAS exam for you? Teas Gurus provides reliable, confidential, and high-score guaranteed ATI TEAS test-taking services. Whether it's a proctored exam or remote, our experts will take your TEAS exam for you safely and discreetly.",
+              availableChannel: {
+                "@type": "ServiceChannel",
+                serviceUrl: "https://teasgurus.com/",
+                availableLanguage: "English",
+              },
+            },
+            {
               "@type": "FAQPage",
-              "@id": "https://teasgurus.com/#faq",
               mainEntity: [
                 {
                   "@type": "Question",
-                  name: "What credentials do your TEAS exam specialists possess?",
+                  name: "Can I pay someone to take my TEAS exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Our highly skilled professionals with solid academic backgrounds in health sciences are our TEAS exam experts. Many have obtained a Doctor of Nursing Practice (DNP), and the majority have degrees in Allied Health. We are able to provide more than just basic tutoring thanks to these credentials, which enable us to guarantee high scores with genuine academic insight. Our staff has received specialized training in time management, proctored platforms, and test-taking strategies. They are fully aware of what to anticipate and how to function under duress. Each expert is carefully chosen by us based on their experience, academic credentials, and track record of assisting students in passing the ATI TEAS exam.",
+                    text: "Yes. You can pay someone to take your TEAS exam online with Teas Gurus. We provide experienced and professional exam takers who ensure top scores in a safe, secure, and discreet environment.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "How can the security and confidentiality of a student's exam be guaranteed?",
+                  name: "How do I find someone to take my TEAS exam for me?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Security and confidentiality are very important to us. Your identity is fully protected when working with Teas Gurus. No personal information about the students they are helping is ever given to our exam takers. They see it as just another exam that needs to be passed in a discrete and professional manner. To ensure that your data is secure from the first message to the end result, we employ private access systems, secure login processes, and encrypted communication. You can rest assured that your privacy will be completely protected, and neither your school nor the testing platform will ever be aware that you received assistance. Our professional promise is that.",
+                    text: "You can hire a trusted expert at Teas Gurus to take your TEAS exam for you. Just contact us through our homepage, provide your test details, and we'll handle the rest—including proctored exams.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "What occurs if I'm not happy with the outcomes?",
+                  name: "Is it safe to have someone take my TEAS exam online?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "We place a great deal of importance on your satisfaction. Even though the majority of our clients are ecstatic about their high scores, we recognize that unexpected events do occur. We provide a complete money-back guarantee in the extremely unlikely event that you're not satisfied with your outcomes. This implies that you will receive a complete refund without any complexities or fine print. We implemented this policy to demonstrate our appreciation for your confidence and investment. It's a commitment to accountability rather than merely a promise. We completely support the idea that we only succeed when you do.",
+                    text: "Yes. At Teas Gurus, all TEAS exams taken on your behalf are managed with complete confidentiality, privacy, and professionalism. Our process is secure, even for proctored exams.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Even if I'm not in the US, can I still get help with the TEAS exam?",
+                  name: "How much should I pay someone to take my online TEAS exam Reddit?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Indeed! Anywhere in the world, you can get professional TEAS exam assistance. Teas Gurus is a worldwide service that works around the clock to accommodate students' needs in all time zones. We can help you whether you're studying in the UK, Canada, Australia, Africa, or Asia. All you need is a laptop or desktop computer and a reliable internet connection because our system is fully online. No matter where you are, we will walk you through every step once you get in touch with us. Our services have been successfully utilized by students from more than 20 countries. Even though it is midnight your time, we are only a message away.",
+                    text: "According to Reddit discussions, prices to hire someone to take your TEAS exam online can reach up to $500. However, prices vary depending on the exam difficulty, tutor's success rate, and their qualifications.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Can I retake the TEAS exam for free?",
+                  name: "Can I pay someone to take my remote TEAS exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Unfortunately, there is a cost associated with retaking the TEAS exam. The exam fee is the same whether you are taking it for the first time or again, and you will need to pay it through ATI Testing or your test center. This can be discouraging, particularly if you failed by a slim margin. Because of this, we advise students to do things correctly the first time, and our team assists you in doing just that. When you use Teas Gurus, you're investing in outcomes that save you money, time, and stress by removing the need for pricey retakes. You're not just paying someone to take your test.",
+                    text: "Yes. You can pay someone to take your remote TEAS exams through Teas Gurus. Our expert MSN tutors handle the full process and guarantee high scores while maintaining complete discretion.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "What TEAS score is regarded as passing?",
+                  name: "Where can I pay someone to take my TEAS entrance exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Depending on your school's requirements, a passing score on the TEAS test can vary, but it usually hovers around 65%. While some nursing programs may accept a lower score, others may require a minimum of 70% or even 75% for admission. But why settle for less? Our professionals at Teas Gurus routinely receive scores of 85% and higher, and many of our clients end up in the 90th percentile. Therefore, we help you stand out as a top applicant rather than just meeting the cutoff. Our goal is to get you recognized for your excellence, so don't worry about merely 'passing.'",
+                    text: "The best place to pay someone to take your TEAS entrance exam is online. Teas Gurus offers confidential, professional help with flexible access and a wide range of exam services.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How much should I pay someone to take my online TEAS exam?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "While others may charge over $500, Teas Gurus offers affordable pricing at $400 per exam. You also get a money-back guarantee, secure testing, and the option to pay in installments.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is Teas Gurus legit?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes. Teas Gurus is a legitimate and trusted platform with real student testimonials. Our pricing is transparent, our services are proven, and our results speak for themselves.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is Teas Gurus legit and do they have enough exam takers?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Absolutely. Teas Gurus has been helping students for years. We have a strong team of expert exam takers ready to assist with your TEAS test anytime you need.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Can I take my TEAS exam online or remotely?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes. The TEAS exam can be taken online or remotely. Most institutions now support remote proctoring. Teas Gurus offers support to help you complete your exam from anywhere with ease.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How do you properly take the TEAS exam?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "To take the TEAS exam properly, register through the ATI website, choose the remote option, and select your date. Teas Gurus can help install software like AnyDesk and Respondus bypass to handle the exam securely on your behalf.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Are there legit TEAS taker experts?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes. Teas Gurus is home to expert TEAS exam takers who are qualified, experienced, and available to help you pass your test professionally and securely.",
                   },
                 },
               ],

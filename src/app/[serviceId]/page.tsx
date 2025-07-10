@@ -6,7 +6,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import { getServiceContent } from "@/lib/firestore-operations";
 import { mathPageContent } from "@/lib/math-page-content";
-import AnchorTextRenderer from "@/components/ui/AnchorTextRenderer";
+import RichTextRenderer from "@/components/ui/RichTextRenderer";
 
 interface ServiceContent {
   meta?: {
@@ -299,11 +299,17 @@ export default function ServicePage({
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
               {content.hero.title}
             </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
-              {content.hero.subtitle}
-            </p>
-            <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
-              <AnchorTextRenderer text={content.hero.description} />
+            <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed text-white">
+              <RichTextRenderer
+                content={content.hero.subtitle}
+                className="text-white"
+              />
+            </div>
+            <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90 text-white">
+              <RichTextRenderer
+                content={content.hero.description}
+                className="text-white"
+              />
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -366,19 +372,19 @@ export default function ServicePage({
               {content.whatToExpect.title}
             </h2>
             <div className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              <AnchorTextRenderer text={content.whatToExpect.subtitle} />
+              <RichTextRenderer content={content.whatToExpect.subtitle} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {content.whatToExpect.cards.map((card, index) => (
+            {(content?.whatToExpect?.cards ?? []).map((card, index) => (
               <div
                 key={index}
                 className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
               >
                 <div
                   className={`w-16 h-16 ${getIconColor(
-                    card.icon
+                    card?.icon || "check"
                   )} rounded-full flex items-center justify-center mx-auto mb-6`}
                 >
                   <svg
@@ -386,20 +392,20 @@ export default function ServicePage({
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d={getIconComponent(card.icon)} />
+                    <path d={getIconComponent(card?.icon || "check")} />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                  {card.title}
+                  {card?.title || "Card Title"}
                 </h3>
-                {card.content.map((paragraph, pIndex) => (
+                {(card?.content ?? []).map((paragraph, pIndex) => (
                   <div
                     key={pIndex}
                     className={`text-gray-600 leading-relaxed ${
-                      pIndex < card.content.length - 1 ? "mb-4" : ""
+                      pIndex < (card?.content ?? []).length - 1 ? "mb-4" : ""
                     }`}
                   >
-                    <AnchorTextRenderer text={paragraph} />
+                    <RichTextRenderer content={paragraph} />
                   </div>
                 ))}
               </div>
@@ -408,7 +414,7 @@ export default function ServicePage({
 
           <div className="mt-12 text-center">
             <div className="text-lg text-gray-700 max-w-4xl mx-auto leading-relaxed">
-              <AnchorTextRenderer text={content.whatToExpect.footer} />
+              <RichTextRenderer content={content?.whatToExpect?.footer || ""} />
             </div>
           </div>
         </div>
@@ -420,33 +426,35 @@ export default function ServicePage({
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-6">
               <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-              {content.mostCommonQuestions.badge}
+              {content?.mostCommonQuestions?.badge || "Most Common Questions"}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              {content.mostCommonQuestions.title}
+              {content?.mostCommonQuestions?.title || "Most Common Questions"}
             </h2>
             <div className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              <AnchorTextRenderer text={content.mostCommonQuestions.subtitle} />
+              <RichTextRenderer
+                content={content?.mostCommonQuestions?.subtitle || ""}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {content.mostCommonQuestions.cards.map((card, index) => (
+            {(content?.mostCommonQuestions?.cards ?? []).map((card, index) => (
               <div
                 key={index}
                 className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
               >
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  {card.title}
+                  {card?.title || "Card Title"}
                 </h3>
-                {card.content.map((paragraph, pIndex) => (
+                {(card?.content ?? []).map((paragraph, pIndex) => (
                   <div
                     key={pIndex}
                     className={`text-gray-600 leading-relaxed ${
-                      pIndex < card.content.length - 1 ? "mb-4" : ""
+                      pIndex < (card?.content ?? []).length - 1 ? "mb-4" : ""
                     }`}
                   >
-                    <AnchorTextRenderer text={paragraph} />
+                    <RichTextRenderer content={paragraph} />
                   </div>
                 ))}
               </div>
@@ -461,25 +469,25 @@ export default function ServicePage({
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold mb-6">
               <span className="w-2 h-2 bg-yellow-600 rounded-full mr-2"></span>
-              {content.studyGuide.badge}
+              {content?.studyGuide?.badge || "Study Guide"}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              {content.studyGuide.title}
+              {content?.studyGuide?.title || "Study Guide"}
             </h2>
             <div className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              <AnchorTextRenderer text={content.studyGuide.subtitle} />
+              <RichTextRenderer content={content?.studyGuide?.subtitle || ""} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {content.studyGuide.sections.map((section, index) => (
+            {(content?.studyGuide?.sections ?? []).map((section, index) => (
               <div
                 key={index}
                 className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
               >
                 <div
                   className={`w-16 h-16 ${getIconColor(
-                    section.icon
+                    section?.icon || "check"
                   )} rounded-full flex items-center justify-center mx-auto mb-6`}
                 >
                   <svg
@@ -487,14 +495,14 @@ export default function ServicePage({
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d={getIconComponent(section.icon)} />
+                    <path d={getIconComponent(section?.icon || "check")} />
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-                  {section.title}
+                  {section?.title || "Section Title"}
                 </h3>
                 <div className="text-gray-600 leading-relaxed text-sm">
-                  <AnchorTextRenderer text={section.content} />
+                  <RichTextRenderer content={section?.content || ""} />
                 </div>
               </div>
             ))}
@@ -506,14 +514,14 @@ export default function ServicePage({
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {content.privacyPricing.map((item, index) => (
+            {(content?.privacyPricing ?? []).map((item, index) => (
               <div
                 key={index}
                 className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
               >
                 <div
                   className={`w-16 h-16 ${getIconColor(
-                    item.icon
+                    item?.icon || "check"
                   )} rounded-full flex items-center justify-center mx-auto mb-6`}
                 >
                   <svg
@@ -521,14 +529,14 @@ export default function ServicePage({
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d={getIconComponent(item.icon)} />
+                    <path d={getIconComponent(item?.icon || "check")} />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                  {item.title}
+                  {item?.title || "Item Title"}
                 </h3>
                 <div className="text-gray-600 leading-relaxed">
-                  <AnchorTextRenderer text={item.content} />
+                  <RichTextRenderer content={item?.content || ""} />
                 </div>
               </div>
             ))}
@@ -541,49 +549,48 @@ export default function ServicePage({
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              {content.faq.title}
+              {content?.faq?.title || "Frequently Asked Questions"}
             </h2>
             <div className="text-xl text-gray-600 max-w-3xl mx-auto">
-              <AnchorTextRenderer text={content.faq.subtitle} />
+              <RichTextRenderer content={content?.faq?.subtitle || ""} />
             </div>
           </div>
 
           <div className="space-y-6">
-            {content.faq.questions.map((faq, index) => (
+            {(content?.faq?.questions ?? []).map((faq, index) => (
               <div
                 key={index}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  {faq.question}
+                  {faq?.question || "Question"}
                 </h3>
 
                 {/* Render paragraphs */}
-                {faq.paragraphs.map((paragraph, pIndex) => (
+                {(faq?.paragraphs ?? []).map((paragraph, pIndex) => (
                   <div
                     key={pIndex}
                     className={`text-gray-600 leading-relaxed ${
-                      pIndex < faq.paragraphs.length - 1 ? "mb-4" : ""
+                      pIndex < (faq?.paragraphs ?? []).length - 1 ? "mb-4" : ""
                     }`}
                   >
-                    <AnchorTextRenderer text={paragraph} />
+                    <RichTextRenderer content={paragraph} />
                   </div>
                 ))}
 
                 {/* Render additional paragraphs if they exist */}
-                {faq.additionalParagraphs &&
-                  faq.additionalParagraphs.map((paragraph, pIndex) => (
-                    <div
-                      key={pIndex}
-                      className={`text-gray-600 leading-relaxed ${
-                        pIndex < faq.additionalParagraphs!.length - 1
-                          ? "mb-4"
-                          : ""
-                      }`}
-                    >
-                      <AnchorTextRenderer text={paragraph} />
-                    </div>
-                  ))}
+                {(faq?.additionalParagraphs ?? []).map((paragraph, pIndex) => (
+                  <div
+                    key={pIndex}
+                    className={`text-gray-600 leading-relaxed ${
+                      pIndex < (faq?.additionalParagraphs ?? []).length - 1
+                        ? "mb-4"
+                        : ""
+                    }`}
+                  >
+                    <RichTextRenderer content={paragraph} />
+                  </div>
+                ))}
               </div>
             ))}
           </div>

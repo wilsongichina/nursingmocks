@@ -18,22 +18,6 @@ export default function HowItWorksPageSchema() {
                 "https://tiktok.com/@teas.gurus",
                 "https://www.youtube.com/@teasgurus",
               ],
-              openingHoursSpecification: [
-                {
-                  "@type": "OpeningHoursSpecification",
-                  dayOfWeek: [
-                    "Monday",
-                    "Tuesday",
-                    "Wednesday",
-                    "Thursday",
-                    "Friday",
-                    "Saturday",
-                    "Sunday",
-                  ],
-                  opens: "00:00",
-                  closes: "23:59",
-                },
-              ],
             },
             {
               "@type": "WebSite",

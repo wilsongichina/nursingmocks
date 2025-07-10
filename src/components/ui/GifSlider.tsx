@@ -62,7 +62,10 @@ export default function GifSlider() {
               <Image
                 src={gifs[currentIndex].src}
                 alt={gifs[currentIndex].alt}
-              ></Image>
+                width={800}
+                height={600}
+                className="w-full h-full object-cover"
+              />
             </div>
 
             {/* Navigation Arrows */}
@@ -129,6 +132,8 @@ export default function GifSlider() {
                   <Image
                     src={gif.src}
                     alt={gif.alt}
+                    width={128}
+                    height={96}
                     className="w-full h-full object-cover"
                   />
                   {index === currentIndex && (

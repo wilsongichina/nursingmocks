@@ -7,6 +7,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  disableLinks?: boolean;
 }
 
 export default function RichTextEditor({
@@ -14,6 +15,7 @@ export default function RichTextEditor({
   onChange,
   placeholder = "Start typing your content...",
   className = "",
+  disableLinks = false,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -144,16 +146,18 @@ export default function RichTextEditor({
 
         <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
-        <button
-          type="button"
-          onClick={insertLink}
-          className="p-2 hover:bg-gray-200 rounded text-gray-700 hover:text-gray-900"
-          title="Insert Link"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" />
-          </svg>
-        </button>
+        {!disableLinks && (
+          <button
+            type="button"
+            onClick={insertLink}
+            className="p-2 hover:bg-gray-200 rounded text-gray-700 hover:text-gray-900"
+            title="Insert Link"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Editor */}
@@ -163,12 +167,24 @@ export default function RichTextEditor({
         onInput={handleInput}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className={`min-h-[200px] p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset text-gray-900 ${
+        className={`min-h-[200px] p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset text-gray-900 rich-text-editor-content ${
           isFocused ? "bg-white" : "bg-gray-50"
         }`}
         style={{ minHeight: "200px" }}
         data-placeholder={placeholder}
       />
+      <style jsx global>{`
+        .rich-text-editor-content a {
+          color: #2563eb !important;
+          text-decoration: underline !important;
+          text-decoration-thickness: 2px;
+          font-weight: 500;
+          transition: color 0.2s;
+        }
+        .rich-text-editor-content a:hover {
+          color: #1d4ed8 !important;
+        }
+      `}</style>
     </div>
   );
 }
