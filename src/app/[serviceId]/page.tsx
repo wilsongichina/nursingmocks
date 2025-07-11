@@ -376,7 +376,13 @@ export default function ServicePage({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div
+            className={`grid gap-8 ${
+              (content?.whatToExpect?.cards ?? []).length === 1
+                ? "grid-cols-1"
+                : "grid-cols-1 md:grid-cols-2"
+            }`}
+          >
             {(content?.whatToExpect?.cards ?? []).map((card, index) => (
               <div
                 key={index}
@@ -438,7 +444,13 @@ export default function ServicePage({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div
+            className={`grid gap-8 ${
+              (content?.mostCommonQuestions?.cards ?? []).length === 1
+                ? "grid-cols-1"
+                : "grid-cols-1 md:grid-cols-2"
+            }`}
+          >
             {(content?.mostCommonQuestions?.cards ?? []).map((card, index) => (
               <div
                 key={index}
