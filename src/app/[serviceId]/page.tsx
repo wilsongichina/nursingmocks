@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
+import ContentRenderer from "@/components/ui/ContentRenderer";
 import { getServiceContent, getAllServices } from "@/lib/firestore-operations";
 import { mathPageContent } from "@/lib/math-page-content";
 
@@ -376,18 +377,18 @@ export default async function ServicePage({ params }: PageProps) {
               {content?.hero?.title ||
                 `${resolvedParams.serviceId} - TEAS Gurus`}
             </h1>
-            <div
-              className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed"
-              dangerouslySetInnerHTML={{
-                __html: content?.hero?.subtitle || "",
-              }}
-            />
-            <div
-              className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90"
-              dangerouslySetInnerHTML={{
-                __html: content?.hero?.description || "",
-              }}
-            />
+            <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+              <ContentRenderer
+                content={content?.hero?.subtitle || ""}
+                textColor="white"
+              />
+            </div>
+            <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
+              <ContentRenderer
+                content={content?.hero?.description || ""}
+                textColor="white"
+              />
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/hesi-a2"
@@ -439,12 +440,11 @@ export default async function ServicePage({ params }: PageProps) {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                 {content.whatToExpect.title}
               </h2>
-              <div
-                className="text-xl text-gray-600 max-w-3xl mx-auto"
-                dangerouslySetInnerHTML={{
-                  __html: content.whatToExpect.subtitle || "",
-                }}
-              />
+              <div className="text-xl text-gray-600 max-w-3xl mx-auto">
+                <ContentRenderer
+                  content={content.whatToExpect.subtitle || ""}
+                />
+              </div>
             </div>
 
             <div
@@ -470,7 +470,7 @@ export default async function ServicePage({ params }: PageProps) {
                         className="flex items-start space-x-3 text-gray-600"
                       >
                         <span className="text-green-500 mt-1">✓</span>
-                        <span dangerouslySetInnerHTML={{ __html: item }} />
+                        <ContentRenderer content={item} />
                       </li>
                     ))}
                   </ul>
@@ -480,12 +480,9 @@ export default async function ServicePage({ params }: PageProps) {
 
             {content.whatToExpect.footer && (
               <div className="text-center mt-12">
-                <div
-                  className="text-lg text-gray-600"
-                  dangerouslySetInnerHTML={{
-                    __html: content.whatToExpect.footer,
-                  }}
-                />
+                <div className="text-lg text-gray-600">
+                  <ContentRenderer content={content.whatToExpect.footer} />
+                </div>
               </div>
             )}
           </div>
@@ -531,7 +528,7 @@ export default async function ServicePage({ params }: PageProps) {
                         className="flex items-start space-x-3 text-gray-600"
                       >
                         <span className="text-purple-500 mt-1">•</span>
-                        <span dangerouslySetInnerHTML={{ __html: item }} />
+                        <ContentRenderer content={item} />
                       </li>
                     ))}
                   </ul>
@@ -554,12 +551,9 @@ export default async function ServicePage({ params }: PageProps) {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                 {content.studyGuide.title}
               </h2>
-              <div
-                className="text-xl text-gray-600 max-w-3xl mx-auto"
-                dangerouslySetInnerHTML={{
-                  __html: content.studyGuide.subtitle || "",
-                }}
-              />
+              <div className="text-xl text-gray-600 max-w-3xl mx-auto">
+                <ContentRenderer content={content.studyGuide.subtitle || ""} />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -572,10 +566,9 @@ export default async function ServicePage({ params }: PageProps) {
                   <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {section.title}
                   </h3>
-                  <div
-                    className="text-gray-600 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: section.content }}
-                  />
+                  <div className="text-gray-600 leading-relaxed">
+                    <ContentRenderer content={section.content} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -603,10 +596,9 @@ export default async function ServicePage({ params }: PageProps) {
                   <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {item.title}
                   </h3>
-                  <div
-                    className="text-gray-600 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: item.content }}
-                  />
+                  <div className="text-gray-600 leading-relaxed">
+                    <ContentRenderer content={item.content} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -622,10 +614,9 @@ export default async function ServicePage({ params }: PageProps) {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                 {content.faq.title}
               </h2>
-              <div
-                className="text-xl text-gray-600"
-                dangerouslySetInnerHTML={{ __html: content.faq.subtitle || "" }}
-              />
+              <div className="text-xl text-gray-600">
+                <ContentRenderer content={content.faq.subtitle || ""} />
+              </div>
             </div>
 
             <div className="space-y-8">
@@ -636,20 +627,22 @@ export default async function ServicePage({ params }: PageProps) {
                   </h3>
                   <div className="space-y-4">
                     {faq.paragraphs.map((paragraph, pIndex) => (
-                      <p
+                      <div
                         key={pIndex}
                         className="text-gray-600 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: paragraph }}
-                      />
+                      >
+                        <ContentRenderer content={paragraph} />
+                      </div>
                     ))}
                     {faq.additionalParagraphs && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
                         {faq.additionalParagraphs.map((paragraph, pIndex) => (
-                          <p
+                          <div
                             key={pIndex}
                             className="text-gray-600 leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: paragraph }}
-                          ></p>
+                          >
+                            <ContentRenderer content={paragraph} />
+                          </div>
                         ))}
                       </div>
                     )}

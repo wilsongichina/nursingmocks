@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
+import ContentRenderer from "@/components/ui/ContentRenderer";
 import { getAllSupportPages } from "@/lib/firestore-operations";
 
 interface SupportPageContent {
@@ -196,10 +197,15 @@ export default async function SupportPage({ params }: PageProps) {
               {content?.hero?.subtitle ||
                 `Get expert help with your ${resolvedParams.pageId} TEAS exam preparation.`}
             </p>
-            <p className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
-              {content?.hero?.description ||
-                "Our experienced tutors are here to help you succeed in your TEAS exam."}
-            </p>
+            <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
+              <ContentRenderer
+                content={
+                  content?.hero?.description ||
+                  "Our experienced tutors are here to help you succeed in your TEAS exam."
+                }
+                textColor="white"
+              />
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/hesi-a2"
@@ -225,12 +231,9 @@ export default async function SupportPage({ params }: PageProps) {
             {/* Main Content with Left Border */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl p-8 shadow-lg border-l-4 border-blue-600 ">
-                <div
+                <ContentRenderer
+                  content={content?.content || ""}
                   className="prose prose-lg max-w-none text-gray-900"
-                  style={{
-                    color: "#111827",
-                  }}
-                  dangerouslySetInnerHTML={{ __html: content?.content || "" }}
                 />
               </div>
             </div>
