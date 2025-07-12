@@ -1,10 +1,8 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
+import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
-import { getServiceContent } from "@/lib/firestore-operations";
+import { getServiceContent, getAllPages } from "@/lib/static-data";
 import { mathPageContent } from "@/lib/math-page-content";
 import RichTextRenderer from "@/components/ui/RichTextRenderer";
 
@@ -75,188 +73,116 @@ interface ServiceContent {
   };
 }
 
-export default function ServicePage({
-  params,
-}: {
+interface PageProps {
   params: Promise<{ serviceId: string }>;
-}) {
-  const [content, setContent] = useState<ServiceContent | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [resolvedParams, setResolvedParams] = useState<{
-    serviceId: string;
-  } | null>(null);
+}
 
-  useEffect(() => {
-    const resolveParams = async () => {
-      const resolved = await params;
-      setResolvedParams(resolved);
-    };
-    resolveParams();
-  }, [params]);
+// Generate static params at build time
+export async function generateStaticParams() {
+  try {
+    const result = await getAllPages();
 
-  const loadContent = useCallback(async () => {
-    if (!resolvedParams) return;
+    if (result.success && result.data) {
+      const pages = result.data;
+      return Object.keys(pages).map((serviceId) => ({ serviceId }));
+    }
+  } catch (error) {
+    console.error("Error generating static params:", error);
+  }
 
-    try {
-      setLoading(true);
-      setError(null);
+  // Return default service IDs if static data is not available during build
+  return [
+    { serviceId: "math" },
+    { serviceId: "maths" },
+    { serviceId: "teas" },
+    { serviceId: "hesi" },
+  ];
+}
 
-      const result = await getServiceContent(resolvedParams.serviceId);
+// Generate metadata for each page
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const resolvedParams = await params;
 
-      if (result.success && result.data) {
-        setContent(result.data as ServiceContent);
-      } else {
-        // Fallback to default content for math/maths
-        if (
-          resolvedParams.serviceId === "maths" ||
-          resolvedParams.serviceId === "math"
-        ) {
-          setContent(mathPageContent);
-        } else {
-          setError("Content not found for this service");
-        }
-      }
-    } catch (err) {
-      console.error("Error loading service content:", err);
-      setError("Failed to load content");
+  try {
+    const result = await getServiceContent(resolvedParams.serviceId);
 
+    if (result.success && result.data) {
+      const content = result.data as ServiceContent;
+      return {
+        title:
+          content.meta?.title || `${resolvedParams.serviceId} - TEAS Gurus`,
+        description: content.meta?.description || "",
+        keywords: content.meta?.keywords || "",
+        openGraph: {
+          title:
+            content.meta?.ogTitle ||
+            content.meta?.title ||
+            `${resolvedParams.serviceId} - TEAS Gurus`,
+          description:
+            content.meta?.ogDescription || content.meta?.description || "",
+          url:
+            content.meta?.canonicalUrl ||
+            `https://teasgurus.com/${resolvedParams.serviceId}`,
+          images: [
+            {
+              url: content.meta?.ogImage || "/teas-gurus-logo.png",
+              width: 1200,
+              height: 630,
+              alt:
+                content.meta?.title ||
+                `${resolvedParams.serviceId} - TEAS Gurus`,
+            },
+          ],
+        },
+        alternates: {
+          canonical:
+            content.meta?.canonicalUrl || `/${resolvedParams.serviceId}`,
+        },
+      };
+    }
+  } catch (error) {
+    console.error("Error generating metadata:", error);
+  }
+
+  // Fallback metadata
+  return {
+    title: `${resolvedParams.serviceId} - TEAS Gurus`,
+    description: `Get help with your ${resolvedParams.serviceId} exam preparation.`,
+    alternates: {
+      canonical: `/${resolvedParams.serviceId}`,
+    },
+  };
+}
+
+export default async function ServicePage({ params }: PageProps) {
+  const resolvedParams = await params;
+  let content: ServiceContent | null = null;
+
+  try {
+    const result = await getServiceContent(resolvedParams.serviceId);
+
+    if (result.success && result.data) {
+      content = result.data as ServiceContent;
+    } else {
       // Fallback to default content for math/maths
       if (
         resolvedParams.serviceId === "maths" ||
         resolvedParams.serviceId === "math"
       ) {
-        setContent(mathPageContent);
+        content = mathPageContent;
       }
-    } finally {
-      setLoading(false);
     }
-  }, [resolvedParams]);
-
-  useEffect(() => {
-    if (resolvedParams) {
-      loadContent();
+  } catch (error) {
+    console.error("Error loading service content:", error);
+    // Fallback to default content for math/maths
+    if (
+      resolvedParams.serviceId === "maths" ||
+      resolvedParams.serviceId === "math"
+    ) {
+      content = mathPageContent;
     }
-  }, [resolvedParams, loadContent]);
-
-  // Update page metadata when content changes
-  useEffect(() => {
-    if (content?.meta) {
-      // Update document title
-      if (content.meta.title) {
-        document.title = content.meta.title;
-      }
-
-      // Update meta description
-      let metaDescription = document.querySelector('meta[name="description"]');
-      if (!metaDescription) {
-        metaDescription = document.createElement("meta");
-        metaDescription.setAttribute("name", "description");
-        document.head.appendChild(metaDescription);
-      }
-      metaDescription.setAttribute("content", content.meta.description || "");
-
-      // Update meta keywords
-      let metaKeywords = document.querySelector('meta[name="keywords"]');
-      if (!metaKeywords) {
-        metaKeywords = document.createElement("meta");
-        metaKeywords.setAttribute("name", "keywords");
-        document.head.appendChild(metaKeywords);
-      }
-      metaKeywords.setAttribute("content", content.meta.keywords || "");
-
-      // Update Open Graph tags
-      let ogTitle = document.querySelector('meta[property="og:title"]');
-      if (!ogTitle) {
-        ogTitle = document.createElement("meta");
-        ogTitle.setAttribute("property", "og:title");
-        document.head.appendChild(ogTitle);
-      }
-      ogTitle.setAttribute(
-        "content",
-        content.meta.ogTitle || content.meta.title || ""
-      );
-
-      let ogDescription = document.querySelector(
-        'meta[property="og:description"]'
-      );
-      if (!ogDescription) {
-        ogDescription = document.createElement("meta");
-        ogDescription.setAttribute("property", "og:description");
-        document.head.appendChild(ogDescription);
-      }
-      ogDescription.setAttribute(
-        "content",
-        content.meta.ogDescription || content.meta.description || ""
-      );
-
-      let ogImage = document.querySelector('meta[property="og:image"]');
-      if (!ogImage) {
-        ogImage = document.createElement("meta");
-        ogImage.setAttribute("property", "og:image");
-        document.head.appendChild(ogImage);
-      }
-      ogImage.setAttribute("content", content.meta.ogImage || "");
-
-      // Update canonical URL
-      let canonicalLink = document.querySelector('link[rel="canonical"]');
-      if (!canonicalLink) {
-        canonicalLink = document.createElement("link");
-        canonicalLink.setAttribute("rel", "canonical");
-        document.head.appendChild(canonicalLink);
-      }
-      canonicalLink.setAttribute(
-        "href",
-        content.meta.canonicalUrl || window.location.href
-      );
-    }
-  }, [content]);
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading content from Firestore...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error && !content) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="bg-red-100 p-4 rounded-lg mb-4">
-              <svg
-                className="w-8 h-8 text-red-600 mx-auto mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-              <p className="text-red-800 font-medium">Error Loading Content</p>
-            </div>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </Layout>
-    );
   }
 
   if (!content) {
