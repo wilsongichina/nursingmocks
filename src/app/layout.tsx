@@ -122,33 +122,6 @@ export default function RootLayout({
             }),
           }}
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "FAQPage",
-              mainEntity: [
-                {
-                  "@type": "Question",
-                  name: "Is it safe to pay someone to take my proctored exam for me?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Yes, Teas Gurus ensures full confidentiality and secure exam-taking services.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "What platforms do you support for proctored exams?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "We support ProctorU, Honorlock, Respondus, Examity, and other major systems.",
-                  },
-                },
-              ],
-            }),
-          }}
-        />
       </head>
       <body className={`${outfit.variable} font-sans antialiased`}>
         {children}
