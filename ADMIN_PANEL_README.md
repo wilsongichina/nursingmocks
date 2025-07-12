@@ -14,7 +14,7 @@ This admin panel provides a comprehensive interface for managing service pages o
 ### 2. Services Management (`/admin`)
 
 - **View All Services**: Displays all created service pages with their details
-- **Create New Services**: Add new service pages with a template structure
+- **Create New Services**: Add new service pages with a template structure test
 - **Edit Services**: Navigate to individual service editing pages
 - **View Live Pages**: Open service pages in new tabs to preview
 - **Delete Services**: Remove services from the database (with confirmation)
