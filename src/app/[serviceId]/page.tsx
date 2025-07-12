@@ -1,3 +1,4 @@
+import React from "react";
 import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
@@ -163,6 +164,122 @@ export async function generateMetadata({
   };
 }
 
+// Helper functions for icons
+const getIconComponent = (iconName: string) => {
+  const iconMap: { [key: string]: React.ReactNode } = {
+    check: (
+      <svg
+        className="w-10 h-10 mx-auto text-blue-600"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M9 12l2 2 4-4"
+          stroke="currentColor"
+          strokeWidth="2"
+          fill="none"
+        />
+      </svg>
+    ),
+    shield: (
+      <svg
+        className="w-10 h-10 mx-auto text-green-600"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3z"
+          stroke="currentColor"
+          strokeWidth="2"
+          fill="none"
+        />
+      </svg>
+    ),
+    star: (
+      <svg
+        className="w-10 h-10 mx-auto text-yellow-500"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    ),
+    "check-circle": (
+      <svg
+        className="w-10 h-10 mx-auto text-red-500"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M9 12l2 2 4-4"
+          stroke="currentColor"
+          strokeWidth="2"
+          fill="none"
+        />
+      </svg>
+    ),
+    "currency-dollar": (
+      <svg
+        className="w-10 h-10 mx-auto text-green-500"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4" />
+        <path d="M12 2v2m0 16v2m-6-6h12" />
+      </svg>
+    ),
+    "credit-card": (
+      <svg
+        className="w-10 h-10 mx-auto text-blue-400"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <path d="M2 10h20" />
+      </svg>
+    ),
+    dollar: (
+      <svg
+        className="w-10 h-10 mx-auto text-green-500"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4" />
+        <path d="M12 2v2m0 16v2m-6-6h12" />
+      </svg>
+    ),
+  };
+  return iconMap[iconName] || iconMap.check;
+};
+
 export default async function ServicePage({ params }: PageProps) {
   const resolvedParams = await params;
 
@@ -259,14 +376,18 @@ export default async function ServicePage({ params }: PageProps) {
               {content?.hero?.title ||
                 `${resolvedParams.serviceId} - TEAS Gurus`}
             </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
-              {content?.hero?.subtitle ||
-                `Get expert help with your ${resolvedParams.serviceId} TEAS exam preparation.`}
-            </p>
-            <p className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
-              {content?.hero?.description ||
-                "Our experienced tutors are here to help you succeed in your TEAS exam."}
-            </p>
+            <div
+              className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed"
+              dangerouslySetInnerHTML={{
+                __html: content?.hero?.subtitle || "",
+              }}
+            />
+            <div
+              className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90"
+              dangerouslySetInnerHTML={{
+                __html: content?.hero?.description || "",
+              }}
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/hesi-a2"
@@ -295,7 +416,7 @@ export default async function ServicePage({ params }: PageProps) {
                   key={index}
                   className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
-                  <div className="text-4xl mb-4">{indicator.icon}</div>
+                  <div className="mb-4">{getIconComponent(indicator.icon)}</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     {indicator.title}
                   </h3>
@@ -318,19 +439,28 @@ export default async function ServicePage({ params }: PageProps) {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                 {content.whatToExpect.title}
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                {content.whatToExpect.subtitle}
-              </p>
+              <div
+                className="text-xl text-gray-600 max-w-3xl mx-auto"
+                dangerouslySetInnerHTML={{
+                  __html: content.whatToExpect.subtitle || "",
+                }}
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div
+              className={`grid gap-8 ${
+                content.whatToExpect.cards.length === 1
+                  ? "grid-cols-1"
+                  : "grid-cols-1 md:grid-cols-2"
+              }`}
+            >
               {content.whatToExpect.cards.map((card, index) => (
                 <div
                   key={index}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
                 >
-                  <div className="text-4xl mb-6">{card.icon}</div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  <div className="mb-6">{getIconComponent(card.icon)}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {card.title}
                   </h3>
                   <ul className="space-y-3">
@@ -340,7 +470,7 @@ export default async function ServicePage({ params }: PageProps) {
                         className="flex items-start space-x-3 text-gray-600"
                       >
                         <span className="text-green-500 mt-1">✓</span>
-                        <span>{item}</span>
+                        <span dangerouslySetInnerHTML={{ __html: item }} />
                       </li>
                     ))}
                   </ul>
@@ -350,9 +480,12 @@ export default async function ServicePage({ params }: PageProps) {
 
             {content.whatToExpect.footer && (
               <div className="text-center mt-12">
-                <p className="text-lg text-gray-600">
-                  {content.whatToExpect.footer}
-                </p>
+                <div
+                  className="text-lg text-gray-600"
+                  dangerouslySetInnerHTML={{
+                    __html: content.whatToExpect.footer,
+                  }}
+                />
               </div>
             )}
           </div>
@@ -376,13 +509,19 @@ export default async function ServicePage({ params }: PageProps) {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div
+              className={`grid gap-8 ${
+                content.mostCommonQuestions.cards.length === 1
+                  ? "grid-cols-1"
+                  : "grid-cols-1 md:grid-cols-2"
+              }`}
+            >
               {content.mostCommonQuestions.cards.map((card, index) => (
                 <div
                   key={index}
                   className="bg-gray-50 rounded-2xl p-8 hover:bg-gray-100 transition-colors"
                 >
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {card.title}
                   </h3>
                   <ul className="space-y-3">
@@ -392,7 +531,7 @@ export default async function ServicePage({ params }: PageProps) {
                         className="flex items-start space-x-3 text-gray-600"
                       >
                         <span className="text-purple-500 mt-1">•</span>
-                        <span>{item}</span>
+                        <span dangerouslySetInnerHTML={{ __html: item }} />
                       </li>
                     ))}
                   </ul>
@@ -415,24 +554,28 @@ export default async function ServicePage({ params }: PageProps) {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                 {content.studyGuide.title}
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                {content.studyGuide.subtitle}
-              </p>
+              <div
+                className="text-xl text-gray-600 max-w-3xl mx-auto"
+                dangerouslySetInnerHTML={{
+                  __html: content.studyGuide.subtitle || "",
+                }}
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {content.studyGuide.sections.map((section, index) => (
                 <div
                   key={index}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
                 >
-                  <div className="text-4xl mb-6">{section.icon}</div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  <div className="mb-6">{getIconComponent(section.icon)}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {section.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {section.content}
-                  </p>
+                  <div
+                    className="text-gray-600 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: section.content }}
+                  />
                 </div>
               ))}
             </div>
@@ -444,19 +587,26 @@ export default async function ServicePage({ params }: PageProps) {
       {content?.privacyPricing && content.privacyPricing.length > 0 && (
         <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div
+              className={`grid gap-8 ${
+                content.privacyPricing.length === 1
+                  ? "grid-cols-1"
+                  : "grid-cols-1 md:grid-cols-2"
+              }`}
+            >
               {content.privacyPricing.map((item, index) => (
                 <div
                   key={index}
-                  className="text-center p-8 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 border border-green-200"
+                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
                 >
-                  <div className="text-4xl mb-6">{item.icon}</div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  <div className="mb-6">{getIconComponent(item.icon)}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {item.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {item.content}
-                  </p>
+                  <div
+                    className="text-gray-600 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: item.content }}
+                  />
                 </div>
               ))}
             </div>
@@ -472,7 +622,10 @@ export default async function ServicePage({ params }: PageProps) {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                 {content.faq.title}
               </h2>
-              <p className="text-xl text-gray-600">{content.faq.subtitle}</p>
+              <div
+                className="text-xl text-gray-600"
+                dangerouslySetInnerHTML={{ __html: content.faq.subtitle || "" }}
+              />
             </div>
 
             <div className="space-y-8">
@@ -483,9 +636,11 @@ export default async function ServicePage({ params }: PageProps) {
                   </h3>
                   <div className="space-y-4">
                     {faq.paragraphs.map((paragraph, pIndex) => (
-                      <p key={pIndex} className="text-gray-600 leading-relaxed">
-                        {paragraph}
-                      </p>
+                      <p
+                        key={pIndex}
+                        className="text-gray-600 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: paragraph }}
+                      />
                     ))}
                     {faq.additionalParagraphs && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
@@ -493,9 +648,8 @@ export default async function ServicePage({ params }: PageProps) {
                           <p
                             key={pIndex}
                             className="text-gray-600 leading-relaxed"
-                          >
-                            {paragraph}
-                          </p>
+                            dangerouslySetInnerHTML={{ __html: paragraph }}
+                          ></p>
                         ))}
                       </div>
                     )}
