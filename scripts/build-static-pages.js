@@ -1,16 +1,9 @@
 const { initializeApp } = require("firebase/app");
-const {
-  getFirestore,
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-} = require("firebase/firestore");
-const fs = require("fs");
-const path = require("path");
+const { getFirestore, collection, getDocs } = require("firebase/firestore");
 
-// Firebase configuration
+// Your Firebase config
 const firebaseConfig = {
+  // Add your Firebase config here
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -23,80 +16,60 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-async function fetchAllPages() {
+async function getAllSupportPages() {
   try {
-    console.log("Fetching all pages from Firestore...");
-    const pagesSnapshot = await getDocs(collection(db, "pages"));
+    const querySnapshot = await getDocs(collection(db, "supportPages"));
     const pages = {};
 
-    pagesSnapshot.forEach((doc) => {
+    querySnapshot.forEach((doc) => {
       pages[doc.id] = doc.data();
     });
 
-    return pages;
+    return {
+      success: true,
+      data: pages,
+    };
   } catch (error) {
-    console.error("Error fetching pages:", error);
-    return {};
+    console.error("Error getting all support pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve pages: ${error.message}`,
+    };
   }
 }
 
-async function fetchAllSupportPages() {
-  try {
-    console.log("Fetching all support pages from Firestore...");
-    const supportPagesSnapshot = await getDocs(collection(db, "supportPages"));
-    const pages = {};
+async function generateStaticParams() {
+  console.log("Generating static params for dynamic pages...");
 
-    supportPagesSnapshot.forEach((doc) => {
-      const docData = doc.data();
-      const serviceId = docData.serviceId || doc.id.split("_")[0];
-      const pageId = docData.pageId || doc.id.split("_")[1];
+  const result = await getAllSupportPages();
 
-      if (!pages[serviceId]) {
-        pages[serviceId] = {};
+  if (result.success && result.data) {
+    const pages = result.data;
+    const params = [];
+
+    // Extract all possible serviceId/pageId combinations
+    Object.keys(pages).forEach((serviceId) => {
+      const servicePages = pages[serviceId];
+      if (servicePages && typeof servicePages === "object") {
+        Object.keys(servicePages).forEach((pageId) => {
+          params.push({ serviceId, pageId });
+          console.log(`Generated static param: ${serviceId}/${pageId}`);
+        });
       }
-
-      pages[serviceId][pageId] = docData;
     });
 
-    return pages;
-  } catch (error) {
-    console.error("Error fetching support pages:", error);
-    return {};
+    console.log(`Total static params generated: ${params.length}`);
+    return params;
   }
+
+  console.log("No pages found, using default params");
+  return [
+    { serviceId: "teas", pageId: "math" },
+    { serviceId: "teas", pageId: "science" },
+    { serviceId: "teas", pageId: "reading" },
+    { serviceId: "teas", pageId: "english" },
+  ];
 }
 
-async function buildStaticData() {
-  try {
-    console.log("Starting static data build...");
-
-    // Create data directory if it doesn't exist
-    const dataDir = path.join(process.cwd(), "src", "data");
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Fetch all data
-    const [pages, supportPages] = await Promise.all([
-      fetchAllPages(),
-      fetchAllSupportPages(),
-    ]);
-
-    // Save pages data
-    const pagesPath = path.join(dataDir, "pages.json");
-    fs.writeFileSync(pagesPath, JSON.stringify(pages, null, 2));
-    console.log(`Saved pages data to ${pagesPath}`);
-
-    // Save support pages data
-    const supportPagesPath = path.join(dataDir, "support-pages.json");
-    fs.writeFileSync(supportPagesPath, JSON.stringify(supportPages, null, 2));
-    console.log(`Saved support pages data to ${supportPagesPath}`);
-
-    console.log("Static data build completed successfully!");
-  } catch (error) {
-    console.error("Error building static data:", error);
-    process.exit(1);
-  }
-}
-
-// Run the build script
-buildStaticData();
+// Export for use in Next.js
+module.exports = { generateStaticParams };

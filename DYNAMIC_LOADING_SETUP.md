@@ -1,96 +1,171 @@
-# Static Page Generation Setup
-
-This document explains how the dynamic pages are now built as static pages at build time instead of fetching data from Firebase at runtime.
+# Dynamic Content Loading from Firestore
 
 ## Overview
 
-The pages at `/[serviceId]` and `/[serviceId]/[pageId]` routes were previously client-side components that fetched data from Firebase on each page load, showing a "Loading content from firebase..." message. They have been converted to server-side components that are pre-built at build time.
+The math page (`/math`) now loads content dynamically from Firestore instead of using static local content. This allows for real-time content updates without requiring code deployments.
 
 ## How It Works
 
-### 1. Build Script (`scripts/build-static-pages.js`)
+### 1. **Client-Side Loading**
 
-This script runs during the build process and:
+- The math page is now a **client component** (`"use client"`)
+- Content is fetched from Firestore on page load using `useEffect`
+- Loading states and error handling are implemented
 
-- Connects to Firebase
-- Fetches all pages from the `pages` collection
-- Fetches all support pages from the `supportPages` collection
-- Saves the data as JSON files in `src/data/`
+### 2. **Fallback Content**
 
-### 2. Static Data Layer (`src/lib/static-data.ts`)
+- If Firestore is unavailable or content doesn't exist, the page falls back to default content
+- This ensures the page always displays something, even if there are connectivity issues
 
-This module provides the same API as the Firebase operations but reads from static JSON files instead:
+### 3. **Content Structure**
 
-- `getServiceContent(serviceId)` - Gets service page content
-- `getAllSupportPages()` - Gets all support pages
-- `getSupportPageContent(serviceId, pageId)` - Gets specific support page content
-- `getAllPages()` - Gets all pages
+The page loads the same content structure that's stored in Firestore:
 
-### 3. Updated Page Components
+```typescript
+{
+  hero: { badge, title, subtitle, description },
+  trustIndicators: [...],
+  whatToExpect: { badge, title, subtitle, cards[], footer },
+  mostCommonQuestions: { badge, title, subtitle, cards[] },
+  studyGuide: { badge, title, subtitle, sections[] },
+  privacyPricing: [...],
+  faq: { title, subtitle, questions[] }
+}
+```
 
-Both dynamic page components have been converted from client-side to server-side:
+## Implementation Details
 
-#### `src/app/[serviceId]/page.tsx`
+### **File Changes**
 
-- Removed `"use client"` directive
-- Removed React hooks (`useState`, `useEffect`)
-- Added `generateStaticParams()` to pre-generate all service pages
-- Added `generateMetadata()` for SEO optimization
-- Data is fetched at build time, not runtime
+1. **`src/app/math/page.tsx`** - Converted to client component with dynamic loading
+2. **`src/app/math/layout.tsx`** - Added for metadata handling (since client components can't export metadata)
+3. **`src/lib/firestore-operations.ts`** - Contains the `getMathPageContent()` function
 
-#### `src/app/[serviceId]/[pageId]/page.tsx`
+### **Loading States**
 
-- Already had `generateStaticParams()` and `generateMetadata()`
-- Updated to use static data functions instead of Firebase functions
+- **Loading**: Shows spinner with "Loading content from Firestore..." message
+- **Error**: Shows error message with retry button
+- **Success**: Displays the content from Firestore
+- **Fallback**: Uses default content if Firestore fails
 
-## Build Process
+### **Error Handling**
 
-The build process now includes:
+- Network connectivity issues
+- Firestore permission errors
+- Missing or malformed data
+- Timeout scenarios
 
-1. **Data Fetching**: The build script fetches all data from Firebase
-2. **Static Generation**: Next.js generates static HTML for all pages
-3. **No Runtime Dependencies**: Pages load instantly without Firebase calls
+## Usage Workflow
+
+### **1. Content Management**
+
+1. Login to admin panel (`/admin`)
+2. Edit content using the admin interface
+3. Click "Upload Current" to save to Firestore
+4. The math page will automatically load the updated content
+
+### **2. Content Updates**
+
+- Changes made in the admin panel are immediately available on the math page
+- No code deployment required for content updates
+- Real-time content synchronization
+
+### **3. Content Fallback**
+
+- If Firestore is down, the page shows default content
+- Users can still access the page with basic information
+- Error messages guide users on what's happening
+
+## Performance Considerations
+
+### **Caching**
+
+- Firestore has built-in caching for better performance
+- Subsequent page loads are faster due to cached data
+- Offline support for previously loaded content
+
+### **Loading Times**
+
+- First load: May take 1-3 seconds to fetch from Firestore
+- Subsequent loads: Usually under 500ms due to caching
+- Fallback content: Instant display if Firestore fails
 
 ## Benefits
 
-- **Performance**: Pages load instantly without Firebase API calls
-- **SEO**: Better search engine optimization with pre-rendered content
-- **Reliability**: No dependency on Firebase availability at runtime
-- **Cost**: Reduced Firebase read operations
+### **1. Dynamic Content**
 
-## Development
+- Update content without code changes
+- Real-time content management
+- A/B testing capabilities
 
-During development, you can still use the dynamic loading by running:
+### **2. Scalability**
 
-```bash
-npm run dev
-```
+- Content stored in cloud database
+- Automatic backups and redundancy
+- Global content distribution
 
-For production builds with static generation:
+### **3. User Experience**
 
-```bash
-npm run build
-```
+- Loading states provide feedback
+- Error handling prevents broken pages
+- Fallback content ensures availability
 
-## Adding New Pages
+## Troubleshooting
 
-To add new pages:
+### **Common Issues**
 
-1. Add content to Firebase collections (`pages` or `supportPages`)
-2. Run the build script to fetch the new data
-3. The pages will be automatically generated at build time
+1. **"Loading content from Firestore..." never completes**
 
-## Fallback Content
+   - Check Firestore security rules
+   - Verify Firebase configuration
+   - Check network connectivity
 
-The system includes fallback content for math pages (`mathPageContent`) to ensure pages work even if Firebase is unavailable during build.
+2. **"Error Loading Content" appears**
 
-## Environment Variables
+   - Check browser console for specific errors
+   - Verify Firestore permissions
+   - Check if content exists in Firestore
 
-Make sure these Firebase environment variables are set for the build script:
+3. **Page shows default content**
+   - Content may not be uploaded to Firestore yet
+   - Use admin panel to upload content
+   - Check if Firestore is accessible
 
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
+### **Debug Steps**
+
+1. Open browser developer tools
+2. Check Console tab for error messages
+3. Check Network tab for Firestore requests
+4. Verify Firebase configuration in `src/lib/firebase.ts`
+
+## Future Enhancements
+
+### **Planned Features**
+
+- Real-time content updates (WebSocket)
+- Content versioning and rollback
+- Multi-language support
+- Content analytics and tracking
+- Advanced caching strategies
+
+### **Performance Optimizations**
+
+- Server-side rendering with hydration
+- Content preloading
+- Progressive loading
+- Image optimization
+
+## Security Considerations
+
+### **Current Setup**
+
+- Read-only access to content for public users
+- Admin panel requires password authentication
+- Firestore security rules control access
+
+### **Recommended Improvements**
+
+- Implement user authentication for admin access
+- Add content approval workflows
+- Implement content validation
+- Add audit logging for content changes

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
-import { getAllSupportPages } from "@/lib/static-data";
+import { getAllSupportPages } from "@/lib/firestore-operations";
 
 interface SupportPageContent {
   meta: {
@@ -53,7 +53,7 @@ export async function generateStaticParams() {
     console.error("Error generating static params:", error);
   }
 
-  // Return some default pages if static data is not available during build
+  // Return some default pages if Firestore is not available during build
   return [
     { serviceId: "teas", pageId: "math" },
     { serviceId: "teas", pageId: "science" },
