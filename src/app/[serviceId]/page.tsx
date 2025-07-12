@@ -1,12 +1,9 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
+import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
-import { getServiceContent } from "@/lib/firestore-operations";
+import { getServiceContent, getAllServices } from "@/lib/firestore-operations";
 import { mathPageContent } from "@/lib/math-page-content";
-import RichTextRenderer from "@/components/ui/RichTextRenderer";
 
 interface ServiceContent {
   meta?: {
@@ -75,157 +72,129 @@ interface ServiceContent {
   };
 }
 
-export default function ServicePage({
-  params,
-}: {
+interface PageProps {
   params: Promise<{ serviceId: string }>;
-}) {
-  const [content, setContent] = useState<ServiceContent | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [resolvedParams, setResolvedParams] = useState<{
-    serviceId: string;
-  } | null>(null);
+}
 
-  useEffect(() => {
-    const resolveParams = async () => {
-      const resolved = await params;
-      setResolvedParams(resolved);
-    };
-    resolveParams();
-  }, [params]);
+// Generate static params at build time
+export async function generateStaticParams() {
+  try {
+    const result = await getAllServices();
 
-  const loadContent = useCallback(async () => {
-    if (!resolvedParams) return;
+    if (result.success && result.data) {
+      const services = result.data;
+      const params: Array<{ serviceId: string }> = [];
 
-    try {
-      setLoading(true);
-      setError(null);
+      // Extract all possible serviceId combinations
+      services.forEach((serviceId) => {
+        params.push({ serviceId });
+      });
 
-      const result = await getServiceContent(resolvedParams.serviceId);
+      return params;
+    }
+  } catch (error) {
+    console.error("Error generating static params:", error);
+  }
 
-      if (result.success && result.data) {
-        setContent(result.data as ServiceContent);
-      } else {
-        // Fallback to default content for math/maths
-        if (
-          resolvedParams.serviceId === "maths" ||
-          resolvedParams.serviceId === "math"
-        ) {
-          setContent(mathPageContent);
-        } else {
-          setError("Content not found for this service");
-        }
+  // Return some default services if Firestore is not available during build
+  return [{ serviceId: "maths" }, { serviceId: "math" }, { serviceId: "teas" }];
+}
+
+// Generate metadata for each page
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+
+  try {
+    const result = await getServiceContent(resolvedParams.serviceId);
+
+    if (result.success && result.data) {
+      const serviceData = result.data as ServiceContent;
+
+      if (serviceData.meta) {
+        return {
+          title:
+            serviceData.meta.title ||
+            `${resolvedParams.serviceId} - TEAS Gurus`,
+          description: serviceData.meta.description || "",
+          keywords: serviceData.meta.keywords || "",
+          openGraph: {
+            title:
+              serviceData.meta.ogTitle ||
+              serviceData.meta.title ||
+              `${resolvedParams.serviceId} - TEAS Gurus`,
+            description:
+              serviceData.meta.ogDescription ||
+              serviceData.meta.description ||
+              "",
+            url:
+              serviceData.meta.canonicalUrl ||
+              `https://teasgurus.com/${resolvedParams.serviceId}`,
+            images: [
+              {
+                url: serviceData.meta.ogImage || "/teas-gurus-logo.png",
+                width: 1200,
+                height: 630,
+                alt:
+                  serviceData.meta.title ||
+                  `${resolvedParams.serviceId} - TEAS Gurus`,
+              },
+            ],
+          },
+          alternates: {
+            canonical:
+              serviceData.meta.canonicalUrl || `/${resolvedParams.serviceId}`,
+          },
+        };
       }
-    } catch (err) {
-      console.error("Error loading service content:", err);
-      setError("Failed to load content");
+    }
+  } catch (error) {
+    console.error("Error generating metadata:", error);
+  }
 
+  // Fallback metadata
+  return {
+    title: `${resolvedParams.serviceId} - TEAS Gurus`,
+    description: `Get help with your ${resolvedParams.serviceId} TEAS exam preparation.`,
+    alternates: {
+      canonical: `/${resolvedParams.serviceId}`,
+    },
+  };
+}
+
+export default async function ServicePage({ params }: PageProps) {
+  const resolvedParams = await params;
+
+  let content: ServiceContent | null = null;
+
+  try {
+    const result = await getServiceContent(resolvedParams.serviceId);
+
+    if (result.success && result.data) {
+      content = result.data as ServiceContent;
+    } else {
       // Fallback to default content for math/maths
       if (
         resolvedParams.serviceId === "maths" ||
         resolvedParams.serviceId === "math"
       ) {
-        setContent(mathPageContent);
+        content = mathPageContent;
       }
-    } finally {
-      setLoading(false);
     }
-  }, [resolvedParams]);
+  } catch (error) {
+    console.error("Error loading service content:", error);
 
-  useEffect(() => {
-    if (resolvedParams) {
-      loadContent();
+    // Fallback to default content for math/maths
+    if (
+      resolvedParams.serviceId === "maths" ||
+      resolvedParams.serviceId === "math"
+    ) {
+      content = mathPageContent;
     }
-  }, [resolvedParams, loadContent]);
-
-  // Update page metadata when content changes
-  useEffect(() => {
-    if (content?.meta) {
-      // Update document title
-      if (content.meta.title) {
-        document.title = content.meta.title;
-      }
-
-      // Update meta description
-      let metaDescription = document.querySelector('meta[name="description"]');
-      if (!metaDescription) {
-        metaDescription = document.createElement("meta");
-        metaDescription.setAttribute("name", "description");
-        document.head.appendChild(metaDescription);
-      }
-      metaDescription.setAttribute("content", content.meta.description || "");
-
-      // Update meta keywords
-      let metaKeywords = document.querySelector('meta[name="keywords"]');
-      if (!metaKeywords) {
-        metaKeywords = document.createElement("meta");
-        metaKeywords.setAttribute("name", "keywords");
-        document.head.appendChild(metaKeywords);
-      }
-      metaKeywords.setAttribute("content", content.meta.keywords || "");
-
-      // Update Open Graph tags
-      let ogTitle = document.querySelector('meta[property="og:title"]');
-      if (!ogTitle) {
-        ogTitle = document.createElement("meta");
-        ogTitle.setAttribute("property", "og:title");
-        document.head.appendChild(ogTitle);
-      }
-      ogTitle.setAttribute(
-        "content",
-        content.meta.ogTitle || content.meta.title || ""
-      );
-
-      let ogDescription = document.querySelector(
-        'meta[property="og:description"]'
-      );
-      if (!ogDescription) {
-        ogDescription = document.createElement("meta");
-        ogDescription.setAttribute("property", "og:description");
-        document.head.appendChild(ogDescription);
-      }
-      ogDescription.setAttribute(
-        "content",
-        content.meta.ogDescription || content.meta.description || ""
-      );
-
-      let ogImage = document.querySelector('meta[property="og:image"]');
-      if (!ogImage) {
-        ogImage = document.createElement("meta");
-        ogImage.setAttribute("property", "og:image");
-        document.head.appendChild(ogImage);
-      }
-      ogImage.setAttribute("content", content.meta.ogImage || "");
-
-      // Update canonical URL
-      let canonicalLink = document.querySelector('link[rel="canonical"]');
-      if (!canonicalLink) {
-        canonicalLink = document.createElement("link");
-        canonicalLink.setAttribute("rel", "canonical");
-        document.head.appendChild(canonicalLink);
-      }
-      canonicalLink.setAttribute(
-        "href",
-        content.meta.canonicalUrl || window.location.href
-      );
-    }
-  }, [content]);
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading content from Firestore...</p>
-          </div>
-        </div>
-      </Layout>
-    );
   }
 
-  if (error && !content) {
+  if (!content) {
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -244,27 +213,17 @@ export default function ServicePage({
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
                 />
               </svg>
-              <p className="text-red-800 font-medium">Error Loading Content</p>
+              <p className="text-red-800 font-medium">Content Not Found</p>
             </div>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            <p className="text-gray-600 mb-4">
+              Content not found for this service
+            </p>
+            <Link
+              href="/"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Retry
-            </button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!content) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-600">Service not found</p>
+              Go Home
+            </Link>
           </div>
         </div>
       </Layout>
@@ -274,7 +233,7 @@ export default function ServicePage({
   return (
     <Layout>
       {/* Schema Script */}
-      {content.schema && (
+      {content?.schema && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -294,23 +253,20 @@ export default function ServicePage({
           <div className="text-center">
             <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-              {content.hero.badge}
+              {content?.hero?.badge || "TEAS Exam Help"}
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              {content.hero.title}
+              {content?.hero?.title ||
+                `${resolvedParams.serviceId} - TEAS Gurus`}
             </h1>
-            <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed text-white">
-              <RichTextRenderer
-                content={content.hero.subtitle}
-                className="text-white"
-              />
-            </div>
-            <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90 text-white">
-              <RichTextRenderer
-                content={content.hero.description}
-                className="text-white"
-              />
-            </div>
+            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+              {content?.hero?.subtitle ||
+                `Get expert help with your ${resolvedParams.serviceId} TEAS exam preparation.`}
+            </p>
+            <p className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
+              {content?.hero?.description ||
+                "Our experienced tutors are here to help you succeed in your TEAS exam."}
+            </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/hesi-a2"
@@ -330,346 +286,253 @@ export default function ServicePage({
       </section>
 
       {/* Trust Indicators Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {content.trustIndicators.map((indicator, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 text-center"
-              >
+      {content?.trustIndicators && content.trustIndicators.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {content.trustIndicators.map((indicator, index) => (
                 <div
-                  className={`w-20 h-20 ${getIconColor(
-                    indicator.icon
-                  )} rounded-full flex items-center justify-center mx-auto mb-6`}
+                  key={index}
+                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
-                  <svg
-                    className="w-10 h-10 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d={getIconComponent(indicator.icon)} />
-                  </svg>
+                  <div className="text-4xl mb-4">{indicator.icon}</div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {indicator.title}
+                  </h3>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  {indicator.title}
-                </h3>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* What to Expect Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
-              <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-              {content.whatToExpect.badge}
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              {content.whatToExpect.title}
-            </h2>
-            <div className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              <RichTextRenderer content={content.whatToExpect.subtitle} />
-            </div>
-          </div>
-
-          <div
-            className={`grid gap-8 ${
-              (content?.whatToExpect?.cards ?? []).length === 1
-                ? "grid-cols-1"
-                : "grid-cols-1 md:grid-cols-2"
-            }`}
-          >
-            {(content?.whatToExpect?.cards ?? []).map((card, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
-              >
-                <div
-                  className={`w-16 h-16 ${getIconColor(
-                    card?.icon || "check"
-                  )} rounded-full flex items-center justify-center mx-auto mb-6`}
-                >
-                  <svg
-                    className="w-8 h-8 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d={getIconComponent(card?.icon || "check")} />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                  {card?.title || "Card Title"}
-                </h3>
-                {(card?.content ?? []).map((paragraph, pIndex) => (
-                  <div
-                    key={pIndex}
-                    className={`text-gray-600 leading-relaxed ${
-                      pIndex < (card?.content ?? []).length - 1 ? "mb-4" : ""
-                    }`}
-                  >
-                    <RichTextRenderer content={paragraph} />
-                  </div>
-                ))}
+      {content?.whatToExpect && (
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-6">
+                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+                {content.whatToExpect.badge}
               </div>
-            ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <div className="text-lg text-gray-700 max-w-4xl mx-auto leading-relaxed">
-              <RichTextRenderer content={content?.whatToExpect?.footer || ""} />
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                {content.whatToExpect.title}
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                {content.whatToExpect.subtitle}
+              </p>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {content.whatToExpect.cards.map((card, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="text-4xl mb-6">{card.icon}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    {card.title}
+                  </h3>
+                  <ul className="space-y-3">
+                    {card.content.map((item, itemIndex) => (
+                      <li
+                        key={itemIndex}
+                        className="flex items-start space-x-3 text-gray-600"
+                      >
+                        <span className="text-green-500 mt-1">✓</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            {content.whatToExpect.footer && (
+              <div className="text-center mt-12">
+                <p className="text-lg text-gray-600">
+                  {content.whatToExpect.footer}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Most Common Questions Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-6">
-              <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-              {content?.mostCommonQuestions?.badge || "Most Common Questions"}
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              {content?.mostCommonQuestions?.title || "Most Common Questions"}
-            </h2>
-            <div className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              <RichTextRenderer
-                content={content?.mostCommonQuestions?.subtitle || ""}
-              />
-            </div>
-          </div>
-
-          <div
-            className={`grid gap-8 ${
-              (content?.mostCommonQuestions?.cards ?? []).length === 1
-                ? "grid-cols-1"
-                : "grid-cols-1 md:grid-cols-2"
-            }`}
-          >
-            {(content?.mostCommonQuestions?.cards ?? []).map((card, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
-              >
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  {card?.title || "Card Title"}
-                </h3>
-                {(card?.content ?? []).map((paragraph, pIndex) => (
-                  <div
-                    key={pIndex}
-                    className={`text-gray-600 leading-relaxed ${
-                      pIndex < (card?.content ?? []).length - 1 ? "mb-4" : ""
-                    }`}
-                  >
-                    <RichTextRenderer content={paragraph} />
-                  </div>
-                ))}
+      {content?.mostCommonQuestions && (
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold mb-6">
+                <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
+                {content.mostCommonQuestions.badge}
               </div>
-            ))}
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                {content.mostCommonQuestions.title}
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                {content.mostCommonQuestions.subtitle}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {content.mostCommonQuestions.cards.map((card, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-50 rounded-2xl p-8 hover:bg-gray-100 transition-colors"
+                >
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    {card.title}
+                  </h3>
+                  <ul className="space-y-3">
+                    {card.content.map((item, itemIndex) => (
+                      <li
+                        key={itemIndex}
+                        className="flex items-start space-x-3 text-gray-600"
+                      >
+                        <span className="text-purple-500 mt-1">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Study Guide Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold mb-6">
-              <span className="w-2 h-2 bg-yellow-600 rounded-full mr-2"></span>
-              {content?.studyGuide?.badge || "Study Guide"}
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              {content?.studyGuide?.title || "Study Guide"}
-            </h2>
-            <div className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              <RichTextRenderer content={content?.studyGuide?.subtitle || ""} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {(content?.studyGuide?.sections ?? []).map((section, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
-              >
-                <div
-                  className={`w-16 h-16 ${getIconColor(
-                    section?.icon || "check"
-                  )} rounded-full flex items-center justify-center mx-auto mb-6`}
-                >
-                  <svg
-                    className="w-8 h-8 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d={getIconComponent(section?.icon || "check")} />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-                  {section?.title || "Section Title"}
-                </h3>
-                <div className="text-gray-600 leading-relaxed text-sm">
-                  <RichTextRenderer content={section?.content || ""} />
-                </div>
+      {content?.studyGuide && (
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+                <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                {content.studyGuide.badge}
               </div>
-            ))}
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                {content.studyGuide.title}
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                {content.studyGuide.subtitle}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {content.studyGuide.sections.map((section, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="text-4xl mb-6">{section.icon}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    {section.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {section.content}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Privacy & Pricing Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {(content?.privacyPricing ?? []).map((item, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
-              >
+      {content?.privacyPricing && content.privacyPricing.length > 0 && (
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {content.privacyPricing.map((item, index) => (
                 <div
-                  className={`w-16 h-16 ${getIconColor(
-                    item?.icon || "check"
-                  )} rounded-full flex items-center justify-center mx-auto mb-6`}
+                  key={index}
+                  className="text-center p-8 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 border border-green-200"
                 >
-                  <svg
-                    className="w-8 h-8 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d={getIconComponent(item?.icon || "check")} />
-                  </svg>
+                  <div className="text-4xl mb-6">{item.icon}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {item.content}
+                  </p>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                  {item?.title || "Item Title"}
-                </h3>
-                <div className="text-gray-600 leading-relaxed">
-                  <RichTextRenderer content={item?.content || ""} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              {content?.faq?.title || "Frequently Asked Questions"}
-            </h2>
-            <div className="text-xl text-gray-600 max-w-3xl mx-auto">
-              <RichTextRenderer content={content?.faq?.subtitle || ""} />
+      {content?.faq && (
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                {content.faq.title}
+              </h2>
+              <p className="text-xl text-gray-600">{content.faq.subtitle}</p>
+            </div>
+
+            <div className="space-y-8">
+              {content.faq.questions.map((faq, index) => (
+                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                    {faq.question}
+                  </h3>
+                  <div className="space-y-4">
+                    {faq.paragraphs.map((paragraph, pIndex) => (
+                      <p key={pIndex} className="text-gray-600 leading-relaxed">
+                        {paragraph}
+                      </p>
+                    ))}
+                    {faq.additionalParagraphs && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        {faq.additionalParagraphs.map((paragraph, pIndex) => (
+                          <p
+                            key={pIndex}
+                            className="text-gray-600 leading-relaxed"
+                          >
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          <div className="space-y-6">
-            {(content?.faq?.questions ?? []).map((faq, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  {faq?.question || "Question"}
-                </h3>
-
-                {/* Render paragraphs */}
-                {(faq?.paragraphs ?? []).map((paragraph, pIndex) => (
-                  <div
-                    key={pIndex}
-                    className={`text-gray-600 leading-relaxed ${
-                      pIndex < (faq?.paragraphs ?? []).length - 1 ? "mb-4" : ""
-                    }`}
-                  >
-                    <RichTextRenderer content={paragraph} />
-                  </div>
-                ))}
-
-                {/* Render additional paragraphs if they exist */}
-                {(faq?.additionalParagraphs ?? []).map((paragraph, pIndex) => (
-                  <div
-                    key={pIndex}
-                    className={`text-gray-600 leading-relaxed ${
-                      pIndex < (faq?.additionalParagraphs ?? []).length - 1
-                        ? "mb-4"
-                        : ""
-                    }`}
-                  >
-                    <RichTextRenderer content={paragraph} />
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-white shadow-2xl">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold mb-4">
-                Ready to Master TEAS{" "}
-                {resolvedParams?.serviceId
-                  ? resolvedParams.serviceId.charAt(0).toUpperCase() +
-                    resolvedParams.serviceId.slice(1)
-                  : "Exam"}
-                ?
-              </h2>
-              <p className="text-xl mb-8 opacity-90 leading-relaxed">
-                Join thousands of successful students who have achieved their
-                nursing school dreams with TEAS Gurus. Get started today and pay
-                only after you pass.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/hesi-a2"
-                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Our Services
-                </Link>
-                <Link
-                  href="/prices"
-                  className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  View Pricing
-                </Link>
-              </div>
-            </div>
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            Ready to Ace Your TEAS Exam?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Get expert help with your {resolvedParams.serviceId} preparation and
+            achieve your nursing school dreams.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/contact"
+              className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+            >
+              Get Started Today
+            </Link>
+            <Link
+              href="/prices"
+              className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+            >
+              View Pricing
+            </Link>
           </div>
         </div>
       </section>
     </Layout>
   );
 }
-
-// Helper functions for icons
-const getIconComponent = (iconName: string) => {
-  const iconMap: { [key: string]: string } = {
-    check:
-      "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z",
-    shield:
-      "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z",
-    star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
-    "check-circle": "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-  };
-
-  return iconMap[iconName] || iconMap.check;
-};
-
-const getIconColor = (iconName: string) => {
-  const colorMap: { [key: string]: string } = {
-    check: "bg-blue-600",
-    shield: "bg-green-600",
-    star: "bg-yellow-500",
-    "check-circle": "bg-red-500",
-  };
-
-  return colorMap[iconName] || "bg-blue-600";
-};

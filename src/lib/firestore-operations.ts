@@ -189,6 +189,37 @@ export const deleteServiceContent = async (serviceId: string) => {
   }
 };
 
+// Get all services from Firestore
+export const getAllServices = async () => {
+  try {
+    console.log("Fetching services from Firestore...");
+    const querySnapshot = await getDocs(collection(db, "pages"));
+    console.log("Services query snapshot size:", querySnapshot.size);
+
+    const services: string[] = [];
+
+    querySnapshot.forEach((doc) => {
+      console.log("Service Document ID:", doc.id, "Data:", doc.data());
+      services.push(doc.id);
+    });
+
+    console.log("Available services:", services);
+    return {
+      success: true,
+      data: services,
+      message: "All services retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting all services:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve services: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
 // Get all support pages from Firestore
 export const getAllSupportPages = async () => {
   try {
