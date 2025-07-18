@@ -32,7 +32,10 @@ export default function FAQPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
-            <Breadcrumb />
+            <Breadcrumb
+              items={[{ label: "Home", href: "/" }, { label: "FAQs" }]}
+              className="text-white"
+            />
           </div>
 
           <div className="text-center">

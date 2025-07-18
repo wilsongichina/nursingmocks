@@ -283,20 +283,18 @@ const getIconComponent = (iconName: string) => {
 
 export default async function ServicePage({ params }: PageProps) {
   const resolvedParams = await params;
+  const serviceId = resolvedParams.serviceId;
 
   let content: ServiceContent | null = null;
 
   try {
-    const result = await getServiceContent(resolvedParams.serviceId);
+    const result = await getServiceContent(serviceId);
 
     if (result.success && result.data) {
       content = result.data as ServiceContent;
     } else {
       // Fallback to default content for math/maths
-      if (
-        resolvedParams.serviceId === "maths" ||
-        resolvedParams.serviceId === "math"
-      ) {
+      if (serviceId === "maths" || serviceId === "math") {
         content = mathPageContent;
       }
     }
@@ -304,10 +302,7 @@ export default async function ServicePage({ params }: PageProps) {
     console.error("Error loading service content:", error);
 
     // Fallback to default content for math/maths
-    if (
-      resolvedParams.serviceId === "maths" ||
-      resolvedParams.serviceId === "math"
-    ) {
+    if (serviceId === "maths" || serviceId === "math") {
       content = mathPageContent;
     }
   }
@@ -365,7 +360,17 @@ export default async function ServicePage({ params }: PageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
-            <Breadcrumb />
+            <Breadcrumb
+              items={[
+                { label: "Home", href: "/" },
+                {
+                  label:
+                    serviceId.charAt(0).toUpperCase() +
+                    serviceId.slice(1).replace(/-/g, " "),
+                },
+              ]}
+              className="text-white"
+            />
           </div>
 
           <div className="text-center">
@@ -374,8 +379,7 @@ export default async function ServicePage({ params }: PageProps) {
               {content?.hero?.badge || "TEAS Exam Help"}
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              {content?.hero?.title ||
-                `${resolvedParams.serviceId} - TEAS Gurus`}
+              {content?.hero?.title || `${serviceId} - TEAS Gurus`}
             </h1>
             <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
               <ContentRenderer
@@ -661,8 +665,8 @@ export default async function ServicePage({ params }: PageProps) {
             Ready to Ace Your TEAS Exam?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Get expert help with your {resolvedParams.serviceId} preparation and
-            achieve your nursing school dreams.
+            Get expert help with your {serviceId} preparation and achieve your
+            nursing school dreams.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

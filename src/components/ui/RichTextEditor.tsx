@@ -8,6 +8,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   disableLinks?: boolean;
+  onPendingImageUpload?: (file: File, previewUrl: string) => void;
 }
 
 export default function RichTextEditor({
@@ -16,8 +17,10 @@ export default function RichTextEditor({
   placeholder = "Start typing your content...",
   className = "",
   disableLinks = false,
+  onPendingImageUpload,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
@@ -49,6 +52,34 @@ export default function RichTextEditor({
     execCommand(
       type === "ordered" ? "insertOrderedList" : "insertUnorderedList"
     );
+  };
+
+  const insertImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Create local preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const previewUrl = e.target?.result as string;
+
+      // Insert image into editor with preview URL
+      const img = `<img src="${previewUrl}" alt="Uploaded image" style="max-width: 100%; height: auto;" />`;
+      execCommand("insertHTML", img);
+
+      // Notify parent component about pending upload
+      if (onPendingImageUpload) {
+        onPendingImageUpload(file, previewUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input
+    event.target.value = "";
   };
 
   return (
@@ -158,7 +189,27 @@ export default function RichTextEditor({
             </svg>
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={insertImage}
+          className="p-2 hover:bg-gray-200 rounded text-gray-700 hover:text-gray-900"
+          title="Insert Image"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+          </svg>
+        </button>
       </div>
+
+      {/* Hidden file input for image upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
 
       {/* Editor */}
       <div
@@ -183,6 +234,12 @@ export default function RichTextEditor({
         }
         .rich-text-editor-content a:hover {
           color: #1d4ed8 !important;
+        }
+        .rich-text-editor-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+          margin: 8px 0;
         }
       `}</style>
     </div>

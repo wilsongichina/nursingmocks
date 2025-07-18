@@ -1,4 +1,4 @@
-import { db } from "./firebase";
+import { db, storage } from "./firebase";
 import {
   doc,
   setDoc,
@@ -7,6 +7,12 @@ import {
   getDocs,
   deleteDoc,
 } from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import { mathPageContent } from "./math-page-content";
 
 // Upload math page content to Firestore
@@ -365,6 +371,260 @@ export const testFirebaseConnection = async () => {
     return {
       success: false,
       message: `Firebase connection failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Blog Operations
+export const getAllBlogs = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "blogs"));
+    const blogs: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      blogs.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    // Sort by date (newest first)
+    blogs.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    return {
+      success: true,
+      data: blogs,
+      message: "All blogs retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting all blogs:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve blogs: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+export const getBlogContent = async (blogId: string) => {
+  try {
+    const docRef = doc(db, "blogs", blogId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Blog content retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No blog found with ID: ${blogId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting blog content:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve blog content: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+export const uploadBlogContent = async (blogId: string, content: any) => {
+  try {
+    const docRef = doc(db, "blogs", blogId);
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Blog content uploaded successfully to Firestore!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading blog content:`, error);
+    return {
+      success: false,
+      message: `Failed to upload blog content: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+export const deleteBlogContent = async (blogId: string) => {
+  try {
+    const docRef = doc(db, "blogs", blogId);
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Blog deleted successfully from Firestore!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting blog:`, error);
+    return {
+      success: false,
+      message: `Failed to delete blog: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all blog categories
+export const getAllBlogCategories = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "blogCategories"));
+    const categories: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      categories.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: categories,
+      message: "All blog categories retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting blog categories:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve blog categories: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Add a new blog category
+export const addBlogCategory = async (categoryName: string) => {
+  try {
+    const categoryId = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const docRef = doc(db, "blogCategories", categoryId);
+    await setDoc(docRef, {
+      name: categoryName,
+      slug: categoryId,
+      createdAt: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      message: `Category "${categoryName}" added successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error adding blog category:`, error);
+    return {
+      success: false,
+      message: `Failed to add blog category: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get blogs by category
+export const getBlogsByCategory = async (category: string) => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "blogs"));
+    const blogs: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const blogData = doc.data();
+      if (blogData.category === category) {
+        blogs.push({
+          id: doc.id,
+          ...blogData,
+        });
+      }
+    });
+
+    // Sort by date (newest first)
+    blogs.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    return {
+      success: true,
+      data: blogs,
+      message: `Blogs in category "${category}" retrieved successfully!`,
+    };
+  } catch (error) {
+    console.error("Error getting blogs by category:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve blogs by category: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Image Upload Functions
+export const uploadImage = async (
+  file: File,
+  folder: string = "blog-images"
+) => {
+  try {
+    // Create a unique filename
+    const timestamp = Date.now();
+    const fileName = `${folder}/${timestamp}_${file.name}`;
+    const storageRef = ref(storage, fileName);
+
+    // Upload the file
+    const snapshot = await uploadBytes(storageRef, file);
+
+    // Get the download URL
+    const downloadURL = await getDownloadURL(snapshot.ref);
+
+    return {
+      success: true,
+      data: {
+        url: downloadURL,
+        path: fileName,
+      },
+      message: "Image uploaded successfully!",
+    };
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    return {
+      success: false,
+      message: `Failed to upload image: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+export const deleteImage = async (imagePath: string) => {
+  try {
+    const imageRef = ref(storage, imagePath);
+    await deleteObject(imageRef);
+
+    return {
+      success: true,
+      message: "Image deleted successfully!",
+    };
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    return {
+      success: false,
+      message: `Failed to delete image: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };

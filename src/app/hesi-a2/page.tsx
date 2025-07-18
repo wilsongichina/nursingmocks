@@ -92,7 +92,10 @@ export default function HesiA2Page() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
-            <Breadcrumb />
+            <Breadcrumb
+              items={[{ label: "Home", href: "/" }, { label: "HESI A2" }]}
+              className="text-white"
+            />
           </div>
 
           <div className="text-center">

@@ -13,8 +13,34 @@ const RichTextRenderer: React.FC<RichTextRendererProps> = ({
     return null;
   }
 
-  // Apply className to the content by wrapping it in a div with the class
-  const contentWithClass = `<div class="${className}">${content}</div>`;
+  // Process content to add IDs to headings
+  const processContent = (htmlContent: string) => {
+    let processedContent = htmlContent;
+
+    // Add IDs to headings (h1, h2, h3, h4, h5, h6)
+    const headingRegex = /<(h[1-6])([^>]*)>(.*?)<\/\1>/gi;
+    let headingIndex = 0;
+
+    processedContent = processedContent.replace(
+      headingRegex,
+      (match, tag, attributes, text) => {
+        headingIndex++;
+        const id = `section-${headingIndex}`;
+        const cleanText = text.replace(/<[^>]*>/g, "").trim();
+        const slug = cleanText
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+
+        return `<${tag}${attributes} id="${slug || id}">${text}</${tag}>`;
+      }
+    );
+
+    return processedContent;
+  };
+
+  const processedContent = processContent(content);
+  const contentWithClass = `<div class="${className}">${processedContent}</div>`;
 
   return (
     <div

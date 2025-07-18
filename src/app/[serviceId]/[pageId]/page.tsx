@@ -127,6 +127,7 @@ export async function generateMetadata({
 
 export default async function SupportPage({ params }: PageProps) {
   const resolvedParams = await params;
+  const { serviceId, pageId } = resolvedParams;
 
   let content: SupportPageContent | null = null;
 
@@ -182,7 +183,23 @@ export default async function SupportPage({ params }: PageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
-            <Breadcrumb />
+            <Breadcrumb
+              items={[
+                { label: "Home", href: "/" },
+                {
+                  label:
+                    serviceId.charAt(0).toUpperCase() +
+                    serviceId.slice(1).replace(/-/g, " "),
+                  href: `/${serviceId}`,
+                },
+                {
+                  label:
+                    pageId.charAt(0).toUpperCase() +
+                    pageId.slice(1).replace(/-/g, " "),
+                },
+              ]}
+              className="text-white"
+            />
           </div>
 
           <div className="text-center">
