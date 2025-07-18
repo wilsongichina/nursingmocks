@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   getBlogContent,
   uploadBlogContent,
@@ -11,6 +10,7 @@ import {
   addBlogCategory,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import FirebaseImage from "@/components/ui/FirebaseImage";
 
 interface TableOfContentsItem {
   id: string;
@@ -122,7 +122,7 @@ export default function EditBlogPage() {
     return items;
   };
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const result = await getAllBlogCategories();
       if (result.success && result.data) {
@@ -131,7 +131,7 @@ export default function EditBlogPage() {
     } catch (err) {
       console.error("Failed to load categories:", err);
     }
-  };
+  }, []);
 
   const handleAddCategory = async () => {
     if (!newCategory.trim()) return;
@@ -215,7 +215,7 @@ export default function EditBlogPage() {
     });
   };
 
-  const loadBlogData = async () => {
+  const loadBlogData = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -248,7 +248,7 @@ export default function EditBlogPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [blogId]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -534,7 +534,7 @@ export default function EditBlogPage() {
                 />
                 {(imagePreview || formData.image) && (
                   <div className="mt-2 flex items-center gap-4">
-                    <Image
+                    <FirebaseImage
                       src={imagePreview || formData.image}
                       alt="Preview"
                       width={128}

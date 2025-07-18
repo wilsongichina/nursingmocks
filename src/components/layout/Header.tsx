@@ -19,6 +19,7 @@ export default function Header({ className = "" }: HeaderProps) {
     { label: "How It Works", href: "/how-it-works" },
     { label: "Prices", href: "/prices" },
     { label: "FAQ", href: "/faqs" },
+    { label: "Blog", href: "/blog" },
     { label: "Contact", href: "/contact" },
   ];
 

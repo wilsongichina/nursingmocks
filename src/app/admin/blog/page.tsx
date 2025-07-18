@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   getAllBlogs,
   deleteBlogContent,
   getAllBlogCategories,
 } from "@/lib/firestore-operations";
+import FirebaseImage from "@/components/ui/FirebaseImage";
 
 interface Blog {
   id: string;
@@ -285,7 +285,7 @@ export default function BlogManagementPage() {
               >
                 {blog.image && (
                   <div className="relative h-48 bg-gray-200 rounded-t-2xl overflow-hidden">
-                    <Image
+                    <FirebaseImage
                       src={blog.image}
                       alt={blog.title}
                       fill

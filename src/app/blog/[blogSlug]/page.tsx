@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { getAllBlogs } from "@/lib/firestore-operations";
 import Layout from "@/components/layout/Layout";
 import RichTextRenderer from "@/components/ui/RichTextRenderer";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import FirebaseImage from "@/components/ui/FirebaseImage";
 
 interface Blog {
   id: string;
@@ -81,7 +81,7 @@ export default function BlogPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const extractTocItems = () => {
+  const extractTocItems = useCallback(() => {
     if (!blog?.content) return;
 
     const tempDiv = document.createElement("div");
@@ -103,7 +103,7 @@ export default function BlogPage() {
     });
 
     setTocItems(items);
-  };
+  }, [blog?.content]);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -117,7 +117,7 @@ export default function BlogPage() {
     }
   };
 
-  const loadBlog = async () => {
+  const loadBlog = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -146,7 +146,7 @@ export default function BlogPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [blogSlug]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -360,7 +360,7 @@ export default function BlogPage() {
                 <div className="lg:col-span-1">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-600 rounded-3xl transform rotate-3 scale-105 opacity-20"></div>
-                    <Image
+                    <FirebaseImage
                       src={blog.image}
                       alt={blog.title}
                       width={400}

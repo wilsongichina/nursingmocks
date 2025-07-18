@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { getAllBlogs, getAllBlogCategories } from "@/lib/firestore-operations";
 import Layout from "@/components/layout/Layout";
+import FirebaseImage from "@/components/ui/FirebaseImage";
 
 interface Blog {
   id: string;
@@ -312,7 +312,7 @@ export default function BlogListingPage() {
                     >
                       {blog.image && (
                         <div className="relative h-56 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
-                          <Image
+                          <FirebaseImage
                             src={blog.image}
                             alt={blog.title}
                             fill

@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   uploadBlogContent,
   getAllBlogCategories,
   addBlogCategory,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import FirebaseImage from "@/components/ui/FirebaseImage";
 
 interface TableOfContentsItem {
   id: string;
@@ -555,7 +555,7 @@ export default function CreateBlogPage() {
                 />
                 {(imagePreview || formData.image) && (
                   <div className="mt-2 flex items-center gap-4">
-                    <Image
+                    <FirebaseImage
                       src={imagePreview || formData.image}
                       alt={formData.imageAlt || "Preview"}
                       width={128}
