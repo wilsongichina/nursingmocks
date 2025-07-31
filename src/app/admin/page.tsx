@@ -141,6 +141,55 @@ export default function AdminPage() {
             </div>
           </Link>
 
+          {/* Question List Card */}
+          <Link
+            href="/admin/question"
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+          >
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-purple-200 transition-colors">
+                <svg
+                  className="w-6 h-6 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 17l4 4 4-4m0-5V3a1 1 0 00-1-1H7a1 1 0 00-1 1v9m12 4h-4m0 0V3m0 13v4"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
+                  Question List
+                </h3>
+                <p className="text-sm text-gray-600">Manage exam questions</p>
+              </div>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Create, edit, and manage your exam questions for all services.
+            </p>
+            <div className="mt-4 flex items-center text-purple-600 group-hover:text-purple-700 transition-colors">
+              <span className="text-sm font-medium">Manage Questions</span>
+              <svg
+                className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </Link>
+
           {/* Blog Management Card */}
           <Link
             href="/admin/blog"

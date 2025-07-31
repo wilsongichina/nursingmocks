@@ -1,4 +1,21 @@
-export default function SchemaScripts() {
+import React from "react";
+
+interface SchemaScriptsProps {
+  schema?: any;
+}
+
+export default function SchemaScripts({ schema }: SchemaScriptsProps) {
+  if (schema) {
+    return (
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: typeof schema === "string" ? schema : JSON.stringify(schema),
+        }}
+      />
+    );
+  }
+  // Default schema
   return (
     <script
       type="application/ld+json"

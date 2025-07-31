@@ -630,3 +630,170 @@ export const deleteImage = async (imagePath: string) => {
     };
   }
 };
+
+// =====================
+// Question Operations
+// =====================
+
+// Upload or update a question
+export const uploadQuestionContent = async (
+  serviceId: string,
+  slug: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(db, "questions", `${serviceId}_${slug}`);
+    await setDoc(docRef, {
+      ...content,
+      serviceId,
+      slug,
+      lastUpdated: new Date().toISOString(),
+      createdAt: content.createdAt || new Date().toISOString(),
+      version: "1.0",
+    });
+    return {
+      success: true,
+      message: "Question uploaded successfully!",
+    };
+  } catch (error) {
+    console.error("Error uploading question content:", error);
+    return {
+      success: false,
+      message: `Failed to upload question: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a single question by serviceId and slug
+export const getQuestionContent = async (serviceId: string, slug: string) => {
+  try {
+    const docRef = doc(db, "questions", `${serviceId}_${slug}`);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Question content retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No question found for ${serviceId}/${slug}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting question content:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve question content: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all questions, optionally filtered by serviceId
+export const getAllQuestions = async (serviceId?: string) => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "questions"));
+    const questions: any[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (!serviceId || data.serviceId === serviceId) {
+        questions.push({ id: doc.id, ...data });
+      }
+    });
+    // Optionally sort by createdAt or lastUpdated
+    questions.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    return {
+      success: true,
+      data: questions,
+      message: "All questions retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting all questions:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve questions: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete a question
+export const deleteQuestionContent = async (
+  serviceId: string,
+  slug: string
+) => {
+  try {
+    const docRef = doc(db, "questions", `${serviceId}_${slug}`);
+    await deleteDoc(docRef);
+    return {
+      success: true,
+      message: `Question deleted successfully!`,
+    };
+  } catch (error) {
+    console.error("Error deleting question:", error);
+    return {
+      success: false,
+      message: `Failed to delete question: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all question categories
+export const getAllQuestionCategories = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "questionCategories"));
+    const categories: any[] = [];
+    querySnapshot.forEach((doc) => {
+      categories.push({ id: doc.id, ...doc.data() });
+    });
+    return {
+      success: true,
+      data: categories,
+      message: "All question categories retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting question categories:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve question categories: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Add a new question category
+export const addQuestionCategory = async (categoryName: string) => {
+  try {
+    const categoryId = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const docRef = doc(db, "questionCategories", categoryId);
+    await setDoc(docRef, {
+      name: categoryName,
+      slug: categoryId,
+      createdAt: new Date().toISOString(),
+    });
+    return {
+      success: true,
+      message: `Category "${categoryName}" added successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error adding question category:`, error);
+    return {
+      success: false,
+      message: `Failed to add question category: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
