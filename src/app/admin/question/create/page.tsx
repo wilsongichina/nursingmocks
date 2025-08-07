@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   uploadQuestionContent,
   getAllServices,
+  getAllServicesList,
+  getAllPages,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 
@@ -15,7 +17,8 @@ interface QuestionFormData {
   answerChoices: string[];
   correctAnswer: string;
   explanation: string;
-  category: string; // This is the serviceId
+  category: string; // Question category
+  service: string; // Service (HESI, TEAS, etc.)
   tags: string[];
   image: string;
   slug: string;
@@ -36,10 +39,11 @@ export default function CreateQuestionPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<QuestionFormData>({
     questionText: "",
-    answerChoices: ["", ""],
+    answerChoices: ["", "", "", ""],
     correctAnswer: "A",
     explanation: "",
     category: "",
+    service: "",
     tags: [],
     image: "",
     slug: "",
@@ -58,33 +62,213 @@ export default function CreateQuestionPage() {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [newTag, setNewTag] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadCategories();
+    loadServices();
   }, []);
 
+  // Auto-add category and service as tags when they change
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      slug: prev.questionText
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, ""),
-      meta: {
-        ...prev.meta,
-        title: prev.meta.title || prev.questionText,
-      },
-    }));
-  }, [formData.questionText]);
+    setFormData((prev) => {
+      const newTags = [...prev.tags];
+
+      // Add category as tag if not already present
+      if (prev.category && !newTags.includes(prev.category)) {
+        newTags.push(prev.category);
+      }
+
+      // Add service as tag if not already present
+      if (prev.service && !newTags.includes(prev.service)) {
+        newTags.push(prev.service);
+      }
+
+      return {
+        ...prev,
+        tags: newTags,
+      };
+    });
+  }, [formData.category, formData.service]);
+
+  useEffect(() => {
+    setFormData((prev) => {
+      // Generate dynamic schema based on question data
+      const generateSchema = () => {
+        if (!prev.questionText.trim()) return "";
+
+        const questionSlug =
+          prev.slug ||
+          prev.questionText
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+        const questionUrl = `https://www.teasgurus.com/questions/${questionSlug}`;
+        const serviceName = prev.service === "hesi" ? "HESI" : "TEAS";
+
+        const schema = {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://www.teasgurus.com/#organization",
+              name: "Teas Gurus",
+              url: "https://www.teasgurus.com",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://teasgurus.com/teas-gurus-logo.png",
+              },
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://www.teasgurus.com/#website",
+              url: "https://www.teasgurus.com",
+              name: "Teas Gurus",
+              publisher: {
+                "@id": "https://www.teasgurus.com/#organization",
+              },
+              potentialAction: {
+                "@type": "SearchAction",
+                target:
+                  "https://www.teasgurus.com/search?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
+            },
+            {
+              "@type": "WebPage",
+              "@id": `${questionUrl}#webpage`,
+              url: questionUrl,
+              name: prev.questionText,
+              isPartOf: {
+                "@id": "https://www.teasgurus.com/#website",
+              },
+              about: {
+                "@id": "https://www.teasgurus.com/#organization",
+              },
+              breadcrumb: {
+                "@id": `${questionUrl}#breadcrumb`,
+              },
+              primaryImageOfPage: {
+                "@type": "ImageObject",
+                url:
+                  prev.image ||
+                  "https://www.teasgurus.com/images/question-banner.jpg",
+              },
+            },
+            {
+              "@type": "BreadcrumbList",
+              "@id": `${questionUrl}#breadcrumb`,
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item: "https://www.teasgurus.com",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: `${serviceName} Questions`,
+                  item: `https://www.teasgurus.com/questions`,
+                },
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: prev.questionText,
+                  item: questionUrl,
+                },
+              ],
+            },
+            {
+              "@type": "QAPage",
+              "@id": `${questionUrl}#qa`,
+              mainEntity: {
+                "@type": "Question",
+                name: prev.questionText,
+                text: prev.questionText,
+                answerCount: prev.answerChoices.length,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: `${prev.correctAnswer}. ${
+                    prev.answerChoices[
+                      ANSWER_LABELS.indexOf(prev.correctAnswer)
+                    ] || ""
+                  }`,
+                  url: `${questionUrl}#correct`,
+                  upvoteCount: 100,
+                  downvoteCount: 0,
+                },
+                suggestedAnswer: prev.answerChoices
+                  .map((choice, idx) => {
+                    if (ANSWER_LABELS[idx] === prev.correctAnswer) return null;
+                    return {
+                      "@type": "Answer",
+                      text: `${ANSWER_LABELS[idx]}. ${choice}`,
+                    };
+                  })
+                  .filter(Boolean),
+              },
+            },
+          ],
+        };
+
+        return JSON.stringify(schema, null, 2);
+      };
+
+      return {
+        ...prev,
+        slug: prev.questionText
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, ""),
+        meta: {
+          ...prev.meta,
+          title:
+            prev.questionText.length > 60
+              ? prev.questionText.substring(0, 60) + "..."
+              : prev.questionText,
+          description: prev.questionText,
+          ogTitle: prev.questionText,
+          ogDescription: prev.questionText,
+          ogImage: prev.image,
+          canonicalUrl:
+            typeof window !== "undefined" ? window.location.href : "",
+          keywords: prev.tags.join(", "),
+        },
+        schema: generateSchema(),
+      };
+    });
+  }, [
+    formData.questionText,
+    formData.image,
+    formData.tags,
+    formData.correctAnswer,
+    formData.answerChoices,
+    formData.service,
+  ]);
 
   const loadCategories = async () => {
     try {
-      const result = await getAllServices();
+      const result = await getAllPages();
       if (result.success && result.data) {
-        setCategories(result.data);
+        // Extract page IDs from the pages object
+        const pageIds = Object.keys(result.data);
+        setCategories(pageIds);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      const result = await getAllServicesList();
+      if (result.success && result.data) {
+        setServices(result.data);
       }
     } catch {
       // ignore
@@ -92,11 +276,20 @@ export default function CreateQuestionPage() {
   };
 
   const handleAddTag = () => {
-    if (!newTag.trim() || formData.tags.includes(newTag.trim())) return;
-    setFormData((prev) => ({
-      ...prev,
-      tags: [...prev.tags, newTag.trim()],
-    }));
+    if (!newTag.trim()) return;
+
+    // Split by commas and trim each tag
+    const tagsToAdd = newTag
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag && !formData.tags.includes(tag));
+
+    if (tagsToAdd.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, ...tagsToAdd],
+      }));
+    }
     setNewTag("");
   };
 
@@ -125,7 +318,7 @@ export default function CreateQuestionPage() {
   };
 
   const handleRemoveAnswer = (idx: number) => {
-    if (formData.answerChoices.length > 2) {
+    if (formData.answerChoices.length > 1) {
       setFormData((prev) => {
         const updated = prev.answerChoices.filter((_, i) => i !== idx);
         return { ...prev, answerChoices: updated };
@@ -165,7 +358,12 @@ export default function CreateQuestionPage() {
     setLoading(true);
     // Validation
     if (!formData.category.trim()) {
-      setError("Category (Service) is required");
+      setError("Category is required");
+      setLoading(false);
+      return;
+    }
+    if (!formData.service.trim()) {
+      setError("Service is required");
       setLoading(false);
       return;
     }
@@ -214,7 +412,7 @@ export default function CreateQuestionPage() {
       createdAt: new Date().toISOString(),
     };
     const result = await uploadQuestionContent(
-      formData.category,
+      formData.service,
       formData.slug,
       dataToSave
     );
@@ -245,7 +443,7 @@ export default function CreateQuestionPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category (Service) *
+                  Category *
                 </label>
                 <select
                   value={formData.category}
@@ -255,10 +453,28 @@ export default function CreateQuestionPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
                   required
                 >
-                  <option value="">Select service</option>
+                  <option value="">Select category</option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Service *
+                </label>
+                <select
+                  value={formData.service}
+                  onChange={(e) => handleInputChange("service", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                  required
+                >
+                  <option value="">Select service</option>
+                  {services.map((service) => (
+                    <option key={service.id} value={service.slug}>
+                      {service.name}
                     </option>
                   ))}
                 </select>
@@ -288,16 +504,14 @@ export default function CreateQuestionPage() {
                       placeholder={`Option ${ANSWER_LABELS[idx]}`}
                       required
                     />
-                    {formData.answerChoices.length > 2 && (
-                      <button
-                        type="button"
-                        className="ml-2 text-red-500"
-                        onClick={() => handleRemoveAnswer(idx)}
-                        title="Remove"
-                      >
-                        &times;
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="ml-2 text-red-500"
+                      onClick={() => handleRemoveAnswer(idx)}
+                      title="Remove"
+                    >
+                      &times;
+                    </button>
                   </div>
                 ))}
                 <button
@@ -345,7 +559,7 @@ export default function CreateQuestionPage() {
                   {formData.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full flex items-center"
+                      className="bg-purple-100 text-black px-2 py-1 rounded-full flex items-center"
                     >
                       {tag}
                       <button
@@ -363,8 +577,8 @@ export default function CreateQuestionPage() {
                     type="text"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded-l"
-                    placeholder="Add tag"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded-l text-black"
+                    placeholder="Add tag (e.g., tag1, tag2)"
                   />
                   <button
                     type="button"
@@ -405,115 +619,7 @@ export default function CreateQuestionPage() {
                   readOnly
                 />
               </div>
-              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meta Title
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.meta.title}
-                    onChange={(e) => handleMetaChange("title", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                    placeholder="Custom SEO title tag"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meta Description
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.meta.description}
-                    onChange={(e) =>
-                      handleMetaChange("description", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                    placeholder="Meta description"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meta Keywords
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.meta.keywords}
-                    onChange={(e) =>
-                      handleMetaChange("keywords", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                    placeholder="Meta keywords (comma separated)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    OG Title
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.meta.ogTitle}
-                    onChange={(e) =>
-                      handleMetaChange("ogTitle", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                    placeholder="Open Graph title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    OG Description
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.meta.ogDescription}
-                    onChange={(e) =>
-                      handleMetaChange("ogDescription", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                    placeholder="Open Graph description"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    OG Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.meta.ogImage}
-                    onChange={(e) =>
-                      handleMetaChange("ogImage", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                    placeholder="Open Graph image URL"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Canonical URL
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.meta.canonicalUrl}
-                    onChange={(e) =>
-                      handleMetaChange("canonicalUrl", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                    placeholder="Canonical URL"
-                  />
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Schema Markup (JSON-LD)
-                </label>
-                <textarea
-                  value={formData.schema}
-                  onChange={(e) => handleSchemaChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black min-h-[120px] font-mono"
-                  placeholder="Paste custom schema markup here (JSON-LD)"
-                ></textarea>
-              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Publish Status

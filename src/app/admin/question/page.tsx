@@ -41,9 +41,7 @@ export default function QuestionManagementPage() {
       const result = await deleteQuestionContent(serviceId, slug);
       if (result.success) {
         setQuestions(
-          questions.filter(
-            (q) => !(q.serviceId === serviceId && q.slug === slug)
-          )
+          questions.filter((q) => !(q.service === serviceId && q.slug === slug))
         );
       } else {
         alert("Failed to delete question: " + result.message);
@@ -96,6 +94,9 @@ export default function QuestionManagementPage() {
                     Category
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Service
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3"></th>
@@ -117,6 +118,15 @@ export default function QuestionManagementPage() {
                       {q.category ? (
                         <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
                           {q.category}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {q.service ? (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                          {q.service}
                         </span>
                       ) : (
                         "-"
@@ -165,7 +175,7 @@ export default function QuestionManagementPage() {
                           </svg>
                         </Link>
                         <button
-                          onClick={() => handleDelete(q.serviceId, q.slug)}
+                          onClick={() => handleDelete(q.service, q.slug)}
                           disabled={deleteLoading === q.id}
                           className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium disabled:opacity-50"
                         >

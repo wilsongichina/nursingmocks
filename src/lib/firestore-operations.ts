@@ -694,6 +694,49 @@ export const getQuestionContent = async (serviceId: string, slug: string) => {
   }
 };
 
+// Get question content by category and slug
+export const getQuestionContentByCategory = async (
+  category: string,
+  slug: string
+): Promise<{
+  success: boolean;
+  data?: any;
+  message: string;
+}> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "questions"));
+    let questionData = null;
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.category === category && data.slug === slug) {
+        questionData = data;
+      }
+    });
+
+    if (questionData) {
+      return {
+        success: true,
+        data: questionData,
+        message: `Question content retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No question found for ${category}/${slug}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting question content by category:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve question content: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
 // Get all questions, optionally filtered by serviceId
 export const getAllQuestions = async (serviceId?: string) => {
   try {
@@ -792,6 +835,115 @@ export const addQuestionCategory = async (categoryName: string) => {
     return {
       success: false,
       message: `Failed to add question category: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all services (HESI, TEAS, etc.)
+export const getAllServicesList = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "services"));
+    const services: any[] = [];
+    querySnapshot.forEach((doc) => {
+      services.push({ id: doc.id, ...doc.data() });
+    });
+    return {
+      success: true,
+      data: services,
+      message: "All services retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting services:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve services: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Add a new service
+export const addService = async (serviceName: string) => {
+  try {
+    const serviceId = serviceName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const docRef = doc(db, "services", serviceId);
+    await setDoc(docRef, {
+      name: serviceName,
+      slug: serviceId,
+      createdAt: new Date().toISOString(),
+    });
+    return {
+      success: true,
+      message: `Service "${serviceName}" added successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error adding service:`, error);
+    return {
+      success: false,
+      message: `Failed to add service: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get service by ID
+export const getServiceById = async (serviceId: string) => {
+  try {
+    const docRef = doc(db, "services", serviceId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: { id: docSnap.id, ...docSnap.data() },
+        message: "Service retrieved successfully!",
+      };
+    } else {
+      return {
+        success: false,
+        message: `No service found with ID: ${serviceId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting service:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve service: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Initialize default services (HESI and TEAS)
+export const initializeDefaultServices = async () => {
+  try {
+    const defaultServices = [
+      { name: "HESI", slug: "hesi" },
+      { name: "TEAS", slug: "teas" },
+    ];
+
+    for (const service of defaultServices) {
+      const docRef = doc(db, "services", service.slug);
+      await setDoc(docRef, {
+        name: service.name,
+        slug: service.slug,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    return {
+      success: true,
+      message: "Default services (HESI and TEAS) initialized successfully!",
+    };
+  } catch (error) {
+    console.error("Error initializing default services:", error);
+    return {
+      success: false,
+      message: `Failed to initialize default services: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };

@@ -1,6 +1,7 @@
 import Layout from "@/components/layout/Layout";
 import {
   getQuestionContent,
+  getQuestionContentByCategory,
   getAllQuestions,
 } from "@/lib/firestore-operations";
 import SchemaScripts from "@/components/ui/SchemaScripts";
@@ -16,7 +17,7 @@ export async function generateMetadata({
   params: Promise<{ serviceId: string; question_title: string }>;
 }): Promise<Metadata> {
   const { serviceId, question_title } = await params;
-  const result = await getQuestionContent(serviceId, question_title);
+  const result = await getQuestionContentByCategory(serviceId, question_title);
   if (!result.success || !result.data) return { title: "Question Not Found" };
   const meta = result.data.meta || {};
   return {
@@ -51,7 +52,7 @@ export default async function QuestionPage({
   params: Promise<{ serviceId: string; question_title: string }>;
 }) {
   const { serviceId, question_title } = await params;
-  const result = await getQuestionContent(serviceId, question_title);
+  const result = await getQuestionContentByCategory(serviceId, question_title);
   if (!result.success || !result.data) {
     return (
       <Layout>
@@ -71,20 +72,55 @@ export default async function QuestionPage({
   // Related Questions
   let relatedQuestions: any[] = [];
   try {
-    const allQuestionsRes = await getAllQuestions(question.category);
+    const allQuestionsRes = await getAllQuestions();
     if (allQuestionsRes.success && allQuestionsRes.data) {
+      // Helper function to normalize tags (handle both string and array)
+      const normalizeTags = (tags: any): string[] => {
+        if (Array.isArray(tags)) {
+          return tags;
+        } else if (typeof tags === "string") {
+          return tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag);
+        }
+        return [];
+      };
+
+      const currentQuestionTags = normalizeTags(question.tags);
+
+      // Debug: Log current question tags
+      console.log("Current question tags:", currentQuestionTags);
+      console.log("Current question category:", question.category);
+
       relatedQuestions = allQuestionsRes.data
-        .filter(
-          (q: any) =>
-            q.slug !== question.slug &&
-            Array.isArray(q.tags) &&
-            Array.isArray(question.tags) &&
-            q.tags.filter((tag: string) => question.tags.includes(tag))
-              .length >= 3
-        )
+        .filter((q: any) => {
+          if (q.slug === question.slug) {
+            return false;
+          }
+
+          const qTags = normalizeTags(q.tags);
+          const sharedTags = qTags.filter((tag: string) =>
+            currentQuestionTags.includes(tag)
+          );
+
+          // Debug: Log comparison details
+          console.log(`Comparing with question ${q.slug}:`, {
+            qTags,
+            sharedTags,
+            sharedCount: sharedTags.length,
+          });
+
+          return sharedTags.length >= 8;
+        })
         .slice(0, 10);
+
+      // Debug: Log final results
+      console.log("Related questions found:", relatedQuestions.length);
     }
-  } catch {}
+  } catch (error) {
+    console.error("Error loading related questions:", error);
+  }
 
   return (
     <Layout>
@@ -97,8 +133,8 @@ export default async function QuestionPage({
             <Breadcrumb
               items={[
                 { label: "Home", href: "/" },
-                { label: question.category, href: `/${question.category}` },
-                { label: "Questions", href: `/${question.category}/question` },
+                { label: question.category, href: `/${serviceId}` },
+                { label: "Questions", href: `/${serviceId}/question` },
                 { label: questionTitle },
               ]}
               className="text-white"
@@ -153,7 +189,7 @@ export default async function QuestionPage({
           {/* Category */}
           <div className="mb-4 flex flex-wrap gap-2 items-center">
             <Link
-              href={`/${question.category}`}
+              href={`/${serviceId}`}
               className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold hover:bg-blue-200 transition-colors"
             >
               {question.category}
@@ -162,9 +198,7 @@ export default async function QuestionPage({
             {question.tags?.map((tag: string) => (
               <Link
                 key={tag}
-                href={`/${question.category}/question?tag=${encodeURIComponent(
-                  tag
-                )}`}
+                href={`/${serviceId}/question?tag=${encodeURIComponent(tag)}`}
                 className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold hover:bg-purple-200 transition-colors"
               >
                 {tag}
@@ -301,28 +335,6 @@ export default async function QuestionPage({
             </div>
           </div>
         )}
-      </div>
-      {/* Floating CTA Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Link
-          href="/contact"
-          className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-full text-lg font-bold shadow-xl hover:bg-yellow-400 transition-colors flex items-center gap-2"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 17l4 4 4-4m0-5V3a1 1 0 00-1-1H7a1 1 0 00-1 1v9m12 4h-4m0 0V3m0 13v4"
-            />
-          </svg>
-          Get a Free Quote
-        </Link>
       </div>
     </Layout>
   );
