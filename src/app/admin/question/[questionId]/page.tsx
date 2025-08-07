@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import {
   uploadQuestionContent,
   getQuestionContent,
-  getAllServices,
   getAllServicesList,
   getAllPages,
 } from "@/lib/firestore-operations";
@@ -81,7 +80,7 @@ export default function EditQuestionPage() {
         };
       });
     }
-  }, [formData?.category, formData?.service]);
+  }, [formData?.category, formData?.service, formData]);
 
   useEffect(() => {
     if (formData) {
@@ -239,6 +238,7 @@ export default function EditQuestionPage() {
     formData?.correctAnswer,
     formData?.answerChoices,
     formData?.service,
+    formData,
   ]);
 
   const loadQuestion = async () => {
@@ -354,19 +354,6 @@ export default function EditQuestionPage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => prev && { ...prev, [field]: value });
-  };
-
-  const handleMetaChange = (field: string, value: string) => {
-    setFormData(
-      (prev) =>
-        prev && {
-          ...prev,
-          meta: { ...prev.meta, [field]: value },
-        }
-    );
-  };
-  const handleSchemaChange = (value: string) => {
-    setFormData((prev) => prev && { ...prev, schema: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

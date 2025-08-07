@@ -1,6 +1,5 @@
 import Layout from "@/components/layout/Layout";
 import {
-  getQuestionContent,
   getQuestionContentByCategory,
   getAllQuestions,
 } from "@/lib/firestore-operations";

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   uploadQuestionContent,
-  getAllServices,
   getAllServicesList,
   getAllPages,
 } from "@/lib/firestore-operations";
@@ -340,16 +339,6 @@ export default function CreateQuestionPage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleMetaChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      meta: { ...prev.meta, [field]: value },
-    }));
-  };
-  const handleSchemaChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, schema: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

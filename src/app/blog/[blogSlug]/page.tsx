@@ -39,16 +39,6 @@ export default function BlogPage() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadBlog();
-  }, [blogSlug]);
-
-  useEffect(() => {
-    if (blog?.content) {
-      extractTocItems();
-    }
-  }, [blog]);
-
-  useEffect(() => {
     const handleScroll = () => {
       if (!contentRef.current) return;
 
@@ -105,6 +95,13 @@ export default function BlogPage() {
     setTocItems(items);
   }, [blog?.content]);
 
+  // Extract TOC items when blog content changes
+  useEffect(() => {
+    if (blog?.content) {
+      extractTocItems();
+    }
+  }, [blog, extractTocItems]);
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -147,6 +144,11 @@ export default function BlogPage() {
       setLoading(false);
     }
   }, [blogSlug]);
+
+  // Load blog data on component mount
+  useEffect(() => {
+    loadBlog();
+  }, [loadBlog]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {

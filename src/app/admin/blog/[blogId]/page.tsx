@@ -64,11 +64,6 @@ export default function EditBlogPage() {
   const [newTocLevel, setNewTocLevel] = useState(1);
 
   useEffect(() => {
-    loadBlogData();
-    loadCategories();
-  }, [blogId]);
-
-  useEffect(() => {
     if (formData.image) {
       setImagePreview(formData.image);
     } else {
@@ -249,6 +244,12 @@ export default function EditBlogPage() {
       setLoading(false);
     }
   }, [blogId]);
+
+  // Load data on component mount
+  useEffect(() => {
+    loadBlogData();
+    loadCategories();
+  }, [loadBlogData, loadCategories]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
