@@ -64,9 +64,16 @@ export default async function QuestionPage({
   const question = result.data;
   const questionTitle =
     question.questionText?.replace(/<[^>]+>/g, "").slice(0, 120) || "Question";
-  const correctIdx = question.correctAnswer
-    ? question.correctAnswer.charCodeAt(0) - 65
-    : 0;
+  // Handle both single and multiple correct answers
+  const isMultipleAnswer =
+    question.isMultipleAnswer || question.correctAnswers?.length > 1;
+  const correctAnswers = isMultipleAnswer
+    ? question.correctAnswers || []
+    : [question.correctAnswer || "A"];
+
+  const correctIndices = correctAnswers.map((answer: string) =>
+    answer ? answer.charCodeAt(0) - 65 : 0
+  );
 
   // Related Questions
   let relatedQuestions: any[] = [];
@@ -110,7 +117,7 @@ export default async function QuestionPage({
             sharedCount: sharedTags.length,
           });
 
-          return sharedTags.length >= 8;
+          return sharedTags.length >= 3;
         })
         .slice(0, 10);
 
@@ -162,10 +169,10 @@ export default async function QuestionPage({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M8 17l4 4 4-4m0-5V3a1 1 0 00-1-1H7a1 1 0 00-1 1v9m12 4h-4m0 0V3m0 13v4"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
                 />
               </svg>
-              Get a Free Quote
+              Take My TEAS Exam
             </Link>
             <Link
               href="https://wa.me/15795011983"
@@ -194,20 +201,51 @@ export default async function QuestionPage({
               {question.category}
             </Link>
             {/* Tags */}
-            {question.tags?.map((tag: string) => (
-              <Link
-                key={tag}
-                href={`/${serviceId}/question?tag=${encodeURIComponent(tag)}`}
-                className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold hover:bg-purple-200 transition-colors"
-              >
-                {tag}
-              </Link>
-            ))}
+            {question.tags
+              ?.filter((tag: string) => tag !== question.category)
+              .map((tag: string) => (
+                <Link
+                  key={tag}
+                  href={`/${serviceId}/question?tag=${encodeURIComponent(tag)}`}
+                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold hover:bg-purple-200 transition-colors"
+                >
+                  {tag}
+                </Link>
+              ))}
           </div>
           {/* Question Text */}
           <h1 className="text-3xl md:text-4xl font-extrabold mb-4 text-gray-900 leading-tight">
             {questionTitle}
           </h1>
+          {/* Reading Passage */}
+          {question.category?.toLowerCase() === "reading" &&
+            question.passage && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-blue-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
+                    </svg>
+                  </span>
+                  <h2 className="font-bold text-lg text-blue-700">
+                    Reading Passage
+                  </h2>
+                </div>
+                <div className="bg-blue-50 border-l-4 border-blue-400 rounded-xl p-4 text-blue-900 shadow-sm">
+                  <RichTextRenderer content={question.passage} />
+                </div>
+              </div>
+            )}
           {/* Image */}
           {question.image && (
             <div className="mb-6 flex justify-center">
@@ -226,7 +264,7 @@ export default async function QuestionPage({
             </div>
             <div className="flex flex-col gap-3">
               {question.answerChoices?.map((choice: string, idx: number) => {
-                const isCorrect = idx === correctIdx;
+                const isCorrect = correctIndices.includes(idx);
                 return (
                   <label
                     key={idx}
@@ -239,14 +277,18 @@ export default async function QuestionPage({
                     `}
                   >
                     <input
-                      type="radio"
+                      type={isMultipleAnswer ? "checkbox" : "radio"}
                       checked={isCorrect}
                       readOnly
-                      className="form-radio h-5 w-5 text-green-600 border-gray-300 focus:ring-green-500 cursor-default"
+                      className={`h-5 w-5 border-gray-300 focus:ring-green-500 cursor-default ${
+                        isMultipleAnswer
+                          ? "text-green-600 rounded"
+                          : "text-green-600 rounded-full"
+                      }`}
                       tabIndex={-1}
                     />
                     <span
-                      className={`inline-block w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center shadow-sm border-2
+                      className={`inline-flex w-8 h-8 rounded-full font-bold text-lg items-center justify-center shadow-sm border-2
                       ${
                         [
                           "bg-blue-100 text-blue-700 border-blue-200",
@@ -266,7 +308,8 @@ export default async function QuestionPage({
                     </span>
                     {isCorrect && (
                       <span className="flex items-center gap-1 text-green-700 font-semibold">
-                        <HiOutlineCheckCircle className="w-6 h-6" /> Correct
+                        <HiOutlineCheckCircle className="w-6 h-6" />
+                        {isMultipleAnswer ? "Correct Answer" : "Correct"}
                       </span>
                     )}
                   </label>
@@ -277,7 +320,7 @@ export default async function QuestionPage({
           {/* Explanation */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-block w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
+              <span className="inline-flex w-6 h-6 bg-yellow-100 rounded-full items-center justify-center">
                 <svg
                   className="w-4 h-4 text-yellow-500"
                   fill="none"

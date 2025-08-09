@@ -15,9 +15,13 @@ interface QuestionFormData {
   questionText: string;
   answerChoices: string[];
   correctAnswer: string;
+  correctAnswers: string[]; // New field for multiple correct answers
+  isMultipleAnswer: boolean; // Toggle for single/multiple answer mode
   explanation: string;
   category: string; // Question category
   service: string; // Service (HESI, TEAS, etc.)
+  set: string; // Question set
+  passage: string; // Reading passage for reading category
   tags: string[];
   image: string;
   slug: string;
@@ -40,9 +44,13 @@ export default function CreateQuestionPage() {
     questionText: "",
     answerChoices: ["", "", "", ""],
     correctAnswer: "A",
+    correctAnswers: ["A"], // Initialize with first answer
+    isMultipleAnswer: false,
     explanation: "",
     category: "",
     service: "",
+    set: "",
+    passage: "",
     tags: [],
     image: "",
     slug: "",
@@ -71,37 +79,50 @@ export default function CreateQuestionPage() {
     loadServices();
   }, []);
 
-  // Auto-add category and service as tags when they change
+  // Helper function to strip HTML tags
+  const stripHtmlTags = (html: string): string => {
+    return html.replace(/<[^>]*>/g, "").trim();
+  };
+
+  // Update slug and meta when question text changes
   useEffect(() => {
     setFormData((prev) => {
-      const newTags = [...prev.tags];
-
-      // Add category as tag if not already present
-      if (prev.category && !newTags.includes(prev.category)) {
-        newTags.push(prev.category);
-      }
-
-      // Add service as tag if not already present
-      if (prev.service && !newTags.includes(prev.service)) {
-        newTags.push(prev.service);
-      }
-
+      const cleanQuestionText = stripHtmlTags(prev.questionText);
       return {
         ...prev,
-        tags: newTags,
+        slug: cleanQuestionText
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, ""),
+        meta: {
+          ...prev.meta,
+          title:
+            cleanQuestionText.length > 60
+              ? cleanQuestionText.substring(0, 60) + "..."
+              : cleanQuestionText,
+          description: cleanQuestionText,
+          ogTitle: cleanQuestionText,
+          ogDescription: cleanQuestionText,
+          ogImage: prev.image,
+          canonicalUrl:
+            typeof window !== "undefined" ? window.location.href : "",
+          keywords: prev.tags.join(", "),
+        },
       };
     });
-  }, [formData.category, formData.service]);
+  }, [formData.questionText, formData.image, formData.tags]);
 
+  // Update schema when relevant fields change
   useEffect(() => {
     setFormData((prev) => {
       // Generate dynamic schema based on question data
       const generateSchema = () => {
-        if (!prev.questionText.trim()) return "";
+        const cleanQuestionText = stripHtmlTags(prev.questionText);
+        if (!cleanQuestionText.trim()) return "";
 
         const questionSlug =
           prev.slug ||
-          prev.questionText
+          cleanQuestionText
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-+|-+$/g, "");
@@ -141,7 +162,7 @@ export default function CreateQuestionPage() {
               "@type": "WebPage",
               "@id": `${questionUrl}#webpage`,
               url: questionUrl,
-              name: prev.questionText,
+              name: cleanQuestionText,
               isPartOf: {
                 "@id": "https://www.teasgurus.com/#website",
               },
@@ -177,7 +198,7 @@ export default function CreateQuestionPage() {
                 {
                   "@type": "ListItem",
                   position: 3,
-                  name: prev.questionText,
+                  name: cleanQuestionText,
                   item: questionUrl,
                 },
               ],
@@ -187,26 +208,42 @@ export default function CreateQuestionPage() {
               "@id": `${questionUrl}#qa`,
               mainEntity: {
                 "@type": "Question",
-                name: prev.questionText,
-                text: prev.questionText,
+                name: cleanQuestionText,
+                text: cleanQuestionText,
                 answerCount: prev.answerChoices.length,
-                acceptedAnswer: {
-                  "@type": "Answer",
-                  text: `${prev.correctAnswer}. ${
-                    prev.answerChoices[
-                      ANSWER_LABELS.indexOf(prev.correctAnswer)
-                    ] || ""
-                  }`,
-                  url: `${questionUrl}#correct`,
-                  upvoteCount: 100,
-                  downvoteCount: 0,
-                },
+                acceptedAnswer: prev.isMultipleAnswer
+                  ? prev.correctAnswers.map((answer) => ({
+                      "@type": "Answer",
+                      text: `${answer}. ${
+                        prev.answerChoices[ANSWER_LABELS.indexOf(answer)] || ""
+                      }`,
+                      url: `${questionUrl}#correct`,
+                      upvoteCount: 100,
+                      downvoteCount: 0,
+                    }))
+                  : {
+                      "@type": "Answer",
+                      text: `${prev.correctAnswer}. ${
+                        prev.answerChoices[
+                          ANSWER_LABELS.indexOf(prev.correctAnswer)
+                        ] || ""
+                      }`,
+                      url: `${questionUrl}#correct`,
+                      upvoteCount: 100,
+                      downvoteCount: 0,
+                    },
                 suggestedAnswer: prev.answerChoices
                   .map((choice, idx) => {
-                    if (ANSWER_LABELS[idx] === prev.correctAnswer) return null;
+                    const answerLabel = ANSWER_LABELS[idx];
+                    if (prev.isMultipleAnswer) {
+                      if (prev.correctAnswers.includes(answerLabel))
+                        return null;
+                    } else {
+                      if (answerLabel === prev.correctAnswer) return null;
+                    }
                     return {
                       "@type": "Answer",
-                      text: `${ANSWER_LABELS[idx]}. ${choice}`,
+                      text: `${answerLabel}. ${choice}`,
                     };
                   })
                   .filter(Boolean),
@@ -220,34 +257,18 @@ export default function CreateQuestionPage() {
 
       return {
         ...prev,
-        slug: prev.questionText
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, ""),
-        meta: {
-          ...prev.meta,
-          title:
-            prev.questionText.length > 60
-              ? prev.questionText.substring(0, 60) + "..."
-              : prev.questionText,
-          description: prev.questionText,
-          ogTitle: prev.questionText,
-          ogDescription: prev.questionText,
-          ogImage: prev.image,
-          canonicalUrl:
-            typeof window !== "undefined" ? window.location.href : "",
-          keywords: prev.tags.join(", "),
-        },
         schema: generateSchema(),
       };
     });
   }, [
     formData.questionText,
+    formData.slug,
     formData.image,
-    formData.tags,
-    formData.correctAnswer,
-    formData.answerChoices,
     formData.service,
+    formData.answerChoices,
+    formData.correctAnswer,
+    formData.correctAnswers,
+    formData.isMultipleAnswer,
   ]);
 
   const loadCategories = async () => {
@@ -299,6 +320,28 @@ export default function CreateQuestionPage() {
     }));
   };
 
+  // Auto-add category and service as tags when they change
+  useEffect(() => {
+    setFormData((prev) => {
+      const newTags = [...prev.tags];
+
+      // Add category as tag if not already present
+      if (prev.category && !newTags.includes(prev.category)) {
+        newTags.push(prev.category);
+      }
+
+      // Add service as tag if not already present
+      if (prev.service && !newTags.includes(prev.service)) {
+        newTags.push(prev.service);
+      }
+
+      return {
+        ...prev,
+        tags: newTags,
+      };
+    });
+  }, [formData.category, formData.service]);
+
   const handleAnswerChange = (idx: number, value: string) => {
     setFormData((prev) => {
       const updated = [...prev.answerChoices];
@@ -320,7 +363,25 @@ export default function CreateQuestionPage() {
     if (formData.answerChoices.length > 1) {
       setFormData((prev) => {
         const updated = prev.answerChoices.filter((_, i) => i !== idx);
-        return { ...prev, answerChoices: updated };
+        const answerLabel = ANSWER_LABELS[idx];
+
+        // Remove the answer from correctAnswers if it was selected
+        const updatedCorrectAnswers = prev.correctAnswers.filter(
+          (answer) => answer !== answerLabel
+        );
+
+        // Update correctAnswer if it was the removed answer
+        let updatedCorrectAnswer = prev.correctAnswer;
+        if (prev.correctAnswer === answerLabel) {
+          updatedCorrectAnswer = ANSWER_LABELS[0];
+        }
+
+        return {
+          ...prev,
+          answerChoices: updated,
+          correctAnswer: updatedCorrectAnswer,
+          correctAnswers: updatedCorrectAnswers,
+        };
       });
     }
   };
@@ -339,6 +400,48 @@ export default function CreateQuestionPage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleToggleMultipleAnswer = () => {
+    setFormData((prev) => {
+      const newIsMultipleAnswer = !prev.isMultipleAnswer;
+      if (newIsMultipleAnswer) {
+        // Switch to multiple answer mode - initialize with current single answer
+        return {
+          ...prev,
+          isMultipleAnswer: newIsMultipleAnswer,
+          correctAnswers: [prev.correctAnswer],
+        };
+      } else {
+        // Switch to single answer mode - use first correct answer or default to A
+        return {
+          ...prev,
+          isMultipleAnswer: newIsMultipleAnswer,
+          correctAnswer:
+            prev.correctAnswers.length > 0 ? prev.correctAnswers[0] : "A",
+          correctAnswers: [],
+        };
+      }
+    });
+  };
+
+  const handleMultipleAnswerChange = (
+    answerLabel: string,
+    checked: boolean
+  ) => {
+    setFormData((prev) => {
+      if (checked) {
+        // Add answer to multiple correct answers
+        const updatedCorrectAnswers = [...prev.correctAnswers, answerLabel];
+        return { ...prev, correctAnswers: updatedCorrectAnswers };
+      } else {
+        // Remove answer from multiple correct answers
+        const updatedCorrectAnswers = prev.correctAnswers.filter(
+          (answer) => answer !== answerLabel
+        );
+        return { ...prev, correctAnswers: updatedCorrectAnswers };
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -371,10 +474,20 @@ export default function CreateQuestionPage() {
       setLoading(false);
       return;
     }
-    if (!formData.correctAnswer) {
-      setError("Correct answer is required");
-      setLoading(false);
-      return;
+    if (formData.isMultipleAnswer) {
+      if (formData.correctAnswers.length === 0) {
+        setError(
+          "At least one correct answer is required for multiple answer questions"
+        );
+        setLoading(false);
+        return;
+      }
+    } else {
+      if (!formData.correctAnswer) {
+        setError("Correct answer is required");
+        setLoading(false);
+        return;
+      }
     }
     if (!formData.explanation.trim()) {
       setError("Explanation is required");
@@ -468,6 +581,18 @@ export default function CreateQuestionPage() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Set
+                </label>
+                <input
+                  type="text"
+                  value={formData.set}
+                  onChange={(e) => handleInputChange("set", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                  placeholder="Enter question set (optional)"
+                />
+              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Question Text *
@@ -478,6 +603,18 @@ export default function CreateQuestionPage() {
                   placeholder="Enter the main exam question..."
                 />
               </div>
+              {formData.category.toLowerCase() === "reading" && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reading Passage (optional)
+                  </label>
+                  <RichTextEditor
+                    value={formData.passage}
+                    onChange={(val) => handleInputChange("passage", val)}
+                    placeholder="Enter the reading passage that the question is based on..."
+                  />
+                </div>
+              )}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Answer Choices (A–F) *
@@ -513,22 +650,95 @@ export default function CreateQuestionPage() {
                 </button>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Correct Answer *
-                </label>
-                <select
-                  value={formData.correctAnswer}
-                  onChange={(e) =>
-                    handleInputChange("correctAnswer", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                >
-                  {formData.answerChoices.map((_, idx) => (
-                    <option key={idx} value={ANSWER_LABELS[idx]}>
-                      {ANSWER_LABELS[idx]}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Answer Type
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleToggleMultipleAnswer}
+                    aria-label={`Switch to ${
+                      formData.isMultipleAnswer ? "single" : "multiple"
+                    } answer mode`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                      formData.isMultipleAnswer
+                        ? "bg-purple-600"
+                        : "bg-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        formData.isMultipleAnswer
+                          ? "translate-x-6"
+                          : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+                <div className="text-sm text-gray-600 mb-4">
+                  {formData.isMultipleAnswer
+                    ? "Multiple Answers"
+                    : "Single Answer"}
+                </div>
+
+                {formData.isMultipleAnswer ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Correct Answers *
+                    </label>
+                    <div className="space-y-2">
+                      {formData.answerChoices.map((_, idx) => {
+                        const answerLabel = ANSWER_LABELS[idx];
+                        const isSelected =
+                          formData.correctAnswers.includes(answerLabel);
+                        return (
+                          <label
+                            key={idx}
+                            className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                              isSelected
+                                ? "border-purple-500 bg-purple-50"
+                                : "border-gray-200 bg-white hover:border-gray-300"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) =>
+                                handleMultipleAnswerChange(
+                                  answerLabel,
+                                  e.target.checked
+                                )
+                              }
+                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-3 font-medium text-gray-700">
+                              {answerLabel}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Correct Answer *
+                    </label>
+                    <select
+                      value={formData.correctAnswer}
+                      onChange={(e) =>
+                        handleInputChange("correctAnswer", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                    >
+                      {formData.answerChoices.map((_, idx) => (
+                        <option key={idx} value={ANSWER_LABELS[idx]}>
+                          {ANSWER_LABELS[idx]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
