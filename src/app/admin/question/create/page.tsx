@@ -545,6 +545,24 @@ export default function CreateQuestionPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Service *
+                </label>
+                <select
+                  value={formData.service}
+                  onChange={(e) => handleInputChange("service", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                  required
+                >
+                  <option value="">Select service</option>
+                  {services.map((service) => (
+                    <option key={service.id} value={service.slug}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category *
                 </label>
                 <select
@@ -559,24 +577,6 @@ export default function CreateQuestionPage() {
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service *
-                </label>
-                <select
-                  value={formData.service}
-                  onChange={(e) => handleInputChange("service", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                  required
-                >
-                  <option value="">Select service</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.slug}>
-                      {service.name}
                     </option>
                   ))}
                 </select>
@@ -603,18 +603,16 @@ export default function CreateQuestionPage() {
                   placeholder="Enter the main exam question..."
                 />
               </div>
-              {formData.category.toLowerCase() === "reading" && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reading Passage (optional)
-                  </label>
-                  <RichTextEditor
-                    value={formData.passage}
-                    onChange={(val) => handleInputChange("passage", val)}
-                    placeholder="Enter the reading passage that the question is based on..."
-                  />
-                </div>
-              )}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reading Passage (optional)
+                </label>
+                <RichTextEditor
+                  value={formData.passage}
+                  onChange={(val) => handleInputChange("passage", val)}
+                  placeholder="Enter the reading passage that the question is based on..."
+                />
+              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Answer Choices (A–F) *
