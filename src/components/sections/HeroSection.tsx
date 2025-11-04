@@ -9,7 +9,7 @@ export default function HeroSection() {
           {/* Left Side - Hero Content */}
           <div>
             <p className="text-xl font-semibold mb-4 w-full text-center">
-              Test 1234
+              Pay Only After You Pass
             </p>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 w-full text-center">
               Pay Someone to Take My TEAS Exam for Me
