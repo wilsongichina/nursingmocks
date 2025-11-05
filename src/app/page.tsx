@@ -9,9 +9,9 @@ import ClientWhatsAppPopup from "@/components/ui/ClientWhatsAppPopup";
 import SchemaScripts from "@/components/ui/SchemaScripts";
 
 export const metadata: Metadata = {
-  title: "Pay Someone to Take My Teas Exam for Me | Teas Gurus",
+  title: "Take My TEAS Exam for Me | Guaranteed High Scores Online",
   description:
-    "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
+    "Need to pay someone to take my TEAS exam? Teas Gurus can take my TEAS test for me with U.S.-based professionals, top results, and guaranteed confidentiality.",
   keywords:
     "take my TEAS exam for me, take my TEAS test for me, pay someone to take my TEAS exam, pay someone to take my proctored exam",
   authors: [{ name: "Teas Gurus" }],
