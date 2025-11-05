@@ -10,9 +10,9 @@ export default function HowItWorksSection() {
   const steps = [
     {
       number: "1",
-      title: "Register for The Online/Remote Exam",
+      title: "Sign up for the TEAS Exam online",
       description:
-        "To register for the TEAS exam, visit www.atitesting.com and select I AM PREPARING FOR OR TAKING THE TEAS. Click on Exam Registration, choose Register under the Remote Online option, and select ATI Remote Proctor. Then, choose your preferred date and time, review your details, create an account if necessary, and enter your payment information to complete your registration.",
+        "To sign up for your ATI TEAS exam, go to www.atitesting.com. This is the official TEAS exam help site for students who want to get into nursing school. Choose I Am Preparing for or Taking the Teas, then click Exam Registration and Register under the Remote Online option. Next, choose ATI Remote Proctor as the way you want to take the test. Choose a date and time that works for you, double-check all of your information, and if this is your first time using ATI, set up your account. Lastly, fill out your payment information to confirm your reservation. This easy step makes sure you're ready to take your nursing exam online, which is the first step toward reaching your nursing goals with confidence.",
       icon: "📝",
       color: "from-blue-500 to-blue-600",
       bgColor: "bg-blue-50",
@@ -22,7 +22,7 @@ export default function HowItWorksSection() {
       number: "2",
       title: "Computer Access",
       description:
-        "Download and install RemotePc on your Windows by visiting the official RemotePC website. Once you install it, copy the code and share it with us. We will access your device and start installing the respondus bypass software.",
+        "Download and install RemotePc on your Windows by visiting the official RemotePC website. Once you install it, copy the code and share it with us. We will access your device and start installing the respondus bypass tool.",
       icon: "💻",
       color: "from-green-500 to-green-600",
       bgColor: "bg-green-50",
@@ -30,9 +30,9 @@ export default function HowItWorksSection() {
     },
     {
       number: "3",
-      title: "Bypass Software Installation",
+      title: "Bypass Tool Installation",
       description:
-        "We will remotely access your Windows laptop to execute commands on your Mac or install software on your Windows device, allowing us to bypass security measures. We want to clarify that our software does not interfere with your exam content or alter your responses in any manner. Its primary purpose is to ensure a seamless proctoring experience for both you and our team.",
+        "We will access your Windows laptop to install software on your Windows device, allowing us to bypass security measures. We want to clarify that our software does not interfere with your exam content or alter your responses in any manner. Its primary purpose is to ensure a seamless proctoring experience for both you and our team.",
       icon: "🔧",
       color: "from-purple-500 to-purple-600",
       bgColor: "bg-purple-50",
@@ -42,7 +42,7 @@ export default function HowItWorksSection() {
       number: "4",
       title: "ATI TEAS Dry Run Assessment",
       description:
-        "We will conduct a dry run test to ensure that the bypass software works in readiness for the real/actual exam. This is important to ensure that you're versed with the process.",
+        "We will conduct a dry run test to ensure that the bypass software works in readiness for the real/actual exam. ATI TEAS dry run help nursing students reach their goals by giving them a chance to practice their test-taking. Our TEAS exam help will help you move through your nursing program and into nursing school. It includes clear instructions, real technical checks, and fair prices for results you can trust.",
       icon: "🧪",
       color: "from-yellow-500 to-yellow-600",
       bgColor: "bg-yellow-50",
@@ -50,9 +50,9 @@ export default function HowItWorksSection() {
     },
     {
       number: "5",
-      title: "Exam Taking",
+      title: "Exam Taking Process",
       description:
-        "On the day of the exam, you will simply sit back and act as though you're taking the test while we control the mouse and complete it for you.",
+        "On the day of the exam, you will simply sit back and act as though you're taking the test while we control the mouse and complete it for you. Our TEAS exam help expert will walk you through each stage of the procedure on the day of your ATI TEAS exam so that you fully grasp it. We want to help nursing students do well, reach their goals, and finish their nursing program successfully with reliable help with their studies.",
       icon: "✍️",
       color: "from-red-500 to-red-600",
       bgColor: "bg-red-50",
@@ -62,7 +62,7 @@ export default function HowItWorksSection() {
       number: "6",
       title: "Make Payment",
       description:
-        "When taking the Online/Remote Teas Exam, the exam results are available immediately you finish the exam. You'll make the full payment once you pass the exam.",
+        "When taking your online ATI TEAS exam, the exam results are available immediately you finish the test. You'll make the full payment once you pass the exam. Afterwards, we will provide you with a detailed nursing plan on how to stay focused on your nursing goals and program success.",
       icon: "💳",
       color: "from-indigo-500 to-indigo-600",
       bgColor: "bg-indigo-50",
@@ -83,10 +83,10 @@ export default function HowItWorksSection() {
             How it Works
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            We're talking about a company with a distinctive culture that sets
-            us apart. Where else will you find such high levels of engagement,
-            authentic communication and top-quality results? Here are is a
-            graphical representation of how our TEAS exam taking service works.
+            To sign up for your ATI TEAS exam, go to www.atitesting.com. This is the official TEAS exam help site for 
+            students who want to get into nursing school. Choose "I Am Preparing for or Taking the Teas," then click 
+            "Exam Registration" and "Register" under the "Remote Online" option. Next, choose ATI Remote Proctor as the 
+            way you want to take the test.
           </p>
         </div>
 
@@ -235,9 +235,11 @@ export default function HowItWorksSection() {
             <div className="max-w-3xl mx-auto">
               <h3 className="text-3xl font-bold mb-4">Ready to Get Started?</h3>
               <p className="text-xl mb-8 opacity-90 leading-relaxed">
-                Join thousands of students who have successfully passed the TEAS
-                exam with our proven approach. Get started today and pay only
-                after you pass.
+                Join thousands of nursing students who have reached their goals with the help of our trusted TEAS test help. 
+                Hundreds of students have gained confidence and improved their skills with our proven method of teaching all 
+                subjects, from math and language to science and reading. You can do well in your nursing program and nursing 
+                school if you grasp things clearly, get advice from professionals, and pay a fair price. With Teas Gurus, you
+                 may start today and become closer to your career goals.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link

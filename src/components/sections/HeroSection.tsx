@@ -15,9 +15,8 @@ export default function HeroSection() {
               Pay Someone to Take My TEAS Exam for Me
             </h1>
             <h2 className="text-xl md:text-2xl mb-8 w-full text-center">
-              The Versatile Online Teas Proctored Help Company for Students.
-              Teas Guru Makes Taking Exams & Answering Refreshing. Order Your
-              Teas Exam, Tests, Quizzes and More…
+              Teas Gurus is a reliable and flexible online TEAS exam help site for nursing students who want to take their tests in a more organized and 
+              smart way.  We make it easy and stress-free to deal with tests, quizzes, and proctored exams.  
             </h2>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
