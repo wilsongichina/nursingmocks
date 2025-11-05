@@ -50,9 +50,9 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               "@type": "WebPage",
               "@id": "https://teasgurus.com/#webpage",
               url: "https://teasgurus.com/",
-              name: "Pay Someone to Take My Teas Exam for Me | Teas Gurus",
+              name: "Take My TEAS Exam for Me | Guaranteed High Scores Online",
               description:
-                "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
+                "Need to pay someone to take my TEAS exam? Teas Gurus can take my TEAS test for me with U.S.-based professionals, top results, and guaranteed confidentiality.",
               isPartOf: {
                 "@id": "https://teasgurus.com/#website",
               },
