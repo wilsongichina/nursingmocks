@@ -25,6 +25,7 @@ interface QuestionFormData {
   tags: string[];
   image: string;
   slug: string;
+  date: string; // Date field
   meta: {
     title: string;
     description?: string;
@@ -54,6 +55,7 @@ export default function CreateQuestionPage() {
     tags: [],
     image: "",
     slug: "",
+    date: new Date().toISOString().split("T")[0], // Initialize with current date
     meta: {
       title: "",
       description: "",
@@ -73,27 +75,84 @@ export default function CreateQuestionPage() {
   const [newTag, setNewTag] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dateTimeSuffix, setDateTimeSuffix] = useState<string>("");
 
   useEffect(() => {
     loadCategories();
     loadServices();
   }, []);
 
-  // Helper function to strip HTML tags
+  // Helper function to strip HTML tags and decode HTML entities
   const stripHtmlTags = (html: string): string => {
-    return html.replace(/<[^>]*>/g, "").trim();
+    if (typeof window === "undefined") {
+      // Server-side: just remove HTML tags and decode basic entities
+      let text = html
+        .replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+      text = text.replace(/\u00A0/g, " "); // Non-breaking space
+      text = text.replace(/\s+/g, " ");
+      return text.trim();
+    }
+
+    // Client-side: Create a temporary DOM element to decode HTML entities
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    let text = tempDiv.textContent || tempDiv.innerText || "";
+
+    // Remove HTML tags
+    text = text.replace(/<[^>]*>/g, "");
+
+    // Replace non-breaking spaces and other whitespace characters with regular spaces
+    text = text.replace(/\u00A0/g, " "); // &nbsp; or \u00A0
+    text = text.replace(/\s+/g, " "); // Multiple spaces to single space
+
+    return text.trim();
   };
+
+  // Generate day.second suffix once when question text is first entered (removed year, month, and minutes)
+  useEffect(() => {
+    if (formData.questionText.trim() && !dateTimeSuffix) {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0"); // DD (day of month)
+      const seconds = String(now.getSeconds()).padStart(2, "0"); // SS (seconds)
+      setDateTimeSuffix(`-${day}-${seconds}`);
+    }
+  }, [formData.questionText, dateTimeSuffix]);
 
   // Update slug and meta when question text changes
   useEffect(() => {
     setFormData((prev) => {
       const cleanQuestionText = stripHtmlTags(prev.questionText);
+      // Remove nbsp and other HTML entities, then create slug
+      let baseSlug = cleanQuestionText
+        .toLowerCase()
+        .replace(/nbsp/g, "") // Remove any remaining "nbsp" text
+        .replace(/&nbsp;/g, "") // Remove &nbsp; entity
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      // Trim base slug if total would exceed 220 characters (when date/time suffix is added)
+      if (dateTimeSuffix) {
+        const dateTimeSuffixLength = dateTimeSuffix.length; // 6 characters
+        const maxBaseSlugLength = 220 - dateTimeSuffixLength; // 214 characters
+        if (baseSlug.length > maxBaseSlugLength) {
+          baseSlug = baseSlug.substring(0, maxBaseSlugLength);
+          // Remove trailing hyphen if present after trimming
+          baseSlug = baseSlug.replace(/-+$/, "");
+        }
+      }
+
+      // Combine base slug with date/time suffix (if available)
+      const fullSlug = dateTimeSuffix ? baseSlug + dateTimeSuffix : baseSlug;
+
       return {
         ...prev,
-        slug: cleanQuestionText
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, ""),
+        slug: fullSlug,
         meta: {
           ...prev.meta,
           title:
@@ -110,7 +169,7 @@ export default function CreateQuestionPage() {
         },
       };
     });
-  }, [formData.questionText, formData.image, formData.tags]);
+  }, [formData.questionText, formData.image, formData.tags, dateTimeSuffix]);
 
   // Update schema when relevant fields change
   useEffect(() => {
@@ -464,6 +523,14 @@ export default function CreateQuestionPage() {
       setLoading(false);
       return;
     }
+    // Validate slug length (including date.minute.second) - max 220 characters
+    if (formData.slug.length > 220) {
+      setError(
+        `Slug is too long (${formData.slug.length} characters). Maximum allowed is 220 characters including the date and time suffix. Please shorten the question text.`
+      );
+      setLoading(false);
+      return;
+    }
     if (
       formData.answerChoices.length < 2 ||
       formData.answerChoices.some((a) => !a.trim())
@@ -591,6 +658,18 @@ export default function CreateQuestionPage() {
                   onChange={(e) => handleInputChange("set", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
                   placeholder="Enter question set (optional)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange("date", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                  required
                 />
               </div>
               <div className="md:col-span-2">

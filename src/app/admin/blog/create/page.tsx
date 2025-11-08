@@ -344,11 +344,69 @@ export default function CreateBlogPage() {
     setError("");
 
     try {
+      // Helper function to clean HTML entities and nbsp from text
+      const cleanText = (text: string): string => {
+        if (typeof window === "undefined") {
+          // Server-side: just decode basic entities
+          let cleaned = text
+            .replace(/&nbsp;/g, " ")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'");
+          cleaned = cleaned.replace(/\u00A0/g, " "); // Non-breaking space
+          cleaned = cleaned.replace(/\s+/g, " ");
+          return cleaned.trim();
+        }
+
+        // Client-side: Create a temporary DOM element to decode HTML entities
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = text;
+        let cleaned = tempDiv.textContent || tempDiv.innerText || text;
+
+        // Replace non-breaking spaces and other whitespace characters
+        cleaned = cleaned.replace(/\u00A0/g, " "); // &nbsp; or \u00A0
+        cleaned = cleaned.replace(/\s+/g, " "); // Multiple spaces to single space
+
+        return cleaned.trim();
+      };
+
       // Create a URL-friendly ID from the title
-      const blogId = formData.title
+      const cleanedTitle = cleanText(formData.title);
+      let baseSlug = cleanedTitle
         .toLowerCase()
+        .replace(/nbsp/g, "") // Remove any remaining "nbsp" text
+        .replace(/&nbsp;/g, "") // Remove &nbsp; entity
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
+
+      // Add current day and second to make slug unique (removed year, month, and minutes)
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0"); // DD (day of month)
+      const seconds = String(now.getSeconds()).padStart(2, "0"); // SS (seconds)
+      const dateTimeSuffix = `-${day}-${seconds}`;
+      const dateTimeSuffixLength = dateTimeSuffix.length; // 6 characters
+
+      // Trim base slug if total would exceed 220 characters
+      const maxBaseSlugLength = 220 - dateTimeSuffixLength; // 214 characters
+      if (baseSlug.length > maxBaseSlugLength) {
+        baseSlug = baseSlug.substring(0, maxBaseSlugLength);
+        // Remove trailing hyphen if present after trimming
+        baseSlug = baseSlug.replace(/-+$/, "");
+      }
+
+      // Combine base slug with date/time suffix
+      const blogId = baseSlug + dateTimeSuffix;
+
+      // Validate slug length (including date.minute.second) - max 220 characters
+      if (blogId.length > 220) {
+        setError(
+          `Slug is too long (${blogId.length} characters). Maximum allowed is 220 characters including the date and time suffix. Please shorten the title.`
+        );
+        setLoading(false);
+        return;
+      }
 
       let finalImageUrl = formData.image;
 
