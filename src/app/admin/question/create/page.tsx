@@ -66,7 +66,7 @@ export default function CreateQuestionPage() {
       canonicalUrl: "",
     },
     schema: "",
-    publishStatus: "draft",
+    publishStatus: "published",
   });
   const [imagePreview, setImagePreview] = useState<string>("");
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);

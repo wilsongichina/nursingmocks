@@ -11,7 +11,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
   const ADMIN_PASSWORD = "teasgurus2024"; // In production, this should be in environment variables
 
   const handleLogin = (e: React.FormEvent) => {
