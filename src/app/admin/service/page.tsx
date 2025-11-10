@@ -5,6 +5,11 @@ import {
   getAllPages,
   uploadServiceContent,
   deleteServiceContent,
+  getAllPillarPages,
+  getPillarServicePageContent,
+  uploadPillarServicePageContent,
+  getAllPillarServicePages,
+  deletePillarServicePageContent,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -16,6 +21,9 @@ interface ServicePage {
   hero?: {
     title: string;
   };
+  pillarPageId?: string;
+  servicePageId?: string;
+  pillarPageName?: string;
 }
 
 export default function AdminServicePage() {
@@ -26,27 +34,63 @@ export default function AdminServicePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newServiceId, setNewServiceId] = useState("");
   const [newServiceTitle, setNewServiceTitle] = useState("");
+  const [selectedPillarPage, setSelectedPillarPage] = useState("teas");
+  const [pillarPages, setPillarPages] = useState<Array<{ id: string; pageName?: string }>>([]);
+  const [validationError, setValidationError] = useState("");
+  const [filterPillarPage, setFilterPillarPage] = useState("all");
 
   useEffect(() => {
     loadServices();
+    loadPillarPages();
   }, []);
+
+  const loadPillarPages = async () => {
+    try {
+      const result = await getAllPillarPages();
+      if (result.success && result.data) {
+        setPillarPages(result.data);
+      }
+    } catch (err) {
+      console.error("Error loading pillar pages:", err);
+    }
+  };
 
   const loadServices = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const result = await getAllPages();
+      const allServices: ServicePage[] = [];
 
+      // Load regular services (TEAS)
+      const result = await getAllPages();
       if (result.success && result.data) {
         const servicesList = Object.keys(result.data).map((id) => ({
           id,
           ...result.data[id],
         }));
-        setServices(servicesList);
-      } else {
-        setError("Failed to load services");
+        allServices.push(...servicesList);
       }
+
+      // Load services from all pillar pages
+      const pillarPagesResult = await getAllPillarPages();
+      if (pillarPagesResult.success && pillarPagesResult.data) {
+        for (const pillarPage of pillarPagesResult.data) {
+          const pillarServicesResult = await getAllPillarServicePages(pillarPage.id);
+          if (pillarServicesResult.success && pillarServicesResult.data) {
+            const pillarServices = pillarServicesResult.data.map((service: any) => ({
+              ...service,
+              id: `${pillarPage.id}/${service.servicePageId}`,
+              servicePageId: service.servicePageId,
+              pillarPageId: pillarPage.id,
+              pillarPageName: pillarPage.pageName || pillarPage.id,
+            }));
+            allServices.push(...pillarServices);
+          }
+        }
+      }
+
+      setServices(allServices);
     } catch (err) {
       setError("Failed to load services");
       console.error("Error loading services:", err);
@@ -55,11 +99,48 @@ export default function AdminServicePage() {
     }
   };
 
+  const validateSlugUrl = async (serviceId: string, pillarPageId: string): Promise<string | null> => {
+    const normalizedServiceId = serviceId.toLowerCase().replace(/\s+/g, "-");
+    
+    // If "teas" is selected, check regular services
+    if (pillarPageId === "teas") {
+      const allPagesResult = await getAllPages();
+      if (allPagesResult.success && allPagesResult.data) {
+        const existingService = allPagesResult.data[normalizedServiceId];
+        if (existingService) {
+          return `A service with the slug "${normalizedServiceId}" already exists`;
+        }
+      }
+    } else {
+      // Check pillar service pages
+      try {
+        const result = await getPillarServicePageContent(pillarPageId, normalizedServiceId);
+        if (result.success && result.data) {
+          return `A service page with the slug "${normalizedServiceId}" already exists under this pillar page`;
+        }
+      } catch {
+        // If there's an error, we'll assume it doesn't exist
+      }
+    }
+
+    return null;
+  };
+
   const handleCreateService = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!newServiceId.trim() || !newServiceTitle.trim()) {
       setError("Please provide both service ID and title");
+      return;
+    }
+
+    setValidationError("");
+    setError("");
+
+    // Validate slug URL
+    const slugError = await validateSlugUrl(newServiceId, selectedPillarPage);
+    if (slugError) {
+      setValidationError(slugError);
       return;
     }
 
@@ -242,17 +323,46 @@ export default function AdminServicePage() {
         },
       };
 
-      const result = await uploadServiceContent(newServiceId, newService);
+      const normalizedServiceId = newServiceId.toLowerCase().replace(/\s+/g, "-");
 
-      if (result.success) {
-        setSuccess("Service created successfully!");
-        setNewServiceId("");
-        setNewServiceTitle("");
-        setIsCreating(false);
-        loadServices(); // Reload the services list
-        setTimeout(() => setSuccess(""), 3000);
+      // If pillar page is selected (not "teas"), upload to pillar service pages
+      if (selectedPillarPage !== "teas") {
+        const result = await uploadPillarServicePageContent(
+          selectedPillarPage,
+          normalizedServiceId,
+          {
+            ...newService,
+            lastUpdated: new Date().toISOString(),
+            version: "1.0",
+          }
+        );
+
+        if (result.success) {
+          setSuccess("Service created successfully!");
+          setNewServiceId("");
+          setNewServiceTitle("");
+          setSelectedPillarPage("teas");
+          setIsCreating(false);
+          loadServices(); // Reload the services list
+          setTimeout(() => setSuccess(""), 3000);
+        } else {
+          setError(result.message || "Failed to create service");
+        }
       } else {
-        setError(result.message || "Failed to create service");
+        // Regular service upload
+        const result = await uploadServiceContent(normalizedServiceId, newService);
+
+        if (result.success) {
+          setSuccess("Service created successfully!");
+          setNewServiceId("");
+          setNewServiceTitle("");
+          setSelectedPillarPage("teas");
+          setIsCreating(false);
+          loadServices(); // Reload the services list
+          setTimeout(() => setSuccess(""), 3000);
+        } else {
+          setError(result.message || "Failed to create service");
+        }
       }
     } catch (err) {
       setError("Failed to create service");
@@ -260,9 +370,10 @@ export default function AdminServicePage() {
     }
   };
 
-  const handleDeleteService = async (serviceId: string) => {
+  const handleDeleteService = async (serviceId: string, pillarPageId?: string, servicePageId?: string) => {
+    const displayName = servicePageId || serviceId;
     if (
-      !confirm(`Are you sure you want to delete the service "${serviceId}"?`)
+      !confirm(`Are you sure you want to delete the service "${displayName}"?`)
     ) {
       return;
     }
@@ -271,7 +382,14 @@ export default function AdminServicePage() {
       setError("");
       setSuccess("");
 
-      const result = await deleteServiceContent(serviceId);
+      let result;
+      if (pillarPageId && servicePageId) {
+        // Delete from pillar service pages
+        result = await deletePillarServicePageContent(pillarPageId, servicePageId);
+      } else {
+        // Delete regular service
+        result = await deleteServiceContent(serviceId);
+      }
 
       if (result.success) {
         setSuccess("Service deleted successfully!");
@@ -285,6 +403,14 @@ export default function AdminServicePage() {
       console.error("Error deleting service:", err);
     }
   };
+
+  // Filter services based on selected pillar page
+  const filteredServices = 
+    filterPillarPage === "all"
+      ? services
+      : filterPillarPage === "teas"
+      ? services.filter((service) => !service.pillarPageId)
+      : services.filter((service) => service.pillarPageId === filterPillarPage);
 
   if (loading) {
     return (
@@ -420,6 +546,32 @@ export default function AdminServicePage() {
                 Create New Service
               </h2>
               <form onSubmit={handleCreateService} className="space-y-4">
+                {validationError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-800">{validationError}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Pillar Page
+                  </label>
+                  <select
+                    value={selectedPillarPage}
+                    onChange={(e) => setSelectedPillarPage(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white"
+                    required
+                  >
+                    <option value="teas">TEAS</option>
+                    {pillarPages.map((page) => (
+                      <option key={page.id} value={page.id}>
+                        {page.pageName || page.id}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select the pillar page this service belongs to
+                  </p>
+                </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Service ID
@@ -427,13 +579,18 @@ export default function AdminServicePage() {
                   <input
                     type="text"
                     value={newServiceId}
-                    onChange={(e) => setNewServiceId(e.target.value)}
+                    onChange={(e) => {
+                      setNewServiceId(e.target.value);
+                      setValidationError("");
+                    }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
                     placeholder="e.g., reading, science, english"
                     required
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    This will be used in the URL: /[service-id]
+                    {selectedPillarPage === "teas"
+                      ? `This will be used in the URL: /${newServiceId.toLowerCase().replace(/\s+/g, "-") || "[service-id]"}`
+                      : `This will be used in the URL: /${selectedPillarPage}/${newServiceId.toLowerCase().replace(/\s+/g, "-") || "[service-id]"}`}
                   </p>
                 </div>
                 <div>
@@ -465,6 +622,8 @@ export default function AdminServicePage() {
                       setIsCreating(false);
                       setNewServiceId("");
                       setNewServiceTitle("");
+                      setSelectedPillarPage("teas");
+                      setValidationError("");
                     }}
                     className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
                   >
@@ -476,9 +635,34 @@ export default function AdminServicePage() {
           </div>
         )}
 
+        {/* Filter Section */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-semibold text-gray-700">
+              Filter by Pillar Page:
+            </label>
+            <select
+              value={filterPillarPage}
+              onChange={(e) => setFilterPillarPage(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white min-w-[200px]"
+            >
+              <option value="all">All Services</option>
+              <option value="teas">TEAS</option>
+              {pillarPages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.pageName || page.id}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="text-sm text-gray-600">
+            Showing {filteredServices.length} service(s)
+          </div>
+        </div>
+
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
+          {filteredServices.map((service) => (
             <div
               key={service.id}
               className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
@@ -486,9 +670,16 @@ export default function AdminServicePage() {
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {service.hero?.title || service.title || service.id}
+                    {service.hero?.title || service.title || (service.servicePageId || service.id)}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-2">ID: {service.id}</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    ID: {service.servicePageId || service.id}
+                  </p>
+                  {service.pillarPageId && (
+                    <p className="text-sm text-orange-600 font-medium mb-1">
+                      Pillar: {service.pillarPageName || service.pillarPageId}
+                    </p>
+                  )}
                   {service.lastUpdated && (
                     <p className="text-sm text-gray-500">
                       Updated:{" "}
@@ -504,7 +695,7 @@ export default function AdminServicePage() {
                     Edit
                   </Link>
                   <button
-                    onClick={() => handleDeleteService(service.id)}
+                    onClick={() => handleDeleteService(service.id, service.pillarPageId, service.servicePageId)}
                     className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                   >
                     Delete
@@ -513,7 +704,7 @@ export default function AdminServicePage() {
               </div>
               <div className="flex justify-between items-center">
                 <Link
-                  href={`/${service.id}`}
+                  href={service.pillarPageId ? `/${service.pillarPageId}/${service.servicePageId}` : `/${service.id}`}
                   target="_blank"
                   className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
@@ -529,7 +720,7 @@ export default function AdminServicePage() {
           ))}
         </div>
 
-        {services.length === 0 && !loading && (
+        {filteredServices.length === 0 && !loading && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg

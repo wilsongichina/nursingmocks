@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   uploadQuestionContent,
   getAllServicesList,
@@ -876,10 +877,13 @@ export default function CreateQuestionPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-black"
                 />
                 {imagePreview && (
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="Preview"
-                    className="mt-2 max-h-32 rounded"
+                    width={128}
+                    height={128}
+                    className="mt-2 max-h-32 rounded object-contain"
+                    unoptimized
                   />
                 )}
               </div>

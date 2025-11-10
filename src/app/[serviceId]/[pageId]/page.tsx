@@ -1,9 +1,12 @@
+import React from "react";
 import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
-import { getAllSupportPages } from "@/lib/firestore-operations";
+import ContactForm from "@/components/ui/ContactForm";
+import { getAllSupportPages, isPillarPage, getPillarServicePageContent } from "@/lib/firestore-operations";
+import { notFound } from "next/navigation";
 
 interface SupportPageContent {
   meta: {
@@ -68,59 +71,101 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
+  const { serviceId, pageId } = resolvedParams;
 
-  try {
-    const result = await getAllSupportPages();
+  // First check if serviceId is a pillar page
+  const isPillar = await isPillarPage(serviceId);
+  
+  if (isPillar) {
+    // This is a pillar service page
+    try {
+      const result = await getPillarServicePageContent(serviceId, pageId);
 
-    if (result.success && result.data) {
-      const pages = result.data;
-      const pageData = pages[resolvedParams.serviceId]?.[resolvedParams.pageId];
+      if (result.success && result.data) {
+        const serviceData = result.data as any;
 
-      if (pageData) {
-        return {
-          title:
-            pageData.meta?.title || `${resolvedParams.pageId} - TEAS Gurus`,
-          description: pageData.meta?.description || "",
-          keywords: pageData.meta?.keywords || "",
-          openGraph: {
-            title:
-              pageData.meta?.ogTitle ||
-              pageData.meta?.title ||
-              `${resolvedParams.pageId} - TEAS Gurus`,
-            description:
-              pageData.meta?.ogDescription || pageData.meta?.description || "",
-            url:
-              pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.serviceId}/${resolvedParams.pageId}`,
-            images: [
-              {
-                url: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-                width: 1200,
-                height: 630,
-                alt:
-                  pageData.meta?.title ||
-                  `${resolvedParams.pageId} - TEAS Gurus`,
-              },
-            ],
-          },
-          alternates: {
-            canonical:
-              pageData.meta?.canonicalUrl ||
-              `/${resolvedParams.serviceId}/${resolvedParams.pageId}`,
-          },
-        };
+        if (serviceData.meta) {
+          return {
+            title: serviceData.meta.title || `${pageId} - ${serviceId} | TeasGurus`,
+            description: serviceData.meta.description || "",
+            keywords: serviceData.meta.keywords || "",
+            openGraph: {
+              title: serviceData.meta.ogTitle || serviceData.meta.title || `${pageId} - ${serviceId}`,
+              description: serviceData.meta.ogDescription || serviceData.meta.description || "",
+              url: serviceData.meta.canonicalUrl || `https://teasgurus.com/${serviceId}/${pageId}`,
+              images: [
+                {
+                  url: serviceData.meta.ogImage || "/teas-gurus-logo.png",
+                  width: 1200,
+                  height: 630,
+                  alt: serviceData.meta.title || `${pageId} - ${serviceId}`,
+                },
+              ],
+            },
+            alternates: {
+              canonical: serviceData.meta.canonicalUrl || `/${serviceId}/${pageId}`,
+            },
+          };
+        }
       }
+    } catch (error) {
+      console.error("Error generating metadata:", error);
     }
-  } catch (error) {
-    console.error("Error generating metadata:", error);
+  } else {
+    // Support page metadata
+    try {
+      const result = await getAllSupportPages();
+
+      if (result.success && result.data) {
+        const pages = result.data;
+        const pageData = pages[serviceId]?.[pageId];
+
+        if (pageData) {
+          return {
+            title:
+              pageData.meta?.title || `${pageId} - TEAS Gurus`,
+            description: pageData.meta?.description || "",
+            keywords: pageData.meta?.keywords || "",
+            openGraph: {
+              title:
+                pageData.meta?.ogTitle ||
+                pageData.meta?.title ||
+                `${pageId} - TEAS Gurus`,
+              description:
+                pageData.meta?.ogDescription || pageData.meta?.description || "",
+              url:
+                pageData.meta?.canonicalUrl ||
+                `https://teasgurus.com/${serviceId}/${pageId}`,
+              images: [
+                {
+                  url: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+                  width: 1200,
+                  height: 630,
+                  alt:
+                    pageData.meta?.title ||
+                    `${pageId} - TEAS Gurus`,
+                },
+              ],
+            },
+            alternates: {
+              canonical:
+                pageData.meta?.canonicalUrl ||
+                `/${serviceId}/${pageId}`,
+            },
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Error generating metadata:", error);
+    }
   }
 
   // Fallback metadata
   return {
-    title: `${resolvedParams.pageId} - TEAS Gurus`,
-    description: `Get help with your ${resolvedParams.pageId} TEAS exam preparation.`,
+    title: `${pageId} - ${serviceId} | TEAS Gurus`,
+    description: `Get help with your ${pageId} ${serviceId} exam preparation.`,
     alternates: {
-      canonical: `/${resolvedParams.serviceId}/${resolvedParams.pageId}`,
+      canonical: `/${serviceId}/${pageId}`,
     },
   };
 }
@@ -129,6 +174,426 @@ export default async function SupportPage({ params }: PageProps) {
   const resolvedParams = await params;
   const { serviceId, pageId } = resolvedParams;
 
+  // First, check if serviceId is a pillar page
+  const isPillar = await isPillarPage(serviceId);
+  
+  if (isPillar) {
+    // This is a pillar service page (e.g., /nclex/wrtting)
+    // Render with the same structure as regular service pages
+    let serviceContent: any = null;
+
+    try {
+      const serviceResult = await getPillarServicePageContent(serviceId, pageId);
+      if (serviceResult.success && serviceResult.data) {
+        serviceContent = serviceResult.data;
+      }
+    } catch (error) {
+      console.error("Error loading pillar service page content:", error);
+    }
+
+    if (!serviceContent) {
+      notFound();
+    }
+
+    // Import the icon component function from the regular service page
+    const getIconComponent = (iconName: string) => {
+      const iconMap: { [key: string]: React.ReactNode } = {
+        check: (
+          <svg
+            className="w-12 h-12 text-green-500 mx-auto"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        ),
+        shield: (
+          <svg
+            className="w-12 h-12 text-blue-500 mx-auto"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
+          </svg>
+        ),
+        star: (
+          <svg
+            className="w-12 h-12 text-yellow-500 mx-auto"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        ),
+        "check-circle": (
+          <svg
+            className="w-12 h-12 text-green-500 mx-auto"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        ),
+      };
+
+      return iconMap[iconName] || iconMap.check;
+    };
+
+    // Render with the same structure as regular service pages
+    return (
+      <Layout>
+        {/* Schema Script */}
+        {serviceContent?.schema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: serviceContent.schema,
+            }}
+          />
+        )}
+
+        {/* Hero Section */}
+        <section className="gradient-bg text-white py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Breadcrumb */}
+            <div className="mb-8">
+              <Breadcrumb
+                items={[
+                  { label: "Home", href: "/" },
+                  {
+                    label:
+                      serviceId.charAt(0).toUpperCase() +
+                      serviceId.slice(1).replace(/-/g, " "),
+                    href: `/${serviceId}`,
+                  },
+                  {
+                    label:
+                      pageId.charAt(0).toUpperCase() +
+                      pageId.slice(1).replace(/-/g, " "),
+                  },
+                ]}
+                className="text-white"
+              />
+            </div>
+
+            <div className="text-center">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+                <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                {serviceContent?.hero?.badge || "TEAS Exam Help"}
+              </div>
+              <h1 className="text-5xl md:text-6xl font-bold mb-6">
+                {serviceContent?.hero?.title || `${pageId} - TEAS Gurus`}
+              </h1>
+              <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+                <ContentRenderer
+                  content={serviceContent?.hero?.subtitle || ""}
+                  textColor="white"
+                />
+              </div>
+              <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
+                <ContentRenderer
+                  content={serviceContent?.hero?.description || ""}
+                  textColor="white"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="/hesi-a2"
+                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+                >
+                  Our Services
+                </Link>
+                <Link
+                  href="/prices"
+                  className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+                >
+                  View Pricing
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust Indicators Section */}
+        {serviceContent?.trustIndicators && serviceContent.trustIndicators.length > 0 && (
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {serviceContent.trustIndicators.map((indicator: any, index: number) => (
+                  <div
+                    key={index}
+                    className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="mb-4">{getIconComponent(indicator.icon)}</div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {indicator.title}
+                    </h3>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* What to Expect Section */}
+        {serviceContent?.whatToExpect && (
+          <section className="py-20 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-6">
+                  <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+                  {serviceContent.whatToExpect.badge}
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  {serviceContent.whatToExpect.title}
+                </h2>
+                <div className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  <ContentRenderer
+                    content={serviceContent.whatToExpect.subtitle || ""}
+                  />
+                </div>
+              </div>
+
+              <div
+                className={`grid gap-8 ${
+                  serviceContent.whatToExpect.cards.length === 1
+                    ? "grid-cols-1"
+                    : "grid-cols-1 md:grid-cols-2"
+                }`}
+              >
+                {serviceContent.whatToExpect.cards.map((card: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    <div className="mb-6">{getIconComponent(card.icon)}</div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                      {card.title}
+                    </h3>
+                    <ul className="space-y-3">
+                      {card.content.map((item: string, itemIndex: number) => (
+                        <li
+                          key={itemIndex}
+                          className="flex items-start space-x-3 text-gray-600"
+                        >
+                          <span className="text-green-500 mt-1">✓</span>
+                          <ContentRenderer content={item} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              {serviceContent.whatToExpect.footer && (
+                <div className="text-center mt-12">
+                  <div className="text-lg text-gray-600">
+                    <ContentRenderer content={serviceContent.whatToExpect.footer} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Most Common Questions Section */}
+        {serviceContent?.mostCommonQuestions && (
+          <section className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold mb-6">
+                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
+                  {serviceContent.mostCommonQuestions.badge}
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  {serviceContent.mostCommonQuestions.title}
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  {serviceContent.mostCommonQuestions.subtitle}
+                </p>
+              </div>
+
+              <div
+                className={`grid gap-8 ${
+                  serviceContent.mostCommonQuestions.cards.length === 1
+                    ? "grid-cols-1"
+                    : "grid-cols-1 md:grid-cols-2"
+                }`}
+              >
+                {serviceContent.mostCommonQuestions.cards.map((card: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-gray-50 rounded-2xl p-8 hover:bg-gray-100 transition-colors"
+                  >
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                      {card.title}
+                    </h3>
+                    <ul className="space-y-3">
+                      {card.content.map((item: string, itemIndex: number) => (
+                        <li
+                          key={itemIndex}
+                          className="flex items-start space-x-3 text-gray-600"
+                        >
+                          <span className="text-purple-500 mt-1">•</span>
+                          <ContentRenderer content={item} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Study Guide Section */}
+        {serviceContent?.studyGuide && (
+          <section className="py-20 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+                  <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                  {serviceContent.studyGuide.badge}
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  {serviceContent.studyGuide.title}
+                </h2>
+                <div className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  <ContentRenderer
+                    content={serviceContent.studyGuide.subtitle || ""}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {serviceContent.studyGuide.sections.map((section: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    <div className="mb-6">{getIconComponent(section.icon)}</div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                      {section.title}
+                    </h3>
+                    <div className="text-gray-600 leading-relaxed">
+                      <ContentRenderer content={section.content} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Privacy & Pricing Section */}
+        {serviceContent?.privacyPricing && serviceContent.privacyPricing.length > 0 && (
+          <section className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div
+                className={`grid gap-8 ${
+                  serviceContent.privacyPricing.length === 1
+                    ? "grid-cols-1"
+                    : "grid-cols-1 md:grid-cols-2"
+                }`}
+              >
+                {serviceContent.privacyPricing.map((card: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
+                  >
+                    <div className="mb-6">{getIconComponent(card.icon)}</div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                      {card.title}
+                    </h3>
+                    <div className="text-gray-600 leading-relaxed">
+                      <ContentRenderer content={card.content} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* FAQ Section */}
+        {serviceContent?.faq && (
+          <section className="py-20 bg-gray-50">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  {serviceContent.faq.title}
+                </h2>
+                <div className="text-xl text-gray-600">
+                  <ContentRenderer
+                    content={serviceContent.faq.subtitle || ""}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                {serviceContent.faq.questions.map((faq: any, index: number) => (
+                  <div key={index} className="bg-white rounded-2xl p-8 shadow-lg">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                      {faq.question}
+                    </h3>
+                    <div className="space-y-4">
+                      {faq.paragraphs.map((paragraph: string, pIndex: number) => (
+                        <div
+                          key={pIndex}
+                          className="text-gray-600 leading-relaxed"
+                        >
+                          <ContentRenderer content={paragraph} />
+                        </div>
+                      ))}
+                      {faq.additionalParagraphs && (
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          {faq.additionalParagraphs.map((paragraph: string, pIndex: number) => (
+                            <div
+                              key={pIndex}
+                              className="text-gray-600 leading-relaxed"
+                            >
+                              <ContentRenderer content={paragraph} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Contact Form Section */}
+        <section className="py-20 bg-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ContactForm title="Get Started Today" />
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  // If not a pillar page, treat it as a support page (existing functionality)
   let content: SupportPageContent | null = null;
 
   try {

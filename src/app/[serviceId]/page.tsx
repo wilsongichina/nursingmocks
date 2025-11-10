@@ -4,6 +4,7 @@ import Layout from "@/components/layout/Layout";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
+import ContactForm from "@/components/ui/ContactForm";
 import { getServiceContent, getAllServices } from "@/lib/firestore-operations";
 import { mathPageContent } from "@/lib/math-page-content";
 
@@ -81,19 +82,33 @@ interface PageProps {
 // Generate static params at build time
 export async function generateStaticParams() {
   try {
-    const result = await getAllServices();
+    const { getAllPillarPages } = await import("@/lib/firestore-operations");
+    
+    // Get both regular services and pillar pages
+    const [servicesResult, pillarPagesResult] = await Promise.all([
+      getAllServices(),
+      getAllPillarPages(),
+    ]);
 
-    if (result.success && result.data) {
-      const services = result.data;
-      const params: Array<{ serviceId: string }> = [];
+    const params: Array<{ serviceId: string }> = [];
 
-      // Extract all possible serviceId combinations
-      services.forEach((serviceId) => {
+    // Add regular services
+    if (servicesResult.success && servicesResult.data) {
+      servicesResult.data.forEach((serviceId) => {
         params.push({ serviceId });
       });
-
-      return params;
     }
+
+    // Add pillar pages
+    if (pillarPagesResult.success && pillarPagesResult.data) {
+      pillarPagesResult.data.forEach((pillarPage: any) => {
+        if (pillarPage.id && !params.find((p) => p.serviceId === pillarPage.id)) {
+          params.push({ serviceId: pillarPage.id });
+        }
+      });
+    }
+
+    return params;
   } catch (error) {
     console.error("Error generating static params:", error);
   }
@@ -109,46 +124,97 @@ export async function generateMetadata({
   const resolvedParams = await params;
 
   try {
-    const result = await getServiceContent(resolvedParams.serviceId);
+    // First check if this is a pillar page
+    const { isPillarPage, getPillarPageContent } = await import(
+      "@/lib/firestore-operations"
+    );
+    const isPillar = await isPillarPage(resolvedParams.serviceId);
 
-    if (result.success && result.data) {
-      const serviceData = result.data as ServiceContent;
-
-      if (serviceData.meta) {
-        return {
-          title:
-            serviceData.meta.title ||
-            `${resolvedParams.serviceId} - TEAS Gurus`,
-          description: serviceData.meta.description || "",
-          keywords: serviceData.meta.keywords || "",
-          openGraph: {
+    if (isPillar) {
+      // This is a pillar page - use pillar page metadata
+      const pillarResult = await getPillarPageContent(resolvedParams.serviceId);
+      if (pillarResult.success && pillarResult.data) {
+        const pillarData = pillarResult.data as any;
+        if (pillarData.meta) {
+          return {
             title:
-              serviceData.meta.ogTitle ||
+              pillarData.meta.title ||
+              `${resolvedParams.serviceId} - TeasGurus`,
+            description: pillarData.meta.description || "",
+            keywords: pillarData.meta.keywords || "",
+            openGraph: {
+              title:
+                pillarData.meta.ogTitle ||
+                pillarData.meta.title ||
+                `${resolvedParams.serviceId} - TeasGurus`,
+              description:
+                pillarData.meta.ogDescription ||
+                pillarData.meta.description ||
+                "",
+              url:
+                pillarData.meta.canonicalUrl ||
+                `https://teasgurus.com/${resolvedParams.serviceId}`,
+              images: [
+                {
+                  url: pillarData.meta.ogImage || "/teas-gurus-logo.png",
+                  width: 1200,
+                  height: 630,
+                  alt:
+                    pillarData.meta.title ||
+                    `${resolvedParams.serviceId} - TeasGurus`,
+                },
+              ],
+            },
+            alternates: {
+              canonical:
+                pillarData.meta.canonicalUrl || `/${resolvedParams.serviceId}`,
+            },
+          };
+        }
+      }
+    } else {
+      // Regular service page
+      const result = await getServiceContent(resolvedParams.serviceId);
+
+      if (result.success && result.data) {
+        const serviceData = result.data as ServiceContent;
+
+        if (serviceData.meta) {
+          return {
+            title:
               serviceData.meta.title ||
               `${resolvedParams.serviceId} - TEAS Gurus`,
-            description:
-              serviceData.meta.ogDescription ||
-              serviceData.meta.description ||
-              "",
-            url:
-              serviceData.meta.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.serviceId}`,
-            images: [
-              {
-                url: serviceData.meta.ogImage || "/teas-gurus-logo.png",
-                width: 1200,
-                height: 630,
-                alt:
-                  serviceData.meta.title ||
-                  `${resolvedParams.serviceId} - TEAS Gurus`,
-              },
-            ],
-          },
-          alternates: {
-            canonical:
-              serviceData.meta.canonicalUrl || `/${resolvedParams.serviceId}`,
-          },
-        };
+            description: serviceData.meta.description || "",
+            keywords: serviceData.meta.keywords || "",
+            openGraph: {
+              title:
+                serviceData.meta.ogTitle ||
+                serviceData.meta.title ||
+                `${resolvedParams.serviceId} - TEAS Gurus`,
+              description:
+                serviceData.meta.ogDescription ||
+                serviceData.meta.description ||
+                "",
+              url:
+                serviceData.meta.canonicalUrl ||
+                `https://teasgurus.com/${resolvedParams.serviceId}`,
+              images: [
+                {
+                  url: serviceData.meta.ogImage || "/teas-gurus-logo.png",
+                  width: 1200,
+                  height: 630,
+                  alt:
+                    serviceData.meta.title ||
+                    `${resolvedParams.serviceId} - TEAS Gurus`,
+                },
+              ],
+            },
+            alternates: {
+              canonical:
+                serviceData.meta.canonicalUrl || `/${resolvedParams.serviceId}`,
+            },
+          };
+        }
       }
     }
   } catch (error) {
@@ -285,6 +351,235 @@ export default async function ServicePage({ params }: PageProps) {
   const resolvedParams = await params;
   const serviceId = resolvedParams.serviceId;
 
+  // First, check if this is a pillar page
+  const { isPillarPage, getPillarPageContent } = await import(
+    "@/lib/firestore-operations"
+  );
+  const isPillar = await isPillarPage(serviceId);
+
+  if (isPillar) {
+    // This is a pillar page - render pillar page content
+    const pillarResult = await getPillarPageContent(serviceId);
+    if (pillarResult.success && pillarResult.data) {
+      const pillarContent = pillarResult.data;
+
+      // Render pillar page using the same structure as the deleted [pillarPage]/page.tsx
+      return (
+        <Layout>
+          {/* Schema Script */}
+          {(pillarContent as any).schema && (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: (pillarContent as any).schema,
+              }}
+            />
+          )}
+
+          {/* Hero Section */}
+          <section className="gradient-bg text-white py-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Breadcrumb */}
+              <div className="mb-8">
+                <Breadcrumb
+                  items={[
+                    { label: "Home", href: "/" },
+                    { label: serviceId.toUpperCase() },
+                  ]}
+                  className="text-white"
+                />
+              </div>
+
+              <div className="text-center">
+                <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+                  <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                  {(pillarContent as any).hero?.badge || "We are Teas Gurus"}
+                </div>
+                <h1 className="text-5xl md:text-6xl font-bold mb-6">
+                  {(pillarContent as any).hero?.title ||
+                    `${serviceId.toUpperCase()} Services`}
+                </h1>
+                <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+                  <ContentRenderer
+                    content={
+                      (pillarContent as any).hero?.subtitle ||
+                      `Comprehensive ${serviceId.toUpperCase()} exam services designed to help you succeed. From full exam taking to targeted practice tests, we have everything you need to achieve your goals.`
+                    }
+                    textColor="white"
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    href="/contact"
+                    className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+                  >
+                    Get Started
+                  </Link>
+                  <Link
+                    href="/prices"
+                    className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+                  >
+                    View Pricing
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Services Grid */}
+          {(pillarContent as any).services &&
+            (pillarContent as any).services.length > 0 && (
+              <section className="py-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center mb-16">
+                    <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                      {(pillarContent as any).servicesHeading ||
+                        `Our Comprehensive ${serviceId.toUpperCase()} Services`}
+                    </h2>
+                    <div className="text-xl text-gray-600 max-w-3xl mx-auto">
+                      <ContentRenderer
+                        content={
+                          (pillarContent as any).servicesSubHeading ||
+                          "Choose the service that best fits your learning style and timeline. All services include our proven strategies and expert support."
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-8">
+                    {(pillarContent as any).services.map(
+                      (service: any, index: number) => {
+                        const serviceSlug = service.title
+                          .toLowerCase()
+                          .includes("math")
+                          ? "math"
+                          : service.title.toLowerCase().includes("reading")
+                          ? "reading"
+                          : service.title.toLowerCase().includes("science")
+                          ? "science"
+                          : service.title.toLowerCase().includes("english")
+                          ? "english"
+                          : "math";
+
+                        return (
+                          <div
+                            key={index}
+                            className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300"
+                          >
+                            <div className="flex items-start space-x-4 mb-6">
+                              <div className="text-4xl">{service.icon}</div>
+                              <div className="flex-1">
+                                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                                  {service.title}
+                                </h3>
+                                <div className="text-gray-600 mb-6 leading-relaxed">
+                                  <ContentRenderer content={service.description} />
+                                </div>
+                              </div>
+                            </div>
+
+                            <ul className="space-y-3 mb-6">
+                              {service.features?.map(
+                                (feature: string, featureIndex: number) => (
+                                  <li
+                                    key={featureIndex}
+                                    className="flex items-start text-gray-700"
+                                  >
+                                    <svg
+                                      className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                    <div className="flex-1">
+                                      <ContentRenderer content={feature} />
+                                    </div>
+                                  </li>
+                                )
+                              )}
+                            </ul>
+
+                            {service.callToAction && (
+                              <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                                <div className="text-lg font-semibold text-blue-900">
+                                  <ContentRenderer content={service.callToAction} />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row gap-4">
+                              <Link
+                                href={`/${serviceId}/${serviceSlug}`}
+                                className="bg-yellow-500 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-400 transition-colors text-center"
+                              >
+                                Learn More
+                              </Link>
+                              <Link
+                                href="/contact"
+                                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
+                              >
+                                Get a Quote
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
+
+          {/* Contact Form Section */}
+          <section className="py-20 bg-gray-50">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  Ready to Get Started?
+                </h2>
+                <p className="text-xl text-gray-600">
+                  Contact us today to discuss your {serviceId.toUpperCase()}{" "}
+                  exam needs and get personalized support.
+                </p>
+              </div>
+              <ContactForm
+                title={`Get Your ${serviceId.toUpperCase()} Support`}
+              />
+            </div>
+          </section>
+        </Layout>
+      );
+    } else {
+      // Pillar page not found
+      return (
+        <Layout>
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                Pillar Page Not Found
+              </h1>
+              <p className="text-gray-600 mb-6">
+                The requested pillar page could not be found.
+              </p>
+              <Link
+                href="/"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go Home
+              </Link>
+            </div>
+          </div>
+        </Layout>
+      );
+    }
+  }
+
+  // If not a pillar page, treat it as a TEAS support page (in pages collection)
   let content: ServiceContent | null = null;
 
   try {

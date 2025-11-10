@@ -575,6 +575,291 @@ export const getBlogsByCategory = async (category: string) => {
   }
 };
 
+// ==================== ROUTE RESOLVER ====================
+
+// Check if a slug is a pillar page (not TEAS which is homepage)
+export const isPillarPage = async (slug: string): Promise<boolean> => {
+  try {
+    // Special case: "teas" is the homepage, not a pillar page route
+    if (slug === "teas" || slug === "" || !slug) {
+      return false;
+    }
+    
+    const result = await getPillarPageContent(slug);
+    return result.success && result.data !== null;
+  } catch {
+    return false;
+  }
+};
+
+// Check if a slug is a TEAS support page (in pages collection)
+export const isTeasSupportPage = async (slug: string): Promise<boolean> => {
+  try {
+    // Check if it exists in pages collection (TEAS support pages)
+    const result = await getServiceContent(slug);
+    return result.success && result.data !== null;
+  } catch {
+    return false;
+  }
+};
+
+// ==================== PILLAR PAGES OPERATIONS ====================
+
+// Get all pillar pages from Firestore
+export const getAllPillarPages = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "pillarPages"));
+    const pillarPages: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      pillarPages.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: pillarPages,
+      message: "All pillar pages retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting all pillar pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve pillar pages: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get pillar page content from Firestore by pillar page ID
+export const getPillarPageContent = async (pillarPageId: string) => {
+  try {
+    const docRef = doc(db, "pillarPages", pillarPageId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Pillar page ${pillarPageId} content retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No pillar page content found for ${pillarPageId} in Firestore`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting pillar page ${pillarPageId} content:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve pillar page ${pillarPageId} content: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload pillar page content to Firestore by pillar page ID
+export const uploadPillarPageContent = async (
+  pillarPageId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(db, "pillarPages", pillarPageId);
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Pillar page ${pillarPageId} content uploaded successfully to Firestore!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading pillar page ${pillarPageId} content:`, error);
+    return {
+      success: false,
+      message: `Failed to upload pillar page ${pillarPageId} content: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete pillar page content from Firestore by pillar page ID
+export const deletePillarPageContent = async (pillarPageId: string) => {
+  try {
+    const docRef = doc(db, "pillarPages", pillarPageId);
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Pillar page ${pillarPageId} deleted successfully from Firestore!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting pillar page ${pillarPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete pillar page ${pillarPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get service page content under a pillar page
+export const getPillarServicePageContent = async (
+  pillarPageId: string,
+  servicePageId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarPageId,
+      "services",
+      servicePageId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Service page ${servicePageId} under ${pillarPageId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No service page content found for ${pillarPageId}/${servicePageId} in Firestore`,
+      };
+    }
+  } catch (error) {
+    console.error(
+      `Error getting service page ${servicePageId} under ${pillarPageId}:`,
+      error
+    );
+    return {
+      success: false,
+      message: `Failed to retrieve service page ${servicePageId} under ${pillarPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload service page content under a pillar page
+export const uploadPillarServicePageContent = async (
+  pillarPageId: string,
+  servicePageId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarPageId,
+      "services",
+      servicePageId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Service page ${servicePageId} under ${pillarPageId} uploaded successfully to Firestore!`,
+    };
+  } catch (error) {
+    console.error(
+      `Error uploading service page ${servicePageId} under ${pillarPageId}:`,
+      error
+    );
+    return {
+      success: false,
+      message: `Failed to upload service page ${servicePageId} under ${pillarPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete service page content under a pillar page
+export const deletePillarServicePageContent = async (
+  pillarPageId: string,
+  servicePageId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarPageId,
+      "services",
+      servicePageId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Service page ${servicePageId} under ${pillarPageId} deleted successfully from Firestore!`,
+    };
+  } catch (error) {
+    console.error(
+      `Error deleting service page ${servicePageId} under ${pillarPageId}:`,
+      error
+    );
+    return {
+      success: false,
+      message: `Failed to delete service page ${servicePageId} under ${pillarPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all service pages under a pillar page
+export const getAllPillarServicePages = async (pillarPageId: string) => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(db, "pillarPages", pillarPageId, "services")
+    );
+    const servicePages: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      servicePages.push({
+        id: doc.id,
+        servicePageId: doc.id,
+        pillarPageId: pillarPageId,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: servicePages,
+      message: `All service pages under ${pillarPageId} retrieved successfully!`,
+    };
+  } catch (error) {
+    console.error(
+      `Error getting all service pages under ${pillarPageId}:`,
+      error
+    );
+    return {
+      success: false,
+      message: `Failed to retrieve service pages under ${pillarPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
 // Image Upload Functions
 export const uploadImage = async (
   file: File,

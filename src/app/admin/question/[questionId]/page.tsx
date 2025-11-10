@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 import {
   uploadQuestionContent,
   getQuestionContent,
@@ -90,6 +91,7 @@ export default function EditQuestionPage() {
         };
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData?.questionText, formData?.image, formData?.tags]);
 
   // Update schema when relevant fields change
@@ -365,6 +367,7 @@ export default function EditQuestionPage() {
         };
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData?.category, formData?.service]);
 
   const handleAnswerChange = (idx: number, value: string) => {
@@ -843,10 +846,13 @@ export default function EditQuestionPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-black"
                 />
                 {imagePreview && (
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="Preview"
-                    className="mt-2 max-h-32 rounded"
+                    width={128}
+                    height={128}
+                    className="mt-2 max-h-32 rounded object-contain"
+                    unoptimized
                   />
                 )}
               </div>
