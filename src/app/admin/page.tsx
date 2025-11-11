@@ -41,56 +41,6 @@ export default function AdminPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Services CMS Card */}
-          <Link
-            href="/admin/service"
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
-          >
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                  Services CMS
-                </h3>
-                <p className="text-sm text-gray-600">Manage service pages</p>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm">
-              Create, edit, and manage your TEAS service pages with full content
-              control.
-            </p>
-            <div className="mt-4 flex items-center text-blue-600 group-hover:text-blue-700 transition-colors">
-              <span className="text-sm font-medium">Manage Services</span>
-              <svg
-                className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </div>
-          </Link>
-
           {/* Pillar Pages Card */}
           <Link
             href="/admin/pillarpages"
@@ -124,6 +74,56 @@ export default function AdminPage() {
             </p>
             <div className="mt-4 flex items-center text-orange-600 group-hover:text-orange-700 transition-colors">
               <span className="text-sm font-medium">Manage Pillar Pages</span>
+              <svg
+                className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </Link>
+
+          {/* Category Pages Card (formerly Services CMS) */}
+          <Link
+            href="/admin/service"
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+          >
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
+                <svg
+                  className="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  Category Pages
+                </h3>
+                <p className="text-sm text-gray-600">Manage service pages</p>
+              </div>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Create, edit, and manage your TEAS service pages with full content
+              control.
+            </p>
+            <div className="mt-4 flex items-center text-blue-600 group-hover:text-blue-700 transition-colors">
+              <span className="text-sm font-medium">Manage Services</span>
               <svg
                 className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
                 fill="none"

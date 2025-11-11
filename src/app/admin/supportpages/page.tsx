@@ -7,6 +7,8 @@ import {
   deleteSupportPageContent,
   getAllPages,
   testFirebaseConnection,
+  getAllPillarPages,
+  getAllPillarServicePages,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -17,6 +19,8 @@ interface SupportPage {
   title?: string;
   lastUpdated?: string;
   version?: string;
+  pillarPageId?: string;
+  pillarPageName?: string;
   meta?: {
     title: string;
   };
@@ -24,14 +28,17 @@ interface SupportPage {
 
 export default function SupportPagesPage() {
   const [supportPages, setSupportPages] = useState<SupportPage[]>([]);
-  const [availableServices, setAvailableServices] = useState<string[]>([]);
+  const [availableServices, setAvailableServices] = useState<Array<{ id: string; title?: string; pillarPageId?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedPillarPage, setSelectedPillarPage] = useState("");
   const [newServiceId, setNewServiceId] = useState("");
   const [newPageId, setNewPageId] = useState("");
   const [newPageTitle, setNewPageTitle] = useState("");
+  const [pillarPages, setPillarPages] = useState<Array<{ id: string; pageName?: string }>>([]);
+  const [filterPillarPage, setFilterPillarPage] = useState("all");
 
   useEffect(() => {
     // Test Firebase connection first
@@ -43,7 +50,7 @@ export default function SupportPagesPage() {
     });
 
     loadSupportPages();
-    loadAvailableServices();
+    loadPillarPages();
   }, []);
 
   const loadSupportPages = async () => {
@@ -59,6 +66,15 @@ export default function SupportPagesPage() {
         console.log("Support pages data structure:", result.data);
         const pagesList: SupportPage[] = [];
 
+        // Load pillar pages to get names
+        const pillarPagesResult = await getAllPillarPages();
+        const pillarPagesMap = new Map<string, string>();
+        if (pillarPagesResult.success && pillarPagesResult.data) {
+          pillarPagesResult.data.forEach((page) => {
+            pillarPagesMap.set(page.id, page.pageName || page.id);
+          });
+        }
+
         // Handle the nested structure: { serviceId: { pageId: pageData } }
         Object.keys(result.data).forEach((serviceId) => {
           const servicePages = result.data[serviceId];
@@ -67,10 +83,18 @@ export default function SupportPagesPage() {
             Object.keys(servicePages).forEach((pageId) => {
               const pageData = servicePages[pageId];
               console.log(`Page ${pageId} data:`, pageData);
+              
+              // Check if serviceId contains a slash (pillar service)
+              const isPillarService = serviceId.includes("/");
+              const pillarPageId = isPillarService ? serviceId.split("/")[0] : undefined;
+              const pillarPageName = pillarPageId ? pillarPagesMap.get(pillarPageId) : undefined;
+              
               pagesList.push({
                 id: `${serviceId}_${pageId}`,
                 serviceId,
                 pageId,
+                pillarPageId,
+                pillarPageName,
                 ...pageData,
               });
             });
@@ -96,27 +120,58 @@ export default function SupportPagesPage() {
     }
   };
 
-  const loadAvailableServices = async () => {
+  const loadPillarPages = async () => {
     try {
-      const result = await getAllPages();
-
+      const result = await getAllPillarPages();
       if (result.success && result.data) {
-        // Extract service IDs from the pages collection
-        const serviceIds = Object.keys(result.data);
-        setAvailableServices(serviceIds);
-      } else {
-        console.warn("Failed to load available services");
+        setPillarPages(result.data);
       }
     } catch (err) {
+      console.error("Error loading pillar pages:", err);
+    }
+  };
+
+  const loadAvailableServices = async (pillarPageId: string) => {
+    try {
+      const services: Array<{ id: string; title?: string; pillarPageId?: string }> = [];
+
+      if (pillarPageId === "teas" || pillarPageId === "") {
+        // Load regular services (TEAS)
+        const result = await getAllPages();
+        if (result.success && result.data) {
+          Object.keys(result.data).forEach((id) => {
+            services.push({
+              id,
+              title: result.data[id]?.hero?.title || id,
+            });
+          });
+        }
+      } else {
+        // Load services from the selected pillar page
+        const pillarServicesResult = await getAllPillarServicePages(pillarPageId);
+        if (pillarServicesResult.success && pillarServicesResult.data) {
+          pillarServicesResult.data.forEach((service: any) => {
+            services.push({
+              id: `${pillarPageId}/${service.servicePageId}`,
+              title: service.hero?.title || service.servicePageId,
+              pillarPageId,
+            });
+          });
+        }
+      }
+
+      setAvailableServices(services);
+    } catch (err) {
       console.error("Error loading available services:", err);
+      setAvailableServices([]);
     }
   };
 
   const handleCreateSupportPage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newServiceId.trim() || !newPageId.trim() || !newPageTitle.trim()) {
-      setError("Please provide service ID, page ID, and title");
+    if (!selectedPillarPage || !newServiceId.trim() || !newPageId.trim() || !newPageTitle.trim()) {
+      setError("Please provide pillar page, service ID, page ID, and title");
       return;
     }
 
@@ -206,9 +261,11 @@ export default function SupportPagesPage() {
 
       if (result.success) {
         setSuccess("Support page created successfully!");
+        setSelectedPillarPage("");
         setNewServiceId("");
         setNewPageId("");
         setNewPageTitle("");
+        setAvailableServices([]);
         setIsCreating(false);
         loadSupportPages(); // Reload the pages list
         setTimeout(() => setSuccess(""), 3000);
@@ -248,6 +305,24 @@ export default function SupportPagesPage() {
       console.error("Error deleting support page:", err);
     }
   };
+
+  // Filter support pages based on selected pillar page
+  const filteredSupportPages = 
+    filterPillarPage === "all"
+      ? supportPages
+      : filterPillarPage === "teas"
+      ? supportPages.filter((page) => !page.pillarPageId)
+      : supportPages.filter((page) => page.pillarPageId === filterPillarPage);
+
+  // Load services when pillar page selection changes
+  useEffect(() => {
+    if (selectedPillarPage) {
+      loadAvailableServices(selectedPillarPage);
+    } else {
+      setAvailableServices([]);
+      setNewServiceId("");
+    }
+  }, [selectedPillarPage]);
 
   if (loading) {
     return (
@@ -377,7 +452,7 @@ export default function SupportPagesPage() {
 
         {/* Create Support Page Modal */}
         {isCreating && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
             <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Create New Support Page
@@ -385,23 +460,51 @@ export default function SupportPagesPage() {
               <form onSubmit={handleCreateSupportPage} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Pillar Page
+                  </label>
+                  <select
+                    value={selectedPillarPage}
+                    onChange={(e) => {
+                      setSelectedPillarPage(e.target.value);
+                      setNewServiceId("");
+                    }}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white"
+                    required
+                  >
+                    <option value="">Select a pillar page...</option>
+                    <option value="teas">TEAS</option>
+                    {pillarPages.map((page) => (
+                      <option key={page.id} value={page.id}>
+                        {page.pageName || page.id}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select the pillar page this support page belongs to
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Service ID
                   </label>
                   <select
                     value={newServiceId}
                     onChange={(e) => setNewServiceId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
+                    disabled={!selectedPillarPage}
                   >
                     <option value="">Select a service...</option>
-                    {availableServices.map((serviceId) => (
-                      <option key={serviceId} value={serviceId}>
-                        {serviceId}
+                    {availableServices.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.id.includes("/") ? service.id.split("/")[1] : service.id}
                       </option>
                     ))}
                   </select>
                   <p className="text-sm text-gray-500 mt-1">
-                    Select the service this page belongs to
+                    {selectedPillarPage 
+                      ? `Select the service from ${selectedPillarPage === "teas" ? "TEAS" : pillarPages.find(p => p.id === selectedPillarPage)?.pageName || selectedPillarPage}`
+                      : "Please select a pillar page first"}
                   </p>
                 </div>
                 <div>
@@ -449,9 +552,11 @@ export default function SupportPagesPage() {
                     type="button"
                     onClick={() => {
                       setIsCreating(false);
+                      setSelectedPillarPage("");
                       setNewServiceId("");
                       setNewPageId("");
                       setNewPageTitle("");
+                      setAvailableServices([]);
                     }}
                     className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
                   >
@@ -463,9 +568,34 @@ export default function SupportPagesPage() {
           </div>
         )}
 
+        {/* Filter Section */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-semibold text-gray-700">
+              Filter by Pillar Page:
+            </label>
+            <select
+              value={filterPillarPage}
+              onChange={(e) => setFilterPillarPage(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white min-w-[200px]"
+            >
+              <option value="all">All Support Pages</option>
+              <option value="teas">TEAS</option>
+              {pillarPages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.pageName || page.id}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="text-sm text-gray-600">
+            Showing {filteredSupportPages.length} page(s)
+          </div>
+        </div>
+
         {/* Support Pages Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {supportPages.map((page) => (
+          {filteredSupportPages.map((page) => (
             <div
               key={page.id}
               className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
@@ -477,6 +607,11 @@ export default function SupportPagesPage() {
                       page.title ||
                       `${page.serviceId}/${page.pageId}`}
                   </h3>
+                  {page.pillarPageId && (
+                    <p className="text-sm text-orange-600 font-medium mb-1">
+                      Pillar: {page.pillarPageName || page.pillarPageId}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-600 mb-2">
                     Service: {page.serviceId}
                   </p>
@@ -491,7 +626,7 @@ export default function SupportPagesPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Link
-                    href={`/admin/supportpages/${page.serviceId}/${page.pageId}`}
+                    href={`/admin/supportpages/${page.serviceId.split("/").join("/")}/${page.pageId}`}
                     className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                   >
                     Edit
@@ -524,7 +659,7 @@ export default function SupportPagesPage() {
           ))}
         </div>
 
-        {supportPages.length === 0 && !loading && (
+        {filteredSupportPages.length === 0 && !loading && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg

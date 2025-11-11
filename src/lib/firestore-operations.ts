@@ -265,13 +265,20 @@ export const getAllSupportPages = async () => {
   }
 };
 
+// Helper function to encode serviceId for use in Firestore document IDs
+// Replaces slashes with double dashes to avoid path issues
+const encodeServiceId = (serviceId: string): string => {
+  return serviceId.replace(/\//g, "--");
+};
+
 // Get support page content from Firestore by service and page ID
 export const getSupportPageContent = async (
   serviceId: string,
   pageId: string
 ) => {
   try {
-    const docRef = doc(db, "supportPages", `${serviceId}_${pageId}`);
+    const encodedServiceId = encodeServiceId(serviceId);
+    const docRef = doc(db, "supportPages", `${encodedServiceId}_${pageId}`);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -304,7 +311,8 @@ export const uploadSupportPageContent = async (
   content: any
 ) => {
   try {
-    const docRef = doc(db, "supportPages", `${serviceId}_${pageId}`);
+    const encodedServiceId = encodeServiceId(serviceId);
+    const docRef = doc(db, "supportPages", `${encodedServiceId}_${pageId}`);
     await setDoc(docRef, {
       ...content,
       serviceId,
@@ -334,7 +342,8 @@ export const deleteSupportPageContent = async (
   pageId: string
 ) => {
   try {
-    const docRef = doc(db, "supportPages", `${serviceId}_${pageId}`);
+    const encodedServiceId = encodeServiceId(serviceId);
+    const docRef = doc(db, "supportPages", `${encodedServiceId}_${pageId}`);
     await deleteDoc(docRef);
 
     return {

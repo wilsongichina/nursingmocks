@@ -91,11 +91,14 @@ export async function generateStaticParams() {
     ]);
 
     const params: Array<{ serviceId: string }> = [];
+    let serviceCount = 0;
+    let pillarCount = 0;
 
     // Add regular services
     if (servicesResult.success && servicesResult.data) {
       servicesResult.data.forEach((serviceId) => {
         params.push({ serviceId });
+        serviceCount++;
       });
     }
 
@@ -104,10 +107,12 @@ export async function generateStaticParams() {
       pillarPagesResult.data.forEach((pillarPage: any) => {
         if (pillarPage.id && !params.find((p) => p.serviceId === pillarPage.id)) {
           params.push({ serviceId: pillarPage.id });
+          pillarCount++;
         }
       });
     }
 
+    console.log(`✓ Generated ${serviceCount} Service Pages and ${pillarCount} Pillar Pages`);
     return params;
   } catch (error) {
     console.error("Error generating static params:", error);

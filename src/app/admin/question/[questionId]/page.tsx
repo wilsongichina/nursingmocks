@@ -247,6 +247,7 @@ export default function EditQuestionPage() {
         };
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     formData?.questionText,
     formData?.slug,

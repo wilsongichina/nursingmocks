@@ -5,9 +5,9 @@ import {
   getAllPillarPages,
   deletePillarPageContent,
   getPillarPageContent,
+  uploadPillarPageContent,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface PillarPage {
   id: string;
@@ -21,7 +21,6 @@ interface PillarPage {
 }
 
 export default function AdminPillarPagesPage() {
-  const router = useRouter();
   const [pillarPages, setPillarPages] = useState<PillarPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -117,12 +116,128 @@ export default function AdminPillarPagesPage() {
       return;
     }
 
-    // Navigate to create page with query params
-    router.push(
-      `/admin/pillarpages/create?pageName=${encodeURIComponent(
-        newPageName
-      )}&slug=${encodeURIComponent(normalizedSlug)}`
-    );
+    try {
+      setError("");
+      setSuccess("");
+
+      // Create default content structure similar to hesi-a2
+      const defaultContent = {
+        pageName: newPageName,
+        meta: {
+          title: `${newPageName} | ${newPageName} Exam Services – TeasGurus`,
+          description: `Get guaranteed ${newPageName} exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your ${newPageName} test from start to finish.`,
+          keywords: `${newPageName} services, ${newPageName} practice tests, ${newPageName} study materials, ${newPageName} tutoring, ${newPageName} exam help, nursing school preparation`,
+          ogTitle: `${newPageName} | ${newPageName} Exam Services – TeasGurus`,
+          ogDescription: `Get guaranteed ${newPageName} exam support with real questions and expert help. Whether it's Math, Reading, Science, or English – TeasGurus handles your ${newPageName} test from start to finish.`,
+          ogImage: "/teas-gurus-logo.png",
+          canonicalUrl: `https://teasgurus.com/${normalizedSlug}`,
+        },
+        hero: {
+          badge: "We are Teas Gurus",
+          title: `${newPageName} Services`,
+          subtitle: `Comprehensive ${newPageName} exam services designed to help you succeed. From full exam taking to targeted practice tests, we have everything you need to achieve your goals.`,
+        },
+        servicesHeading: `Our Comprehensive ${newPageName} Services`,
+        servicesSubHeading: `Choose the service that best fits your learning style and timeline. All services include our proven strategies and expert support.`,
+        services: [
+          {
+            icon: "➗",
+            title: `${newPageName} Math Questions — Let Us Take It for You and Get Real Questions`,
+            description: `Are you worried about changing numbers or solving hard equations? Our math experts can take your ${newPageName} math test for you and give you the same kinds of questions that are on the real test.`,
+            features: [
+              `Full support for math, algebra, reading data, and taking measurements`,
+              `Real ${newPageName} Math Questions with answers and explanations`,
+              `We have professionals who take the test for you, either online or in person`,
+              `100% privacy, and if you're not happy, you can get your money back`,
+            ],
+            callToAction: `👉 We give you ${newPageName} Math Questions or take the test for you.`,
+          },
+          {
+            icon: "🔬",
+            title: `${newPageName} Science Questions — We Take the Test and Share Real Exam Content`,
+            description: `Don't worry about dealing with hard anatomy and chemistry. We'll take the ${newPageName} science test for you, and we'll give you access to the real questions so you can study and understand them ahead of time.`,
+            features: [
+              `Covers biology, chemistry, human anatomy & physiology, and scientific reasoning`,
+              `Get ${newPageName} Science Questions with the correct answers`,
+              `MSN-level tutors take the test for you in complete safety`,
+              `Transparent service and flexible payment options`,
+            ],
+            callToAction: `👉 We give you ${newPageName} Science Questions or do the science part for you.`,
+          },
+          {
+            icon: "📘",
+            title: `${newPageName} English Questions — We Handle the Test and Provide the Real Questions`,
+            description: `Are you stressed out about grammar? Not only will our team take the ${newPageName} English section for you, but they will also give you the real, current questions that are on the test.`,
+            features: [
+              `Includes spelling, punctuation, sentence structure, and word meaning`,
+              `Access the exact ${newPageName} English Questions that appeared on past exams`,
+              `We handle tests in person or remotely with 100% privacy`,
+              `Guaranteed score improvement or your money back`,
+            ],
+            callToAction: `👉 We give you ${newPageName} English Questions and or care of the whole test for you.`,
+          },
+          {
+            icon: "📖",
+            title: `${newPageName} Reading Questions — We Take the Test and Share Real Passages`,
+            description: `Are you having trouble with reading comprehension? Our experts will help you with the ${newPageName} Reading section and give you the real questions and passages that will be on the test.`,
+            features: [
+              `Focus on paragraph structure, inference skills, and passage analysis`,
+              `Exact ${newPageName} Reading Questions and answers provided`,
+              `Exams handled by experienced tutors with proven success`,
+              `Safe, secure, and results-focused exam assistance`,
+            ],
+            callToAction: `👉 We give you ${newPageName} Reading Questions and take the reading test for you.`,
+          },
+        ],
+        schema: `{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "TEAS Gurus",
+  "description": "Looking to pay someone to take my ${newPageName.toLowerCase()} exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
+  "url": "https://teasgurus.com/",
+  "logo": "https://teasgurus.com/teas-gurus-logo.png",
+  "sameAs": [
+    "https://www.instagram.com/teasgurus",
+    "https://www.tiktok.com/@teas.gurus",
+    "www.youtube.com/@TeasGurus",
+    "https://www.linkedin.com/company/teasgurus/"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "1-579-501-1983",
+    "contactType": "customer service",
+    "availableLanguage": "English"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": {
+      "@type": "Country",
+      "name": "US"
+    }
+  }
+}`,
+      };
+
+      const result = await uploadPillarPageContent(
+        normalizedSlug,
+        defaultContent
+      );
+
+      if (result.success) {
+        setSuccess(`${newPageName} pillar page created successfully!`);
+        setShowCreateModal(false);
+        setNewPageName("");
+        setNewSlug("");
+        setValidationError("");
+        loadPillarPages(); // Reload the pages list
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setValidationError(result.message || "Failed to create pillar page");
+      }
+    } catch (err) {
+      setValidationError("Failed to create pillar page");
+      console.error("Error creating pillar page:", err);
+    }
   };
 
   const handleDeletePillarPage = async (pillarPageId: string) => {
@@ -281,7 +396,7 @@ export default function AdminPillarPagesPage() {
 
         {/* Create Pillar Page Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
             <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Create New Pillar Page
