@@ -587,9 +587,56 @@ export default function EditServicePage({
 
         {/* Form Sections */}
         <div className="space-y-8">
-          {/* SEO & Meta Information */}
+          {/* Page Settings */}
           <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">SEO & Meta Information</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Page Settings</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Service ID
+                </label>
+                <input
+                  type="text"
+                  value={resolvedParams?.serviceId || ""}
+                  disabled
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Service identifier (read-only)
+                </p>
+              </div>
+              {resolvedParams?.isPillar && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Pillar Page ID
+                    </label>
+                    <input
+                      type="text"
+                      value={resolvedParams?.pillarPageId || ""}
+                      disabled
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Service Page ID
+                    </label>
+                    <input
+                      type="text"
+                      value={resolvedParams?.servicePageId || ""}
+                      disabled
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Meta Data */}
+          <div className="bg-white rounded-2xl p-8 shadow-lg">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Meta Data</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">

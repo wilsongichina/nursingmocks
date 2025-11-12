@@ -393,243 +393,238 @@ export default function EditSupportPage({
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Content */}
-          <div className="space-y-6">
-            {/* Page Settings */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Page Settings
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Service
-                  </label>
+        {/* Form Sections - Single Column Layout */}
+        <div className="space-y-8">
+          {/* Page Settings */}
+          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Page Settings
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Service
+                </label>
+                <input
+                  type="text"
+                  value={editableServiceId}
+                  onChange={(e) => setEditableServiceId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900"
+                  placeholder="e.g., nursing/fundamentals or reading"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Service ID (use format: pillarPage/servicePage for pillar services, or just serviceId for TEAS)
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Page Slug (URL)
+                </label>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">
+                    /{editableServiceId}/
+                  </span>
                   <input
                     type="text"
-                    value={editableServiceId}
-                    onChange={(e) => setEditableServiceId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                    placeholder="e.g., nursing/fundamentals or reading"
+                    value={editablePageId}
+                    onChange={(e) => setEditablePageId(e.target.value)}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    placeholder="page-slug"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Service ID (use format: pillarPage/servicePage for pillar services, or just serviceId for TEAS)
-                  </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Page Slug (URL)
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">
-                      /{editableServiceId}/
-                    </span>
-                    <input
-                      type="text"
-                      value={editablePageId}
-                      onChange={(e) => setEditablePageId(e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      placeholder="page-slug"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This will change the URL of the page. Use lowercase letters,
-                    numbers, and hyphens only.
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  This will change the URL of the page. Use lowercase letters,
+                  numbers, and hyphens only.
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* Hero Section */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Hero Section
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Badge
-                  </label>
-                  <input
-                    type="text"
-                    value={content.hero.badge}
-                    onChange={(e) =>
-                      updateContent("hero.badge", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., Study Guide"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={content.hero.title}
-                    onChange={(e) =>
-                      updateContent("hero.title", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="Page title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    value={content.hero.subtitle}
-                    onChange={(e) =>
-                      updateContent("hero.subtitle", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="Page subtitle"
-                  />
-                </div>
-                <div>
-                  <AnchorTextEditor
-                    value={content.hero.description}
-                    onChange={(value) =>
-                      updateContent("hero.description", value)
-                    }
-                    rows={4}
-                    label="Description"
-                    placeholder="Page description"
-                  />
-                </div>
+          {/* Meta Data */}
+          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Meta Data
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Page Title
+                </label>
+                <input
+                  type="text"
+                  value={content.meta.title}
+                  onChange={(e) =>
+                    updateContent("meta.title", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="SEO page title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Meta Description
+                </label>
+                <textarea
+                  value={content.meta.description}
+                  onChange={(e) =>
+                    updateContent("meta.description", e.target.value)
+                  }
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="SEO meta description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Keywords
+                </label>
+                <input
+                  type="text"
+                  value={content.meta.keywords}
+                  onChange={(e) =>
+                    updateContent("meta.keywords", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="SEO keywords"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  OG Title
+                </label>
+                <input
+                  type="text"
+                  value={content.meta.ogTitle}
+                  onChange={(e) =>
+                    updateContent("meta.ogTitle", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="Open Graph title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  OG Description
+                </label>
+                <textarea
+                  value={content.meta.ogDescription}
+                  onChange={(e) =>
+                    updateContent("meta.ogDescription", e.target.value)
+                  }
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="Open Graph description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Canonical URL
+                </label>
+                <input
+                  type="text"
+                  value={content.meta.canonicalUrl}
+                  onChange={(e) =>
+                    updateContent("meta.canonicalUrl", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="Canonical URL"
+                />
               </div>
             </div>
+          </div>
 
-            {/* Main Content */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Main Content
-              </h2>
-              <RichTextEditor
-                value={content.content}
-                onChange={(value) => updateContent("content", value)}
-                placeholder="Start typing your content..."
-                className="min-h-[400px]"
+          {/* Schema Markup */}
+          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Schema Markup
+            </h2>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                JSON-LD Schema
+              </label>
+              <textarea
+                value={content.schema}
+                onChange={(e) => updateContent("schema", e.target.value)}
+                rows={12}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 font-mono text-sm"
+                placeholder="Paste your JSON-LD schema here..."
               />
             </div>
           </div>
 
-          {/* Right Column - Meta & Schema */}
-          <div className="space-y-6">
-            {/* Meta Data */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Meta Data
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Page Title
-                  </label>
-                  <input
-                    type="text"
-                    value={content.meta.title}
-                    onChange={(e) =>
-                      updateContent("meta.title", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="SEO page title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Meta Description
-                  </label>
-                  <textarea
-                    value={content.meta.description}
-                    onChange={(e) =>
-                      updateContent("meta.description", e.target.value)
-                    }
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="SEO meta description"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Keywords
-                  </label>
-                  <input
-                    type="text"
-                    value={content.meta.keywords}
-                    onChange={(e) =>
-                      updateContent("meta.keywords", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="SEO keywords"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    OG Title
-                  </label>
-                  <input
-                    type="text"
-                    value={content.meta.ogTitle}
-                    onChange={(e) =>
-                      updateContent("meta.ogTitle", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="Open Graph title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    OG Description
-                  </label>
-                  <textarea
-                    value={content.meta.ogDescription}
-                    onChange={(e) =>
-                      updateContent("meta.ogDescription", e.target.value)
-                    }
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="Open Graph description"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Canonical URL
-                  </label>
-                  <input
-                    type="text"
-                    value={content.meta.canonicalUrl}
-                    onChange={(e) =>
-                      updateContent("meta.canonicalUrl", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="Canonical URL"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Schema */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Schema Markup
-              </h2>
+          {/* Hero Section */}
+          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Hero Section
+            </h2>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  JSON-LD Schema
+                  Badge
                 </label>
-                <textarea
-                  value={content.schema}
-                  onChange={(e) => updateContent("schema", e.target.value)}
-                  rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 font-mono text-sm"
-                  placeholder="Paste your JSON-LD schema here..."
+                <input
+                  type="text"
+                  value={content.hero.badge}
+                  onChange={(e) =>
+                    updateContent("hero.badge", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="e.g., Study Guide"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={content.hero.title}
+                  onChange={(e) =>
+                    updateContent("hero.title", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="Page title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={content.hero.subtitle}
+                  onChange={(e) =>
+                    updateContent("hero.subtitle", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="Page subtitle"
+                />
+              </div>
+              <div>
+                <AnchorTextEditor
+                  value={content.hero.description}
+                  onChange={(value) =>
+                    updateContent("hero.description", value)
+                  }
+                  rows={4}
+                  label="Description"
+                  placeholder="Page description"
                 />
               </div>
             </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Main Content
+            </h2>
+            <RichTextEditor
+              value={content.content}
+              onChange={(value) => updateContent("content", value)}
+              placeholder="Start typing your content..."
+              className="min-h-[400px]"
+            />
           </div>
         </div>
       </div>

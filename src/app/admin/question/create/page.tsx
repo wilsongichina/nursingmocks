@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
   uploadQuestionContent,
-  getAllServicesList,
   getAllPages,
+  getAllPillarPages,
+  getAllPillarServicePages,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 
@@ -40,8 +41,9 @@ interface QuestionFormData {
   publishStatus: string;
 }
 
-export default function CreateQuestionPage() {
+function CreateQuestionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<QuestionFormData>({
     questionText: "",
     answerChoices: ["", "", "", ""],
@@ -72,16 +74,103 @@ export default function CreateQuestionPage() {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [services, setServices] = useState<any[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [pillarPageCategories, setPillarPageCategories] = useState<Set<string>>(new Set());
+  const [pillarPages, setPillarPages] = useState<any[]>([]);
   const [newTag, setNewTag] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [dateTimeSuffix, setDateTimeSuffix] = useState<string>("");
+  const [pendingCategoryFromUrl, setPendingCategoryFromUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCategories();
-    loadServices();
+    loadPillarPages();
+    loadAllCategories();
+    loadPillarPageCategories();
   }, []);
+
+  // Load all categories that belong to pillar pages
+  const loadPillarPageCategories = async () => {
+    try {
+      const pillarPagesResult = await getAllPillarPages();
+      if (pillarPagesResult.success && pillarPagesResult.data) {
+        const allPillarCategories = new Set<string>();
+        
+        // Get all service pages (categories) from all pillar pages
+        for (const pillarPage of pillarPagesResult.data) {
+          const result = await getAllPillarServicePages(pillarPage.id);
+          if (result.success && result.data) {
+            result.data.forEach((service: any) => {
+              const categoryId = service.servicePageId || service.id;
+              if (categoryId) {
+                allPillarCategories.add(categoryId);
+              }
+            });
+          }
+        }
+        
+        setPillarPageCategories(allPillarCategories);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // Pre-fill form from URL query parameters (only once on mount)
+  useEffect(() => {
+    const serviceParam = searchParams.get("service");
+    const categoryParam = searchParams.get("category");
+    const setParam = searchParams.get("set");
+
+    // For TEAS, we need allCategories and pillarPageCategories loaded
+    // For pillar pages, we need pillarPages loaded
+    const isTeas = serviceParam === "teas";
+    const isReady = isTeas 
+      ? (allCategories.length > 0 && pillarPageCategories.size > 0)
+      : (pillarPages.length > 0);
+
+    if (serviceParam && isReady && !formData.service) {
+      setFormData((prev) => ({
+        ...prev,
+        service: serviceParam,
+      }));
+      
+      // Store category param to set after categories are loaded
+      if (categoryParam) {
+        setPendingCategoryFromUrl(categoryParam);
+      }
+    }
+
+    if (setParam && !formData.set) {
+      setFormData((prev) => ({
+        ...prev,
+        set: setParam,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pillarPages.length, allCategories.length, pillarPageCategories.size, searchParams]);
+
+  // Set category from URL once categories are loaded
+  useEffect(() => {
+    if (pendingCategoryFromUrl && categories.length > 0 && categories.includes(pendingCategoryFromUrl)) {
+      setFormData((prev) => ({
+        ...prev,
+        category: pendingCategoryFromUrl,
+      }));
+      setPendingCategoryFromUrl(null);
+    }
+  }, [categories, pendingCategoryFromUrl]);
+
+  // Update categories when service changes
+  useEffect(() => {
+    if (formData.service && pillarPages.length > 0 && allCategories.length > 0) {
+      loadCategoriesForService(formData.service);
+    } else {
+      setCategories([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.service, pillarPages, allCategories, pillarPageCategories]);
 
   // Helper function to strip HTML tags and decode HTML entities
   const stripHtmlTags = (html: string): string => {
@@ -331,27 +420,60 @@ export default function CreateQuestionPage() {
     formData.isMultipleAnswer,
   ]);
 
-  const loadCategories = async () => {
+  const loadPillarPages = async () => {
     try {
-      const result = await getAllPages();
+      const result = await getAllPillarPages();
       if (result.success && result.data) {
-        // Extract page IDs from the pages object
-        const pageIds = Object.keys(result.data);
-        setCategories(pageIds);
+        setPillarPages(result.data);
       }
     } catch {
       // ignore
     }
   };
 
-  const loadServices = async () => {
+  const loadAllCategories = async () => {
     try {
-      const result = await getAllServicesList();
+      const result = await getAllPages();
       if (result.success && result.data) {
-        setServices(result.data);
+        // Extract page IDs from the pages object
+        const pageIds = Object.keys(result.data);
+        setAllCategories(pageIds);
       }
     } catch {
       // ignore
+    }
+  };
+
+  const loadCategoriesForService = async (serviceId: string) => {
+    try {
+      // Check if this is TEAS
+      if (serviceId === "teas") {
+        // For TEAS, show only categories that don't belong to any pillar page
+        const teasCategories = allCategories.filter(
+          (cat) => !pillarPageCategories.has(cat)
+        );
+        setCategories(teasCategories);
+        return;
+      }
+
+      // Check if this is a pillar page
+      const pillarPage = pillarPages.find((p) => p.id === serviceId);
+      
+      if (pillarPage) {
+        // Load service pages (categories) for this pillar page
+        const result = await getAllPillarServicePages(serviceId);
+        if (result.success && result.data) {
+          const categoryIds = result.data.map((service: any) => service.servicePageId || service.id);
+          setCategories(categoryIds);
+        } else {
+          setCategories([]);
+        }
+      } else {
+        // For unknown services, show empty categories
+        setCategories([]);
+      }
+    } catch {
+      setCategories([]);
     }
   };
 
@@ -587,9 +709,63 @@ export default function CreateQuestionPage() {
       dataToSave
     );
     if (result.success) {
-      router.push("/admin/question");
+      setSuccess("Question created successfully!");
+      setError("");
+      
+      // Reset form but keep service, category, and set from URL params
+      const serviceParam = searchParams.get("service");
+      const categoryParam = searchParams.get("category");
+      const setParam = searchParams.get("set");
+      
+      // Reset dateTimeSuffix to allow new slug generation
+      setDateTimeSuffix("");
+      
+      // Reset form with preserved values
+      setFormData({
+        questionText: "",
+        answerChoices: ["", "", "", ""],
+        correctAnswer: "A",
+        correctAnswers: ["A"],
+        isMultipleAnswer: false,
+        explanation: "",
+        category: categoryParam || "",
+        service: serviceParam || "",
+        set: setParam || "",
+        passage: "",
+        tags: [],
+        image: "",
+        slug: "",
+        date: new Date().toISOString().split("T")[0],
+        meta: {
+          title: "",
+          description: "",
+          keywords: "",
+          ogTitle: "",
+          ogDescription: "",
+          ogImage: "",
+          canonicalUrl: "",
+        },
+        schema: "",
+        publishStatus: "published",
+      });
+      
+      // Reset image preview
+      setImagePreview("");
+      setPendingImageFile(null);
+      
+      // Clear tag input
+      setNewTag("");
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccess("");
+      }, 5000);
+      
+      // Scroll to top to show success message
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       setError(result.message);
+      setSuccess("");
     }
     setLoading(false);
   };
@@ -606,8 +782,35 @@ export default function CreateQuestionPage() {
           </div>
           <form className="p-8" onSubmit={handleSubmit}>
             {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
                 {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                {success}
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -617,14 +820,19 @@ export default function CreateQuestionPage() {
                 </label>
                 <select
                   value={formData.service}
-                  onChange={(e) => handleInputChange("service", e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange("service", e.target.value);
+                    // Clear category when service changes
+                    handleInputChange("category", "");
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
                   required
                 >
                   <option value="">Select service</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.slug}>
-                      {service.name}
+                  <option value="teas">TEAS</option>
+                  {pillarPages.map((pillarPage) => (
+                    <option key={pillarPage.id} value={pillarPage.id}>
+                      {pillarPage.pageName || pillarPage.id.charAt(0).toUpperCase() + pillarPage.id.slice(1).replace(/-/g, " ")}
                     </option>
                   ))}
                 </select>
@@ -640,11 +848,18 @@ export default function CreateQuestionPage() {
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
                   required
+                  disabled={!formData.service || categories.length === 0}
                 >
-                  <option value="">Select category</option>
+                  <option value="">
+                    {!formData.service
+                      ? "Select service first"
+                      : categories.length === 0
+                      ? "Loading categories..."
+                      : "Select category"}
+                  </option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
-                      {cat}
+                      {cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, " ")}
                     </option>
                   ))}
                 </select>
@@ -945,5 +1160,24 @@ export default function CreateQuestionPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateQuestionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <CreateQuestionForm />
+    </Suspense>
   );
 }

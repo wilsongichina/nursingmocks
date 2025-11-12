@@ -190,7 +190,7 @@ export default function AdminPage() {
             </div>
           </Link>
 
-          {/* Question List Card */}
+          {/* Questions Management Card */}
           <Link
             href="/admin/question"
             className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
@@ -213,7 +213,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
-                  Question List
+                  Questions Management
                 </h3>
                 <p className="text-sm text-gray-600">Manage exam questions</p>
               </div>
