@@ -83,7 +83,7 @@ interface PageProps {
 export async function generateStaticParams() {
   try {
     const { getAllPillarPages } = await import("@/lib/firestore-operations");
-    
+
     // Get both regular services and pillar pages
     const [servicesResult, pillarPagesResult] = await Promise.all([
       getAllServices(),
@@ -105,14 +105,19 @@ export async function generateStaticParams() {
     // Add pillar pages
     if (pillarPagesResult.success && pillarPagesResult.data) {
       pillarPagesResult.data.forEach((pillarPage: any) => {
-        if (pillarPage.id && !params.find((p) => p.serviceId === pillarPage.id)) {
+        if (
+          pillarPage.id &&
+          !params.find((p) => p.serviceId === pillarPage.id)
+        ) {
           params.push({ serviceId: pillarPage.id });
           pillarCount++;
         }
       });
     }
 
-    console.log(`✓ Generated ${serviceCount} Service Pages and ${pillarCount} Pillar Pages`);
+    console.log(
+      `✓ Generated ${serviceCount} Service Pages and ${pillarCount} Pillar Pages`
+    );
     return params;
   } catch (error) {
     console.error("Error generating static params:", error);
@@ -382,7 +387,7 @@ export default async function ServicePage({ params }: PageProps) {
           )}
 
           {/* Hero Section */}
-          <section className="gradient-bg text-white py-20">
+          <section className="gradient-bg text-white py-[1.25rem]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               {/* Breadcrumb */}
               <div className="mb-8">
@@ -396,15 +401,15 @@ export default async function ServicePage({ params }: PageProps) {
               </div>
 
               <div className="text-center">
-                <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+                <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
                   <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
                   {(pillarContent as any).hero?.badge || "We are Teas Gurus"}
                 </div>
-                <h1 className="text-5xl md:text-6xl font-bold mb-6">
+                <h1 className="text-5xl md:text-6xl font-bold mb-4">
                   {(pillarContent as any).hero?.title ||
                     `${serviceId.toUpperCase()} Services`}
                 </h1>
-                <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+                <div className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
                   <ContentRenderer
                     content={
                       (pillarContent as any).hero?.subtitle ||
@@ -416,15 +421,9 @@ export default async function ServicePage({ params }: PageProps) {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
                     href="/contact"
-                    className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+                    className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors"
                   >
-                    Get Started
-                  </Link>
-                  <Link
-                    href="/prices"
-                    className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-                  >
-                    View Pricing
+                    Take Test
                   </Link>
                 </div>
               </div>
@@ -478,7 +477,9 @@ export default async function ServicePage({ params }: PageProps) {
                                   {service.title}
                                 </h3>
                                 <div className="text-gray-600 mb-6 leading-relaxed">
-                                  <ContentRenderer content={service.description} />
+                                  <ContentRenderer
+                                    content={service.description}
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -512,7 +513,9 @@ export default async function ServicePage({ params }: PageProps) {
                             {service.callToAction && (
                               <div className="bg-blue-50 p-4 rounded-lg mb-6">
                                 <div className="text-lg font-semibold text-blue-900">
-                                  <ContentRenderer content={service.callToAction} />
+                                  <ContentRenderer
+                                    content={service.callToAction}
+                                  />
                                 </div>
                               </div>
                             )}
@@ -656,7 +659,7 @@ export default async function ServicePage({ params }: PageProps) {
       )}
 
       {/* Hero Section */}
-      <section className="gradient-bg text-white py-20">
+      <section className="gradient-bg text-white py-[1.25rem]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
@@ -674,20 +677,20 @@ export default async function ServicePage({ params }: PageProps) {
           </div>
 
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
               {content?.hero?.badge || "TEAS Exam Help"}
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4">
               {content?.hero?.title || `${serviceId} - TEAS Gurus`}
             </h1>
-            <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+            <div className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
               <ContentRenderer
                 content={content?.hero?.subtitle || ""}
                 textColor="white"
               />
             </div>
-            <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
+            <div className="text-lg mb-4 max-w-4xl mx-auto leading-relaxed opacity-90">
               <ContentRenderer
                 content={content?.hero?.description || ""}
                 textColor="white"
@@ -696,15 +699,9 @@ export default async function ServicePage({ params }: PageProps) {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/hesi-a2"
-                className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+                className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors"
               >
-                Our Services
-              </Link>
-              <Link
-                href="/prices"
-                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-              >
-                View Pricing
+                Take Test
               </Link>
             </div>
           </div>

@@ -338,7 +338,7 @@ export default async function SupportPage({ params }: PageProps) {
         )}
 
         {/* Hero Section */}
-        <section className="gradient-bg text-white py-20">
+        <section className="gradient-bg text-white py-[1.25rem]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Breadcrumb */}
             <div className="mb-8">
@@ -409,20 +409,20 @@ export default async function SupportPage({ params }: PageProps) {
             </div>
 
             <div className="text-center">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
                 <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
                 {serviceContent?.hero?.badge || "TEAS Exam Help"}
               </div>
-              <h1 className="text-5xl md:text-6xl font-bold mb-6">
+              <h1 className="text-5xl md:text-6xl font-bold mb-4">
                 {serviceContent?.hero?.title || `${pageId} - TEAS Gurus`}
               </h1>
-              <div className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+              <div className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
                 <ContentRenderer
                   content={serviceContent?.hero?.subtitle || ""}
                   textColor="white"
                 />
               </div>
-              <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
+              <div className="text-lg mb-4 max-w-4xl mx-auto leading-relaxed opacity-90">
                 <ContentRenderer
                   content={serviceContent?.hero?.description || ""}
                   textColor="white"
@@ -431,15 +431,9 @@ export default async function SupportPage({ params }: PageProps) {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/hesi-a2"
-                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+                  className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors"
                 >
-                  Our Services
-                </Link>
-                <Link
-                  href="/prices"
-                  className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-                >
-                  View Pricing
+                  Take Test
                 </Link>
               </div>
             </div>
@@ -779,7 +773,7 @@ export default async function SupportPage({ params }: PageProps) {
       )}
 
       {/* Hero Section */}
-      <section className="gradient-bg text-white py-20">
+      <section className="gradient-bg text-white py-[1.25rem]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
@@ -899,18 +893,18 @@ export default async function SupportPage({ params }: PageProps) {
           </div>
 
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
               {content?.hero?.badge || "TEAS Exam Help"}
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4">
               {content?.hero?.title || `${pageId} - TEAS Gurus`}
             </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
               {content?.hero?.subtitle ||
                 `Get expert help with your ${pageId} TEAS exam preparation.`}
             </p>
-            <div className="text-lg mb-8 max-w-4xl mx-auto leading-relaxed opacity-90">
+            <div className="text-lg mb-4 max-w-4xl mx-auto leading-relaxed opacity-90">
               <ContentRenderer
                 content={
                   content?.hero?.description ||
@@ -922,15 +916,9 @@ export default async function SupportPage({ params }: PageProps) {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/hesi-a2"
-                className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
+                className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors"
               >
-                Our Services
-              </Link>
-              <Link
-                href="/prices"
-                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-              >
-                View Pricing
+                Take Test
               </Link>
             </div>
           </div>

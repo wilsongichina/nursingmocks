@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import AuthProviderWrapper from "@/components/providers/AuthProviderWrapper";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -124,7 +125,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${outfit.variable} font-sans antialiased`}>
-        {children}
+        <AuthProviderWrapper>{children}</AuthProviderWrapper>
       </body>
     </html>
   );

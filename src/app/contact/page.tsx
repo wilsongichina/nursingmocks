@@ -27,7 +27,7 @@ export default function ContactPage() {
     <Layout>
       <ContactPageSchema />
       {/* Hero Section */}
-      <section className="gradient-bg text-white py-20">
+      <section className="gradient-bg text-white py-[1.25rem]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
@@ -38,12 +38,12 @@ export default function ContactPage() {
           </div>
 
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
               We are Teas Gurus
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">Contact Us</h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4">Contact Us</h1>
+            <p className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
               Ready to start your TEAS exam journey? Get in touch with us for
               personalized support, quotes, and expert guidance.
             </p>

@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   getAllQuestions,
   getAllPillarPages,
+  getAllPillarServicePages,
+  getAllPages,
   deleteQuestionContent,
 } from "@/lib/firestore-operations";
 
@@ -20,6 +22,10 @@ interface QuestionGroup {
 function QuestionManagementContent() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [pillarPages, setPillarPages] = useState<any[]>([]);
+  const [pillarCategories, setPillarCategories] = useState<Record<string, any[]>>({});
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [dropdownFilterPillarPage, setDropdownFilterPillarPage] = useState<string>("all");
+  const [dropdownFilterCategory, setDropdownFilterCategory] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -43,9 +49,10 @@ function QuestionManagementContent() {
     setLoading(true);
     setError("");
     try {
-      const [questionsResult, pillarPagesResult] = await Promise.all([
+      const [questionsResult, pillarPagesResult, allPagesResult] = await Promise.all([
         getAllQuestions(),
         getAllPillarPages(),
+        getAllPages(),
       ]);
 
       if (questionsResult.success && questionsResult.data) {
@@ -56,6 +63,38 @@ function QuestionManagementContent() {
 
       if (pillarPagesResult.success && pillarPagesResult.data) {
         setPillarPages(pillarPagesResult.data);
+        
+        // Load categories for each pillar page
+        const categoriesByPillar: Record<string, any[]> = {};
+        const pillarPageCategoryIds = new Set<string>();
+        
+        for (const pillarPage of pillarPagesResult.data) {
+          const result = await getAllPillarServicePages(pillarPage.id);
+          if (result.success && result.data) {
+            const categories = result.data.map((service: any) => ({
+              id: service.servicePageId || service.id,
+              servicePageId: service.servicePageId || service.id,
+              ...service,
+            }));
+            categoriesByPillar[pillarPage.id] = categories;
+            
+            // Track which categories belong to pillar pages
+            categories.forEach((cat: any) => {
+              const categoryId = cat.servicePageId || cat.id;
+              if (categoryId) {
+                pillarPageCategoryIds.add(categoryId);
+              }
+            });
+          }
+        }
+        
+        setPillarCategories(categoriesByPillar);
+        
+        // Get all categories (pages) and filter out those that belong to pillar pages
+        if (allPagesResult.success && allPagesResult.data) {
+          const allPageIds = Object.keys(allPagesResult.data);
+          setAllCategories(allPageIds);
+        }
       }
     } catch {
       setError("Failed to load questions");
@@ -91,7 +130,17 @@ function QuestionManagementContent() {
     });
 
     // Convert map to array and sort
-    const groupsArray = Array.from(groupsMap.values());
+    let groupsArray = Array.from(groupsMap.values());
+    
+    // Apply filters
+    if (dropdownFilterPillarPage !== "all") {
+      groupsArray = groupsArray.filter((group) => group.service === dropdownFilterPillarPage);
+    }
+    
+    if (dropdownFilterCategory !== "all") {
+      groupsArray = groupsArray.filter((group) => group.category === dropdownFilterCategory);
+    }
+    
     groupsArray.sort((a, b) => {
       // Sort by service, then category, then set
       if (a.service !== b.service) {
@@ -104,7 +153,44 @@ function QuestionManagementContent() {
     });
 
     return groupsArray;
-  }, [questions]);
+  }, [questions, dropdownFilterPillarPage, dropdownFilterCategory]);
+  
+  // Get available categories based on selected pillar page
+  const availableCategories = useMemo(() => {
+    if (dropdownFilterPillarPage === "all") {
+      // Return all unique categories from grouped questions
+      const uniqueCategories = new Set<string>();
+      questions.forEach((q) => {
+        if (q.category) {
+          uniqueCategories.add(q.category);
+        }
+      });
+      return Array.from(uniqueCategories).sort();
+    } else if (dropdownFilterPillarPage === "teas") {
+      // For TEAS, return categories that don't belong to any pillar page
+      const pillarPageCategoryIds = new Set<string>();
+      Object.values(pillarCategories).forEach((categories) => {
+        categories.forEach((cat: any) => {
+          const categoryId = cat.servicePageId || cat.id;
+          if (categoryId) {
+            pillarPageCategoryIds.add(categoryId);
+          }
+        });
+      });
+      return allCategories.filter((cat) => !pillarPageCategoryIds.has(cat)).sort();
+    } else {
+      // Return categories for the selected pillar page
+      const categories = pillarCategories[dropdownFilterPillarPage] || [];
+      return categories.map((cat: any) => cat.servicePageId || cat.id).sort();
+    }
+  }, [dropdownFilterPillarPage, pillarCategories, allCategories, questions]);
+  
+  // Reset category filter when pillar page changes
+  useEffect(() => {
+    if (dropdownFilterPillarPage !== "all" && !availableCategories.includes(dropdownFilterCategory)) {
+      setDropdownFilterCategory("all");
+    }
+  }, [dropdownFilterPillarPage, availableCategories, dropdownFilterCategory]);
 
   // Get filtered questions when viewing a specific group
   const filteredQuestions = useMemo(() => {
@@ -250,6 +336,51 @@ function QuestionManagementContent() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
             {error}
+          </div>
+        )}
+        {!isFiltered && (
+          <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center space-x-4 flex-wrap">
+              <label className="text-sm font-semibold text-gray-700">
+                Filter by Pillar Page:
+              </label>
+              <select
+                value={dropdownFilterPillarPage}
+                onChange={(e) => {
+                  setDropdownFilterPillarPage(e.target.value);
+                  setDropdownFilterCategory("all");
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white min-w-[200px]"
+              >
+                <option value="all">All Pillar Pages</option>
+                <option value="teas">TEAS</option>
+                {pillarPages.map((page) => (
+                  <option key={page.id} value={page.id}>
+                    {page.pageName || page.id}
+                  </option>
+                ))}
+              </select>
+              
+              <label className="text-sm font-semibold text-gray-700">
+                Filter by Category:
+              </label>
+              <select
+                value={dropdownFilterCategory}
+                onChange={(e) => setDropdownFilterCategory(e.target.value)}
+                disabled={availableCategories.length === 0}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="all">All Categories</option>
+                {availableCategories.map((category) => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, " ")}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="text-sm text-gray-600">
+              Showing {groupedQuestions.length} group{groupedQuestions.length !== 1 ? "s" : ""}
+            </div>
           </div>
         )}
         {isFiltered && (

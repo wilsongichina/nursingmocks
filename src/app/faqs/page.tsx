@@ -28,7 +28,7 @@ export default function FAQPage() {
     <Layout>
       <FAQPageSchema />
       {/* Hero Section */}
-      <section className="gradient-bg text-white py-20">
+      <section className="gradient-bg text-white py-[1.25rem]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="mb-8">
@@ -39,14 +39,14 @@ export default function FAQPage() {
           </div>
 
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
               We are Teas Gurus
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4">
               Frequently Asked Questions
             </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
               Get answers to common questions about our TEAS exam services.
               We're here to help you understand our process, guarantees, and how
               we can help you succeed.
