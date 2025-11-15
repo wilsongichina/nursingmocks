@@ -12,6 +12,8 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
@@ -20,6 +22,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -66,6 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return signOut(auth);
   }
 
+  function loginWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider).then(() => {
+      // User is signed in, onAuthStateChanged will update currentUser
+    });
+  }
+
   function resetPassword(email: string) {
     // Get the current domain (works for both development and production)
     const getActionCodeSettings = () => {
@@ -101,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     login,
     register,
+    loginWithGoogle,
     logout,
     resetPassword,
   };

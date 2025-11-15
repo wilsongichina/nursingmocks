@@ -1,4 +1,7 @@
-{
+// This file is auto-generated at build time. Do not edit manually.
+// Generated at: 2025-11-15T18:34:44.757Z
+
+export const sidebarData = {
   "pillarPages": [
     {
       "id": "nursing",
@@ -1679,4 +1682,6 @@
     ]
   },
   "generatedAt": "2025-11-15T18:34:44.753Z"
-}
+} as const;
+
+export type SidebarData = typeof sidebarData;

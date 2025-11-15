@@ -12,9 +12,19 @@ export default function LoginPageClient() {
   const { currentUser, loading } = useAuth();
 
   useEffect(() => {
-    // Redirect to dashboard if user is already logged in
-    if (!loading && currentUser) {
-      router.push("/dashboard");
+    // Only redirect if user is already logged in and not showing success message
+    // Check sessionStorage to see if we're showing a success message
+    if (
+      !loading &&
+      currentUser &&
+      typeof window !== "undefined" &&
+      !sessionStorage.getItem("showingLoginSuccess")
+    ) {
+      // Small delay to allow any success message to show
+      const timer = setTimeout(() => {
+        router.push("/dashboard");
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [currentUser, loading, router]);
 
@@ -32,8 +42,12 @@ export default function LoginPageClient() {
     );
   }
 
-  // Don't render login page if user is logged in (will redirect)
-  if (currentUser) {
+  // Don't render login page if user is logged in and not showing success (will redirect)
+  if (
+    currentUser &&
+    typeof window !== "undefined" &&
+    !sessionStorage.getItem("showingLoginSuccess")
+  ) {
     return null;
   }
 
@@ -77,8 +91,8 @@ export default function LoginPageClient() {
                   </span>
                 </h1>
                 <p className="text-lg text-gray-600 leading-relaxed">
-                  Sign in to access your personalized study materials, track your
-                  progress, and continue your journey to TEAS exam success.
+                  Sign in to access your personalized study materials, track
+                  your progress, and continue your journey to TEAS exam success.
                 </p>
                 <div className="space-y-4 pt-4">
                   <div className="flex items-start space-x-3">
@@ -98,7 +112,9 @@ export default function LoginPageClient() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Access Study Materials</p>
+                      <p className="font-medium text-gray-900">
+                        Access Study Materials
+                      </p>
                       <p className="text-sm text-gray-600">
                         Get instant access to practice tests and study guides
                       </p>
@@ -121,7 +137,9 @@ export default function LoginPageClient() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Track Your Progress</p>
+                      <p className="font-medium text-gray-900">
+                        Track Your Progress
+                      </p>
                       <p className="text-sm text-gray-600">
                         Monitor your performance and improvement over time
                       </p>
@@ -144,7 +162,9 @@ export default function LoginPageClient() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Expert Support</p>
+                      <p className="font-medium text-gray-900">
+                        Expert Support
+                      </p>
                       <p className="text-sm text-gray-600">
                         Connect with tutors and get personalized guidance
                       </p>
@@ -173,7 +193,9 @@ export default function LoginPageClient() {
                       />
                     </svg>
                   </div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                    Sign In
+                  </h2>
                   <p className="text-gray-600">
                     Enter your credentials to access your account
                   </p>
@@ -187,4 +209,3 @@ export default function LoginPageClient() {
     </Layout>
   );
 }
-

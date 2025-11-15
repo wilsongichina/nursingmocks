@@ -12,9 +12,19 @@ export default function RegisterPageClient() {
   const { currentUser, loading } = useAuth();
 
   useEffect(() => {
-    // Redirect to dashboard if user is already logged in
-    if (!loading && currentUser) {
-      router.push("/dashboard");
+    // Only redirect if user is already logged in and not showing success message
+    // Check sessionStorage to see if we're showing a success message
+    if (
+      !loading &&
+      currentUser &&
+      typeof window !== "undefined" &&
+      !sessionStorage.getItem("showingRegisterSuccess")
+    ) {
+      // Small delay to allow any success message to show
+      const timer = setTimeout(() => {
+        router.push("/dashboard");
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [currentUser, loading, router]);
 
@@ -32,8 +42,12 @@ export default function RegisterPageClient() {
     );
   }
 
-  // Don't render register page if user is logged in (will redirect)
-  if (currentUser) {
+  // Don't render register page if user is logged in and not showing success (will redirect)
+  if (
+    currentUser &&
+    typeof window !== "undefined" &&
+    !sessionStorage.getItem("showingRegisterSuccess")
+  ) {
     return null;
   }
 
@@ -78,8 +92,9 @@ export default function RegisterPageClient() {
                   Today
                 </h1>
                 <p className="text-lg text-gray-600 leading-relaxed">
-                  Create your free account and unlock access to expert study materials,
-                  practice tests, and personalized exam preparation support.
+                  Create your free account and unlock access to expert study
+                  materials, practice tests, and personalized exam preparation
+                  support.
                 </p>
                 <div className="space-y-4 pt-4">
                   <div className="flex items-start space-x-3">
@@ -99,7 +114,9 @@ export default function RegisterPageClient() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Expert Study Materials</p>
+                      <p className="font-medium text-gray-900">
+                        Expert Study Materials
+                      </p>
                       <p className="text-sm text-gray-600">
                         Access comprehensive practice tests and study guides
                       </p>
@@ -122,7 +139,9 @@ export default function RegisterPageClient() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Personalized Learning</p>
+                      <p className="font-medium text-gray-900">
+                        Personalized Learning
+                      </p>
                       <p className="text-sm text-gray-600">
                         Get customized study plans tailored to your needs
                       </p>
@@ -174,7 +193,9 @@ export default function RegisterPageClient() {
                       />
                     </svg>
                   </div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                    Create Account
+                  </h2>
                   <p className="text-gray-600">
                     Join TEAS Gurus and start your exam preparation journey
                   </p>
@@ -188,4 +209,3 @@ export default function RegisterPageClient() {
     </Layout>
   );
 }
-

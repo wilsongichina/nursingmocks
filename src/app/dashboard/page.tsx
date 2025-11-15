@@ -208,10 +208,10 @@ export default function DashboardPage() {
               {/* Welcome Section */}
               <div className="mb-6">
                 <h1 className="text-4xl font-bold text-gray-900 mb-3">
-                  Welcome back, {userName} 👋
+                  Welcome back, {userName}! 👋
                 </h1>
                 <p className="text-gray-600 text-base leading-relaxed">
-                  Your progress this week is Awesome. let's keep it up and get a lot of points reward!
+                  Your progress this week looks great! Keep up the excellent work and continue earning those reward points.
                 </p>
               </div>
 

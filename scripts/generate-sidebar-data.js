@@ -174,15 +174,33 @@ async function generateSidebarData() {
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    // Write the data to a JSON file
-    const outputPath = path.join(dataDir, "sidebar-data.json");
-    fs.writeFileSync(outputPath, JSON.stringify(sidebarData, null, 2));
+    // Write the data to a JSON file (for fallback)
+    const jsonOutputPath = path.join(dataDir, "sidebar-data.json");
+    fs.writeFileSync(jsonOutputPath, JSON.stringify(sidebarData, null, 2));
+
+    // Also generate a TypeScript file that can be imported directly (no async loading)
+    const libDataDir = path.join(process.cwd(), "src", "lib", "data");
+    if (!fs.existsSync(libDataDir)) {
+      fs.mkdirSync(libDataDir, { recursive: true });
+    }
+
+    const tsOutputPath = path.join(libDataDir, "sidebar-data.ts");
+    const tsContent = `// This file is auto-generated at build time. Do not edit manually.
+// Generated at: ${new Date().toISOString()}
+
+export const sidebarData = ${JSON.stringify(sidebarData, null, 2)} as const;
+
+export type SidebarData = typeof sidebarData;
+`;
+
+    fs.writeFileSync(tsOutputPath, tsContent);
 
     console.log("✅ Sidebar data generated successfully!");
     console.log(`   - ${allPillarPages.length} pillar pages`);
     console.log(`   - ${teasCats.length} TEAS categories`);
     console.log(`   - ${Object.keys(categoriesByPillar).length} pillar pages with categories`);
-    console.log(`   - Output: ${outputPath}`);
+    console.log(`   - JSON Output: ${jsonOutputPath}`);
+    console.log(`   - TypeScript Output: ${tsOutputPath}`);
 
     return sidebarData;
   } catch (error) {
