@@ -71,9 +71,9 @@ export default function RegisterForm() {
       await register(formData.email, formData.password, formData.name);
 
       setSuccess(true);
-      // Redirect to home page after successful registration
+      // Redirect to dashboard after successful registration
       setTimeout(() => {
-        router.push("/");
+        router.push("/dashboard");
       }, 2000);
     } catch (err: any) {
       // Handle Firebase auth errors
@@ -121,7 +121,8 @@ export default function RegisterForm() {
           Registration Successful!
         </h2>
         <p className="text-gray-600 mb-4">
-          Your account has been created successfully. Redirecting to login...
+          Your account has been created successfully. Redirecting to
+          dashboard...
         </p>
       </div>
     );

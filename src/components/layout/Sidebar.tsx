@@ -31,7 +31,7 @@ interface Category {
 export default function Sidebar({ className = "" }: SidebarProps) {
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const pathname = usePathname();
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const [pillarPages, setPillarPages] = useState<PillarPage[]>([]);
   const [teasCategories, setTeasCategories] = useState<string[]>([]);
   const [pillarCategories, setPillarCategories] = useState<
@@ -110,7 +110,23 @@ export default function Sidebar({ className = "" }: SidebarProps) {
       try {
         setIsLoading(true);
 
-        // Fetch all pillar pages, all pages (categories), and pillar service pages
+        // Try to load from static JSON file first (generated at build time)
+        try {
+          const response = await fetch("/data/sidebar-data.json");
+          if (response.ok) {
+            const staticData = await response.json();
+            setPillarPages(staticData.pillarPages || []);
+            setTeasCategories(staticData.teasCategories || []);
+            setPillarCategories(staticData.pillarCategories || {});
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          // If static file doesn't exist or fails, fall back to Firestore
+          console.log("Static sidebar data not found, fetching from Firestore...");
+        }
+
+        // Fallback: Fetch all pillar pages, all pages (categories), and pillar service pages from Firestore
         const [pillarPagesResult, allPagesResult] = await Promise.all([
           getAllPillarPages(),
           getAllPages(),
@@ -622,6 +638,54 @@ export default function Sidebar({ className = "" }: SidebarProps) {
           )}
         </ul>
       </nav>
+
+      {/* Logout Button - Only show if user is logged in */}
+      {currentUser && (
+        <div className="border-t border-gray-200 p-4 mt-auto">
+          {isCollapsed ? (
+            <button
+              onClick={logout}
+              className="w-full flex items-center justify-center p-2.5 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+            >
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          )}
+        </div>
+      )}
     </aside>
   );
 }

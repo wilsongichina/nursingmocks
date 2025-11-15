@@ -67,7 +67,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   function resetPassword(email: string) {
-    return sendPasswordResetEmail(auth, email);
+    // Get the current domain (works for both development and production)
+    const getActionCodeSettings = () => {
+      if (typeof window !== 'undefined') {
+        // Use the current origin (works for both localhost and production)
+        const baseUrl = window.location.origin;
+        return {
+          url: `${baseUrl}/reset-password`,
+          handleCodeInApp: false,
+        };
+      }
+      // Fallback for SSR
+      return {
+        url: 'https://teasgurus.com/reset-password',
+        handleCodeInApp: false,
+      };
+    };
+
+    return sendPasswordResetEmail(auth, email, getActionCodeSettings());
   }
 
   useEffect(() => {

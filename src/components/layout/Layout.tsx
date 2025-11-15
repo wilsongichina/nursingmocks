@@ -6,6 +6,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import Sidebar from "./Sidebar";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
+import { useAuth } from "@/contexts/AuthContext";
 import FloatingWhatsAppButton from "../ui/FloatingWhatsAppButton";
 import TawkToChat from "../ui/TawkToChat";
 
@@ -16,6 +17,7 @@ interface LayoutProps {
 
 function LayoutWithSidebar({ children }: { children: ReactNode }) {
   const { isCollapsed } = useSidebar();
+  const { currentUser } = useAuth();
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -25,7 +27,8 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
           isCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
-        <Header showLogo={false} />
+        {/* Only show header if user is not logged in */}
+        {!currentUser && <Header showLogo={false} />}
         <main>{children}</main>
         <Footer />
       </div>

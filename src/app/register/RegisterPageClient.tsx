@@ -12,9 +12,9 @@ export default function RegisterPageClient() {
   const { currentUser, loading } = useAuth();
 
   useEffect(() => {
-    // Redirect to home if user is already logged in
+    // Redirect to dashboard if user is already logged in
     if (!loading && currentUser) {
-      router.push("/");
+      router.push("/dashboard");
     }
   }, [currentUser, loading, router]);
 

@@ -49,8 +49,8 @@ export default function LoginForm() {
       // Firebase authentication with remember me
       await login(formData.email, formData.password, formData.rememberMe);
 
-      // Redirect to home page after successful login
-      router.push("/");
+      // Redirect to dashboard after successful login
+      router.push("/dashboard");
     } catch (err: any) {
       // Handle Firebase auth errors
       let errorMessage = "An error occurred. Please try again.";
