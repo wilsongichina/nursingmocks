@@ -82,14 +82,14 @@ export default function Header({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {showLogo ? (
-            <div className="flex items-center">
-              <Link href="/" aria-label="TEAS Gurus Home">
+            <div className="flex items-center h-full">
+              <Link href="/" aria-label="TEAS Gurus Home" className="flex items-center h-full">
                 <Image
                   src="/teas-gurus-logo.png"
                   alt="TEAS Gurus Logo"
                   width={150}
                   height={40}
-                  className="h-10 w-auto "
+                  className="h-10 w-auto object-contain"
                   priority
                 />
               </Link>

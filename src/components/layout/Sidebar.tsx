@@ -10,10 +10,58 @@ import {
   getAllPillarPages,
   getAllPillarServicePages,
   getAllPages,
+  getNursingEntranceExamSubPages,
+  getNestedSubPages,
 } from "@/lib/firestore-operations";
+import { useRouter } from "next/navigation";
 // Import static sidebar data generated at build time
 // This will be replaced with actual data during build
 import { sidebarData as staticSidebarData } from "@/lib/data/sidebar-data";
+
+// Icon components for dashboard-style cards
+const LaptopIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+
+
+// Icon components for popup modal
+const BookIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+  </svg>
+);
+
+const CalculatorIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+  </svg>
+);
+
+const FlaskIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+  </svg>
+);
+
+const ABCIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+    {/* Letter A - Centered */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5.5 17.5L6.5 13.5L7.5 17.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 15.5H7" />
+    
+    {/* Letter B - Centered */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 12.5V17.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 12.5H12C12.7 12.5 13.2 13 13.2 13.6C13.2 14.2 12.7 14.7 12 14.7H10.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 14.7H12C12.7 14.7 13.2 15.2 13.2 15.8C13.2 16.4 12.7 16.9 12 16.9H10.5" />
+    
+    {/* Letter C - Centered */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.5C15.7 12.5 15 13.1 15 13.8V16.2C15 16.9 15.7 17.5 16.5 17.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.8 12.8C18.1 13 18.2 13.3 18.2 13.6" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.8 17.2C18.1 17 18.2 16.7 18.2 16.4" />
+  </svg>
+);
 
 interface SidebarData {
   pillarPages: PillarPage[];
@@ -44,21 +92,23 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
   
-  // Use static data from build time, or initialData prop, or empty arrays (no loading state)
-  const staticData = staticSidebarData || initialData;
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // In development, ignore static data and always fetch from Firestore
+  // In production, use static data from build time
+  const staticData = (!isDevelopment && staticSidebarData) || initialData;
   
   // Initialize state with static data immediately (no loading state)
   // Convert readonly arrays to mutable arrays for useState
+  // In development, start with empty arrays and fetch from Firestore
   const [pillarPages, setPillarPages] = useState<PillarPage[]>(
-    staticData?.pillarPages ? [...staticData.pillarPages] : []
-  );
-  const [teasCategories, setTeasCategories] = useState<string[]>(
-    staticData?.teasCategories ? [...staticData.teasCategories] : []
+    (!isDevelopment && staticData?.pillarPages) ? [...staticData.pillarPages] : []
   );
   const [pillarCategories, setPillarCategories] = useState<
     Record<string, Category[]>
   >(
-    staticData?.pillarCategories
+    (!isDevelopment && staticData?.pillarCategories)
       ? Object.fromEntries(
           Object.entries(staticData.pillarCategories).map(([key, value]) => [
             key,
@@ -68,6 +118,16 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
       : {}
   );
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSubPage, setSelectedSubPage] = useState<{
+    id: string;
+    name: string;
+    parentPillarId: string;
+    slug?: string;
+  } | null>(null);
+  const [nestedSubPages, setNestedSubPages] = useState<any[]>([]);
+  const [loadingNested, setLoadingNested] = useState(false);
+  const router = useRouter();
 
   // Auto-expand sections based on current pathname
   useEffect(() => {
@@ -85,47 +145,35 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
         newSet.add("dashboard");
       }
 
-      // Check if we're on TEAS main page
-      if (pathname === "/teas") {
-        newSet.add("teas");
-      }
-
-      // Check if we're on a TEAS category page (categories that don't belong to any pillar page)
-      if (pathname.startsWith("/") && pathname !== "/") {
-        const pathSegment = pathname.split("/")[1];
-        if (teasCategories.includes(pathSegment)) {
-          newSet.add("teas");
-        }
-      }
+      // Removed TEAS section - no longer exists
 
       // Check if we're on any pillar page or its categories
       pillarPages.forEach((pillarPage) => {
-        if (pathname.startsWith(`/${pillarPage.id}`)) {
-          newSet.add(pillarPage.id);
+        // For nursing-entrance-exam, also check root-level sub-pages
+        if (pillarPage.id === "nursing-entrance-exam") {
+          // Check if we're on the main page
+          if (pathname === `/${pillarPage.id}`) {
+            newSet.add(pillarPage.id);
+          }
+          // Check if we're on a sub-page (root level)
+          const categories = pillarCategories[pillarPage.id] || [];
+          categories.forEach((category) => {
+            const categoryId = category.servicePageId || category.id;
+            if (pathname === `/${categoryId}`) {
+              newSet.add(pillarPage.id);
+            }
+          });
+        } else {
+          // For other pillar pages, check if pathname starts with pillar page ID
+          if (pathname.startsWith(`/${pillarPage.id}`)) {
+            newSet.add(pillarPage.id);
+          }
         }
       });
 
-      // Auto-expand TEAS if no other main tab is expanded (except dashboard)
-      // Check if any pillar page is expanded
-      const hasPillarPageExpanded = pillarPages.some((pillarPage) =>
-        newSet.has(pillarPage.id)
-      );
-      const hasTeasExpanded = newSet.has("teas");
-
-      // If no pillar pages are expanded and TEAS is not already expanded,
-      // and TEAS has categories, then auto-expand TEAS
-      // (Dashboard being expanded doesn't prevent TEAS from auto-expanding)
-      if (
-        !hasPillarPageExpanded &&
-        !hasTeasExpanded &&
-        teasCategories.length > 0
-      ) {
-        newSet.add("teas");
-      }
-
       return newSet;
     });
-  }, [pathname, pillarPages, teasCategories]);
+  }, [pathname, pillarPages, pillarCategories]);
 
   const dashboardItems = [
     { label: "Profile", href: "/profile", icon: "profile", color: "purple" },
@@ -309,33 +357,39 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
   };
 
   useEffect(() => {
-    // If static data is available, skip loading (data is already available at build time)
-    if (staticData) {
+    // Check if we're in development mode
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    // In development, always fetch from Firestore for dynamic updates
+    // In production, use static data from build time
+    if (!isDevelopment && staticData) {
+      // Production: Use static data, no need to fetch
       return;
     }
 
-    // Only load from Firestore if static data is not available (fallback for development)
+    // Development: Always fetch from Firestore for real-time updates
+    // Production fallback: Only if static data is not available
     const loadData = async () => {
       try {
-
-        // Try to load from static JSON file first (generated at build time)
-        try {
-          const response = await fetch("/data/sidebar-data.json");
-          if (response.ok) {
-            const staticData = await response.json();
-            setPillarPages(staticData.pillarPages || []);
-            setTeasCategories(staticData.teasCategories || []);
-            setPillarCategories(staticData.pillarCategories || {});
-            return;
+        // In production, try static JSON file first as fallback
+        if (!isDevelopment) {
+          try {
+            const response = await fetch("/data/sidebar-data.json");
+            if (response.ok) {
+              const staticData = await response.json();
+              setPillarPages(staticData.pillarPages || []);
+              setPillarCategories(staticData.pillarCategories || {});
+              return;
+            }
+          } catch {
+            // If static file doesn't exist or fails, fall back to Firestore
+            console.log(
+              "Static sidebar data not found, fetching from Firestore..."
+            );
           }
-        } catch {
-          // If static file doesn't exist or fails, fall back to Firestore
-          console.log(
-            "Static sidebar data not found, fetching from Firestore..."
-          );
         }
 
-        // Fallback: Fetch all pillar pages, all pages (categories), and pillar service pages from Firestore
+        // Fetch all pillar pages, all pages (categories), and pillar service pages from Firestore
         const [pillarPagesResult, allPagesResult] = await Promise.all([
           getAllPillarPages(),
           getAllPages(),
@@ -347,7 +401,6 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
         }
 
         const allPillarPages = pillarPagesResult.data || [];
-        const allCategories = Object.keys(allPagesResult.data || {});
 
         // Get all categories that belong to pillar pages
         const pillarPageCategoryIds = new Set<string>();
@@ -355,32 +408,54 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
 
         // Fetch categories for each pillar page
         for (const pillarPage of allPillarPages) {
-          const result = await getAllPillarServicePages(pillarPage.id);
-          if (result.success && result.data) {
-            const categories = result.data.map((service: any) => ({
-              id: service.servicePageId || service.id,
-              servicePageId: service.servicePageId || service.id,
-              ...service,
-            }));
-            categoriesByPillar[pillarPage.id] = categories;
+          // For nursing-entrance-exam, use the special function to get sub-pages
+          if (pillarPage.id === "nursing-entrance-exam") {
+            const result = await getNursingEntranceExamSubPages();
+            if (result.success && result.data) {
+              // Sub-pages use 'id' or 'subPageId' as the slug (document ID from Firebase)
+              const categories = result.data.map((subPage: any) => ({
+                id: subPage.id || subPage.subPageId,
+                servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+                ...subPage,
+              }));
+              categoriesByPillar[pillarPage.id] = categories;
 
-            // Track which categories belong to pillar pages
-            categories.forEach((cat: Category) => {
-              const categoryId = cat.servicePageId || cat.id;
-              if (categoryId) {
-                pillarPageCategoryIds.add(categoryId);
-              }
-            });
+              // Track which categories belong to pillar pages
+              categories.forEach((cat: Category) => {
+                const categoryId = cat.servicePageId || cat.id;
+                if (categoryId) {
+                  pillarPageCategoryIds.add(categoryId);
+                }
+              });
+            }
+          } else {
+            // For other pillar pages, use the standard service pages function
+            const result = await getAllPillarServicePages(pillarPage.id);
+            if (result.success && result.data) {
+              const categories = result.data.map((service: any) => ({
+                id: service.servicePageId || service.id,
+                servicePageId: service.servicePageId || service.id,
+                ...service,
+              }));
+              categoriesByPillar[pillarPage.id] = categories;
+
+              // Track which categories belong to pillar pages
+              categories.forEach((cat: Category) => {
+                const categoryId = cat.servicePageId || cat.id;
+                if (categoryId) {
+                  pillarPageCategoryIds.add(categoryId);
+                }
+              });
+            }
           }
         }
 
-        // Categories that don't belong to any pillar page go to TEAS
-        const teasCats = allCategories.filter(
-          (cat) => !pillarPageCategoryIds.has(cat)
-        );
+        // Categories that don't belong to any pillar page are ignored (TEAS removed)
+        // const teasCats = allCategories.filter(
+        //   (cat) => !pillarPageCategoryIds.has(cat)
+        // );
 
         setPillarPages(allPillarPages);
-        setTeasCategories(teasCats);
         setPillarCategories(categoriesByPillar);
       } catch (error) {
         console.error("Error loading pillar pages and categories:", error);
@@ -388,7 +463,7 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
     };
 
     loadData();
-  }, [initialData]);
+  }, [initialData, staticData]);
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -424,6 +499,52 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
     );
+  };
+
+  const handleSubPageClick = async (
+    e: React.MouseEvent,
+    categoryId: string,
+    categoryName: string,
+    parentPillarId: string,
+    categorySlug?: string
+  ) => {
+    e.preventDefault();
+    setSelectedSubPage({ id: categoryId, name: categoryName, parentPillarId, slug: categorySlug });
+    setLoadingNested(true);
+    setIsModalOpen(true);
+
+    try {
+      const result = await getNestedSubPages(categoryId);
+      if (result.success && result.data) {
+        setNestedSubPages(result.data);
+      } else {
+        setNestedSubPages([]);
+      }
+    } catch (error) {
+      console.error("Error loading nested sub-pages:", error);
+      setNestedSubPages([]);
+    } finally {
+      setLoadingNested(false);
+    }
+  };
+
+  const handleNestedSubPageClick = (nestedSubPage: any, parentSubPageId: string) => {
+    const nestedPageId = nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
+    // Get parent slug from selectedSubPage (prefer slug over id) or use parentSubPageId
+    const parentSlug = selectedSubPage?.slug || selectedSubPage?.id || parentSubPageId;
+    // Remove -exam suffix if present for nested sub-page URLs
+    const parentUrlSlug = parentSlug.endsWith("-exam") ? parentSlug.slice(0, -5) : parentSlug;
+    const nestedSubPageUrl = `/${parentUrlSlug}-${nestedPageId}-questions`;
+    router.push(nestedSubPageUrl);
+    setIsModalOpen(false);
+    setSelectedSubPage(null);
+    setNestedSubPages([]);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedSubPage(null);
+    setNestedSubPages([]);
   };
 
   const mobileSidebarRef = useRef<HTMLElement>(null);
@@ -667,129 +788,6 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
 
           {/* Pillar Pages Section - Show for all users */}
           <>
-              {/* TEAS (Special Case) */}
-              {teasCategories.length > 0 && (
-                <li>
-                  {isCollapsed ? (
-                    <Link
-                      href="/teas"
-                      className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                        isActive("/teas")
-                          ? "bg-purple-50"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                      title="TEAS"
-                    >
-                      <IconWithBackground
-                        icon="teas"
-                        color="purple"
-                        size="w-8 h-8"
-                      />
-                    </Link>
-                  ) : (
-                    <div>
-                      <div
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                          isActive("/teas")
-                            ? "bg-purple-50"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
-                        <Link
-                          href="/teas"
-                          className="flex items-center gap-3 flex-1"
-                        >
-                          <IconWithBackground
-                            icon="teas"
-                            color="purple"
-                            size="w-8 h-8"
-                          />
-                          <span
-                            className={`text-sm font-medium ${
-                              isActive("/teas")
-                                ? "text-purple-600"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            TEAS
-                          </span>
-                        </Link>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleExpand("teas");
-                          }}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
-                          aria-label="Toggle TEAS menu"
-                        >
-                          <svg
-                            className={`w-4 h-4 transition-transform duration-200 ${
-                              expandedItems.has("teas") ? "rotate-90" : ""
-                            }`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                      {expandedItems.has("teas") && (
-                        <ul className="ml-4 mt-1 space-y-1 pl-2">
-                          {teasCategories.map((categoryId) => {
-                            const categoryActive =
-                              pathname === `/${categoryId}`;
-                            return (
-                              <li key={categoryId}>
-                                <Link
-                                  href={`/${categoryId}`}
-                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                    categoryActive
-                                      ? "bg-purple-50"
-                                      : "text-gray-600 hover:bg-gray-50"
-                                  }`}
-                                >
-                                  <span
-                                    className={
-                                      categoryActive
-                                        ? "text-purple-600"
-                                        : "text-gray-400"
-                                    }
-                                  >
-                                    •
-                                  </span>
-                                  <span
-                                    className={`font-medium ${
-                                      categoryActive
-                                        ? "text-purple-600"
-                                        : "text-gray-600"
-                                    }`}
-                                  >
-                                    {formatCategoryName(categoryId)}
-                                  </span>
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </li>
-              )}
-
-              {/* Separator after TEAS */}
-              {teasCategories.length > 0 && !isCollapsed && (
-                <li className="px-3 py-2">
-                  <div className="border-t border-gray-200"></div>
-                </li>
-              )}
 
               {/* Other Pillar Pages */}
               {pillarPages.map((pillarPage) => {
@@ -802,12 +800,11 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
                 return (
                   <li key={pillarPage.id}>
                     {isCollapsed ? (
-                      <Link
-                        href={`/${pillarPage.id}`}
+                      <div
                         className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
                           pillarActive
                             ? "bg-green-50"
-                            : "text-gray-700 hover:bg-gray-100"
+                            : "text-gray-700"
                         }`}
                         title={getPillarPageName(pillarPage)}
                       >
@@ -816,20 +813,17 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
                           color="green"
                           size="w-8 h-8"
                         />
-                      </Link>
+                      </div>
                     ) : (
                       <div>
                         <div
                           className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
                             pillarActive
                               ? "bg-green-50"
-                              : "text-gray-700 hover:bg-gray-100"
+                              : "text-gray-700"
                           }`}
                         >
-                          <Link
-                            href={`/${pillarPage.id}`}
-                            className="flex items-center gap-3 flex-1"
-                          >
+                          <div className="flex items-center gap-3 flex-1">
                             <IconWithBackground
                               icon="pillar"
                               color="green"
@@ -844,7 +838,7 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
                             >
                               {getPillarPageName(pillarPage)}
                             </span>
-                          </Link>
+                          </div>
                           <button
                             onClick={(e) => {
                               e.preventDefault();
@@ -876,15 +870,28 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
                         {isExpanded && (
                           <ul className="ml-4 mt-1 space-y-1 pl-2">
                             {categories.map((category) => {
-                              const categoryId =
-                                category.servicePageId || category.id;
-                              const categoryActive =
-                                pathname === `/${pillarPage.id}/${categoryId}`;
+                              // For nursing-entrance-exam, use the document ID (id or subPageId) as the slug from Firebase
+                              // For other pillar pages, use servicePageId or id
+                              const categoryId = pillarPage.id === "nursing-entrance-exam"
+                                ? (category.id || category.subPageId) // Use document ID from Firebase
+                                : (category.servicePageId || category.id);
+                              
+                              // Get the slug for URL generation (for nursing-entrance-exam)
+                              const categorySlug = category.slug || categoryId;
+                              
+                              // For nursing-entrance-exam, sub-pages are at root level: /{slug}-exam
+                              // For other pillar pages, use: /{pillarPage.id}/{categoryId}
+                              const subPageUrl = pillarPage.id === "nursing-entrance-exam" 
+                                ? `/${categorySlug.endsWith("-exam") ? categorySlug : `${categorySlug}-exam`}` 
+                                : `/${pillarPage.id}/${categoryId}`;
+                              const categoryActive = pathname === subPageUrl || 
+                                (pillarPage.id === "nursing-entrance-exam" && (pathname === `/${categorySlug}` || pathname === `/${categorySlug}-exam`));
+                              const categoryName = category.hero?.title || category.pageName || formatCategoryName(categoryId);
                               return (
                                 <li key={categoryId}>
-                                  <Link
-                                    href={`/${pillarPage.id}/${categoryId}`}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  <button
+                                    onClick={(e) => handleSubPageClick(e, categoryId, categoryName, pillarPage.id, categorySlug)}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
                                       categoryActive
                                         ? "bg-green-50"
                                         : "text-gray-600 hover:bg-gray-50"
@@ -906,10 +913,9 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
                                           : "text-gray-600"
                                       }`}
                                     >
-                                      {category.hero?.title ||
-                                        formatCategoryName(categoryId)}
+                                      {categoryName}
                                     </span>
-                                  </Link>
+                                  </button>
                                 </li>
                               );
                             })}
@@ -923,12 +929,11 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
           </>
 
           {/* Separator after Pillar Pages */}
-          {!isCollapsed &&
-            (teasCategories.length > 0 || pillarPages.length > 0) && (
-              <li className="px-3 py-2">
-                <div className="border-t border-gray-200"></div>
-              </li>
-            )}
+          {!isCollapsed && pillarPages.length > 0 && (
+            <li className="px-3 py-2">
+              <div className="border-t border-gray-200"></div>
+            </li>
+          )}
 
           {/* Loading State - Removed: Data is now available immediately from static build */}
 
@@ -1112,6 +1117,136 @@ export default function Sidebar({ className = "", initialData = null }: SidebarP
         {/* Render same sidebar content - mobile always shows full width */}
         {sidebarContent}
       </aside>
+
+      {/* Modal for Nested Sub-Pages */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          onClick={closeModal}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedSubPage?.name || "Select a Page"}
+              </h2>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingNested ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : nestedSubPages.length > 0 ? (
+                <div className="flex flex-wrap justify-center gap-4">
+                  {nestedSubPages.map((nestedSubPage: any) => {
+                    const nestedPageId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+                    const nestedPageName =
+                      nestedSubPage.pageName ||
+                      nestedSubPage.hero?.title ||
+                      nestedSubPage.title ||
+                      nestedPageId;
+                    const parentSubPageId = selectedSubPage?.id || "";
+                    
+                    // Get icon based on page name (for popup modal only)
+                    const getModalIcon = (pageName: string) => {
+                      const nameLower = pageName.toLowerCase();
+                      if (nameLower.includes("reading")) {
+                        return { icon: <BookIcon className="w-6 h-6 text-white" />, iconBg: "bg-purple-500", numberColor: "text-purple-600" };
+                      } else if (nameLower.includes("math")) {
+                        return { icon: <CalculatorIcon className="w-6 h-6 text-white" />, iconBg: "bg-blue-500", numberColor: "text-blue-600" };
+                      } else if (nameLower.includes("science")) {
+                        return { icon: <FlaskIcon className="w-6 h-6 text-white" />, iconBg: "bg-orange-500", numberColor: "text-orange-600" };
+                      } else if (nameLower.includes("english")) {
+                        return { icon: <ABCIcon className="w-6 h-6 text-white" />, iconBg: "bg-green-500", numberColor: "text-green-600" };
+                      }
+                      // Default fallback
+                      return { icon: <LaptopIcon className="w-6 h-6 text-white" />, iconBg: "bg-gray-500", numberColor: "text-gray-600" };
+                    };
+                    
+                    const config = getModalIcon(nestedPageName);
+                    const questionCount = nestedSubPage.questionCount || "0";
+
+                    // Get parent slug for URL generation
+                    const parentSlug = selectedSubPage?.slug || selectedSubPage?.id || parentSubPageId;
+                    const parentUrlSlug = parentSlug.endsWith("-exam") ? parentSlug.slice(0, -5) : parentSlug;
+                    const nestedPageSlug = nestedSubPage.slug || nestedPageId;
+                    const nestedSubPageUrl = `/${parentUrlSlug}-${nestedPageSlug}-questions`;
+
+                    return (
+                      <div
+                        key={nestedPageId}
+                        className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(50%-0.5rem)] max-w-sm flex flex-col"
+                      >
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                            {config.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={nestedSubPageUrl}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleNestedSubPageClick(nestedSubPage, parentSubPageId);
+                              }}
+                              className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors block mb-2"
+                            >
+                              {nestedPageName}
+                            </Link>
+                            <div className="flex items-baseline gap-2">
+                              <span className={`text-lg font-bold ${config.numberColor}`}>
+                                {questionCount}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Questions
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() =>
+                            handleNestedSubPageClick(nestedSubPage, parentSubPageId)
+                          }
+                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium mt-auto"
+                        >
+                          Start Test
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No nested sub-pages available.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

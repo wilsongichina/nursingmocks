@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import emailjs from "@emailjs/browser";
 
 interface ContactFormData {
   name: string;
@@ -51,37 +50,18 @@ export default function ContactForm({
     setIsSubmitting(true);
 
     try {
-      // EmailJS configuration
-      const serviceId =
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "service_b9tsxyr";
-      const templateId =
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "template_d5ezllr";
-      const publicKey =
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "Ia1zPxTbve95JxQan";
+      // Send email using API route
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-      // Prepare email template parameters
-      const templateParams = {
-        to_email: "teasgurus@gmail.com",
-        from_name: formData.name,
-        from_email: formData.email,
-        phone: formData.phone || "Not provided",
-        budget: formData.budget || "Not provided",
-        services: formData.services,
-        message: formData.message,
-        subject: "New Contact Form Submission - TEAS Gurus",
-        reply_to: formData.email,
-        submission_time: new Date().toLocaleString(),
-      };
+      const data = await response.json();
 
-      // Send email using EmailJS
-      const result = await emailjs.send(
-        serviceId,
-        templateId,
-        templateParams,
-        publicKey
-      );
-
-      if (result.status === 200) {
+      if (response.ok && data.success) {
         // Reset form data
         setFormData({
           name: "",
@@ -95,7 +75,7 @@ export default function ContactForm({
         // Redirect to thank you page
         router.push("/thank-you");
       } else {
-        throw new Error("Failed to send email");
+        throw new Error(data.error || "Failed to send email");
       }
     } catch (error) {
       console.error("Error sending form:", error);

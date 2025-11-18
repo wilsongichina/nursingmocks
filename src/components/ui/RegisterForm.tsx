@@ -71,6 +71,27 @@ export default function RegisterForm() {
       // Firebase authentication
       await register(formData.email, formData.password, formData.name);
 
+      // Send welcome email (don't block on failure)
+      try {
+        const emailResponse = await fetch("/api/send-welcome-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+          }),
+        });
+
+        if (!emailResponse.ok) {
+          console.error("Failed to send welcome email");
+        }
+      } catch (emailError) {
+        // Don't fail registration if email fails
+        console.error("Error sending welcome email:", emailError);
+      }
+
       // Mark that we're showing success message to prevent auto-redirect
       sessionStorage.setItem("showingRegisterSuccess", "true");
 
@@ -109,7 +130,38 @@ export default function RegisterForm() {
     setIsGoogleLoading(true);
 
     try {
-      await loginWithGoogle();
+      const userCredential = await loginWithGoogle();
+      const user = userCredential.user;
+
+      // Send welcome email for Google sign-up (don't block on failure)
+      if (user) {
+        const userName =
+          user.displayName || user.email?.split("@")[0] || "User";
+        const userEmail = user.email || "";
+
+        if (userEmail) {
+          try {
+            const emailResponse = await fetch("/api/send-welcome-email", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                name: userName,
+                email: userEmail,
+              }),
+            });
+
+            if (!emailResponse.ok) {
+              console.error("Failed to send welcome email");
+            }
+          } catch (emailError) {
+            // Don't fail registration if email fails
+            console.error("Error sending welcome email:", emailError);
+          }
+        }
+      }
+
       // Mark that we're showing success message to prevent auto-redirect
       sessionStorage.setItem("showingRegisterSuccess", "true");
       setSuccess(true);

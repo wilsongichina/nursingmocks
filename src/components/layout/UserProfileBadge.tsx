@@ -3,13 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSidebar } from "./SidebarContext";
 
 export default function UserProfileBadge() {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const router = useRouter();
   const { currentUser, logout } = useAuth();
-  const { isCollapsed } = useSidebar();
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -44,15 +42,10 @@ export default function UserProfileBadge() {
   }
 
   return (
-    <div
-      className={`fixed top-4 z-50 transition-all duration-300 ${
-        isCollapsed ? "md:right-4" : "md:right-4"
-      } right-4`}
-    >
-      <div className="relative" ref={userDropdownRef}>
+    <div className="relative" ref={userDropdownRef}>
         <button
           onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-          className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium transition-colors bg-white shadow-md rounded-lg px-3 py-2 border border-gray-200"
+          className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
         >
           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
             {currentUser.displayName
@@ -97,7 +90,6 @@ export default function UserProfileBadge() {
             </button>
           </div>
         )}
-      </div>
     </div>
   );
 }

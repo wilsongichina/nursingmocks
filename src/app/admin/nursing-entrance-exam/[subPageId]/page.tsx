@@ -2,15 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  getServiceContent,
-  uploadServiceContent,
-  getPillarServicePageContent,
-  uploadPillarServicePageContent,
+  getNursingEntranceExamSubPage,
+  uploadNursingEntranceExamSubPage,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
 
 interface ServiceContent {
+  pageName?: string;
   meta: {
     title: string;
     description: string;
@@ -77,132 +76,153 @@ interface ServiceContent {
   };
 }
 
-export default function EditServicePage({
+export default function EditSubPage({
   params,
 }: {
-  params: Promise<{ serviceId: string[] }>;
+  params: Promise<{ subPageId: string }>;
 }) {
   const [content, setContent] = useState<ServiceContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [slug, setSlug] = useState("");
   const [resolvedParams, setResolvedParams] = useState<{
-    serviceId: string;
-    isPillar: boolean;
-    pillarPageId?: string;
-    servicePageId?: string;
+    subPageId: string;
   } | null>(null);
 
   useEffect(() => {
     const resolveParams = async () => {
       const resolved = await params;
-      // serviceId is an array for catch-all routes, join it back
-      const serviceIdArray = resolved.serviceId;
-      const serviceIdString = serviceIdArray.join("/");
-      
-      // Check if serviceId contains multiple parts indicating it's a pillar service
-      const isPillar = serviceIdArray.length > 1;
-      let pillarPageId: string | undefined;
-      let servicePageId: string | undefined;
-      
-      if (isPillar) {
-        pillarPageId = serviceIdArray[0];
-        servicePageId = serviceIdArray.slice(1).join("/");
-      }
-      
-      setResolvedParams({
-        serviceId: serviceIdString,
-        isPillar,
-        pillarPageId,
-        servicePageId,
-      });
+      setResolvedParams(resolved);
     };
     resolveParams();
   }, [params]);
 
-  const loadServiceContent = useCallback(async () => {
+  const loadContent = useCallback(async () => {
     if (!resolvedParams) return;
 
     try {
       setLoading(true);
       setError("");
 
-      let result;
-      
-      if (resolvedParams.isPillar && resolvedParams.pillarPageId && resolvedParams.servicePageId) {
-        result = await getPillarServicePageContent(
-          resolvedParams.pillarPageId,
-          resolvedParams.servicePageId
-        );
-      } else {
-        result = await getServiceContent(resolvedParams.serviceId);
-      }
+      const result = await getNursingEntranceExamSubPage(resolvedParams.subPageId);
 
       if (result.success && result.data) {
-        const serviceData = result.data as ServiceContent;
+        const pageData = result.data as any;
+        
+        // Load slug from pageData or use subPageId as default
+        setSlug(pageData.slug || resolvedParams.subPageId);
         
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
+          pageName: pageData.pageName || resolvedParams.subPageId,
           meta: {
-            title: serviceData.meta?.title || "",
-            description: serviceData.meta?.description || "",
-            keywords: serviceData.meta?.keywords || "",
-            ogTitle: serviceData.meta?.ogTitle || "",
-            ogDescription: serviceData.meta?.ogDescription || "",
-            ogImage: serviceData.meta?.ogImage || "",
-            canonicalUrl: serviceData.meta?.canonicalUrl || "",
+            title: pageData.meta?.title || `${resolvedParams.subPageId} | TeasGurus`,
+            description: pageData.meta?.description || "",
+            keywords: pageData.meta?.keywords || "",
+            ogTitle: pageData.meta?.ogTitle || "",
+            ogDescription: pageData.meta?.ogDescription || "",
+            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${resolvedParams.subPageId}`,
           },
-          schema: serviceData.schema || "",
+          schema: pageData.schema || "",
           hero: {
-            badge: serviceData.hero?.badge || "",
-            title: serviceData.hero?.title || "",
-            subtitle: serviceData.hero?.subtitle || "",
-            description: serviceData.hero?.description || "",
+            badge: pageData.hero?.badge || "",
+            title: pageData.hero?.title || pageData.pageName || resolvedParams.subPageId,
+            subtitle: pageData.hero?.subtitle || "",
+            description: pageData.hero?.description || "",
           },
-          trustIndicators: serviceData.trustIndicators || [],
+          trustIndicators: pageData.trustIndicators || [],
           whatToExpect: {
-            badge: serviceData.whatToExpect?.badge || "",
-            title: serviceData.whatToExpect?.title || "",
-            subtitle: serviceData.whatToExpect?.subtitle || "",
-            cards: serviceData.whatToExpect?.cards || [],
-            footer: serviceData.whatToExpect?.footer || "",
+            badge: pageData.whatToExpect?.badge || "",
+            title: pageData.whatToExpect?.title || "",
+            subtitle: pageData.whatToExpect?.subtitle || "",
+            cards: pageData.whatToExpect?.cards || [],
+            footer: pageData.whatToExpect?.footer || "",
           },
           mostCommonQuestions: {
-            badge: serviceData.mostCommonQuestions?.badge || "",
-            title: serviceData.mostCommonQuestions?.title || "",
-            subtitle: serviceData.mostCommonQuestions?.subtitle || "",
-            cards: serviceData.mostCommonQuestions?.cards || [],
+            badge: pageData.mostCommonQuestions?.badge || "",
+            title: pageData.mostCommonQuestions?.title || "",
+            subtitle: pageData.mostCommonQuestions?.subtitle || "",
+            cards: pageData.mostCommonQuestions?.cards || [],
           },
           studyGuide: {
-            badge: serviceData.studyGuide?.badge || "",
-            title: serviceData.studyGuide?.title || "",
-            subtitle: serviceData.studyGuide?.subtitle || "",
-            sections: serviceData.studyGuide?.sections || [],
+            badge: pageData.studyGuide?.badge || "",
+            title: pageData.studyGuide?.title || "",
+            subtitle: pageData.studyGuide?.subtitle || "",
+            sections: pageData.studyGuide?.sections || [],
           },
-          privacyPricing: serviceData.privacyPricing || [],
+          privacyPricing: pageData.privacyPricing || [],
           faq: {
-            title: serviceData.faq?.title || "",
-            subtitle: serviceData.faq?.subtitle || "",
-            questions: serviceData.faq?.questions || [],
+            title: pageData.faq?.title || "",
+            subtitle: pageData.faq?.subtitle || "",
+            questions: pageData.faq?.questions || [],
           },
         };
         
         setContent(initializedContent);
       } else {
-        setError("Service not found");
+        // Initialize with default content structure
+        const defaultContent: ServiceContent = {
+          pageName: resolvedParams.subPageId,
+          meta: {
+            title: `${resolvedParams.subPageId} | TeasGurus`,
+            description: `Content for ${resolvedParams.subPageId}`,
+            keywords: `${resolvedParams.subPageId}, nursing entrance exam`,
+            ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
+            ogDescription: `Content for ${resolvedParams.subPageId}`,
+            ogImage: "/teas-gurus-logo.png",
+            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
+          },
+          schema: "",
+          hero: {
+            badge: "",
+            title: resolvedParams.subPageId,
+            subtitle: "",
+            description: "",
+          },
+          trustIndicators: [],
+          whatToExpect: {
+            badge: "",
+            title: "",
+            subtitle: "",
+            cards: [],
+            footer: "",
+          },
+          mostCommonQuestions: {
+            badge: "",
+            title: "",
+            subtitle: "",
+            cards: [],
+          },
+          studyGuide: {
+            badge: "",
+            title: "",
+            subtitle: "",
+            sections: [],
+          },
+          privacyPricing: [],
+          faq: {
+            title: "",
+            subtitle: "",
+            questions: [],
+          },
+        };
+        setContent(defaultContent);
+        setSlug(resolvedParams.subPageId);
       }
     } catch (err) {
-      setError("Failed to load service content");
-      console.error("Error loading service content:", err);
+      setError("Failed to load content");
+      console.error("Error loading content:", err);
     } finally {
       setLoading(false);
     }
   }, [resolvedParams]);
 
   useEffect(() => {
-    loadServiceContent();
-  }, [loadServiceContent]);
+    loadContent();
+  }, [loadContent]);
 
   const handleSave = async () => {
     if (!content || !resolvedParams) return;
@@ -212,33 +232,26 @@ export default function EditServicePage({
       setError("");
       setSuccess("");
 
-      let result;
-      
-      if (resolvedParams.isPillar && resolvedParams.pillarPageId && resolvedParams.servicePageId) {
-        result = await uploadPillarServicePageContent(
-          resolvedParams.pillarPageId,
-          resolvedParams.servicePageId,
-          {
-            ...content,
-            lastUpdated: new Date().toISOString(),
-          }
-        );
-      } else {
-        result = await uploadServiceContent(
-          resolvedParams.serviceId,
-          content
-        );
-      }
+      // Include slug in the content to be saved
+      const contentWithSlug = {
+        ...content,
+        slug: slug.trim() || resolvedParams.subPageId,
+      };
+
+      const result = await uploadNursingEntranceExamSubPage(
+        resolvedParams.subPageId,
+        contentWithSlug
+      );
 
       if (result.success) {
-        setSuccess("Service updated successfully!");
+        setSuccess("Content updated successfully!");
         setTimeout(() => setSuccess(""), 3000);
       } else {
-        setError(result.message || "Failed to save service");
+        setError(result.message || "Failed to save content");
       }
     } catch (err) {
-      setError("Failed to save service");
-      console.error("Error saving service:", err);
+      setError("Failed to save content");
+      console.error("Error saving content:", err);
     } finally {
       setSaving(false);
     }
@@ -353,56 +366,7 @@ export default function EditServicePage({
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading service...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !content) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 p-8 rounded-2xl mb-6 max-w-md mx-auto">
-            <div className="w-16 h-16 bg-red-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-red-800 mb-2">
-              Error Loading Service
-            </h3>
-            <p className="text-red-600">{error}</p>
-          </div>
-          <Link
-            href="/admin/service"
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold inline-flex items-center space-x-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            <span>Back to Services</span>
-          </Link>
+          <p className="text-gray-600">Loading content...</p>
         </div>
       </div>
     );
@@ -412,10 +376,6 @@ export default function EditServicePage({
     return null;
   }
 
-  const displayServiceName = resolvedParams?.isPillar 
-    ? resolvedParams.servicePageId 
-    : resolvedParams?.serviceId;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -424,9 +384,9 @@ export default function EditServicePage({
           <div className="flex justify-between items-center py-6">
             <div>
               <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
                   <svg
-                    className="w-6 h-6 text-blue-600"
+                    className="w-6 h-6 text-indigo-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -440,19 +400,16 @@ export default function EditServicePage({
                   </svg>
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Edit Service: {displayServiceName || ""}
+                  Edit Sub-Page: {content.pageName || resolvedParams?.subPageId}
                 </h1>
               </div>
               <p className="text-gray-600 text-lg">
-                Update the content for the {displayServiceName || ""} service page
-                {resolvedParams?.isPillar && resolvedParams.pillarPageId 
-                  ? ` (Pillar: ${resolvedParams.pillarPageId})` 
-                  : ""}
+                Update the content for this sub-page
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/admin/service"
+                href="/admin/nursing-entrance-exam"
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -468,36 +425,36 @@ export default function EditServicePage({
                     d="M10 19l-7-7m0 0l7-7m-7 7h18"
                   />
                 </svg>
-                <span>Back to Services</span>
+                <span>Back</span>
               </Link>
-              <Link
-                href={resolvedParams?.isPillar && resolvedParams.pillarPageId && resolvedParams.servicePageId
-                  ? `/${resolvedParams.pillarPageId}/${resolvedParams.servicePageId}`
-                  : `/${resolvedParams?.serviceId || ""}`}
-                target="_blank"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {resolvedParams?.subPageId && (
+                <Link
+                  href={`/${(slug || resolvedParams.subPageId).endsWith("-exam") ? (slug || resolvedParams.subPageId) : `${slug || resolvedParams.subPageId}-exam`}`}
+                  target="_blank"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                </svg>
-                <span>View Page</span>
-              </Link>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                  <span>View Page</span>
+                </Link>
+              )}
               <button
                 onClick={handleSave}
                 disabled={saving}
@@ -593,44 +550,32 @@ export default function EditServicePage({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Service ID
+                  Page Name
                 </label>
                 <input
                   type="text"
-                  value={resolvedParams?.serviceId || ""}
-                  disabled
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+                  value={content.pageName || ""}
+                  onChange={(e) =>
+                    setContent({ ...content, pageName: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Sub-Page ID (Slug)
+                </label>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder={resolvedParams?.subPageId || ""}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Service identifier (read-only)
+                  URL slug (editable). The URL will be: /[slug]-exam
                 </p>
               </div>
-              {resolvedParams?.isPillar && (
-                <>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Pillar Page ID
-                    </label>
-                    <input
-                      type="text"
-                      value={resolvedParams?.pillarPageId || ""}
-                      disabled
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Service Page ID
-                    </label>
-                    <input
-                      type="text"
-                      value={resolvedParams?.servicePageId || ""}
-                      disabled
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
-                    />
-                  </div>
-                </>
-              )}
             </div>
           </div>
 
@@ -740,17 +685,6 @@ export default function EditServicePage({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Badge
-                </label>
-                <input
-                  type="text"
-                  value={content.hero.badge}
-                  onChange={(e) => updateContent("hero.badge", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Title
                 </label>
                 <input
@@ -758,15 +692,6 @@ export default function EditServicePage({
                   value={content.hero.title}
                   onChange={(e) => updateContent("hero.title", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subtitle
-                </label>
-                <RichTextEditor
-                  value={content.hero.subtitle}
-                  onChange={(value) => updateContent("hero.subtitle", value)}
                 />
               </div>
               <div>
@@ -1608,9 +1533,9 @@ export default function EditServicePage({
               ))}
             </div>
           </div>
+
         </div>
       </div>
     </div>
   );
 }
-

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getNursingEntranceExamSubPage } from "@/lib/firestore-operations";
 
 interface Props {
   children: React.ReactNode;
@@ -9,8 +10,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
   const serviceId = resolvedParams.serviceId;
 
-  // Convert serviceId to readable title
+  // Check if this is a Nursing Entrance Exam sub-page
+  // If so, return minimal metadata to let [subPageId] handle it
+  const subPageResult = await getNursingEntranceExamSubPage(serviceId);
+  if (subPageResult.success && subPageResult.data) {
+    // This is a sub-page, let [subPageId] handle the metadata
+    return {
+      title: "",
+      description: "",
+    };
+  }
 
+  // Convert serviceId to readable title
   const title =
     serviceId || serviceId.charAt(0).toUpperCase() + serviceId.slice(1);
 
@@ -39,6 +50,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ServiceLayout({ children }: Props) {
+export default async function ServiceLayout({ children, params }: Props) {
+  const resolvedParams = await params;
+  const serviceId = resolvedParams.serviceId;
+
+  // Check if this is a Nursing Entrance Exam sub-page
+  // If so, don't render this layout - let [subPageId] handle it
+  try {
+    const subPageResult = await getNursingEntranceExamSubPage(serviceId);
+    if (subPageResult.success && subPageResult.data) {
+      // This is a sub-page, return children without this layout wrapper
+      // This allows the [subPageId] route to handle it
+      return <>{children}</>;
+    }
+  } catch (error) {
+    console.error("Error checking sub-page in layout:", error);
+  }
+
   return children;
 }
