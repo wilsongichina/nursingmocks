@@ -5,55 +5,9 @@ import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
 import {
   getNursingExitExamSubPage,
-  getNursingExitExamSubPages,
   getNursingExitExamNestedSubPage,
   getNursingExitExamNestedSubPages,
 } from "@/lib/firestore-operations";
-
-// Force static generation
-export const dynamic = 'force-static';
-export const dynamicParams = false;
-
-// Generate static params for all exit exam sub-pages
-export async function generateStaticParams() {
-  const params: { subPageId: string }[] = [];
-  let totalPages = 0;
-
-  console.log('🔨 Starting static generation for nursing-exit-exam sub-pages...');
-
-  try {
-    const exitExamSubPagesResult = await getNursingExitExamSubPages();
-    if (exitExamSubPagesResult.success && exitExamSubPagesResult.data) {
-      for (const subPage of exitExamSubPagesResult.data) {
-        const subPageId = subPage.id || subPage.subPageId;
-        const slug = subPage.slug || subPageId;
-        
-        // Add regular sub-page
-        params.push({ subPageId: slug });
-        totalPages += 1;
-
-        // Generate nested sub-pages
-        const nestedResult = await getNursingExitExamNestedSubPages(subPageId);
-        if (nestedResult.success && nestedResult.data) {
-          for (const nested of nestedResult.data) {
-            const nestedId = nested.id || nested.nestedSubPageId;
-            const nestedSlug = nested.slug || nestedId;
-            params.push({ subPageId: `${nestedSlug}-${slug}-exit-exam` });
-            totalPages += 1;
-          }
-        }
-      }
-      console.log(`  ✓ Generated ${exitExamSubPagesResult.data.length} exit exam sub-pages`);
-    }
-
-    console.log(`✅ Total exit exam static pages generated: ${totalPages}`);
-    console.log(`📄 Generated ${params.length} unique routes`);
-  } catch (error) {
-    console.error('❌ Error generating static params for exit exam:', error);
-  }
-
-  return params;
-}
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
@@ -450,10 +404,6 @@ export default async function SubPage({
   params: Promise<{ subPageId: string }>;
 }) {
   const { subPageId } = await params;
-  
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`🔨 Statically generating: /nursing-exit-exam/${subPageId}`);
-  }
 
   // Check if this is a nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-exit-exam
   const nestedSubPageMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);

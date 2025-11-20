@@ -18,9 +18,6 @@ import {
   getNursingTestBankNestedSubPages,
 } from "@/lib/firestore-operations";
 import { useRouter } from "next/navigation";
-// Import static sidebar data generated at build time
-// This will be replaced with actual data during build
-import { sidebarData as staticSidebarData } from "@/lib/data/sidebar-data";
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
@@ -167,25 +164,16 @@ export default function Sidebar({
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
 
-  // Check if we're in development mode
-  const isDevelopment = process.env.NODE_ENV === "development";
-
-  // In development, ignore static data and always fetch from Firestore
-  // In production, use static data from build time
-  const staticData = (!isDevelopment && staticSidebarData) || initialData;
-
-  // Initialize state with static data immediately (no loading state)
-  // Convert readonly arrays to mutable arrays for useState
-  // In development, start with empty arrays and fetch from Firestore
+  // Initialize state - always start empty, will be populated from Firestore
   const [pillarPages, setPillarPages] = useState<PillarPage[]>(
-    !isDevelopment && staticData?.pillarPages ? [...staticData.pillarPages] : []
+    initialData?.pillarPages ? [...initialData.pillarPages] : []
   );
   const [pillarCategories, setPillarCategories] = useState<
     Record<string, Category[]>
   >(
-    !isDevelopment && staticData?.pillarCategories
+    initialData?.pillarCategories
       ? Object.fromEntries(
-          Object.entries(staticData.pillarCategories).map(([key, value]) => [
+          Object.entries(initialData.pillarCategories).map(([key, value]) => [
             key,
             [...value],
           ])
@@ -198,9 +186,9 @@ export default function Sidebar({
     // Add nursing-exit-exam and nursing-test-bank to expanded items by default
     initialSet.add("nursing-exit-exam");
     initialSet.add("nursing-test-bank");
-    // Add all pillar page IDs to the set if static data is available
-    if (!isDevelopment && staticData?.pillarPages) {
-      staticData.pillarPages.forEach((page: PillarPage) => {
+    // Add all pillar page IDs to the set if initial data is available
+    if (initialData?.pillarPages) {
+      initialData.pillarPages.forEach((page: PillarPage) => {
         initialSet.add(page.id);
       });
     }
@@ -473,46 +461,9 @@ export default function Sidebar({
   };
 
   useEffect(() => {
-    // Check if we're in development mode
-    const isDevelopment = process.env.NODE_ENV === "development";
-
-    // In development, always fetch from Firestore for dynamic updates
-    // In production, use static data from build time
-    if (!isDevelopment && staticData) {
-      // Production: Use static data, no need to fetch
-      return;
-    }
-
-    // Development: Always fetch from Firestore for real-time updates
-    // Production fallback: Only if static data is not available
+    // Always fetch from Firestore for dynamic updates
     const loadData = async () => {
       try {
-        // In production, try static JSON file first as fallback
-        if (!isDevelopment) {
-          try {
-            const response = await fetch("/data/sidebar-data.json");
-            if (response.ok) {
-              const staticData = await response.json();
-              setPillarPages(staticData.pillarPages || []);
-              setPillarCategories(staticData.pillarCategories || {});
-
-              // Expand all pillar pages by default when static data is loaded
-              setExpandedItems((prev) => {
-                const newSet = new Set(prev);
-                (staticData.pillarPages || []).forEach((page: PillarPage) => {
-                  newSet.add(page.id);
-                });
-                return newSet;
-              });
-              return;
-            }
-          } catch {
-            // If static file doesn't exist or fails, fall back to Firestore
-            console.log(
-              "Static sidebar data not found, fetching from Firestore..."
-            );
-          }
-        }
 
         // Fetch all pillar pages, all pages (categories), and pillar service pages from Firestore
         const [pillarPagesResult, allPagesResult] = await Promise.all([
@@ -611,7 +562,7 @@ export default function Sidebar({
     };
 
     loadData();
-  }, [initialData, staticData]);
+  }, [initialData]);
 
   const isActive = (href: string) => {
     if (href === "/") {

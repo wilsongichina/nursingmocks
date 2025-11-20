@@ -5,11 +5,8 @@ import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
 import {
   getNursingEntranceExamSubPage,
-  getNursingEntranceExamSubPages,
   getNursingExitExamSubPage,
-  getNursingExitExamSubPages,
   getNursingTestBankSubPage,
-  getNursingTestBankSubPages,
   getNestedSubPage,
   getNestedSubPages,
   getNursingExitExamNestedSubPages,
@@ -19,113 +16,6 @@ import {
   getNursingTestBankTopic,
   getNursingTestBankTopics,
 } from "@/lib/firestore-operations";
-
-// Force static generation
-export const dynamic = 'force-static';
-export const dynamicParams = false;
-
-// Generate static params for all possible sub-page routes
-export async function generateStaticParams() {
-  const params: { subPageId: string }[] = [];
-  let totalPages = 0;
-
-  console.log('🔨 Starting static generation for dynamic sub-pages...');
-
-  try {
-    // 1. Generate entrance exam sub-pages
-    const entranceSubPagesResult = await getNursingEntranceExamSubPages();
-    if (entranceSubPagesResult.success && entranceSubPagesResult.data) {
-      for (const subPage of entranceSubPagesResult.data) {
-        const subPageId = subPage.id || subPage.subPageId;
-        const slug = subPage.slug || subPageId;
-        
-        // Add both with and without -exam suffix
-        params.push({ subPageId: slug });
-        params.push({ subPageId: `${slug}-exam` });
-        totalPages += 2;
-
-        // Generate nested sub-pages for entrance exam
-        const nestedResult = await getNestedSubPages(subPageId);
-        if (nestedResult.success && nestedResult.data) {
-          for (const nested of nestedResult.data) {
-            const nestedId = nested.id || nested.nestedSubPageId;
-            const nestedSlug = nested.slug || nestedId;
-            const parentSlug = slug.endsWith('-exam') ? slug.slice(0, -5) : slug;
-            params.push({ subPageId: `${parentSlug}-${nestedSlug}-questions` });
-            totalPages += 1;
-          }
-        }
-      }
-      console.log(`  ✓ Generated ${entranceSubPagesResult.data.length} entrance exam sub-pages`);
-    }
-
-    // 2. Generate test bank sub-pages
-    const testBankSubPagesResult = await getNursingTestBankSubPages();
-    if (testBankSubPagesResult.success && testBankSubPagesResult.data) {
-      for (const subPage of testBankSubPagesResult.data) {
-        const subPageId = subPage.id || subPage.subPageId;
-        const slug = subPage.slug || subPageId;
-        
-        // Add test bank sub-page
-        params.push({ subPageId: `${slug}-test-bank` });
-        totalPages += 1;
-
-        // Generate nested sub-pages for test bank
-        const nestedResult = await getNursingTestBankNestedSubPages(subPageId);
-        if (nestedResult.success && nestedResult.data) {
-          for (const nested of nestedResult.data) {
-            const nestedId = nested.id || nested.nestedSubPageId;
-            const nestedSlug = nested.slug || nestedId;
-            
-            // Add nested sub-page
-            params.push({ subPageId: `${nestedSlug}-${slug}-test-bank` });
-            totalPages += 1;
-
-            // Generate topics for nested sub-pages
-            const topicsResult = await getNursingTestBankTopics(subPageId, nestedId);
-            if (topicsResult.success && topicsResult.data) {
-              for (const topic of topicsResult.data) {
-                const topicId = topic.id || topic.topicId;
-                const topicSlug = topic.slug || topicId;
-                params.push({ subPageId: `${nestedSlug}-${slug}-${topicSlug}` });
-                totalPages += 1;
-              }
-            }
-          }
-        }
-      }
-      console.log(`  ✓ Generated ${testBankSubPagesResult.data.length} test bank sub-pages`);
-    }
-
-    // 3. Generate exit exam sub-pages (nested only, as regular ones use different route)
-    const exitExamSubPagesResult = await getNursingExitExamSubPages();
-    if (exitExamSubPagesResult.success && exitExamSubPagesResult.data) {
-      for (const subPage of exitExamSubPagesResult.data) {
-        const subPageId = subPage.id || subPage.subPageId;
-        const slug = subPage.slug || subPageId;
-
-        // Generate nested sub-pages for exit exam
-        const nestedResult = await getNursingExitExamNestedSubPages(subPageId);
-        if (nestedResult.success && nestedResult.data) {
-          for (const nested of nestedResult.data) {
-            const nestedId = nested.id || nested.nestedSubPageId;
-            const nestedSlug = nested.slug || nestedId;
-            params.push({ subPageId: `${nestedSlug}-${slug}-exit-exam` });
-            totalPages += 1;
-          }
-        }
-      }
-      console.log(`  ✓ Generated exit exam nested sub-pages`);
-    }
-
-    console.log(`✅ Total static pages generated: ${totalPages}`);
-    console.log(`📄 Generated ${params.length} unique routes`);
-  } catch (error) {
-    console.error('❌ Error generating static params:', error);
-  }
-
-  return params;
-}
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
@@ -617,10 +507,6 @@ export default async function SubPage({
   params: Promise<{ subPageId: string }>;
 }) {
   const { subPageId } = await params;
-  
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`🔨 Statically generating: /${subPageId}`);
-  }
 
   // Check if this is a test bank nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-test-bank
   const testBankNestedMatch = subPageId.match(/^(.+)-(.+)-test-bank$/);

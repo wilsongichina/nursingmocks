@@ -4,9 +4,6 @@ import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
 import { getPillarPageContent, getNursingEntranceExamSubPages } from "@/lib/firestore-operations";
 
-// Force static generation
-export const dynamic = 'force-static';
-
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,10 +254,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NursingEntranceExamPage() {
-  if (process.env.NODE_ENV === 'production') {
-    console.log('🔨 Statically generating: /nursing-entrance-exam');
-  }
-  
   const result = await getPillarPageContent("nursing-entrance-exam");
   const subPagesResult = await getNursingEntranceExamSubPages();
 

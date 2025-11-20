@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "node scripts/generate-sidebar-data.js",
     "build": "next build",
     "build:static": "next build && next export",
     "start": "next start",
