@@ -346,10 +346,54 @@ export async function generateMetadata({
   if (nestedSubPageMatch) {
     // This is a nested sub-page
     const nestedSubPageId = nestedSubPageMatch[1];
-    const parentSubPageId = nestedSubPageMatch[2];
+    let parentSubPageId = nestedSubPageMatch[2];
 
     // First verify the parent exists
-    const parentResult = await getNursingExitExamSubPage(parentSubPageId);
+    // Try with the parent ID as-is first
+    let parentResult = await getNursingExitExamSubPage(parentSubPageId);
+    
+    // If not found, try with -exit-exam suffix
+    if (!parentResult.success || !parentResult.data) {
+      parentResult = await getNursingExitExamSubPage(parentSubPageId + "-exit-exam");
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = parentSubPageId + "-exit-exam";
+      }
+    }
+    
+    // If still not found, try without -rn or other suffixes
+    if ((!parentResult.success || !parentResult.data) && parentSubPageId.endsWith("-rn")) {
+      const baseId = parentSubPageId.slice(0, -3); // Remove "-rn"
+      parentResult = await getNursingExitExamSubPage(baseId);
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = baseId;
+      }
+    }
+    
+    // If still not found, try to find by slug
+    if (!parentResult.success || !parentResult.data) {
+      const { getNursingExitExamSubPages } = await import("@/lib/firestore-operations");
+      const allSubPagesResult = await getNursingExitExamSubPages();
+      if (allSubPagesResult.success && allSubPagesResult.data) {
+        const foundParent = allSubPagesResult.data.find((subPage: any) => {
+          const subPageSlug = subPage.slug || subPage.id || subPage.subPageId;
+          const subPageId = subPage.id || subPage.subPageId;
+          return (
+            subPageSlug === parentSubPageId ||
+            subPageId === parentSubPageId ||
+            subPageSlug === parentSubPageId + "-exit-exam" ||
+            subPageId === parentSubPageId + "-exit-exam"
+          );
+        });
+        if (foundParent) {
+          const foundId = foundParent.id || foundParent.subPageId;
+          if (foundId && typeof foundId === "string") {
+            parentSubPageId = foundId;
+            parentResult = await getNursingExitExamSubPage(parentSubPageId);
+          }
+        }
+      }
+    }
+    
     if (!parentResult.success || !parentResult.data) {
       return {
         title: `${subPageId} | TeasGurus`,
@@ -424,7 +468,51 @@ export default async function SubPage({
     parentSubPageId = nestedSubPageMatch[2];
 
     // First verify the parent sub-page exists
-    const parentResult = await getNursingExitExamSubPage(parentSubPageId);
+    // Try with the parent ID as-is first
+    let parentResult = await getNursingExitExamSubPage(parentSubPageId);
+    
+    // If not found, try with -exit-exam suffix
+    if (!parentResult.success || !parentResult.data) {
+      parentResult = await getNursingExitExamSubPage(parentSubPageId + "-exit-exam");
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = parentSubPageId + "-exit-exam";
+      }
+    }
+    
+    // If still not found, try without -rn or other suffixes
+    if ((!parentResult.success || !parentResult.data) && parentSubPageId.endsWith("-rn")) {
+      const baseId = parentSubPageId.slice(0, -3); // Remove "-rn"
+      parentResult = await getNursingExitExamSubPage(baseId);
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = baseId;
+      }
+    }
+    
+    // If still not found, try to find by slug
+    if (!parentResult.success || !parentResult.data) {
+      const { getNursingExitExamSubPages } = await import("@/lib/firestore-operations");
+      const allSubPagesResult = await getNursingExitExamSubPages();
+      if (allSubPagesResult.success && allSubPagesResult.data) {
+        const foundParent = allSubPagesResult.data.find((subPage: any) => {
+          const subPageSlug = subPage.slug || subPage.id || subPage.subPageId;
+          const subPageId = subPage.id || subPage.subPageId;
+          return (
+            subPageSlug === parentSubPageId ||
+            subPageId === parentSubPageId ||
+            subPageSlug === parentSubPageId + "-exit-exam" ||
+            subPageId === parentSubPageId + "-exit-exam"
+          );
+        });
+        if (foundParent) {
+          const foundId = foundParent.id || foundParent.subPageId;
+          if (foundId && typeof foundId === "string") {
+            parentSubPageId = foundId;
+            parentResult = await getNursingExitExamSubPage(parentSubPageId);
+          }
+        }
+      }
+    }
+    
     if (!parentResult.success || !parentResult.data) {
       notFound();
     }

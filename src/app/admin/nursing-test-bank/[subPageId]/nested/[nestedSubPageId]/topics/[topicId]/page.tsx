@@ -120,24 +120,20 @@ export default function EditTopic({
       const parentResult = await getNursingTestBankSubPage(
         resolvedParams.subPageId
       );
-      if (parentResult.success && parentResult.data) {
-        const parentData = parentResult.data as any;
-        setParentSlug(parentData.slug || resolvedParams.subPageId);
-      } else {
-        setParentSlug(resolvedParams.subPageId);
-      }
+      const currentParentSlug = parentResult.success && parentResult.data
+        ? (parentResult.data as any).slug || resolvedParams.subPageId
+        : resolvedParams.subPageId;
+      setParentSlug(currentParentSlug);
 
       // Load nested sub-page to get its slug
       const nestedResult = await getNursingTestBankNestedSubPage(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId
       );
-      if (nestedResult.success && nestedResult.data) {
-        const nestedData = nestedResult.data as any;
-        setNestedSlug(nestedData.slug || resolvedParams.nestedSubPageId);
-      } else {
-        setNestedSlug(resolvedParams.nestedSubPageId);
-      }
+      const currentNestedSlug = nestedResult.success && nestedResult.data
+        ? (nestedResult.data as any).slug || resolvedParams.nestedSubPageId
+        : resolvedParams.nestedSubPageId;
+      setNestedSlug(currentNestedSlug);
 
       const result = await getNursingTestBankTopic(
         resolvedParams.subPageId,
@@ -164,9 +160,7 @@ export default function EditTopic({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${
-                nestedSlug || resolvedParams.nestedSubPageId
-              }-${parentSlug || resolvedParams.subPageId}-${
+              `https://teasgurus.com/${currentNestedSlug}-${currentParentSlug}-${
                 resolvedParams.topicId
               }`,
           },
@@ -220,9 +214,7 @@ export default function EditTopic({
             ogTitle: `${resolvedParams.topicId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.topicId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${
-              nestedSlug || resolvedParams.nestedSubPageId
-            }-${parentSlug || resolvedParams.subPageId}-${
+            canonicalUrl: `https://teasgurus.com/${currentNestedSlug}-${currentParentSlug}-${
               resolvedParams.topicId
             }`,
           },

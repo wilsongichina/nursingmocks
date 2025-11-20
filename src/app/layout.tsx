@@ -124,7 +124,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${outfit.variable} font-sans antialiased`}>
+      <body 
+        className={`${outfit.variable} font-sans antialiased`}
+        suppressHydrationWarning
+      >
         <AuthProviderWrapper>{children}</AuthProviderWrapper>
       </body>
     </html>

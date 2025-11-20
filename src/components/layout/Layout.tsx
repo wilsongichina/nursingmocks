@@ -1429,12 +1429,14 @@ function LayoutWithoutSidebar({ children }: { children: ReactNode }) {
 
 export default function Layout({ children, showSidebar }: LayoutProps) {
   const pathname = usePathname();
+  const [sidebarEnabled, setSidebarEnabled] = useState<boolean | null>(null);
 
   // Determine if sidebar should be shown based on pathname
-  const shouldShowSidebar = () => {
+  useEffect(() => {
     // If explicitly set, use that value
     if (showSidebar !== undefined) {
-      return showSidebar;
+      setSidebarEnabled(showSidebar);
+      return;
     }
 
     // Exclude these routes from showing sidebar
@@ -1447,24 +1449,35 @@ export default function Layout({ children, showSidebar }: LayoutProps) {
 
     // Check if pathname starts with excluded routes
     if (excludedRoutes.includes(pathname)) {
-      return false;
+      setSidebarEnabled(false);
+      return;
     }
 
     // Exclude blog pages
     if (pathname.startsWith("/blog")) {
-      return false;
+      setSidebarEnabled(false);
+      return;
     }
 
     // Exclude admin panel
     if (pathname.startsWith("/admin")) {
-      return false;
+      setSidebarEnabled(false);
+      return;
     }
 
     // Show sidebar for all other pages
-    return true;
-  };
+    setSidebarEnabled(true);
+  }, [pathname, showSidebar]);
 
-  const sidebarEnabled = shouldShowSidebar();
+  // Show loading state or default to showing sidebar during hydration
+  if (sidebarEnabled === null) {
+    // Default to showing sidebar during initial render to avoid hydration mismatch
+    return (
+      <SidebarProvider>
+        <LayoutWithSidebar>{children}</LayoutWithSidebar>
+      </SidebarProvider>
+    );
+  }
 
   if (sidebarEnabled) {
     return (

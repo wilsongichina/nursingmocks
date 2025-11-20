@@ -985,7 +985,7 @@ export default function Sidebar({
 
               const pillarActive =
                 pathname.startsWith(`/${pillarPage.id}`) ||
-                pathname.match(/^\/.+-exam$/) ||
+                (pathname.match(/^\/.+-exam$/) && !pathname.endsWith("-exit-exam")) ||
                 pathname.match(/^\/.+-.+-questions$/);
               const isExpanded = expandedItems.has(pillarPage.id);
 
