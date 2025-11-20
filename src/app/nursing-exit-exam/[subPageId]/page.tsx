@@ -4,107 +4,35 @@ import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
 import {
-  getNursingEntranceExamSubPage,
-  getNursingEntranceExamSubPages,
   getNursingExitExamSubPage,
   getNursingExitExamSubPages,
-  getNursingTestBankSubPage,
-  getNursingTestBankSubPages,
-  getNestedSubPage,
-  getNestedSubPages,
-  getNursingExitExamNestedSubPages,
   getNursingExitExamNestedSubPage,
-  getNursingTestBankNestedSubPages,
-  getNursingTestBankNestedSubPage,
-  getNursingTestBankTopic,
-  getNursingTestBankTopics,
+  getNursingExitExamNestedSubPages,
 } from "@/lib/firestore-operations";
 
 // Force static generation
 export const dynamic = 'force-static';
 export const dynamicParams = false;
 
-// Generate static params for all possible sub-page routes
+// Generate static params for all exit exam sub-pages
 export async function generateStaticParams() {
   const params: { subPageId: string }[] = [];
   let totalPages = 0;
 
-  console.log('🔨 Starting static generation for dynamic sub-pages...');
+  console.log('🔨 Starting static generation for nursing-exit-exam sub-pages...');
 
   try {
-    // 1. Generate entrance exam sub-pages
-    const entranceSubPagesResult = await getNursingEntranceExamSubPages();
-    if (entranceSubPagesResult.success && entranceSubPagesResult.data) {
-      for (const subPage of entranceSubPagesResult.data) {
-        const subPageId = subPage.id || subPage.subPageId;
-        const slug = subPage.slug || subPageId;
-        
-        // Add both with and without -exam suffix
-        params.push({ subPageId: slug });
-        params.push({ subPageId: `${slug}-exam` });
-        totalPages += 2;
-
-        // Generate nested sub-pages for entrance exam
-        const nestedResult = await getNestedSubPages(subPageId);
-        if (nestedResult.success && nestedResult.data) {
-          for (const nested of nestedResult.data) {
-            const nestedId = nested.id || nested.nestedSubPageId;
-            const nestedSlug = nested.slug || nestedId;
-            const parentSlug = slug.endsWith('-exam') ? slug.slice(0, -5) : slug;
-            params.push({ subPageId: `${parentSlug}-${nestedSlug}-questions` });
-            totalPages += 1;
-          }
-        }
-      }
-      console.log(`  ✓ Generated ${entranceSubPagesResult.data.length} entrance exam sub-pages`);
-    }
-
-    // 2. Generate test bank sub-pages
-    const testBankSubPagesResult = await getNursingTestBankSubPages();
-    if (testBankSubPagesResult.success && testBankSubPagesResult.data) {
-      for (const subPage of testBankSubPagesResult.data) {
-        const subPageId = subPage.id || subPage.subPageId;
-        const slug = subPage.slug || subPageId;
-        
-        // Add test bank sub-page
-        params.push({ subPageId: `${slug}-test-bank` });
-        totalPages += 1;
-
-        // Generate nested sub-pages for test bank
-        const nestedResult = await getNursingTestBankNestedSubPages(subPageId);
-        if (nestedResult.success && nestedResult.data) {
-          for (const nested of nestedResult.data) {
-            const nestedId = nested.id || nested.nestedSubPageId;
-            const nestedSlug = nested.slug || nestedId;
-            
-            // Add nested sub-page
-            params.push({ subPageId: `${nestedSlug}-${slug}-test-bank` });
-            totalPages += 1;
-
-            // Generate topics for nested sub-pages
-            const topicsResult = await getNursingTestBankTopics(subPageId, nestedId);
-            if (topicsResult.success && topicsResult.data) {
-              for (const topic of topicsResult.data) {
-                const topicId = topic.id || topic.topicId;
-                const topicSlug = topic.slug || topicId;
-                params.push({ subPageId: `${nestedSlug}-${slug}-${topicSlug}` });
-                totalPages += 1;
-              }
-            }
-          }
-        }
-      }
-      console.log(`  ✓ Generated ${testBankSubPagesResult.data.length} test bank sub-pages`);
-    }
-
-    // 3. Generate exit exam sub-pages (nested only, as regular ones use different route)
     const exitExamSubPagesResult = await getNursingExitExamSubPages();
     if (exitExamSubPagesResult.success && exitExamSubPagesResult.data) {
       for (const subPage of exitExamSubPagesResult.data) {
         const subPageId = subPage.id || subPage.subPageId;
         const slug = subPage.slug || subPageId;
+        
+        // Add regular sub-page
+        params.push({ subPageId: slug });
+        totalPages += 1;
 
-        // Generate nested sub-pages for exit exam
+        // Generate nested sub-pages
         const nestedResult = await getNursingExitExamNestedSubPages(subPageId);
         if (nestedResult.success && nestedResult.data) {
           for (const nested of nestedResult.data) {
@@ -115,13 +43,13 @@ export async function generateStaticParams() {
           }
         }
       }
-      console.log(`  ✓ Generated exit exam nested sub-pages`);
+      console.log(`  ✓ Generated ${exitExamSubPagesResult.data.length} exit exam sub-pages`);
     }
 
-    console.log(`✅ Total static pages generated: ${totalPages}`);
+    console.log(`✅ Total exit exam static pages generated: ${totalPages}`);
     console.log(`📄 Generated ${params.length} unique routes`);
   } catch (error) {
-    console.error('❌ Error generating static params:', error);
+    console.error('❌ Error generating static params for exit exam:', error);
   }
 
   return params;
@@ -453,82 +381,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { subPageId } = await params;
 
-  // Check if this is a test bank nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-test-bank
-  const testBankNestedMatch = subPageId.match(/^(.+)-(.+)-test-bank$/);
-
-  // Check if this is a test bank topic URL pattern: [nestedSubPageId]-[parentSubPageId]-[topicId]
-  // Only match if it doesn't end with -test-bank (to avoid conflict with nested sub-pages)
-  const testBankTopicMatch =
-    !subPageId.endsWith("-test-bank") && subPageId.match(/^(.+)-(.+)-(.+)$/);
-
-  // Check if this is an exit exam nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-exit-exam
-  const exitExamNestedMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);
-
-  // Check if this is an entrance exam nested sub-page URL pattern: [parentSubPageId]-[nestedSubPageId]-questions
-  const entranceExamNestedMatch = subPageId.match(/^(.+)-(.+)-questions$/);
+  // Check if this is a nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-exit-exam
+  const nestedSubPageMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);
 
   let result: any;
-  if (testBankTopicMatch) {
-    // This is a test bank topic page
-    // Pattern: [nestedSubPageId]-[parentSubPageId]-[topicId]
-    const nestedSubPageId = testBankTopicMatch[1];
-    const parentSubPageId = testBankTopicMatch[2];
-    const topicId = testBankTopicMatch[3];
+  if (nestedSubPageMatch) {
+    // This is a nested sub-page
+    const nestedSubPageId = nestedSubPageMatch[1];
+    const parentSubPageId = nestedSubPageMatch[2];
 
-    // Verify parent exists first
-    const parentResult = await getNursingTestBankSubPage(parentSubPageId);
-    if (!parentResult.success || !parentResult.data) {
-      return {
-        title: `${subPageId} | TeasGurus`,
-        description: `Content for ${subPageId}`,
-      };
-    }
-
-    // Verify nested sub-page exists
-    const nestedResult = await getNursingTestBankNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (!nestedResult.success || !nestedResult.data) {
-      return {
-        title: `${subPageId} | TeasGurus`,
-        description: `Content for ${subPageId}`,
-      };
-    }
-
-    // Get topic
-    const topicResult = await getNursingTestBankTopic(
-      parentSubPageId,
-      nestedSubPageId,
-      topicId
-    );
-    result = topicResult;
-  } else if (testBankNestedMatch) {
-    // This is a test bank nested sub-page
-    const nestedSubPageId = testBankNestedMatch[1];
-    const parentSubPageId = testBankNestedMatch[2];
-
-    // Verify parent exists first
-    const parentResult = await getNursingTestBankSubPage(parentSubPageId);
-    if (!parentResult.success || !parentResult.data) {
-      return {
-        title: `${subPageId} | TeasGurus`,
-        description: `Content for ${subPageId}`,
-      };
-    }
-
-    // Get nested sub-page
-    const nestedResult = await getNursingTestBankNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    result = nestedResult;
-  } else if (exitExamNestedMatch) {
-    // This is an exit exam nested sub-page
-    const nestedSubPageId = exitExamNestedMatch[1];
-    const parentSubPageId = exitExamNestedMatch[2];
-
-    // Verify parent exists first
+    // First verify the parent exists
     const parentResult = await getNursingExitExamSubPage(parentSubPageId);
     if (!parentResult.success || !parentResult.data) {
       return {
@@ -543,38 +405,9 @@ export async function generateMetadata({
       nestedSubPageId
     );
     result = nestedResult;
-  } else if (entranceExamNestedMatch) {
-    // This is an entrance exam nested sub-page
-    // Parent ID in nested URLs doesn't have -exam suffix
-    const parentSubPageId = entranceExamNestedMatch[1];
-    const nestedSubPageId = entranceExamNestedMatch[2];
-
-    // Verify parent exists first
-    const parentResult = await getNursingEntranceExamSubPage(parentSubPageId);
-    if (!parentResult.success || !parentResult.data) {
-      return {
-        title: `${subPageId} | TeasGurus`,
-        description: `Content for ${subPageId}`,
-      };
-    }
-
-    // Get nested sub-page
-    const nestedResult = await getNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    result = nestedResult;
-  } else if (subPageId.endsWith("-test-bank")) {
-    // This is a test bank regular sub-page
-    const lookupId = subPageId.slice(0, -10); // Remove "-test-bank"
-    result = await getNursingTestBankSubPage(lookupId);
   } else {
-    // Regular sub-page - strip -exam suffix if present
-    let lookupId = subPageId;
-    if (subPageId.endsWith("-exam")) {
-      lookupId = subPageId.slice(0, -5);
-    }
-    result = await getNursingEntranceExamSubPage(lookupId);
+    // Regular sub-page
+    result = await getNursingExitExamSubPage(subPageId);
   }
 
   if (result.success && result.data) {
@@ -588,7 +421,7 @@ export async function generateMetadata({
           title:
             data.meta.ogTitle || data.meta.title || `${subPageId} | TeasGurus`,
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || `https://teasgurus.com/${subPageId}`,
+          url: data.meta.canonicalUrl || `https://teasgurus.com/nursing-exit-exam/${subPageId}`,
           images: [
             {
               url: data.meta.ogImage || "/teas-gurus-logo.png",
@@ -599,7 +432,7 @@ export async function generateMetadata({
           ],
         },
         alternates: {
-          canonical: data.meta.canonicalUrl || `/${subPageId}`,
+          canonical: data.meta.canonicalUrl || `/nursing-exit-exam/${subPageId}`,
         },
       };
     }
@@ -619,97 +452,22 @@ export default async function SubPage({
   const { subPageId } = await params;
   
   if (process.env.NODE_ENV === 'production') {
-    console.log(`🔨 Statically generating: /${subPageId}`);
+    console.log(`🔨 Statically generating: /nursing-exit-exam/${subPageId}`);
   }
 
-  // Check if this is a test bank nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-test-bank
-  const testBankNestedMatch = subPageId.match(/^(.+)-(.+)-test-bank$/);
-
-  // Check if this is a test bank topic URL pattern: [nestedSubPageId]-[parentSubPageId]-[topicId]
-  // Only match if it doesn't end with -test-bank (to avoid conflict with nested sub-pages)
-  const testBankTopicMatch =
-    !subPageId.endsWith("-test-bank") && subPageId.match(/^(.+)-(.+)-(.+)$/);
-
-  // Check if this is an exit exam nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-exit-exam
-  const exitExamNestedMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);
-
-  // Check if this is an entrance exam nested sub-page URL pattern: [parentSubPageId]-[nestedSubPageId]-questions
-  const entranceExamNestedMatch = subPageId.match(/^(.+)-(.+)-questions$/);
+  // Check if this is a nested sub-page URL pattern: [nestedSubPageId]-[parentSubPageId]-exit-exam
+  const nestedSubPageMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);
 
   let pageData: any;
-  let parentSubPageData: any = null; // Store parent sub-page data for URL generation
   let isNestedSubPage = false;
-  let isTopic = false;
-  let isExitExam = false;
-  let isTestBank = false;
   let parentSubPageId: string | null = null;
   let nestedSubPageId: string | null = null;
-  let topicId: string | null = null;
-  let lookupId: string = subPageId;
+  const lookupId: string = subPageId;
 
-  if (testBankTopicMatch) {
-    // This is a test bank topic page
-    // Pattern: [nestedSubPageId]-[parentSubPageId]-[topicId]
-    nestedSubPageId = testBankTopicMatch[1];
-    parentSubPageId = testBankTopicMatch[2];
-    topicId = testBankTopicMatch[3];
-
-    // First verify the parent sub-page exists
-    const parentResult = await getNursingTestBankSubPage(parentSubPageId);
-    if (!parentResult.success || !parentResult.data) {
-      notFound();
-    }
-
-    // Verify nested sub-page exists
-    const nestedResult = await getNursingTestBankNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (!nestedResult.success || !nestedResult.data) {
-      notFound();
-    }
-
-    // Get the topic
-    const topicResult = await getNursingTestBankTopic(
-      parentSubPageId,
-      nestedSubPageId,
-      topicId
-    );
-    if (!topicResult.success || !topicResult.data) {
-      notFound();
-    }
-
-    pageData = topicResult.data;
-    isTopic = true;
-    isTestBank = true;
-  } else if (testBankNestedMatch) {
-    // This is a test bank nested sub-page
-    nestedSubPageId = testBankNestedMatch[1];
-    parentSubPageId = testBankNestedMatch[2];
-
-    // First verify the parent sub-page exists
-    const parentResult = await getNursingTestBankSubPage(parentSubPageId);
-    if (!parentResult.success || !parentResult.data) {
-      notFound();
-    }
-    parentSubPageData = parentResult.data; // Store parent data for URL generation
-
-    // Get the nested sub-page
-    const nestedResult = await getNursingTestBankNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (!nestedResult.success || !nestedResult.data) {
-      notFound();
-    }
-
-    pageData = nestedResult.data;
-    isNestedSubPage = true;
-    isTestBank = true;
-  } else if (exitExamNestedMatch) {
-    // This is an exit exam nested sub-page
-    nestedSubPageId = exitExamNestedMatch[1];
-    parentSubPageId = exitExamNestedMatch[2];
+  if (nestedSubPageMatch) {
+    // This is a nested sub-page
+    nestedSubPageId = nestedSubPageMatch[1];
+    parentSubPageId = nestedSubPageMatch[2];
 
     // First verify the parent sub-page exists
     const parentResult = await getNursingExitExamSubPage(parentSubPageId);
@@ -728,48 +486,9 @@ export default async function SubPage({
 
     pageData = nestedResult.data;
     isNestedSubPage = true;
-    isExitExam = true;
-  } else if (entranceExamNestedMatch) {
-    // This is an entrance exam nested sub-page
-    // Parent ID in nested URLs doesn't have -exam suffix
-    parentSubPageId = entranceExamNestedMatch[1];
-    nestedSubPageId = entranceExamNestedMatch[2];
-
-    // First verify the parent sub-page exists
-    const parentResult = await getNursingEntranceExamSubPage(parentSubPageId);
-    if (!parentResult.success || !parentResult.data) {
-      notFound();
-    }
-
-    // Get the nested sub-page
-    const nestedResult = await getNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (!nestedResult.success || !nestedResult.data) {
-      notFound();
-    }
-
-    pageData = nestedResult.data;
-    isNestedSubPage = true;
-  } else if (subPageId.endsWith("-test-bank")) {
-    // This is a test bank regular sub-page
-    lookupId = subPageId.slice(0, -10); // Remove "-test-bank"
-    const result = await getNursingTestBankSubPage(lookupId);
-
-    if (!result.success || !result.data) {
-      notFound();
-    }
-
-    pageData = result.data;
-    isTestBank = true;
   } else {
-    // This is a regular sub-page - strip -exam suffix if present
-    if (subPageId.endsWith("-exam")) {
-      lookupId = subPageId.slice(0, -5);
-    }
-
-    const result = await getNursingEntranceExamSubPage(lookupId);
+    // This is a regular sub-page
+    const result = await getNursingExitExamSubPage(lookupId);
 
     if (!result.success || !result.data) {
       notFound();
@@ -778,43 +497,12 @@ export default async function SubPage({
     pageData = result.data;
   }
 
-  // Fetch nested sub-pages if this is a regular sub-page (not a nested sub-page or topic itself)
+  // Fetch nested sub-pages if this is a regular sub-page (not a nested sub-page itself)
   let nestedSubPages: any[] = [];
-  if (!isNestedSubPage && !isTopic) {
-    if (isTestBank) {
-      // Fetch test bank nested sub-pages
-      const nestedSubPagesResult = await getNursingTestBankNestedSubPages(
-        lookupId
-      );
-      if (nestedSubPagesResult.success && nestedSubPagesResult.data) {
-        nestedSubPages = nestedSubPagesResult.data;
-      }
-    } else if (isExitExam) {
-      // Fetch exit exam nested sub-pages
-      const nestedSubPagesResult = await getNursingExitExamNestedSubPages(
-        lookupId
-      );
-      if (nestedSubPagesResult.success && nestedSubPagesResult.data) {
-        nestedSubPages = nestedSubPagesResult.data;
-      }
-    } else {
-      // Use the lookup ID (without -exam) for fetching nested sub-pages
-      const nestedSubPagesResult = await getNestedSubPages(lookupId);
-      if (nestedSubPagesResult.success && nestedSubPagesResult.data) {
-        nestedSubPages = nestedSubPagesResult.data;
-      }
-    }
-  }
-
-  // Fetch topics if this is a nested sub-page of the test bank
-  let topics: any[] = [];
-  if (isNestedSubPage && isTestBank && parentSubPageId && nestedSubPageId) {
-    const topicsResult = await getNursingTestBankTopics(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (topicsResult.success && topicsResult.data) {
-      topics = topicsResult.data;
+  if (!isNestedSubPage) {
+    const nestedSubPagesResult = await getNursingExitExamNestedSubPages(lookupId);
+    if (nestedSubPagesResult.success && nestedSubPagesResult.data) {
+      nestedSubPages = nestedSubPagesResult.data;
     }
   }
 
@@ -824,21 +512,15 @@ export default async function SubPage({
     meta: pageData.meta || {
       title: `${subPageId} | TeasGurus`,
       description: `Content for ${subPageId}`,
-      keywords: `${subPageId}, ${
-        isExitExam ? "nursing exit exam" : "nursing entrance exam"
-      }`,
+      keywords: `${subPageId}, nursing exit exam`,
       ogTitle: `${subPageId} | TeasGurus`,
       ogDescription: `Content for ${subPageId}`,
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: `https://teasgurus.com/${subPageId}`,
+      canonicalUrl: `https://teasgurus.com/nursing-exit-exam/${subPageId}`,
     },
     schema: pageData.schema || "",
     hero: pageData.hero || {
-      badge: isTestBank
-        ? "Nursing Test Bank"
-        : isExitExam
-        ? "Nursing Exit Exam"
-        : "Nursing Entrance Exam",
+      badge: "Nursing Exit Exam",
       title: pageData.pageName || subPageId,
       subtitle: "",
       description: "",
@@ -895,136 +577,6 @@ export default async function SubPage({
             </div>
           </div>
 
-          {/* Topics Cards - Dashboard Style (for nested sub-pages) */}
-          {isNestedSubPage && isTestBank && topics.length > 0 && (
-            <div className="mt-6 mb-8">
-              <div className="flex flex-wrap justify-center gap-4">
-                {/* All topics */}
-                {topics.map((topic: any, index: number) => {
-                  const pageName =
-                    topic.pageName ||
-                    topic.hero?.title ||
-                    topic.title ||
-                    topic.id;
-                  const topicPageId = topic.id || topic.topicId;
-
-                  // Get icon and colors based on page name (similar to nested sub-pages)
-                  const getCardIcon = (pageName: string, index: number) => {
-                    const nameLower = pageName.toLowerCase();
-                    const colorVariants = [
-                      {
-                        iconBg: "bg-purple-500",
-                        numberColor: "text-purple-600",
-                      },
-                      { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
-                      {
-                        iconBg: "bg-orange-500",
-                        numberColor: "text-orange-600",
-                      },
-                      { iconBg: "bg-green-500", numberColor: "text-green-600" },
-                      { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
-                      {
-                        iconBg: "bg-indigo-500",
-                        numberColor: "text-indigo-600",
-                      },
-                      { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
-                      { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
-                    ];
-
-                    if (nameLower.includes("reading")) {
-                      return {
-                        icon: <BookIcon className="w-6 h-6 text-white" />,
-                        iconBg: "bg-purple-500",
-                        numberColor: "text-purple-600",
-                      };
-                    } else if (nameLower.includes("math")) {
-                      return {
-                        icon: <CalculatorIcon className="w-6 h-6 text-white" />,
-                        iconBg: "bg-blue-500",
-                        numberColor: "text-blue-600",
-                      };
-                    } else if (nameLower.includes("science")) {
-                      return {
-                        icon: <FlaskIcon className="w-6 h-6 text-white" />,
-                        iconBg: "bg-orange-500",
-                        numberColor: "text-orange-600",
-                      };
-                    } else if (nameLower.includes("english")) {
-                      return {
-                        icon: <ABCIcon className="w-6 h-6 text-white" />,
-                        iconBg: "bg-green-500",
-                        numberColor: "text-green-600",
-                      };
-                    }
-                    // Default fallback - use index-based color rotation for icon and text
-                    const colorVariant =
-                      colorVariants[index % colorVariants.length];
-                    return {
-                      icon: <LaptopIcon className="w-6 h-6 text-white" />,
-                      iconBg: colorVariant.iconBg,
-                      numberColor: colorVariant.numberColor,
-                    };
-                  };
-
-                  const config = getCardIcon(pageName, index);
-                  // Default question count - can be made dynamic later
-                  const questionCount = topic.questionCount || "0";
-
-                  // Get the slugs for URL generation
-                  const nestedSlug = pageData?.slug || nestedSubPageId || "";
-                  const parentSlug =
-                    parentSubPageData?.slug || parentSubPageId || "";
-                  const topicSlug = topic.slug || topicPageId;
-                  const topicUrl = `/${nestedSlug}-${parentSlug}-${topicSlug}`;
-
-                  return (
-                    <Link
-                      key={topicPageId}
-                      href={topicUrl}
-                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                        >
-                          {config.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-600 mb-1">
-                            {pageName}
-                          </p>
-                          <p
-                            className={`text-3xl font-bold ${config.numberColor}`}
-                          >
-                            {questionCount}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="w-5 h-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Show Take Test button only for nested sub-pages */}
           {isNestedSubPage && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
@@ -1055,25 +607,16 @@ export default async function SubPage({
                   const getCardIcon = (pageName: string, index: number) => {
                     const nameLower = pageName.toLowerCase();
                     const colorVariants = [
-                      {
-                        iconBg: "bg-purple-500",
-                        numberColor: "text-purple-600",
-                      },
+                      { iconBg: "bg-purple-500", numberColor: "text-purple-600" },
                       { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
-                      {
-                        iconBg: "bg-orange-500",
-                        numberColor: "text-orange-600",
-                      },
+                      { iconBg: "bg-orange-500", numberColor: "text-orange-600" },
                       { iconBg: "bg-green-500", numberColor: "text-green-600" },
                       { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
-                      {
-                        iconBg: "bg-indigo-500",
-                        numberColor: "text-indigo-600",
-                      },
+                      { iconBg: "bg-indigo-500", numberColor: "text-indigo-600" },
                       { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
                       { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
                     ];
-
+                    
                     if (nameLower.includes("reading")) {
                       return {
                         icon: <BookIcon className="w-6 h-6 text-white" />,
@@ -1100,8 +643,7 @@ export default async function SubPage({
                       };
                     }
                     // Default fallback - use index-based color rotation for icon and text
-                    const colorVariant =
-                      colorVariants[index % colorVariants.length];
+                    const colorVariant = colorVariants[index % colorVariants.length];
                     return {
                       icon: <LaptopIcon className="w-6 h-6 text-white" />,
                       iconBg: colorVariant.iconBg,
@@ -1114,27 +656,12 @@ export default async function SubPage({
                   const questionCount = nestedSubPage.questionCount || "0";
 
                   // Get the slug for URL generation
-                  // Use lookupId as the base, or fallback to pageData.slug/subPageId
                   let baseSlug = lookupId;
                   if (!baseSlug) {
                     baseSlug = pageData?.slug || subPageId;
                   }
-                  // Remove -exam or -test-bank suffix if present (safety check)
-                  let parentUrlSlug = baseSlug;
-                  if (baseSlug.endsWith("-exam")) {
-                    parentUrlSlug = baseSlug.slice(0, -5);
-                  } else if (baseSlug.endsWith("-test-bank")) {
-                    parentUrlSlug = baseSlug.slice(0, -10);
-                  }
 
-                  let nestedSubPageUrl: string;
-                  if (isTestBank) {
-                    nestedSubPageUrl = `/${nestedPageId}-${parentUrlSlug}-test-bank`;
-                  } else if (isExitExam) {
-                    nestedSubPageUrl = `/${nestedPageId}-${parentUrlSlug}-exit-exam`;
-                  } else {
-                    nestedSubPageUrl = `/${parentUrlSlug}-${nestedPageId}-questions`;
-                  }
+                  const nestedSubPageUrl = `/${nestedPageId}-${baseSlug}-exit-exam`;
 
                   return (
                     <Link
@@ -1465,26 +992,11 @@ export default async function SubPage({
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Ace Your{" "}
-            {isTestBank
-              ? "Nursing Exams"
-              : `Nursing ${isExitExam ? "Exit" : "Entrance"} Exam`}
-            ?
+            Ready to Ace Your Nursing Exit Exam?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Get expert help with your{" "}
-            {isTestBank
-              ? "nursing exam preparation"
-              : `nursing ${
-                  isExitExam ? "exit" : "entrance"
-                } exam preparation`}{" "}
-            and achieve your nursing{" "}
-            {isTestBank
-              ? "career goals"
-              : isExitExam
-              ? "career goals"
-              : "school dreams"}
-            .
+            Get expert help with your nursing exit exam preparation and
+            achieve your nursing career goals.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -1505,3 +1017,4 @@ export default async function SubPage({
     </Layout>
   );
 }
+

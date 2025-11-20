@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
-import { getPillarPageContent, getNursingEntranceExamSubPages } from "@/lib/firestore-operations";
+import { getPillarPageContent, getNursingTestBankSubPages } from "@/lib/firestore-operations";
 
 // Force static generation
 export const dynamic = 'force-static';
@@ -221,48 +221,48 @@ const getIconComponent = (iconName: string) => {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const result = await getPillarPageContent("nursing-entrance-exam");
+  const result = await getPillarPageContent("nursing-test-bank");
   
   if (result.success && result.data) {
     const data = result.data as any;
     if (data.meta) {
       return {
-        title: data.meta.title || "Nursing Entrance Exam | TeasGurus",
+        title: data.meta.title || "Nursing Test Bank | TeasGurus",
         description: data.meta.description || "",
         keywords: data.meta.keywords || "",
         openGraph: {
-          title: data.meta.ogTitle || data.meta.title || "Nursing Entrance Exam | TeasGurus",
+          title: data.meta.ogTitle || data.meta.title || "Nursing Test Bank | TeasGurus",
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || "https://teasgurus.com/nursing-entrance-exam",
+          url: data.meta.canonicalUrl || "https://teasgurus.com/nursing-test-bank",
           images: [
             {
               url: data.meta.ogImage || "/teas-gurus-logo.png",
               width: 1200,
               height: 630,
-              alt: data.meta.title || "Nursing Entrance Exam",
+              alt: data.meta.title || "Nursing Test Bank",
             },
           ],
         },
         alternates: {
-          canonical: data.meta.canonicalUrl || "/nursing-entrance-exam",
+          canonical: data.meta.canonicalUrl || "/nursing-test-bank",
         },
       };
     }
   }
 
   return {
-    title: "Nursing Entrance Exam | TeasGurus",
-    description: "Comprehensive guide to nursing entrance exams",
+    title: "Nursing Test Bank | TeasGurus",
+    description: "Comprehensive nursing test bank for exam preparation",
   };
 }
 
-export default async function NursingEntranceExamPage() {
+export default async function NursingTestBankPage() {
   if (process.env.NODE_ENV === 'production') {
-    console.log('🔨 Statically generating: /nursing-entrance-exam');
+    console.log('🔨 Statically generating: /nursing-test-bank');
   }
   
-  const result = await getPillarPageContent("nursing-entrance-exam");
-  const subPagesResult = await getNursingEntranceExamSubPages();
+  const result = await getPillarPageContent("nursing-test-bank");
+  const subPagesResult = await getNursingTestBankSubPages();
 
   // Provide default content structure if not found in Firebase
   const pageData = result.success && result.data ? result.data as any : null;
@@ -270,19 +270,19 @@ export default async function NursingEntranceExamPage() {
   
   const content: ServiceContent = pageData ? {
     meta: pageData.meta || {
-      title: "Nursing Entrance Exam | TeasGurus",
-      description: "Comprehensive guide to nursing entrance exams",
-      keywords: "nursing entrance exam, nursing school, exam preparation",
-      ogTitle: "Nursing Entrance Exam | TeasGurus",
-      ogDescription: "Comprehensive guide to nursing entrance exams",
+      title: "Nursing Test Bank | TeasGurus",
+      description: "Comprehensive nursing test bank for exam preparation",
+      keywords: "nursing test bank, nursing exam, exam preparation",
+      ogTitle: "Nursing Test Bank | TeasGurus",
+      ogDescription: "Comprehensive nursing test bank for exam preparation",
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: "https://teasgurus.com/nursing-entrance-exam",
+      canonicalUrl: "https://teasgurus.com/nursing-test-bank",
     },
     schema: pageData.schema || "",
     hero: pageData.hero || {
       badge: "We are Teas Gurus",
-      title: "Nursing Entrance Exam",
-      subtitle: "Comprehensive guide to help you succeed in your nursing entrance exam.",
+      title: "Nursing Test Bank",
+      subtitle: "Comprehensive test bank to help you succeed in your nursing exams.",
       description: "",
     },
     trustIndicators: pageData.trustIndicators || [],
@@ -313,19 +313,19 @@ export default async function NursingEntranceExamPage() {
     },
   } : {
     meta: {
-      title: "Nursing Entrance Exam | TeasGurus",
-      description: "Comprehensive guide to nursing entrance exams",
-      keywords: "nursing entrance exam, nursing school, exam preparation",
-      ogTitle: "Nursing Entrance Exam | TeasGurus",
-      ogDescription: "Comprehensive guide to nursing entrance exams",
+      title: "Nursing Test Bank | TeasGurus",
+      description: "Comprehensive nursing test bank for exam preparation",
+      keywords: "nursing test bank, nursing exam, exam preparation",
+      ogTitle: "Nursing Test Bank | TeasGurus",
+      ogDescription: "Comprehensive nursing test bank for exam preparation",
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: "https://teasgurus.com/nursing-entrance-exam",
+      canonicalUrl: "https://teasgurus.com/nursing-test-bank",
     },
     schema: "",
     hero: {
       badge: "We are Teas Gurus",
-      title: "Nursing Entrance Exam",
-      subtitle: "Comprehensive guide to help you succeed in your nursing entrance exam.",
+      title: "Nursing Test Bank",
+      subtitle: "Comprehensive test bank to help you succeed in your nursing exams.",
       description: "",
     },
     trustIndicators: [],
@@ -374,7 +374,7 @@ export default async function NursingEntranceExamPage() {
 
           <div className="mb-6">
             <h1 className="text-4xl font-bold text-gray-900 mb-3">
-              {content.hero.title || "Nursing Entrance Exam - TEAS Gurus"}
+              {content.hero.title || "Nursing Test Bank - TEAS Gurus"}
             </h1>
             <div className="text-gray-600 text-base leading-relaxed">
               <ContentRenderer
@@ -384,101 +384,102 @@ export default async function NursingEntranceExamPage() {
           </div>
 
           {/* Sub-Pages Cards - Dashboard Style */}
-          <div className="mt-6">
-            <div className="flex flex-wrap justify-center gap-4">
-              {/* First 2 cards - Dynamic sub-pages */}
-              {subPages.slice(0, 2).map((subPage: any, index: number) => {
-                const pageName = subPage.pageName || subPage.hero?.title || subPage.title || subPage.id;
-                const pageId = subPage.id || subPage.subPageId;
-                
-                // Card configuration based on index
-                const cardConfigs = [
-                  {
-                    iconBg: "bg-purple-500",
-                    iconColor: "text-white",
-                    numberColor: "text-purple-600",
-                    icon: <LaptopIcon className="w-6 h-6 text-white" />,
-                    number: "1,250",
-                    caption: "Total Questions",
-                  },
-                  {
-                    iconBg: "bg-blue-500",
-                    iconColor: "text-white",
-                    numberColor: "text-blue-600",
-                    icon: <LightbulbIcon className="w-6 h-6 text-white" />,
-                    number: "980",
-                    caption: "Total Questions",
-                  },
-                ];
-                
-                const config = cardConfigs[index] || cardConfigs[0];
-                
-                // Get the slug for URL generation, append -exam if not already present
-                const pageSlug = subPage.slug || pageId;
-                const pageUrlSlug = pageSlug.endsWith("-exam") ? pageSlug : `${pageSlug}-exam`;
-                
-                return (
-                  <Link
-                    key={pageId}
-                    href={`/${pageUrlSlug}`}
-                    className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        {config.icon}
+          {subPages.length > 0 && (
+            <div className="mt-6">
+              <div className="flex flex-wrap justify-center gap-4">
+                {/* First 2 cards - Dynamic sub-pages */}
+                {subPages.slice(0, 2).map((subPage: any, index: number) => {
+                  const pageName = subPage.pageName || subPage.hero?.title || subPage.title || subPage.id;
+                  const pageId = subPage.id || subPage.subPageId;
+                  
+                  // Card configuration based on index
+                  const cardConfigs = [
+                    {
+                      iconBg: "bg-teal-500",
+                      iconColor: "text-white",
+                      numberColor: "text-teal-600",
+                      icon: <LaptopIcon className="w-6 h-6 text-white" />,
+                      number: "1,250",
+                      caption: "Total Questions",
+                    },
+                    {
+                      iconBg: "bg-blue-500",
+                      iconColor: "text-white",
+                      numberColor: "text-blue-600",
+                      icon: <LightbulbIcon className="w-6 h-6 text-white" />,
+                      number: "980",
+                      caption: "Total Questions",
+                    },
+                  ];
+                  
+                  const config = cardConfigs[index] || cardConfigs[0];
+                  
+                  // Get the slug for URL generation - format: [subpagename]-test-bank
+                  const pageSlug = subPage.slug || pageId;
+                  
+                  return (
+                    <Link
+                      key={pageId}
+                      href={`/${pageSlug}-test-bank`}
+                      className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          {config.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-600 mb-1">
+                            {pageName}
+                          </p>
+                          <p className={`text-3xl font-bold ${config.numberColor}`}>
+                            {config.number}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {config.caption}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <svg
+                            className="w-5 h-5 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-600 mb-1">
-                          {pageName}
-                        </p>
-                        <p className={`text-3xl font-bold ${config.numberColor}`}>
-                          {config.number}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {config.caption}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <svg
-                          className="w-5 h-5 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </div>
+                    </Link>
+                  );
+                })}
+                
+                {/* Third card - Always show pillar page name */}
+                <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MedalIcon className="w-6 h-6 text-white" />
                     </div>
-                  </Link>
-                );
-              })}
-              
-              {/* Third card - Always show pillar page name */}
-              <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MedalIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      {content.hero.title || "Nursing Entrance Exam"}
-                    </p>
-                    <p className="text-3xl font-bold text-orange-600">
-                      2,230
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Questions Available
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-600 mb-1">
+                        {content.hero.title || "Nursing Test Bank"}
+                      </p>
+                      <p className="text-3xl font-bold text-orange-600">
+                        2,230
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Questions Available
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -733,11 +734,11 @@ export default async function NursingEntranceExamPage() {
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Ace Your Nursing Entrance Exam?
+            Ready to Ace Your Nursing Exams?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Get expert help with your nursing entrance exam preparation and achieve your
-            nursing school dreams.
+            Get expert help with your nursing exam preparation and achieve your
+            nursing career goals.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -758,3 +759,4 @@ export default async function NursingEntranceExamPage() {
     </Layout>
   );
 }
+

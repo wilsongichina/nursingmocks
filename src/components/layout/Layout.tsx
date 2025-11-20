@@ -96,6 +96,15 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
     Record<string, any[]>
   >({});
   const [nursingSubPages, setNursingSubPages] = useState<any[]>([]);
+  const [nursingExitExamSubPages, setNursingExitExamSubPages] = useState<any[]>(
+    []
+  );
+  const [nursingTestBankSubPages, setNursingTestBankSubPages] = useState<any[]>(
+    []
+  );
+  const [nestedSubPagesCache, setNestedSubPagesCache] = useState<
+    Record<string, any[]>
+  >({});
 
   // Load pillar pages and categories for breadcrumbs
   useEffect(() => {
@@ -105,6 +114,8 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
           getAllPillarPages,
           getAllPillarServicePages,
           getNursingEntranceExamSubPages,
+          getNursingExitExamSubPages,
+          getNursingTestBankSubPages,
         } = await import("@/lib/firestore-operations");
         const pillarPagesResult = await getAllPillarPages();
         if (pillarPagesResult.success && pillarPagesResult.data) {
@@ -118,6 +129,22 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
               const nursingResult = await getNursingEntranceExamSubPages();
               if (nursingResult.success && nursingResult.data) {
                 setNursingSubPages(nursingResult.data);
+              }
+              continue;
+            }
+            if (pillarPage.id === "nursing-exit-exam") {
+              // Load nursing-exit-exam sub-pages separately
+              const exitExamResult = await getNursingExitExamSubPages();
+              if (exitExamResult.success && exitExamResult.data) {
+                setNursingExitExamSubPages(exitExamResult.data);
+              }
+              continue;
+            }
+            if (pillarPage.id === "nursing-test-bank") {
+              // Load nursing-test-bank sub-pages separately
+              const testBankResult = await getNursingTestBankSubPages();
+              if (testBankResult.success && testBankResult.data) {
+                setNursingTestBankSubPages(testBankResult.data);
               }
               continue;
             }
@@ -135,6 +162,37 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
 
     loadBreadcrumbData();
   }, []);
+
+  // Reload test bank sub-pages when navigating to test bank pages to ensure fresh data
+  useEffect(() => {
+    const isTestBankPage =
+      pathname === "/nursing-test-bank" ||
+      pathname.match(/^\/.+-test-bank$/) ||
+      pathname.match(/^\/.+-.+-test-bank$/) ||
+      pathname.match(/^\/.+-.+-.+-test-bank$/) ||
+      // Also match topic pattern: [nestedSubPageId]-[parentSubPageId]-[topicId]
+      (pathname.match(/^\/(.+)-(.+)-(.+)$/) &&
+        !pathname.match(/^\/(.+)-(.+)-test-bank$/) &&
+        !pathname.match(/^\/(.+)-(.+)-exit-exam$/) &&
+        !pathname.match(/^\/(.+)-(.+)-questions$/));
+
+    if (isTestBankPage && nursingTestBankSubPages.length === 0) {
+      const loadTestBankSubPages = async () => {
+        try {
+          const { getNursingTestBankSubPages } = await import(
+            "@/lib/firestore-operations"
+          );
+          const testBankResult = await getNursingTestBankSubPages();
+          if (testBankResult.success && testBankResult.data) {
+            setNursingTestBankSubPages(testBankResult.data);
+          }
+        } catch (error) {
+          console.error("Error loading test bank sub-pages:", error);
+        }
+      };
+      loadTestBankSubPages();
+    }
+  }, [pathname, nursingTestBankSubPages.length]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -314,6 +372,647 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                   </Link>
                   {/* Generate breadcrumbs based on pathname */}
                   {(() => {
+                    // For nursing-test-bank pages
+                    // Check if it's the main page
+                    if (pathname === "/nursing-test-bank") {
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="font-medium">Nursing Test Bank</span>
+                        </>
+                      );
+                    }
+
+                    // For nursing-exit-exam pages
+                    // Check if it's the main page
+                    if (pathname === "/nursing-exit-exam") {
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="font-medium">Nursing Exit Exam</span>
+                        </>
+                      );
+                    }
+
+                    // Check if it's an exit exam nested sub-page (pattern: [nestedSubPageId]-[parentSubPageId]-exit-exam)
+                    const exitExamNestedMatch = pathname.match(
+                      /^\/(.+)-(.+)-exit-exam$/
+                    );
+                    const isExitExamNestedSubPage =
+                      exitExamNestedMatch &&
+                      nursingExitExamSubPages.some((subPage) => {
+                        const subPageId = subPage.id || subPage.subPageId;
+                        const parentId = exitExamNestedMatch[2]; // parentSubPageId is the second group
+                        return subPageId === parentId;
+                      });
+
+                    if (isExitExamNestedSubPage && exitExamNestedMatch) {
+                      const nestedSubPageId = exitExamNestedMatch[1];
+                      const parentSubPageId = exitExamNestedMatch[2];
+
+                      // Find the parent sub-page to get its actual name
+                      const parentSubPage = nursingExitExamSubPages.find(
+                        (subPage) => {
+                          const subPageId = subPage.id || subPage.subPageId;
+                          return subPageId === parentSubPageId;
+                        }
+                      );
+                      const parentSubPageName =
+                        parentSubPage?.pageName ||
+                        parentSubPage?.hero?.title ||
+                        formatBreadcrumbLabel(parentSubPageId);
+
+                      // Try to find nested sub-page name from cache or use formatted ID
+                      const cacheKey = `exit-${parentSubPageId}`;
+                      const nestedSubPages =
+                        nestedSubPagesCache[cacheKey] || [];
+                      const nestedSubPage = nestedSubPages.find((nsp: any) => {
+                        const nspId = nsp.id || nsp.nestedSubPageId;
+                        return nspId === nestedSubPageId;
+                      });
+                      const nestedSubPageName =
+                        nestedSubPage?.pageName ||
+                        nestedSubPage?.hero?.title ||
+                        nestedSubPage?.title ||
+                        formatBreadcrumbLabel(nestedSubPageId);
+
+                      // Load nested sub-pages if not in cache
+                      if (!nestedSubPagesCache[cacheKey] && parentSubPageId) {
+                        import("@/lib/firestore-operations").then(
+                          ({ getNursingExitExamNestedSubPages }) => {
+                            getNursingExitExamNestedSubPages(
+                              parentSubPageId
+                            ).then((result) => {
+                              if (result.success && result.data) {
+                                setNestedSubPagesCache((prev) => ({
+                                  ...prev,
+                                  [cacheKey]: result.data || [],
+                                }));
+                              }
+                            });
+                          }
+                        );
+                      }
+
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href="/nursing-exit-exam"
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            Nursing Exit Exam
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href={`/nursing-exit-exam/${parentSubPageId}`}
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            {parentSubPageName}
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="font-medium">
+                            {nestedSubPageName}
+                          </span>
+                        </>
+                      );
+                    }
+
+                    // Check if it's a test bank topic (pattern: [nestedSubPageId]-[parentSubPageId]-[topicId])
+                    // First check if it's not a nested sub-page (doesn't end with -test-bank)
+                    // Also exclude other known patterns: -questions, -exit-exam
+                    const testBankNestedMatchForTopic = pathname.match(
+                      /^\/(.+)-(.+)-test-bank$/
+                    );
+                    const exitExamNestedMatchForTopic = pathname.match(
+                      /^\/(.+)-(.+)-exit-exam$/
+                    );
+                    const entranceExamNestedMatchForTopic = pathname.match(
+                      /^\/(.+)-(.+)-questions$/
+                    );
+                    const testBankTopicMatch =
+                      !testBankNestedMatchForTopic &&
+                      !exitExamNestedMatchForTopic &&
+                      !entranceExamNestedMatchForTopic &&
+                      pathname.match(/^\/(.+)-(.+)-(.+)$/);
+
+                    // Check if it could be a test bank topic
+                    // If data is loaded, verify the parent sub-page exists
+                    // If data is not loaded yet, we'll still try to render (data will load async)
+                    let isTestBankTopic = false;
+                    if (testBankTopicMatch) {
+                      if (nursingTestBankSubPages.length > 0) {
+                        // Data is loaded, verify it's a test bank topic
+                        isTestBankTopic = nursingTestBankSubPages.some(
+                          (subPage) => {
+                            const subPageId = subPage.id || subPage.subPageId;
+                            const subPageSlug = subPage.slug || subPageId;
+                            const parentId = testBankTopicMatch[2]; // parentSubPageId is the second group
+                            return (
+                              subPageId === parentId || subPageSlug === parentId
+                            );
+                          }
+                        );
+                      } else {
+                        // Data not loaded yet, but pattern matches - assume it could be a test bank topic
+                        // We'll render with formatted labels and data will load async
+                        isTestBankTopic = true;
+                      }
+                    }
+
+                    if (isTestBankTopic && testBankTopicMatch) {
+                      // Pattern: [nestedSubPageId]-[parentSubPageId]-[topicId]
+                      const nestedSubPageId = testBankTopicMatch[1];
+                      const parentSubPageId = testBankTopicMatch[2];
+                      const topicId = testBankTopicMatch[3];
+
+                      // Find the parent sub-page to get its actual name and slug
+                      const parentSubPage = nursingTestBankSubPages.find(
+                        (subPage) => {
+                          const subPageId = subPage.id || subPage.subPageId;
+                          const subPageSlug = subPage.slug || subPageId;
+                          return (
+                            subPageId === parentSubPageId ||
+                            subPageSlug === parentSubPageId
+                          );
+                        }
+                      );
+                      const parentSubPageName =
+                        parentSubPage?.pageName ||
+                        parentSubPage?.hero?.title ||
+                        formatBreadcrumbLabel(parentSubPageId);
+                      const parentSubPageSlug =
+                        parentSubPage?.slug || parentSubPageId;
+
+                      // Try to find nested sub-page name from cache
+                      const cacheKey = `test-bank-${parentSubPageId}`;
+                      const nestedSubPages =
+                        nestedSubPagesCache[cacheKey] || [];
+                      const nestedSubPage = nestedSubPages.find((nsp: any) => {
+                        const nspId = nsp.id || nsp.nestedSubPageId;
+                        const nspSlug = nsp.slug || nspId;
+                        return (
+                          nspId === nestedSubPageId ||
+                          nspSlug === nestedSubPageId
+                        );
+                      });
+                      const nestedSubPageName =
+                        nestedSubPage?.pageName ||
+                        nestedSubPage?.hero?.title ||
+                        nestedSubPage?.title ||
+                        formatBreadcrumbLabel(nestedSubPageId);
+
+                      // Load nested sub-pages if not in cache
+                      if (!nestedSubPagesCache[cacheKey] && parentSubPageId) {
+                        import("@/lib/firestore-operations").then(
+                          ({ getNursingTestBankNestedSubPages }) => {
+                            getNursingTestBankNestedSubPages(
+                              parentSubPageId
+                            ).then((result) => {
+                              if (result.success && result.data) {
+                                setNestedSubPagesCache((prev) => ({
+                                  ...prev,
+                                  [cacheKey]: result.data || [],
+                                }));
+                              }
+                            });
+                          }
+                        );
+                      }
+
+                      // Try to find topic name
+                      const topicCacheKey = `test-bank-topic-${parentSubPageId}-${nestedSubPageId}`;
+                      const topicsCache =
+                        (nestedSubPagesCache as any)[topicCacheKey] || [];
+                      const topic = topicsCache.find((t: any) => {
+                        const tId = t.id || t.topicId;
+                        const tSlug = t.slug || tId;
+                        return tId === topicId || tSlug === topicId;
+                      });
+                      const topicName =
+                        topic?.pageName ||
+                        topic?.hero?.title ||
+                        topic?.title ||
+                        formatBreadcrumbLabel(topicId);
+
+                      // Load topics if not in cache
+                      if (
+                        !topicsCache.length &&
+                        parentSubPageId &&
+                        nestedSubPageId
+                      ) {
+                        import("@/lib/firestore-operations").then(
+                          ({ getNursingTestBankTopics }) => {
+                            getNursingTestBankTopics(
+                              parentSubPageId,
+                              nestedSubPageId
+                            ).then((result) => {
+                              if (result.success && result.data) {
+                                setNestedSubPagesCache((prev: any) => ({
+                                  ...prev,
+                                  [topicCacheKey]: result.data || [],
+                                }));
+                              }
+                            });
+                          }
+                        );
+                      }
+
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href="/nursing-test-bank"
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            Nursing Test Bank
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href={`/${parentSubPageSlug}-test-bank`}
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            {parentSubPageName}
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href={`/${
+                              nestedSubPage?.slug || nestedSubPageId
+                            }-${parentSubPageSlug}-test-bank`}
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            {nestedSubPageName}
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="text-gray-900 font-medium">
+                            {topicName}
+                          </span>
+                        </>
+                      );
+                    }
+
+                    // Check if it's a test bank nested sub-page (pattern: [nestedSubPageId]-[parentSubPageId]-test-bank)
+                    const testBankNestedMatch = pathname.match(
+                      /^\/(.+)-(.+)-test-bank$/
+                    );
+                    const isTestBankNestedSubPage =
+                      testBankNestedMatch &&
+                      nursingTestBankSubPages.some((subPage) => {
+                        const subPageId = subPage.id || subPage.subPageId;
+                        const subPageSlug = subPage.slug || subPageId;
+                        const parentId = testBankNestedMatch[2]; // parentSubPageId is the second group
+                        return (
+                          subPageId === parentId || subPageSlug === parentId
+                        );
+                      });
+
+                    if (isTestBankNestedSubPage && testBankNestedMatch) {
+                      const nestedSubPageId = testBankNestedMatch[1];
+                      const parentSubPageId = testBankNestedMatch[2];
+
+                      // Find the parent sub-page to get its actual name and slug
+                      const parentSubPage = nursingTestBankSubPages.find(
+                        (subPage) => {
+                          const subPageId = subPage.id || subPage.subPageId;
+                          const subPageSlug = subPage.slug || subPageId;
+                          return (
+                            subPageId === parentSubPageId ||
+                            subPageSlug === parentSubPageId
+                          );
+                        }
+                      );
+                      const parentSubPageName =
+                        parentSubPage?.pageName ||
+                        parentSubPage?.hero?.title ||
+                        formatBreadcrumbLabel(parentSubPageId);
+                      const parentSubPageSlug =
+                        parentSubPage?.slug || parentSubPageId;
+
+                      // Try to find nested sub-page name from cache or use formatted ID
+                      const cacheKey = `test-bank-${parentSubPageId}`;
+                      const nestedSubPages =
+                        nestedSubPagesCache[cacheKey] || [];
+                      const nestedSubPage = nestedSubPages.find((nsp: any) => {
+                        const nspId = nsp.id || nsp.nestedSubPageId;
+                        const nspSlug = nsp.slug || nspId;
+                        return (
+                          nspId === nestedSubPageId ||
+                          nspSlug === nestedSubPageId
+                        );
+                      });
+                      const nestedSubPageName =
+                        nestedSubPage?.pageName ||
+                        nestedSubPage?.hero?.title ||
+                        nestedSubPage?.title ||
+                        formatBreadcrumbLabel(nestedSubPageId);
+
+                      // Load nested sub-pages if not in cache
+                      if (!nestedSubPagesCache[cacheKey] && parentSubPageId) {
+                        import("@/lib/firestore-operations").then(
+                          ({ getNursingTestBankNestedSubPages }) => {
+                            getNursingTestBankNestedSubPages(
+                              parentSubPageId
+                            ).then((result) => {
+                              if (result.success && result.data) {
+                                setNestedSubPagesCache((prev) => ({
+                                  ...prev,
+                                  [cacheKey]: result.data || [],
+                                }));
+                              }
+                            });
+                          }
+                        );
+                      }
+
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href="/nursing-test-bank"
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            Nursing Test Bank
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href={`/${parentSubPageSlug}-test-bank`}
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            {parentSubPageName}
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="font-medium">
+                            {nestedSubPageName}
+                          </span>
+                        </>
+                      );
+                    }
+
+                    // Check if it's a regular test bank sub-page (pattern: /[subPageId]-test-bank)
+                    // Make sure this doesn't match nested sub-pages (which have two hyphens before -test-bank)
+                    const testBankSubPageMatch =
+                      pathname.match(/^\/(.+)-test-bank$/);
+                    // Exclude nested sub-pages (they have pattern: /[nested]-[parent]-test-bank)
+                    const isNotNestedSubPage =
+                      testBankSubPageMatch &&
+                      !pathname.match(/^\/[^-]+-[^-]+-test-bank$/);
+
+                    if (testBankSubPageMatch && isNotNestedSubPage) {
+                      const subPageId = testBankSubPageMatch[1];
+                      const subPage = nursingTestBankSubPages.find((sp) => {
+                        const spId = sp.id || sp.subPageId;
+                        const spSlug = sp.slug || spId;
+                        // Match by ID or slug (case-insensitive)
+                        return (
+                          (spId &&
+                            spId.toLowerCase() === subPageId.toLowerCase()) ||
+                          (spSlug &&
+                            spSlug.toLowerCase() === subPageId.toLowerCase())
+                        );
+                      });
+                      // Use pageName first, then hero.title, then formatted label
+                      const subPageName =
+                        subPage?.pageName ||
+                        subPage?.hero?.title ||
+                        formatBreadcrumbLabel(subPageId);
+
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href="/nursing-test-bank"
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            Nursing Test Bank
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="font-medium">{subPageName}</span>
+                        </>
+                      );
+                    }
+
+                    // Check if it's a regular exit exam sub-page (pattern: /nursing-exit-exam/[subPageId])
+                    const exitExamSubPageMatch = pathname.match(
+                      /^\/nursing-exit-exam\/(.+)$/
+                    );
+                    if (exitExamSubPageMatch) {
+                      const subPageId = exitExamSubPageMatch[1];
+                      const subPage = nursingExitExamSubPages.find((sp) => {
+                        const spId = sp.id || sp.subPageId;
+                        return spId === subPageId || sp.slug === subPageId;
+                      });
+                      const subPageName =
+                        subPage?.pageName ||
+                        subPage?.hero?.title ||
+                        formatBreadcrumbLabel(subPageId);
+
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href="/nursing-exit-exam"
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            Nursing Exit Exam
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="font-medium">{subPageName}</span>
+                        </>
+                      );
+                    }
+
                     // For nursing-entrance-exam pages
                     // Check if it's the main page
                     if (pathname === "/nursing-entrance-exam") {
@@ -407,6 +1106,60 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                             if (nestedMatch) {
                               const parentSubPageId = nestedMatch[1];
                               const nestedSubPageId = nestedMatch[2];
+
+                              // Find the parent sub-page to get its actual name
+                              const parentSubPage = nursingSubPages.find(
+                                (subPage) => {
+                                  const subPageId =
+                                    subPage.id || subPage.subPageId;
+                                  return (
+                                    subPageId === parentSubPageId ||
+                                    subPageId === parentSubPageId + "-exam"
+                                  );
+                                }
+                              );
+                              const parentSubPageName =
+                                parentSubPage?.pageName ||
+                                parentSubPage?.hero?.title ||
+                                formatBreadcrumbLabel(parentSubPageId);
+
+                              // Try to find nested sub-page name from cache or use formatted ID
+                              const cacheKey = `entrance-${parentSubPageId}`;
+                              const nestedSubPages =
+                                nestedSubPagesCache[cacheKey] || [];
+                              const nestedSubPage = nestedSubPages.find(
+                                (nsp: any) => {
+                                  const nspId = nsp.id || nsp.nestedSubPageId;
+                                  return nspId === nestedSubPageId;
+                                }
+                              );
+                              const nestedSubPageName =
+                                nestedSubPage?.pageName ||
+                                nestedSubPage?.hero?.title ||
+                                nestedSubPage?.title ||
+                                formatBreadcrumbLabel(nestedSubPageId);
+
+                              // Load nested sub-pages if not in cache
+                              if (
+                                !nestedSubPagesCache[cacheKey] &&
+                                parentSubPageId
+                              ) {
+                                import("@/lib/firestore-operations").then(
+                                  ({ getNestedSubPages }) => {
+                                    getNestedSubPages(parentSubPageId).then(
+                                      (result) => {
+                                        if (result.success && result.data) {
+                                          setNestedSubPagesCache((prev) => ({
+                                            ...prev,
+                                            [cacheKey]: result.data || [],
+                                          }));
+                                        }
+                                      }
+                                    );
+                                  }
+                                );
+                              }
+
                               return (
                                 <>
                                   <svg
@@ -430,7 +1183,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                                     }`}
                                     className="hover:text-blue-600 transition-colors font-medium"
                                   >
-                                    {formatBreadcrumbLabel(parentSubPageId)}
+                                    {parentSubPageName}
                                   </Link>
                                   <svg
                                     className="w-4 h-4 text-gray-400"
@@ -446,7 +1199,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                                     />
                                   </svg>
                                   <span className="font-medium">
-                                    {formatBreadcrumbLabel(nestedSubPageId)}
+                                    {nestedSubPageName}
                                   </span>
                                 </>
                               );
@@ -456,6 +1209,21 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                             if (subPageId.endsWith("-exam")) {
                               subPageId = subPageId.slice(0, -5);
                             }
+
+                            // Find the sub-page to get its actual name
+                            const subPage = nursingSubPages.find((sp) => {
+                              const spId = sp.id || sp.subPageId;
+                              return (
+                                spId === subPageId ||
+                                spId === subPageId + "-exam" ||
+                                sp.slug === subPageId
+                              );
+                            });
+                            const subPageName =
+                              subPage?.pageName ||
+                              subPage?.hero?.title ||
+                              formatBreadcrumbLabel(subPageId);
+
                             return (
                               <>
                                 <svg
@@ -472,7 +1240,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                                   />
                                 </svg>
                                 <span className="font-medium">
-                                  {formatBreadcrumbLabel(subPageId)}
+                                  {subPageName}
                                 </span>
                               </>
                             );

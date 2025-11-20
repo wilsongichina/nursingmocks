@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  getNursingEntranceExamSubPage,
-  getNestedSubPages,
-  uploadNestedSubPage,
-  deleteNestedSubPage,
+  getNursingTestBankSubPage,
+  getNursingTestBankNestedSubPages,
+  uploadNursingTestBankNestedSubPage,
+  deleteNursingTestBankNestedSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -125,9 +125,7 @@ export default function ManageSubPage({
       setLoading(true);
       setError("");
 
-      const result = await getNursingEntranceExamSubPage(
-        resolvedParams.subPageId
-      );
+      const result = await getNursingTestBankSubPage(resolvedParams.subPageId);
 
       if (result.success && result.data) {
         const pageData = result.data as any;
@@ -147,7 +145,7 @@ export default function ManageSubPage({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.subPageId}`,
+              `https://teasgurus.com/${resolvedParams.subPageId}-test-bank`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -194,15 +192,15 @@ export default function ManageSubPage({
           meta: {
             title: `${resolvedParams.subPageId} | TeasGurus`,
             description: `Content for ${resolvedParams.subPageId}`,
-            keywords: `${resolvedParams.subPageId}, nursing entrance exam`,
+            keywords: `${resolvedParams.subPageId}, nursing test bank`,
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
+            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}-test-bank`,
           },
           schema: "",
           hero: {
-            badge: "Nursing Entrance Exam",
+            badge: "Nursing Test Bank",
             title: resolvedParams.subPageId,
             subtitle: "",
             description: "",
@@ -249,7 +247,9 @@ export default function ManageSubPage({
 
     try {
       setNestedLoading(true);
-      const result = await getNestedSubPages(resolvedParams.subPageId);
+      const result = await getNursingTestBankNestedSubPages(
+        resolvedParams.subPageId
+      );
       if (result.success && result.data) {
         setNestedSubPages(result.data);
       }
@@ -277,7 +277,7 @@ export default function ManageSubPage({
     }
 
     try {
-      const result = await deleteNestedSubPage(
+      const result = await deleteNursingTestBankNestedSubPage(
         resolvedParams.subPageId,
         nestedSubPageId
       );
@@ -331,11 +331,11 @@ export default function ManageSubPage({
           description: `Content for ${newNestedSubPageName} under ${
             content?.pageName || resolvedParams.subPageId
           }.`,
-          keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing entrance exam`,
+          keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing test bank`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}-${normalizedNestedSubPageId}-questions`,
+          canonicalUrl: `https://teasgurus.com/${normalizedNestedSubPageId}-${resolvedParams.subPageId}-test-bank`,
         },
         hero: {
           badge: content?.pageName || resolvedParams.subPageId,
@@ -371,7 +371,7 @@ export default function ManageSubPage({
         },
       };
 
-      const result = await uploadNestedSubPage(
+      const result = await uploadNursingTestBankNestedSubPage(
         resolvedParams.subPageId,
         normalizedNestedSubPageId,
         defaultNestedSubPageContent
@@ -437,7 +437,7 @@ export default function ManageSubPage({
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href="/admin/nursing-entrance-exam"
+                href="/admin/nursing-test-bank"
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -456,11 +456,7 @@ export default function ManageSubPage({
                 <span>Back</span>
               </Link>
               <Link
-                href={`/${
-                  (slug || resolvedParams.subPageId).endsWith("-exam")
-                    ? slug || resolvedParams.subPageId
-                    : `${slug || resolvedParams.subPageId}-exam`
-                }`}
+                href={`/${slug || resolvedParams.subPageId}-test-bank`}
                 target="_blank"
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
               >
@@ -510,7 +506,7 @@ export default function ManageSubPage({
           <div className="flex justify-between items-center">
             <div className="flex-1">
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Nursing Entrance Exam Main Page
+                Nursing Test Bank Main Page
               </h3>
               <p className="text-sm text-gray-600 mb-2">
                 Parent page for this sub-page
@@ -518,13 +514,13 @@ export default function ManageSubPage({
             </div>
             <div className="flex items-center space-x-2">
               <Link
-                href="/admin/nursing-entrance-exam/edit"
+                href="/admin/nursing-test-bank/edit"
                 className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
               >
                 Edit Main Page
               </Link>
               <Link
-                href="/nursing-entrance-exam"
+                href="/nursing-test-bank"
                 target="_blank"
                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
               >
@@ -539,7 +535,7 @@ export default function ManageSubPage({
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Edit Sub-Page</h2>
             <Link
-              href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}`}
+              href={`/admin/nursing-test-bank/${resolvedParams.subPageId}`}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
             >
               <svg
@@ -569,11 +565,11 @@ export default function ManageSubPage({
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${resolvedParams.subPageId}`}
+                href={`/${slug || resolvedParams.subPageId}-test-bank`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                {resolvedParams.subPageId}
+                /{slug || resolvedParams.subPageId}-test-bank
               </a>
             </p>
           </div>
@@ -647,10 +643,10 @@ export default function ManageSubPage({
                   </div>
                   <div className="flex items-center space-x-2">
                     <Link
-                      href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${nestedSubPage.id}`}
-                      className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                      href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${nestedSubPage.id}/manage`}
+                      className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
-                      Edit
+                      Manage
                     </Link>
                     <button
                       onClick={() =>
@@ -663,11 +659,9 @@ export default function ManageSubPage({
                   </div>
                   <div className="mt-4">
                     <Link
-                      href={`/${
-                        (slug || resolvedParams.subPageId).endsWith("-exam")
-                          ? (slug || resolvedParams.subPageId).slice(0, -5)
-                          : slug || resolvedParams.subPageId
-                      }-${nestedSubPage.slug || nestedSubPage.id}-questions`}
+                      href={`/${nestedSubPage.slug || nestedSubPage.id}-${
+                        slug || resolvedParams.subPageId
+                      }-test-bank`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
@@ -675,12 +669,8 @@ export default function ManageSubPage({
                       View Page →
                     </Link>
                     <p className="text-xs text-gray-500 mt-1">
-                      URL: /
-                      {(slug || resolvedParams.subPageId).endsWith("-exam")
-                        ? (slug || resolvedParams.subPageId).slice(0, -5)
-                        : slug || resolvedParams.subPageId}
-                      -{nestedSubPage.slug || nestedSubPage.id}
-                      -questions
+                      URL: /{nestedSubPage.slug || nestedSubPage.id}-
+                      {slug || resolvedParams.subPageId}-test-bank
                     </p>
                   </div>
                 </div>
@@ -724,7 +714,7 @@ export default function ManageSubPage({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    https://teasgurus.com/{resolvedParams.subPageId}-
+                    https://teasgurus.com/
                   </span>
                   <input
                     type="text"
@@ -739,12 +729,13 @@ export default function ManageSubPage({
                     required
                   />
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    -questions
+                    -{resolvedParams.subPageId}-test-bank
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /{resolvedParams.subPageId}-
-                  {newNestedSubPageId || "nested-sub-page-id"}-questions
+                  This will create a page at /
+                  {newNestedSubPageId || "nested-sub-page-id"}-
+                  {resolvedParams.subPageId}-test-bank
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

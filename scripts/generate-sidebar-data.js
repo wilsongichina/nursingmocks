@@ -127,11 +127,37 @@ async function generateSidebarData() {
       process.exit(1);
     }
 
-    const allPillarPages = pillarPagesResult.data || [];
-    const allCategories = Object.keys(allPagesResult.data || {});
+    let allPillarPages = pillarPagesResult.data || [];
+    
+    // Ensure all 3 required pillar pages are included
+    const requiredPillarPageIds = [
+      "nursing-entrance-exam",
+      "nursing-exit-exam",
+      "nursing-test-bank"
+    ];
+    
+    const existingPillarPageIds = new Set(allPillarPages.map(p => p.id));
+    
+    // Add missing pillar pages with minimal structure
+    for (const requiredId of requiredPillarPageIds) {
+      if (!existingPillarPageIds.has(requiredId)) {
+        console.log(`⚠️  Pillar page '${requiredId}' not found in Firestore, adding placeholder...`);
+        allPillarPages.push({
+          id: requiredId,
+          pageName: requiredId.split("-").map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(" "),
+        });
+      }
+    }
+    
+    // Sort to ensure consistent order
+    allPillarPages.sort((a, b) => {
+      const order = requiredPillarPageIds.indexOf(a.id) - requiredPillarPageIds.indexOf(b.id);
+      return order !== -1 ? order : a.id.localeCompare(b.id);
+    });
 
     // Get all categories that belong to pillar pages
-    const pillarPageCategoryIds = new Set();
     const categoriesByPillar = {};
 
     // Fetch categories for each pillar page
@@ -144,26 +170,15 @@ async function generateSidebarData() {
           ...service,
         }));
         categoriesByPillar[pillarPage.id] = categories;
-
-        // Track which categories belong to pillar pages
-        categories.forEach((cat) => {
-          const categoryId = cat.servicePageId || cat.id;
-          if (categoryId) {
-            pillarPageCategoryIds.add(categoryId);
-          }
-        });
+      } else {
+        // Initialize empty array for pillar pages without categories
+        categoriesByPillar[pillarPage.id] = [];
       }
     }
 
-    // Categories that don't belong to any pillar page go to TEAS
-    const teasCats = allCategories.filter(
-      (cat) => !pillarPageCategoryIds.has(cat)
-    );
-
-    // Prepare the sidebar data structure
+    // Prepare the sidebar data structure - only pillar pages, no TEAS categories
     const sidebarData = {
       pillarPages: allPillarPages,
-      teasCategories: teasCats,
       pillarCategories: categoriesByPillar,
       generatedAt: new Date().toISOString(),
     };
@@ -197,7 +212,6 @@ export type SidebarData = typeof sidebarData;
 
     console.log("✅ Sidebar data generated successfully!");
     console.log(`   - ${allPillarPages.length} pillar pages`);
-    console.log(`   - ${teasCats.length} TEAS categories`);
     console.log(`   - ${Object.keys(categoriesByPillar).length} pillar pages with categories`);
     console.log(`   - JSON Output: ${jsonOutputPath}`);
     console.log(`   - TypeScript Output: ${tsOutputPath}`);

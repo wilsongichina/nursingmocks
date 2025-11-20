@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import {
-  getNursingEntranceExamSubPages,
-  deleteNursingEntranceExamSubPage,
-  uploadNursingEntranceExamSubPage,
+  getNursingTestBankSubPages,
+  deleteNursingTestBankSubPage,
+  uploadNursingTestBankSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -21,7 +21,7 @@ interface SubPage {
   };
 }
 
-export default function NursingEntranceExamAdminPage() {
+export default function NursingTestBankAdminPage() {
   const [subPages, setSubPages] = useState<SubPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,7 +44,7 @@ export default function NursingEntranceExamAdminPage() {
       setLoading(true);
       setError("");
 
-      const result = await getNursingEntranceExamSubPages();
+      const result = await getNursingTestBankSubPages();
 
       if (result.success && result.data) {
         setSubPages(result.data);
@@ -72,7 +72,7 @@ export default function NursingEntranceExamAdminPage() {
       setError("");
       setSuccess("");
 
-      const result = await deleteNursingEntranceExamSubPage(subPageToDelete.id);
+      const result = await deleteNursingTestBankSubPage(subPageToDelete.id);
 
       if (result.success) {
         setSuccess("Sub-page deleted successfully!");
@@ -125,26 +125,52 @@ export default function NursingEntranceExamAdminPage() {
 
       const defaultSubPageContent = {
         pageName: newSubPageName,
+        slug: normalizedSubPageId,
         meta: {
-          title: `${newSubPageName} | Nursing Entrance Exam`,
-          description: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
-          keywords: `${newSubPageName}, nursing entrance exam`,
-          ogTitle: `${newSubPageName} | Nursing Entrance Exam`,
-          ogDescription: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
+          title: `${newSubPageName} | Nursing Test Bank`,
+          description: `Content for ${newSubPageName} under Nursing Test Bank.`,
+          keywords: `${newSubPageName}, nursing test bank`,
+          ogTitle: `${newSubPageName} | Nursing Test Bank`,
+          ogDescription: `Content for ${newSubPageName} under Nursing Test Bank.`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${normalizedSubPageId}`,
+          canonicalUrl: `https://teasgurus.com/${normalizedSubPageId}-test-bank`,
         },
         hero: {
-          badge: "Nursing Entrance Exam",
+          badge: "Nursing Test Bank",
           title: newSubPageName,
           subtitle: `Detailed information about ${newSubPageName}.`,
+          description: "",
         },
-        content: `<p>This is the default content for the <strong>${newSubPageName}</strong> sub-page. You can edit this content using the rich text editor.</p>`,
-        image: "",
+        trustIndicators: [],
+        whatToExpect: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+          footer: "",
+        },
+        mostCommonQuestions: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+        },
+        studyGuide: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          sections: [],
+        },
+        privacyPricing: [],
+        faq: {
+          title: "",
+          subtitle: "",
+          questions: [],
+        },
         schema: "",
       };
 
-      const result = await uploadNursingEntranceExamSubPage(
+      const result = await uploadNursingTestBankSubPage(
         normalizedSubPageId,
         defaultSubPageContent
       );
@@ -186,9 +212,9 @@ export default function NursingEntranceExamAdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
                 <svg
-                  className="w-6 h-6 text-indigo-600"
+                  className="w-6 h-6 text-purple-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -203,7 +229,7 @@ export default function NursingEntranceExamAdminPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Nursing Entrance Exam CMS
+                  Nursing Test Bank CMS
                 </h1>
                 <p className="text-sm text-gray-600">
                   Manage the main page and sub-pages
@@ -280,23 +306,23 @@ export default function NursingEntranceExamAdminPage() {
           <div className="flex justify-between items-center">
             <div className="flex-1">
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Nursing Entrance Exam Main Page
+                Nursing Test Bank Main Page
               </h3>
               <p className="text-sm text-gray-600 mb-2">
-                Edit the main Nursing Entrance Exam page content
+                Edit the main Nursing Test Bank page content
               </p>
             </div>
             <div className="flex items-center space-x-2">
               <Link
-                href="/admin/nursing-entrance-exam/edit"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                href="/admin/nursing-test-bank/edit"
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
               >
                 Edit Main Page
               </Link>
               <Link
-                href="/nursing-entrance-exam"
+                href="/nursing-test-bank"
                 target="_blank"
-                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
               >
                 View Page →
               </Link>
@@ -353,91 +379,90 @@ export default function NursingEntranceExamAdminPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subPages.map((subPage) => (
-                <div
-                  key={subPage.id}
-                  className="bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        {subPage.pageName ||
-                          subPage.hero?.title ||
-                          subPage.title ||
-                          subPage.id}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        ID: {subPage.id}
-                      </p>
-                      {subPage.lastUpdated && (
-                        <p className="text-sm text-gray-500">
-                          Updated:{" "}
-                          {new Date(subPage.lastUpdated).toLocaleDateString()}
+              {subPages.map((subPage) => {
+                const pageSlug = subPage.slug || subPage.id;
+                return (
+                  <div
+                    key={subPage.id}
+                    className="bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                          {subPage.pageName ||
+                            subPage.hero?.title ||
+                            subPage.title ||
+                            subPage.id}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-2">
+                          ID: {subPage.id}
                         </p>
-                      )}
+                        {subPage.lastUpdated && (
+                          <p className="text-sm text-gray-500">
+                            Updated:{" "}
+                            {new Date(subPage.lastUpdated).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Link
+                        href={`/admin/nursing-test-bank/${subPage.id}/manage`}
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center space-x-2"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        <span>Manage</span>
+                      </Link>
+                      <button
+                        onClick={() => handleDeleteClick(subPage)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center space-x-2"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                    <div className="mt-4">
+                      <Link
+                        href={`/${pageSlug}-test-bank`}
+                        target="_blank"
+                        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                      >
+                        View Page →
+                      </Link>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Link
-                      href={`/admin/nursing-entrance-exam/${subPage.id}/manage`}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center space-x-2"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      <span>Manage</span>
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteClick(subPage)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center space-x-2"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                  <div className="mt-4">
-                    <Link
-                      href={`/${
-                        (subPage.slug || subPage.id).endsWith("-exam")
-                          ? subPage.slug || subPage.id
-                          : `${subPage.slug || subPage.id}-exam`
-                      }`}
-                      target="_blank"
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                    >
-                      View Page →
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -544,7 +569,7 @@ export default function NursingEntranceExamAdminPage() {
                   type="text"
                   value={newSubPageName}
                   onChange={(e) => setNewSubPageName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
                   placeholder="e.g., Math Review, Reading Strategies"
                   required
                 />
@@ -556,8 +581,8 @@ export default function NursingEntranceExamAdminPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Slug URL *
                 </label>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
+                <div className="flex items-center space-x-2 flex-wrap gap-2">
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
                     https://teasgurus.com/
                   </span>
                   <input
@@ -568,21 +593,24 @@ export default function NursingEntranceExamAdminPage() {
                         e.target.value.toLowerCase().replace(/\s+/g, "-")
                       )
                     }
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., ati-teas, math-review"
+                    className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    placeholder="e.g., math-review, reading-strategies"
                     required
                   />
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    -test-bank
+                  </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
                   This will create a page at /{newSubPageId || "sub-page-id"}
-                  -exam
+                  -test-bank
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50"
+                  className="flex-1 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold disabled:opacity-50"
                 >
                   {saving ? "Creating..." : "Create Sub-page"}
                 </button>

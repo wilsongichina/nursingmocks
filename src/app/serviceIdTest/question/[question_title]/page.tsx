@@ -10,21 +10,6 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { HiOutlineCheckCircle } from "react-icons/hi";
 
-// Generate static params for all questions so pages are built at build time
-export async function generateStaticParams() {
-  const result = await getAllQuestions();
-  if (!result.success || !result.data) {
-    console.log("✓ Generated 0 Question Pages");
-    return [];
-  }
-  const params = result.data.map((q: any) => ({
-    serviceId: q.serviceId,
-    question_title: q.slug,
-  }));
-  console.log(`✓ Generated ${params.length} Question Pages`);
-  return params;
-}
-
 export async function generateMetadata({
   params,
 }: {

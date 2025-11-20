@@ -120,7 +120,6 @@ export const getAllPages = async () => {
   }
 };
 
-
 // Test function to verify Firebase connection
 export const testFirebaseConnection = async () => {
   try {
@@ -353,14 +352,13 @@ export const isPillarPage = async (slug: string): Promise<boolean> => {
     if (slug === "teas" || slug === "" || !slug) {
       return false;
     }
-    
+
     const result = await getPillarPageContent(slug);
     return result.success && result.data !== null;
   } catch {
     return false;
   }
 };
-
 
 // ==================== PILLAR PAGES OPERATIONS ====================
 
@@ -440,7 +438,10 @@ export const uploadPillarPageContent = async (
       message: `Pillar page ${pillarPageId} content uploaded successfully to Firestore!`,
     };
   } catch (error) {
-    console.error(`Error uploading pillar page ${pillarPageId} content:`, error);
+    console.error(
+      `Error uploading pillar page ${pillarPageId} content:`,
+      error
+    );
     return {
       success: false,
       message: `Failed to upload pillar page ${pillarPageId} content: ${
@@ -465,6 +466,189 @@ export const deletePillarPageContent = async (pillarPageId: string) => {
     return {
       success: false,
       message: `Failed to delete pillar page ${pillarPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Initialize dummy content for Nursing Exit Exam
+export const initializeNursingExitExamContent = async () => {
+  try {
+    const dummyContent = {
+      meta: {
+        title: "Nursing Exit Exam | TeasGurus",
+        description:
+          "Comprehensive guide to nursing exit exams. Prepare for your nursing exit exam with expert resources, practice questions, and study guides.",
+        keywords:
+          "nursing exit exam, nursing school exit exam, NCLEX preparation, nursing graduation exam, exit exam study guide",
+        ogTitle: "Nursing Exit Exam | TeasGurus",
+        ogDescription:
+          "Comprehensive guide to nursing exit exams. Prepare for your nursing exit exam with expert resources, practice questions, and study guides.",
+        ogImage: "/teas-gurus-logo.png",
+        canonicalUrl: "https://teasgurus.com/nursing-exit-exam",
+      },
+      schema: "",
+      hero: {
+        badge: "We are Teas Gurus",
+        title: "Nursing Exit Exam",
+        subtitle: "Your comprehensive guide to success",
+        description:
+          "<p>Prepare for your nursing exit exam with confidence. Our comprehensive resources, practice questions, and expert guidance will help you succeed in your final nursing school assessment.</p>",
+      },
+      trustIndicators: [
+        {
+          title: "Expert Guidance",
+          icon: "star",
+        },
+        {
+          title: "Comprehensive Resources",
+          icon: "book",
+        },
+        {
+          title: "Proven Success",
+          icon: "trophy",
+        },
+        {
+          title: "24/7 Support",
+          icon: "clock",
+        },
+      ],
+      whatToExpect: {
+        badge: "What to Expect",
+        title: "Understanding the Nursing Exit Exam",
+        subtitle:
+          "<p>Learn what to expect on your nursing exit exam and how to prepare effectively.</p>",
+        cards: [
+          {
+            title: "Exam Format",
+            icon: "book",
+            content: [
+              "<p>Multiple-choice questions covering all nursing fundamentals</p>",
+              "<p>Clinical scenario-based questions</p>",
+              "<p>Time-limited assessment</p>",
+            ],
+          },
+          {
+            title: "Preparation Tips",
+            icon: "lightbulb",
+            content: [
+              "<p>Review all core nursing concepts</p>",
+              "<p>Practice with sample questions</p>",
+              "<p>Create a study schedule</p>",
+            ],
+          },
+        ],
+        footer:
+          "<p>With proper preparation and the right resources, you can excel on your nursing exit exam.</p>",
+      },
+      mostCommonQuestions: {
+        badge: "Common Questions",
+        title: "Most Common Questions About Nursing Exit Exams",
+        subtitle:
+          "Find answers to frequently asked questions about nursing exit exams.",
+        cards: [
+          {
+            title: "What is a nursing exit exam?",
+            content: [
+              "<p>A nursing exit exam is a comprehensive assessment taken by nursing students before graduation to evaluate their readiness for the NCLEX and professional practice.</p>",
+            ],
+          },
+          {
+            title: "How should I prepare?",
+            content: [
+              "<p>Start early, review all core concepts, practice with sample questions, and utilize study guides and resources.</p>",
+            ],
+          },
+        ],
+      },
+      studyGuide: {
+        badge: "Study Guide",
+        title: "Comprehensive Study Guide",
+        subtitle:
+          "<p>Access our comprehensive study materials to help you prepare for your nursing exit exam.</p>",
+        sections: [
+          {
+            title: "Fundamentals",
+            icon: "book",
+            content:
+              "<p>Review essential nursing fundamentals and core concepts.</p>",
+          },
+          {
+            title: "Practice Questions",
+            icon: "lightbulb",
+            content:
+              "<p>Access thousands of practice questions with detailed explanations.</p>",
+          },
+          {
+            title: "Study Plans",
+            icon: "clock",
+            content:
+              "<p>Follow structured study plans designed for success.</p>",
+          },
+          {
+            title: "Expert Tips",
+            icon: "star",
+            content:
+              "<p>Learn from nursing experts and successful graduates.</p>",
+          },
+        ],
+      },
+      privacyPricing: [
+        {
+          title: "Privacy & Security",
+          icon: "shield",
+          content:
+            "<p>Your data is secure and private. We never share your information with third parties.</p>",
+        },
+        {
+          title: "Affordable Pricing",
+          icon: "star",
+          content:
+            "<p>Access comprehensive resources at affordable prices. Multiple pricing plans available.</p>",
+        },
+      ],
+      faq: {
+        title: "Frequently Asked Questions",
+        subtitle:
+          "<p>Find answers to common questions about nursing exit exams and our preparation resources.</p>",
+        questions: [
+          {
+            question: "What topics are covered on the nursing exit exam?",
+            paragraphs: [
+              "<p>The nursing exit exam typically covers all core nursing concepts including fundamentals, medical-surgical nursing, pharmacology, pathophysiology, and nursing care across the lifespan.</p>",
+            ],
+          },
+          {
+            question: "How long does it take to prepare for the exit exam?",
+            paragraphs: [
+              "<p>Preparation time varies, but most students benefit from 4-8 weeks of focused study. Start early and create a consistent study schedule.</p>",
+            ],
+          },
+          {
+            question: "Are practice questions available?",
+            paragraphs: [
+              "<p>Yes, we provide thousands of practice questions with detailed explanations to help you prepare effectively.</p>",
+            ],
+          },
+        ],
+      },
+      lastUpdated: new Date().toISOString(),
+      version: "1.0",
+    };
+
+    const docRef = doc(db, "pillarPages", "nursing-exit-exam");
+    await setDoc(docRef, dummyContent);
+
+    return {
+      success: true,
+      message: "Nursing Exit Exam dummy content initialized successfully!",
+    };
+  } catch (error) {
+    console.error("Error initializing Nursing Exit Exam content:", error);
+    return {
+      success: false,
+      message: `Failed to initialize content: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };
@@ -749,9 +933,139 @@ export const deleteNursingEntranceExamSubPage = async (subPageId: string) => {
   }
 };
 
+// ==================== NURSING EXIT EXAM SUB-PAGES OPERATIONS ====================
+
+// Get all sub-pages under nursing-exit-exam
+export const getNursingExitExamSubPages = async () => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(db, "pillarPages", "nursing-exit-exam", "subPages")
+    );
+    const subPages: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      subPages.push({
+        id: doc.id,
+        subPageId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: subPages,
+      message: "All sub-pages retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve sub-pages: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific sub-page content
+export const getNursingExitExamSubPage = async (subPageId: string) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      subPageId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Sub-page ${subPageId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No sub-page content found for ${subPageId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting sub-page ${subPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve sub-page ${subPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update sub-page content
+export const uploadNursingExitExamSubPage = async (
+  subPageId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      subPageId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Sub-page ${subPageId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading sub-page ${subPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload sub-page ${subPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete sub-page
+export const deleteNursingExitExamSubPage = async (subPageId: string) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      subPageId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Sub-page ${subPageId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting sub-page ${subPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete sub-page ${subPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
 // ==================== NESTED SUB-PAGES OPERATIONS ====================
 
-// Get all nested sub-pages under a specific sub-page
+// Get all nested sub-pages under a specific sub-page (for entrance exam)
 export const getNestedSubPages = async (parentSubPageId: string) => {
   try {
     const querySnapshot = await getDocs(
@@ -784,6 +1098,600 @@ export const getNestedSubPages = async (parentSubPageId: string) => {
     return {
       success: false,
       message: `Failed to retrieve nested sub-pages: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all nested sub-pages under a specific sub-page (for exit exam)
+export const getNursingExitExamNestedSubPages = async (
+  parentSubPageId: string
+) => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-exit-exam",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages"
+      )
+    );
+    const nestedSubPages: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      nestedSubPages.push({
+        id: doc.id,
+        nestedSubPageId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: nestedSubPages,
+      message: "All nested sub-pages retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting nested sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve nested sub-pages: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific nested sub-page content (for exit exam)
+export const getNursingExitExamNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No nested sub-page content found for ${nestedSubPageId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update nested sub-page content (for exit exam)
+export const uploadNursingExitExamNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Nested sub-page ${nestedSubPageId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete nested sub-page (for exit exam)
+export const deleteNursingExitExamNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Nested sub-page ${nestedSubPageId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING TEST BANK SUB-PAGES OPERATIONS ====================
+
+// Get all sub-pages under nursing-test-bank
+export const getNursingTestBankSubPages = async () => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(db, "pillarPages", "nursing-test-bank", "subPages")
+    );
+    const subPages: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      subPages.push({
+        id: doc.id,
+        subPageId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: subPages,
+      message: "All sub-pages retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve sub-pages: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific sub-page content
+export const getNursingTestBankSubPage = async (subPageId: string) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      subPageId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Sub-page ${subPageId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No sub-page content found for ${subPageId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting sub-page ${subPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve sub-page ${subPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update sub-page content
+export const uploadNursingTestBankSubPage = async (
+  subPageId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      subPageId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Sub-page ${subPageId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading sub-page ${subPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload sub-page ${subPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete sub-page
+export const deleteNursingTestBankSubPage = async (subPageId: string) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      subPageId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Sub-page ${subPageId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting sub-page ${subPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete sub-page ${subPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all nested sub-pages under a specific sub-page (for test bank)
+export const getNursingTestBankNestedSubPages = async (
+  parentSubPageId: string
+) => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-test-bank",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages"
+      )
+    );
+    const nestedSubPages: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      nestedSubPages.push({
+        id: doc.id,
+        nestedSubPageId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: nestedSubPages,
+      message: "All nested sub-pages retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting nested sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve nested sub-pages: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific nested sub-page content (for test bank)
+export const getNursingTestBankNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No nested sub-page content found for ${nestedSubPageId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update nested sub-page content (for test bank)
+export const uploadNursingTestBankNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Nested sub-page ${nestedSubPageId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete nested sub-page (for test bank)
+export const deleteNursingTestBankNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Nested sub-page ${nestedSubPageId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING TEST BANK TOPICS OPERATIONS ====================
+
+// Get all topics under a specific nested sub-page (for test bank)
+export const getNursingTestBankTopics = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-test-bank",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "topics"
+      )
+    );
+    const topics: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      topics.push({
+        id: doc.id,
+        topicId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: topics,
+      message: "All topics retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting topics:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve topics: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific topic content (for test bank)
+export const getNursingTestBankTopic = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "topics",
+      topicId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Topic ${topicId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No topic content found for ${topicId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting topic ${topicId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve topic ${topicId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update topic content (for test bank)
+export const uploadNursingTestBankTopic = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "topics",
+      topicId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Topic ${topicId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading topic ${topicId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload topic ${topicId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete topic (for test bank)
+export const deleteNursingTestBankTopic = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-test-bank",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "topics",
+      topicId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Topic ${topicId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting topic ${topicId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete topic ${topicId}: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };

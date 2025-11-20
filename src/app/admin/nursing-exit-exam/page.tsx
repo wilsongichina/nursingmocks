@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import {
-  getNursingEntranceExamSubPages,
-  deleteNursingEntranceExamSubPage,
-  uploadNursingEntranceExamSubPage,
+  getNursingExitExamSubPages,
+  deleteNursingExitExamSubPage,
+  uploadNursingExitExamSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -21,7 +21,7 @@ interface SubPage {
   };
 }
 
-export default function NursingEntranceExamAdminPage() {
+export default function NursingExitExamAdminPage() {
   const [subPages, setSubPages] = useState<SubPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,7 +44,7 @@ export default function NursingEntranceExamAdminPage() {
       setLoading(true);
       setError("");
 
-      const result = await getNursingEntranceExamSubPages();
+      const result = await getNursingExitExamSubPages();
 
       if (result.success && result.data) {
         setSubPages(result.data);
@@ -72,7 +72,7 @@ export default function NursingEntranceExamAdminPage() {
       setError("");
       setSuccess("");
 
-      const result = await deleteNursingEntranceExamSubPage(subPageToDelete.id);
+      const result = await deleteNursingExitExamSubPage(subPageToDelete.id);
 
       if (result.success) {
         setSuccess("Sub-page deleted successfully!");
@@ -112,9 +112,7 @@ export default function NursingEntranceExamAdminPage() {
       (page) => page.id === normalizedSubPageId
     );
     if (existingSubPage) {
-      setValidationError(
-        `A sub-page with ID "${normalizedSubPageId}" already exists.`
-      );
+      setValidationError(`A sub-page with ID "${normalizedSubPageId}" already exists.`);
       return;
     }
 
@@ -125,26 +123,52 @@ export default function NursingEntranceExamAdminPage() {
 
       const defaultSubPageContent = {
         pageName: newSubPageName,
+        slug: normalizedSubPageId,
         meta: {
-          title: `${newSubPageName} | Nursing Entrance Exam`,
-          description: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
-          keywords: `${newSubPageName}, nursing entrance exam`,
-          ogTitle: `${newSubPageName} | Nursing Entrance Exam`,
-          ogDescription: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
+          title: `${newSubPageName} | Nursing Exit Exam`,
+          description: `Content for ${newSubPageName} under Nursing Exit Exam.`,
+          keywords: `${newSubPageName}, nursing exit exam`,
+          ogTitle: `${newSubPageName} | Nursing Exit Exam`,
+          ogDescription: `Content for ${newSubPageName} under Nursing Exit Exam.`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${normalizedSubPageId}`,
+          canonicalUrl: `https://teasgurus.com/nursing-exit-exam/${normalizedSubPageId}`,
         },
         hero: {
-          badge: "Nursing Entrance Exam",
+          badge: "Nursing Exit Exam",
           title: newSubPageName,
           subtitle: `Detailed information about ${newSubPageName}.`,
+          description: "",
         },
-        content: `<p>This is the default content for the <strong>${newSubPageName}</strong> sub-page. You can edit this content using the rich text editor.</p>`,
-        image: "",
+        trustIndicators: [],
+        whatToExpect: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+          footer: "",
+        },
+        mostCommonQuestions: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+        },
+        studyGuide: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          sections: [],
+        },
+        privacyPricing: [],
+        faq: {
+          title: "",
+          subtitle: "",
+          questions: [],
+        },
         schema: "",
       };
 
-      const result = await uploadNursingEntranceExamSubPage(
+      const result = await uploadNursingExitExamSubPage(
         normalizedSubPageId,
         defaultSubPageContent
       );
@@ -186,9 +210,9 @@ export default function NursingEntranceExamAdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+              <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center mr-4">
                 <svg
-                  className="w-6 h-6 text-indigo-600"
+                  className="w-6 h-6 text-teal-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -197,13 +221,13 @@ export default function NursingEntranceExamAdminPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
                   />
                 </svg>
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Nursing Entrance Exam CMS
+                  Nursing Exit Exam CMS
                 </h1>
                 <p className="text-sm text-gray-600">
                   Manage the main page and sub-pages
@@ -280,23 +304,23 @@ export default function NursingEntranceExamAdminPage() {
           <div className="flex justify-between items-center">
             <div className="flex-1">
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Nursing Entrance Exam Main Page
+                Nursing Exit Exam Main Page
               </h3>
               <p className="text-sm text-gray-600 mb-2">
-                Edit the main Nursing Entrance Exam page content
+                Edit the main Nursing Exit Exam page content
               </p>
             </div>
             <div className="flex items-center space-x-2">
               <Link
-                href="/admin/nursing-entrance-exam/edit"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                href="/admin/nursing-exit-exam/edit"
+                className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
               >
                 Edit Main Page
               </Link>
               <Link
-                href="/nursing-entrance-exam"
+                href="/nursing-exit-exam"
                 target="_blank"
-                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                className="text-teal-600 hover:text-teal-800 text-sm font-medium"
               >
                 View Page →
               </Link>
@@ -349,7 +373,9 @@ export default function NursingEntranceExamAdminPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 No sub-pages found
               </h3>
-              <p className="text-gray-600">Create a sub-page to get started.</p>
+              <p className="text-gray-600">
+                Create a sub-page to get started.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -379,7 +405,7 @@ export default function NursingEntranceExamAdminPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Link
-                      href={`/admin/nursing-entrance-exam/${subPage.id}/manage`}
+                      href={`/admin/nursing-exit-exam/${subPage.id}/manage`}
                       className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center space-x-2"
                     >
                       <svg
@@ -425,13 +451,9 @@ export default function NursingEntranceExamAdminPage() {
                   </div>
                   <div className="mt-4">
                     <Link
-                      href={`/${
-                        (subPage.slug || subPage.id).endsWith("-exam")
-                          ? subPage.slug || subPage.id
-                          : `${subPage.slug || subPage.id}-exam`
-                      }`}
+                      href={`/nursing-exit-exam/${subPage.id}`}
                       target="_blank"
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                      className="text-teal-600 hover:text-teal-800 text-sm font-medium"
                     >
                       View Page →
                     </Link>
@@ -468,12 +490,10 @@ export default function NursingEntranceExamAdminPage() {
             <p className="text-gray-600 mb-6 text-center">
               Are you sure you want to delete the sub-page{" "}
               <span className="font-semibold text-gray-900">
-                "
-                {subPageToDelete.pageName ||
+                "{subPageToDelete.pageName ||
                   subPageToDelete.hero?.title ||
                   subPageToDelete.title ||
-                  subPageToDelete.id}
-                "
+                  subPageToDelete.id}"
               </span>
               ? This action cannot be undone.
             </p>
@@ -544,7 +564,7 @@ export default function NursingEntranceExamAdminPage() {
                   type="text"
                   value={newSubPageName}
                   onChange={(e) => setNewSubPageName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
                   placeholder="e.g., Math Review, Reading Strategies"
                   required
                 />
@@ -556,9 +576,9 @@ export default function NursingEntranceExamAdminPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Slug URL *
                 </label>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    https://teasgurus.com/
+                <div className="flex items-center space-x-2 flex-wrap gap-2">
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    https://teasgurus.com/nursing-exit-exam/
                   </span>
                   <input
                     type="text"
@@ -568,21 +588,20 @@ export default function NursingEntranceExamAdminPage() {
                         e.target.value.toLowerCase().replace(/\s+/g, "-")
                       )
                     }
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., ati-teas, math-review"
+                    className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    placeholder="e.g., math-review, reading-strategies"
                     required
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /{newSubPageId || "sub-page-id"}
-                  -exam
+                  This will create a page at /nursing-exit-exam/{newSubPageId || "sub-page-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50"
+                  className="flex-1 bg-teal-600 text-white px-4 py-3 rounded-lg hover:bg-teal-700 transition-colors font-semibold disabled:opacity-50"
                 >
                   {saving ? "Creating..." : "Create Sub-page"}
                 </button>
@@ -606,3 +625,4 @@ export default function NursingEntranceExamAdminPage() {
     </div>
   );
 }
+
