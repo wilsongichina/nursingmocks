@@ -101,6 +101,35 @@ async function getAllPillarServicePages(db, pillarPageId) {
   }
 }
 
+async function getNursingEntranceExamSubPages(db) {
+  try {
+    const querySnapshot = await getDocs(
+      collection(db, "pillarPages", "nursing-entrance-exam", "subPages")
+    );
+    const subPages = [];
+
+    querySnapshot.forEach((doc) => {
+      subPages.push({
+        id: doc.id,
+        subPageId: doc.id,
+        servicePageId: doc.id, // Use the document ID as the slug
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: subPages,
+    };
+  } catch (error) {
+    console.error("Error getting nursing entrance exam sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve sub-pages: ${error.message}`,
+    };
+  }
+}
+
 async function generateSidebarData() {
   try {
     console.log("🚀 Starting sidebar data generation...");
@@ -162,17 +191,32 @@ async function generateSidebarData() {
 
     // Fetch categories for each pillar page
     for (const pillarPage of allPillarPages) {
-      const result = await getAllPillarServicePages(db, pillarPage.id);
-      if (result.success && result.data) {
-        const categories = result.data.map((service) => ({
-          id: service.servicePageId || service.id,
-          servicePageId: service.servicePageId || service.id,
-          ...service,
-        }));
-        categoriesByPillar[pillarPage.id] = categories;
+      // For nursing-entrance-exam, use the special function to get sub-pages
+      if (pillarPage.id === "nursing-entrance-exam") {
+        const result = await getNursingEntranceExamSubPages(db);
+        if (result.success && result.data) {
+          const categories = result.data.map((subPage) => ({
+            id: subPage.id || subPage.subPageId,
+            servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+            ...subPage,
+          }));
+          categoriesByPillar[pillarPage.id] = categories;
+        } else {
+          categoriesByPillar[pillarPage.id] = [];
+        }
       } else {
-        // Initialize empty array for pillar pages without categories
-        categoriesByPillar[pillarPage.id] = [];
+        const result = await getAllPillarServicePages(db, pillarPage.id);
+        if (result.success && result.data) {
+          const categories = result.data.map((service) => ({
+            id: service.servicePageId || service.id,
+            servicePageId: service.servicePageId || service.id,
+            ...service,
+          }));
+          categoriesByPillar[pillarPage.id] = categories;
+        } else {
+          // Initialize empty array for pillar pages without categories
+          categoriesByPillar[pillarPage.id] = [];
+        }
       }
     }
 
