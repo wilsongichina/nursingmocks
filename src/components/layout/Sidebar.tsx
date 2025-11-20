@@ -1046,18 +1046,18 @@ export default function Sidebar({
                 if (pillarPage.id === "nursing-entrance-exam") {
                   pillarActive =
                     pathname.startsWith(`/${pillarPage.id}`) ||
-                    (pathname.match(/^\/.+-exam$/) && !pathname.endsWith("-exit-exam")) ||
-                    pathname.match(/^\/.+-.+-questions$/);
+                    (!!pathname.match(/^\/.+-exam$/) && !pathname.endsWith("-exit-exam")) ||
+                    !!pathname.match(/^\/.+-.+-questions$/);
                 } else if (pillarPage.id === "nursing-exit-exam") {
                   pillarActive =
                     pathname === "/nursing-exit-exam" ||
                     pathname.startsWith("/nursing-exit-exam/") ||
-                    pathname.match(/^\/.+-.+-exit-exam$/);
+                    !!pathname.match(/^\/.+-.+-exit-exam$/);
                 } else if (pillarPage.id === "nursing-test-bank") {
                   pillarActive =
                     pathname === "/nursing-test-bank" ||
                     pathname.startsWith("/nursing-test-bank/") ||
-                    pathname.match(/^\/.+-.+-test-bank$/);
+                    !!pathname.match(/^\/.+-.+-test-bank$/);
                 } else {
                   pillarActive = pathname.startsWith(`/${pillarPage.id}`);
                 }
@@ -1190,7 +1190,7 @@ export default function Sidebar({
                                   pathname === subPageUrl ||
                                   pathname === `/${categorySlug}` ||
                                   pathname === `/${categorySlug}-exam` ||
-                                  pathname.match(
+                                  !!pathname.match(
                                     new RegExp(`^/${categorySlug}-.+-questions$`)
                                   );
                               } else if (pillarPage.id === "nursing-exit-exam") {
@@ -1199,7 +1199,7 @@ export default function Sidebar({
                                 categoryActive =
                                   pathname === subPageUrl ||
                                   pathname.startsWith(subPageUrl + "/") ||
-                                  pathname.match(
+                                  !!pathname.match(
                                     new RegExp(`^/.+-${categorySlug}-exit-exam$`)
                                   );
                               } else if (pillarPage.id === "nursing-test-bank") {
@@ -1207,10 +1207,10 @@ export default function Sidebar({
                                 subPageUrl = `/${categorySlug}-test-bank`;
                                 categoryActive =
                                   pathname === subPageUrl ||
-                                  pathname.match(
+                                  !!pathname.match(
                                     new RegExp(`^/.+-${categorySlug}-test-bank$`)
                                   ) ||
-                                  pathname.match(
+                                  !!pathname.match(
                                     new RegExp(`^/${categorySlug}-.+-test-bank$`)
                                   );
                               } else {
