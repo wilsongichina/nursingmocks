@@ -17,6 +17,10 @@ import {
   getNursingTestBankTopics,
 } from "@/lib/firestore-operations";
 
+// Enable dynamic params for on-demand generation
+export const dynamicParams = true;
+export const dynamic = 'force-dynamic';
+
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
   <svg
