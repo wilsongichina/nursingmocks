@@ -9,9 +9,10 @@ import {
   getNursingExitExamNestedSubPages,
 } from "@/lib/firestore-operations";
 
-// Enable dynamic params for on-demand generation
-export const dynamicParams = true;
-export const dynamic = 'force-dynamic';
+// Enable static generation at build time
+export const dynamicParams = false; // Disable dynamic params - all routes must be pre-generated
+export const dynamic = "force-static"; // Force static generation
+export const revalidate = 3600; // Revalidate every hour (ISR)
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
@@ -331,6 +332,42 @@ const getIconComponent = (iconName: string) => {
 
   return iconMap[iconName] || iconMap.check;
 };
+
+// Generate static params for all exit exam sub-pages at build time
+export async function generateStaticParams() {
+  const params: { subPageId: string }[] = [];
+
+  try {
+    const { getNursingExitExamSubPages } = await import(
+      "@/lib/firestore-operations"
+    );
+
+    // Generate exit exam regular sub-pages: [name]
+    const exitSubPages = await getNursingExitExamSubPages();
+    if (exitSubPages.success && exitSubPages.data) {
+      for (const subPage of exitSubPages.data) {
+        const subPageId = subPage.id || subPage.subPageId;
+        const slug = subPage.slug || subPageId;
+        params.push({ subPageId: slug });
+        // Also add with -exit-exam suffix if not already present
+        if (!slug.endsWith("-exit-exam")) {
+          params.push({ subPageId: `${slug}-exit-exam` });
+        }
+      }
+    }
+
+    console.log(
+      `[Static Generation] Generated ${params.length} static params for nursing-exit-exam/[subPageId] route`
+    );
+  } catch (error) {
+    console.error(
+      "[Static Generation] Error generating static params for exit exam:",
+      error
+    );
+  }
+
+  return params;
+}
 
 export async function generateMetadata({
   params,

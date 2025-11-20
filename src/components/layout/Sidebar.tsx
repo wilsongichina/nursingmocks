@@ -461,11 +461,56 @@ export default function Sidebar({
   };
 
   useEffect(() => {
-    // Always fetch from Firestore for dynamic updates
-    const loadData = async () => {
-      try {
+    // If initialData is provided, use it and skip Firestore loading
+    if (initialData) {
+      setPillarPages(initialData.pillarPages || []);
+      setPillarCategories(initialData.pillarCategories || {});
+      return;
+    }
 
-        // Fetch all pillar pages, all pages (categories), and pillar service pages from Firestore
+    // Try to load from static JSON file first
+    const loadStaticData = async () => {
+      try {
+        const response = await fetch("/data/sidebar-data.json");
+        if (response.ok) {
+          const staticData = await response.json();
+          if (staticData.pillarPages && staticData.pillarCategories) {
+            setPillarPages(staticData.pillarPages);
+            setPillarCategories(staticData.pillarCategories);
+            console.log("[Sidebar] Loaded static data from sidebar-data.json");
+            return true;
+          }
+        }
+      } catch (error) {
+        console.warn("[Sidebar] Could not load static data, falling back to Firestore:", error);
+      }
+      return false;
+    };
+
+    // Load data - try static first, then Firestore
+    const loadData = async () => {
+      const staticLoaded = await loadStaticData();
+      if (staticLoaded) {
+        // Still need to load exit exam and test bank sub-pages from Firestore
+        // as they might not be in the static JSON
+        try {
+          const exitExamResult = await getNursingExitExamSubPages();
+          if (exitExamResult.success && exitExamResult.data) {
+            setNursingExitExamSubPages(exitExamResult.data);
+          }
+
+          const testBankResult = await getNursingTestBankSubPages();
+          if (testBankResult.success && testBankResult.data) {
+            setNursingTestBankSubPages(testBankResult.data);
+          }
+        } catch (error) {
+          console.error("Error loading exit exam/test bank sub-pages:", error);
+        }
+        return;
+      }
+
+      // Fallback to Firestore if static data not available
+      try {
         const [pillarPagesResult, allPagesResult] = await Promise.all([
           getAllPillarPages(),
           getAllPages(),
@@ -477,35 +522,21 @@ export default function Sidebar({
         }
 
         const allPillarPages = pillarPagesResult.data || [];
-
-        // Get all categories that belong to pillar pages
-        const pillarPageCategoryIds = new Set<string>();
         const categoriesByPillar: Record<string, Category[]> = {};
 
         // Fetch categories for each pillar page
         for (const pillarPage of allPillarPages) {
-          // For nursing-entrance-exam, use the special function to get sub-pages
           if (pillarPage.id === "nursing-entrance-exam") {
             const result = await getNursingEntranceExamSubPages();
             if (result.success && result.data) {
-              // Sub-pages use 'id' or 'subPageId' as the slug (document ID from Firebase)
               const categories = result.data.map((subPage: any) => ({
                 id: subPage.id || subPage.subPageId,
-                servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+                servicePageId: subPage.id || subPage.subPageId,
                 ...subPage,
               }));
               categoriesByPillar[pillarPage.id] = categories;
-
-              // Track which categories belong to pillar pages
-              categories.forEach((cat: Category) => {
-                const categoryId = cat.servicePageId || cat.id;
-                if (categoryId) {
-                  pillarPageCategoryIds.add(categoryId);
-                }
-              });
             }
           } else {
-            // For other pillar pages, use the standard service pages function
             const result = await getAllPillarServicePages(pillarPage.id);
             if (result.success && result.data) {
               const categories = result.data.map((service: any) => ({
@@ -514,22 +545,9 @@ export default function Sidebar({
                 ...service,
               }));
               categoriesByPillar[pillarPage.id] = categories;
-
-              // Track which categories belong to pillar pages
-              categories.forEach((cat: Category) => {
-                const categoryId = cat.servicePageId || cat.id;
-                if (categoryId) {
-                  pillarPageCategoryIds.add(categoryId);
-                }
-              });
             }
           }
         }
-
-        // Categories that don't belong to any pillar page are ignored (TEAS removed)
-        // const teasCats = allCategories.filter(
-        //   (cat) => !pillarPageCategoryIds.has(cat)
-        // );
 
         setPillarPages(allPillarPages);
         setPillarCategories(categoriesByPillar);
@@ -548,7 +566,6 @@ export default function Sidebar({
         // Expand all pillar pages by default when data is loaded
         setExpandedItems((prev) => {
           const newSet = new Set(prev);
-          // Add nursing-exit-exam and nursing-test-bank to expanded items by default
           newSet.add("nursing-exit-exam");
           newSet.add("nursing-test-bank");
           allPillarPages.forEach((page: PillarPage) => {
@@ -557,7 +574,7 @@ export default function Sidebar({
           return newSet;
         });
       } catch (error) {
-        console.error("Error loading pillar pages and categories:", error);
+        console.error("Error loading pillar pages and categories from Firestore:", error);
       }
     };
 
@@ -1077,8 +1094,8 @@ export default function Sidebar({
                                 new RegExp(`^/${categorySlug}-.+-questions$`)
                               );
                             const categoryName =
-                              category.hero?.title ||
                               category.pageName ||
+                              category.hero?.title ||
                               formatCategoryName(categoryId);
                             return (
                               <li key={categoryId}>
@@ -1548,8 +1565,8 @@ export default function Sidebar({
                                   (pathname === `/${categorySlug}` ||
                                     pathname === `/${categorySlug}-exam`));
                               const categoryName =
-                                category.hero?.title ||
                                 category.pageName ||
+                                category.hero?.title ||
                                 formatCategoryName(categoryId);
                               return (
                                 <li key={categoryId}>

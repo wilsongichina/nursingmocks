@@ -17,9 +17,10 @@ import {
   getNursingTestBankTopics,
 } from "@/lib/firestore-operations";
 
-// Enable dynamic params for on-demand generation
-export const dynamicParams = true;
-export const dynamic = "force-dynamic";
+// Enable static generation at build time
+export const dynamicParams = false; // Disable dynamic params - all routes must be pre-generated
+export const dynamic = "force-static"; // Force static generation
+export const revalidate = 3600; // Revalidate every hour (ISR)
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
@@ -339,6 +340,132 @@ const getIconComponent = (iconName: string) => {
 
   return iconMap[iconName] || iconMap.check;
 };
+
+// Generate static params for all routes at build time
+export async function generateStaticParams() {
+  const params: { subPageId: string }[] = [];
+
+  try {
+    // Import all necessary functions
+    const {
+      getNursingEntranceExamSubPages,
+      getNursingExitExamSubPages,
+      getNursingTestBankSubPages,
+      getNestedSubPages,
+      getNursingExitExamNestedSubPages,
+      getNursingTestBankNestedSubPages,
+      getNursingTestBankTopics,
+    } = await import("@/lib/firestore-operations");
+
+    // 1. Generate entrance exam regular sub-pages: [name]-exam
+    const entranceSubPages = await getNursingEntranceExamSubPages();
+    if (entranceSubPages.success && entranceSubPages.data) {
+      for (const subPage of entranceSubPages.data) {
+        const subPageId = subPage.id || subPage.subPageId;
+        const slug = subPage.slug || subPageId;
+        // Add with -exam suffix
+        params.push({ subPageId: `${slug}-exam` });
+        // Also add without -exam suffix (in case it's stored that way)
+        if (!slug.endsWith("-exam")) {
+          params.push({ subPageId: slug });
+        }
+      }
+    }
+
+    // 2. Generate entrance exam nested sub-pages: [parent]-[nested]-questions
+    if (entranceSubPages.success && entranceSubPages.data) {
+      for (const parentSubPage of entranceSubPages.data) {
+        const parentId = parentSubPage.id || parentSubPage.subPageId;
+        const parentSlug = parentSubPage.slug || parentId;
+        // Remove -exam suffix if present for nested URLs
+        const parentUrlSlug = parentSlug.endsWith("-exam")
+          ? parentSlug.slice(0, -5)
+          : parentSlug;
+
+        const nestedSubPages = await getNestedSubPages(parentId);
+        if (nestedSubPages.success && nestedSubPages.data) {
+          for (const nestedSubPage of nestedSubPages.data) {
+            const nestedId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+            const nestedSlug = nestedSubPage.slug || nestedId;
+            params.push({
+              subPageId: `${parentUrlSlug}-${nestedSlug}-questions`,
+            });
+          }
+        }
+      }
+    }
+
+    // 3. Generate exit exam nested sub-pages: [nested]-[parent]-exit-exam
+    const exitSubPages = await getNursingExitExamSubPages();
+    if (exitSubPages.success && exitSubPages.data) {
+      for (const parentSubPage of exitSubPages.data) {
+        const parentId = parentSubPage.id || parentSubPage.subPageId;
+        const parentSlug = parentSubPage.slug || parentId;
+
+        const nestedSubPages = await getNursingExitExamNestedSubPages(parentId);
+        if (nestedSubPages.success && nestedSubPages.data) {
+          for (const nestedSubPage of nestedSubPages.data) {
+            const nestedId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+            const nestedSlug = nestedSubPage.slug || nestedId;
+            params.push({
+              subPageId: `${nestedSlug}-${parentSlug}-exit-exam`,
+            });
+          }
+        }
+      }
+    }
+
+    // 4. Generate test bank regular sub-pages: [name]-test-bank
+    const testBankSubPages = await getNursingTestBankSubPages();
+    if (testBankSubPages.success && testBankSubPages.data) {
+      for (const subPage of testBankSubPages.data) {
+        const subPageId = subPage.id || subPage.subPageId;
+        const slug = subPage.slug || subPageId;
+        params.push({ subPageId: `${slug}-test-bank` });
+      }
+    }
+
+    // 5. Generate test bank nested sub-pages: [nested]-[parent]-test-bank
+    if (testBankSubPages.success && testBankSubPages.data) {
+      for (const parentSubPage of testBankSubPages.data) {
+        const parentId = parentSubPage.id || parentSubPage.subPageId;
+        const parentSlug = parentSubPage.slug || parentId;
+
+        const nestedSubPages = await getNursingTestBankNestedSubPages(parentId);
+        if (nestedSubPages.success && nestedSubPages.data) {
+          for (const nestedSubPage of nestedSubPages.data) {
+            const nestedId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+            const nestedSlug = nestedSubPage.slug || nestedId;
+            params.push({
+              subPageId: `${nestedSlug}-${parentSlug}-test-bank`,
+            });
+
+            // 6. Generate test bank topics: [nested]-[parent]-[topic]
+            const topics = await getNursingTestBankTopics(parentId, nestedId);
+            if (topics.success && topics.data) {
+              for (const topic of topics.data) {
+                const topicId = topic.id || topic.topicId;
+                const topicSlug = topic.slug || topicId;
+                params.push({
+                  subPageId: `${nestedSlug}-${parentSlug}-${topicSlug}`,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    console.log(
+      `[Static Generation] Generated ${params.length} static params for [subPageId] route`
+    );
+  } catch (error) {
+    console.error("[Static Generation] Error generating static params:", error);
+    // Return empty array on error - pages will be generated on-demand
+  }
+
+  return params;
+}
 
 export async function generateMetadata({
   params,
@@ -959,17 +1086,89 @@ export default async function SubPage({
     isExitExam = true;
   } else {
     // This is a regular entrance exam sub-page
+    console.log(
+      `[DEBUG] Processing as regular entrance exam sub-page: "${subPageId}"`
+    );
+
     // Try with the full ID first (in case it's stored as "ati-teas-exam")
     let result = await getNursingEntranceExamSubPage(subPageId);
+    console.log(
+      `[DEBUG] First lookup (${subPageId}):`,
+      result.success ? "FOUND" : "NOT FOUND"
+    );
 
     // If not found and it ends with -exam, try without the suffix
     if ((!result.success || !result.data) && subPageId.endsWith("-exam")) {
       lookupId = subPageId.slice(0, -5);
+      console.log(`[DEBUG] Trying without -exam suffix: "${lookupId}"`);
       result = await getNursingEntranceExamSubPage(lookupId);
+      console.log(
+        `[DEBUG] Second lookup (${lookupId}):`,
+        result.success ? "FOUND" : "NOT FOUND"
+      );
     } else if (!subPageId.endsWith("-exam")) {
       lookupId = subPageId;
     } else {
       lookupId = subPageId;
+    }
+
+    // If still not found, try to find by slug
+    if (!result.success || !result.data) {
+      const { getNursingEntranceExamSubPages } = await import(
+        "@/lib/firestore-operations"
+      );
+      const allSubPagesResult = await getNursingEntranceExamSubPages();
+      if (allSubPagesResult.success && allSubPagesResult.data) {
+        console.log(
+          `[DEBUG] Searching ${allSubPagesResult.data.length} sub-pages by slug for: "${subPageId}" or "${lookupId}"`
+        );
+        const foundSubPage = allSubPagesResult.data.find((subPage: any) => {
+          const subPageSlug = (
+            subPage.slug ||
+            subPage.id ||
+            subPage.subPageId ||
+            ""
+          ).toLowerCase();
+          const subPageId_lower = (
+            subPage.id ||
+            subPage.subPageId ||
+            ""
+          ).toLowerCase();
+          const searchId = subPageId.toLowerCase();
+          const searchIdNoSuffix = lookupId.toLowerCase();
+          return (
+            subPageSlug === searchId ||
+            subPageId_lower === searchId ||
+            subPageSlug === searchIdNoSuffix ||
+            subPageId_lower === searchIdNoSuffix ||
+            subPageSlug === searchId.replace("-exam", "") ||
+            subPageId_lower === searchId.replace("-exam", "")
+          );
+        });
+        if (foundSubPage) {
+          console.log(
+            `[DEBUG] Found sub-page by slug:`,
+            foundSubPage.id || foundSubPage.subPageId
+          );
+          const foundId = foundSubPage.id || foundSubPage.subPageId;
+          if (foundId && typeof foundId === "string") {
+            lookupId = foundId;
+            result = await getNursingEntranceExamSubPage(lookupId);
+            console.log(
+              `[DEBUG] Lookup by found ID (${lookupId}):`,
+              result.success ? "FOUND" : "NOT FOUND"
+            );
+          }
+        } else {
+          console.log(
+            `[DEBUG] No sub-page found by slug. Available sub-pages:`,
+            allSubPagesResult.data.map((sp: any) => ({
+              id: sp.id || sp.subPageId,
+              slug: sp.slug,
+            }))
+          );
+        }
+      }
     }
 
     if (!result.success || !result.data) {

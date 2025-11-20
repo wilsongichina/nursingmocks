@@ -69,7 +69,14 @@ function isNursingEntranceExamPage(pathname: string): boolean {
   ];
 
   // If it's an excluded route, it's not a nursing-entrance-exam sub-page
-  if (excludedRoutes.some((route) => normalizedPath.startsWith(route))) {
+  // But check for exact matches first to avoid false positives (e.g., /hesi-a2-practice-exam shouldn't match /hesi-a2)
+  if (excludedRoutes.some((route) => {
+    // Exact match
+    if (normalizedPath === route) return true;
+    // Path starts with route followed by a slash (e.g., /hesi-a2/...)
+    if (normalizedPath.startsWith(route + "/")) return true;
+    return false;
+  })) {
     return false;
   }
 
@@ -1053,10 +1060,13 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                       : firstSegment;
                     const isNursingSubPage = nursingSubPages.some((subPage) => {
                       const subPageId = subPage.id || subPage.subPageId;
-                      // Compare with and without -exam suffix
+                      const subPageSlug = subPage.slug || subPageId;
+                      // Compare with and without -exam suffix, and also check slug
                       return (
                         subPageId === firstSegment ||
-                        subPageId === firstSegmentWithoutExam
+                        subPageId === firstSegmentWithoutExam ||
+                        subPageSlug === firstSegment ||
+                        subPageSlug === firstSegmentWithoutExam
                       );
                     });
 
