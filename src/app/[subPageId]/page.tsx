@@ -462,6 +462,14 @@ export async function generateMetadata({
     // This is a test bank regular sub-page
     const lookupId = subPageId.slice(0, -10); // Remove "-test-bank"
     result = await getNursingTestBankSubPage(lookupId);
+  } else if (subPageId.endsWith("-exit-exam") && !exitExamNestedMatch) {
+    // This is a regular exit exam sub-page (not nested)
+    // Try with the full ID first, then without -exit-exam suffix
+    result = await getNursingExitExamSubPage(subPageId);
+    if (!result.success || !result.data) {
+      const lookupId = subPageId.slice(0, -10); // Remove "-exit-exam"
+      result = await getNursingExitExamSubPage(lookupId);
+    }
   } else {
     // Regular sub-page - strip -exam suffix if present
     let lookupId = subPageId;
@@ -653,6 +661,25 @@ export default async function SubPage({
 
     pageData = result.data;
     isTestBank = true;
+  } else if (subPageId.endsWith("-exit-exam") && !exitExamNestedMatch) {
+    // This is a regular exit exam sub-page (not nested)
+    // Try with the full ID first, then without -exit-exam suffix
+    let result = await getNursingExitExamSubPage(subPageId);
+    
+    if (!result.success || !result.data) {
+      // Try without -exit-exam suffix
+      lookupId = subPageId.slice(0, -10); // Remove "-exit-exam"
+      result = await getNursingExitExamSubPage(lookupId);
+    } else {
+      lookupId = subPageId;
+    }
+
+    if (!result.success || !result.data) {
+      notFound();
+    }
+
+    pageData = result.data;
+    isExitExam = true;
   } else {
     // This is a regular sub-page - strip -exam suffix if present
     if (subPageId.endsWith("-exam")) {
