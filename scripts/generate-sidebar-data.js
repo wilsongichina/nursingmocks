@@ -130,6 +130,64 @@ async function getNursingEntranceExamSubPages(db) {
   }
 }
 
+async function getNursingExitExamSubPages(db) {
+  try {
+    const querySnapshot = await getDocs(
+      collection(db, "pillarPages", "nursing-exit-exam", "subPages")
+    );
+    const subPages = [];
+
+    querySnapshot.forEach((doc) => {
+      subPages.push({
+        id: doc.id,
+        subPageId: doc.id,
+        servicePageId: doc.id, // Use the document ID as the slug
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: subPages,
+    };
+  } catch (error) {
+    console.error("Error getting nursing exit exam sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve sub-pages: ${error.message}`,
+    };
+  }
+}
+
+async function getNursingTestBankSubPages(db) {
+  try {
+    const querySnapshot = await getDocs(
+      collection(db, "pillarPages", "nursing-test-bank", "subPages")
+    );
+    const subPages = [];
+
+    querySnapshot.forEach((doc) => {
+      subPages.push({
+        id: doc.id,
+        subPageId: doc.id,
+        servicePageId: doc.id, // Use the document ID as the slug
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: subPages,
+    };
+  } catch (error) {
+    console.error("Error getting nursing test bank sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve sub-pages: ${error.message}`,
+    };
+  }
+}
+
 async function generateSidebarData() {
   try {
     console.log("🚀 Starting sidebar data generation...");
@@ -159,10 +217,11 @@ async function generateSidebarData() {
     let allPillarPages = pillarPagesResult.data || [];
     
     // Ensure all 3 required pillar pages are included
+    // Order: 1. Entrance Exam, 2. Test Bank, 3. Exit Exam
     const requiredPillarPageIds = [
       "nursing-entrance-exam",
-      "nursing-exit-exam",
-      "nursing-test-bank"
+      "nursing-test-bank",
+      "nursing-exit-exam"
     ];
     
     const existingPillarPageIds = new Set(allPillarPages.map(p => p.id));
@@ -204,7 +263,34 @@ async function generateSidebarData() {
         } else {
           categoriesByPillar[pillarPage.id] = [];
         }
+      } else if (pillarPage.id === "nursing-exit-exam") {
+        // For nursing-exit-exam, use the special function to get sub-pages
+        const result = await getNursingExitExamSubPages(db);
+        if (result.success && result.data) {
+          const categories = result.data.map((subPage) => ({
+            id: subPage.id || subPage.subPageId,
+            servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+            ...subPage,
+          }));
+          categoriesByPillar[pillarPage.id] = categories;
+        } else {
+          categoriesByPillar[pillarPage.id] = [];
+        }
+      } else if (pillarPage.id === "nursing-test-bank") {
+        // For nursing-test-bank, use the special function to get sub-pages
+        const result = await getNursingTestBankSubPages(db);
+        if (result.success && result.data) {
+          const categories = result.data.map((subPage) => ({
+            id: subPage.id || subPage.subPageId,
+            servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+            ...subPage,
+          }));
+          categoriesByPillar[pillarPage.id] = categories;
+        } else {
+          categoriesByPillar[pillarPage.id] = [];
+        }
       } else {
+        // For other pillar pages, use the services collection
         const result = await getAllPillarServicePages(db, pillarPage.id);
         if (result.success && result.data) {
           const categories = result.data.map((service) => ({
@@ -257,6 +343,13 @@ export type SidebarData = typeof sidebarData;
     console.log("✅ Sidebar data generated successfully!");
     console.log(`   - ${allPillarPages.length} pillar pages`);
     console.log(`   - ${Object.keys(categoriesByPillar).length} pillar pages with categories`);
+    
+    // Log sub-pages count for each pillar page
+    for (const pillarPage of allPillarPages) {
+      const subPagesCount = categoriesByPillar[pillarPage.id]?.length || 0;
+      console.log(`   - ${pillarPage.id}: ${subPagesCount} sub-pages`);
+    }
+    
     console.log(`   - JSON Output: ${jsonOutputPath}`);
     console.log(`   - TypeScript Output: ${tsOutputPath}`);
 

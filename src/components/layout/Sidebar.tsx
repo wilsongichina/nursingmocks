@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -203,12 +203,6 @@ export default function Sidebar({
   } | null>(null);
   const [nestedSubPages, setNestedSubPages] = useState<any[]>([]);
   const [loadingNested, setLoadingNested] = useState(false);
-  const [nursingExitExamSubPages, setNursingExitExamSubPages] = useState<any[]>(
-    []
-  );
-  const [nursingTestBankSubPages, setNursingTestBankSubPages] = useState<any[]>(
-    []
-  );
   const router = useRouter();
 
   // Auto-expand sections based on current pathname
@@ -446,6 +440,34 @@ export default function Sidebar({
               />
             </svg>
           );
+        case "entrance-exam":
+          return (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 14l9-5-9-5-9 5 9 5z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 14v9M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
+              />
+            </svg>
+          );
         default:
           return null;
       }
@@ -491,21 +513,7 @@ export default function Sidebar({
     const loadData = async () => {
       const staticLoaded = await loadStaticData();
       if (staticLoaded) {
-        // Still need to load exit exam and test bank sub-pages from Firestore
-        // as they might not be in the static JSON
-        try {
-          const exitExamResult = await getNursingExitExamSubPages();
-          if (exitExamResult.success && exitExamResult.data) {
-            setNursingExitExamSubPages(exitExamResult.data);
-          }
-
-          const testBankResult = await getNursingTestBankSubPages();
-          if (testBankResult.success && testBankResult.data) {
-            setNursingTestBankSubPages(testBankResult.data);
-          }
-        } catch (error) {
-          console.error("Error loading exit exam/test bank sub-pages:", error);
-        }
+        // Static data loaded successfully, no need to load from Firestore
         return;
       }
 
@@ -536,6 +544,26 @@ export default function Sidebar({
               }));
               categoriesByPillar[pillarPage.id] = categories;
             }
+          } else if (pillarPage.id === "nursing-exit-exam") {
+            const result = await getNursingExitExamSubPages();
+            if (result.success && result.data) {
+              const categories = result.data.map((subPage: any) => ({
+                id: subPage.id || subPage.subPageId,
+                servicePageId: subPage.id || subPage.subPageId,
+                ...subPage,
+              }));
+              categoriesByPillar[pillarPage.id] = categories;
+            }
+          } else if (pillarPage.id === "nursing-test-bank") {
+            const result = await getNursingTestBankSubPages();
+            if (result.success && result.data) {
+              const categories = result.data.map((subPage: any) => ({
+                id: subPage.id || subPage.subPageId,
+                servicePageId: subPage.id || subPage.subPageId,
+                ...subPage,
+              }));
+              categoriesByPillar[pillarPage.id] = categories;
+            }
           } else {
             const result = await getAllPillarServicePages(pillarPage.id);
             if (result.success && result.data) {
@@ -551,17 +579,6 @@ export default function Sidebar({
 
         setPillarPages(allPillarPages);
         setPillarCategories(categoriesByPillar);
-
-        // Load exit exam sub-pages
-        const exitExamResult = await getNursingExitExamSubPages();
-        if (exitExamResult.success && exitExamResult.data) {
-          setNursingExitExamSubPages(exitExamResult.data);
-        }
-
-        const testBankResult = await getNursingTestBankSubPages();
-        if (testBankResult.success && testBankResult.data) {
-          setNursingTestBankSubPages(testBankResult.data);
-        }
 
         // Expand all pillar pages by default when data is loaded
         setExpandedItems((prev) => {
@@ -993,521 +1010,135 @@ export default function Sidebar({
             </li>
           )}
 
-          {/* Nursing Entrance Exam Section */}
-          {pillarPages
-            .filter((page) => page.id === "nursing-entrance-exam")
-            .map((pillarPage) => {
-              const categories = pillarCategories[pillarPage.id] || [];
-              if (categories.length === 0) return null;
-
-              const pillarActive =
-                pathname.startsWith(`/${pillarPage.id}`) ||
-                (pathname.match(/^\/.+-exam$/) && !pathname.endsWith("-exit-exam")) ||
-                pathname.match(/^\/.+-.+-questions$/);
-              const isExpanded = expandedItems.has(pillarPage.id);
-
-              return (
-                <li key={pillarPage.id}>
-                  {isCollapsed ? (
-                    <div
-                      className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                        pillarActive ? "bg-green-50" : "text-gray-700"
-                      }`}
-                      title={getPillarPageName(pillarPage)}
-                    >
-                      <IconWithBackground
-                        icon="pillar"
-                        color="green"
-                        size="w-8 h-8"
-                      />
-                    </div>
-                  ) : (
-                    <div>
-                      <div
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
-                          pillarActive ? "bg-green-50" : "text-gray-700"
-                        }`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleExpand(pillarPage.id);
-                        }}
-                      >
-                        <div className="flex items-center gap-3 flex-1 cursor-pointer">
-                          <IconWithBackground
-                            icon="pillar"
-                            color="green"
-                            size="w-8 h-8"
-                          />
-                          <span
-                            className={`text-sm font-medium cursor-pointer ${
-                              pillarActive ? "text-green-600" : "text-gray-700"
-                            }`}
-                          >
-                            {getPillarPageName(pillarPage)}
-                          </span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleExpand(pillarPage.id);
-                          }}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
-                          aria-label={`Toggle ${getPillarPageName(
-                            pillarPage
-                          )} menu`}
-                        >
-                          <svg
-                            className={`w-4 h-4 transition-transform duration-200 ${
-                              isExpanded ? "rotate-90" : ""
-                            }`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                      {isExpanded && (
-                        <ul className="ml-4 mt-1 space-y-1 pl-2">
-                          {categories.map((category) => {
-                            const categoryId =
-                              category.id || category.subPageId;
-                            const categorySlug = category.slug || categoryId;
-                            const subPageUrl = `/${
-                              categorySlug.endsWith("-exam")
-                                ? categorySlug
-                                : `${categorySlug}-exam`
-                            }`;
-                            const categoryActive =
-                              pathname === subPageUrl ||
-                              pathname === `/${categorySlug}` ||
-                              pathname === `/${categorySlug}-exam` ||
-                              pathname.match(
-                                new RegExp(`^/${categorySlug}-.+-questions$`)
-                              );
-                            const categoryName =
-                              category.pageName ||
-                              category.hero?.title ||
-                              formatCategoryName(categoryId);
-                            return (
-                              <li key={categoryId}>
-                                <button
-                                  onClick={(e) =>
-                                    handleSubPageClick(
-                                      e,
-                                      categoryId,
-                                      categoryName,
-                                      pillarPage.id,
-                                      categorySlug
-                                    )
-                                  }
-                                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left cursor-pointer ${
-                                    categoryActive
-                                      ? "bg-green-50"
-                                      : "text-gray-600 hover:bg-gray-50"
-                                  }`}
-                                >
-                                  <span
-                                    className={`cursor-pointer ${
-                                      categoryActive
-                                        ? "text-green-600"
-                                        : "text-gray-400"
-                                    }`}
-                                  >
-                                    •
-                                  </span>
-                                  <span
-                                    className={`font-medium cursor-pointer ${
-                                      categoryActive
-                                        ? "text-green-600"
-                                        : "text-gray-600"
-                                    }`}
-                                  >
-                                    {categoryName}
-                                  </span>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-
-          {/* Separator after Nursing Entrance Exam */}
-          {!isCollapsed &&
-            pillarPages.some(
-              (page) =>
-                page.id === "nursing-entrance-exam" &&
-                (pillarCategories[page.id] || []).length > 0
-            ) && (
-              <li className="px-3 py-2">
-                <div className="border-t border-gray-200"></div>
-              </li>
-            )}
-
-          {/* Nursing Test Bank Section */}
-          {nursingTestBankSubPages.length > 0 && (
-            <li>
-              {isCollapsed ? (
-                <div
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    pathname.startsWith("/nursing-test-bank") ||
-                    pathname.match(/^\/.+-.+-test-bank$/)
-                      ? "bg-indigo-50"
-                      : "text-gray-700"
-                  }`}
-                  title="Nursing Test Bank"
-                >
-                  <IconWithBackground
-                    icon="test-bank"
-                    color="indigo"
-                    size="w-8 h-8"
-                  />
-                </div>
-              ) : (
-                <div>
-                  <div
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                      pathname === "/nursing-test-bank" ||
-                      (pathname.startsWith("/nursing-test-bank") &&
-                        pathname !== "/nursing-test-bank") ||
-                      pathname.match(/^\/.+-.+-test-bank$/)
-                        ? "bg-indigo-50"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    <Link
-                      href="/nursing-test-bank"
-                      className="flex items-center gap-3 flex-1 cursor-pointer"
-                    >
-                      <IconWithBackground
-                        icon="test-bank"
-                        color="indigo"
-                        size="w-8 h-8"
-                      />
-                      <span
-                        className={`text-sm font-medium ${
-                          pathname === "/nursing-test-bank" ||
-                          (pathname.startsWith("/nursing-test-bank") &&
-                            pathname !== "/nursing-test-bank") ||
-                          pathname.match(/^\/.+-.+-test-bank$/)
-                            ? "text-indigo-600"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        Nursing Test Bank
-                      </span>
-                    </Link>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleExpand("nursing-test-bank");
-                      }}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer text-gray-700"
-                      aria-label="Toggle Nursing Test Bank menu"
-                    >
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-200 text-gray-700 ${
-                          expandedItems.has("nursing-test-bank")
-                            ? "rotate-90"
-                            : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  {expandedItems.has("nursing-test-bank") && (
-                    <ul className="ml-4 mt-1 space-y-1 pl-2">
-                      {nursingTestBankSubPages.slice(0, 2).map((subPage) => {
-                        const subPageId = subPage.id || subPage.subPageId;
-                        const subPageSlug = subPage.slug || subPageId;
-                        const subPageName =
-                          subPage.pageName ||
-                          subPage.hero?.title ||
-                          formatCategoryName(subPageId);
-                        const subPageUrl = `/${subPageSlug}-test-bank`;
-                        const subPageActive =
-                          pathname === subPageUrl ||
-                          pathname.match(
-                            new RegExp(`^/${subPageSlug}-.+-test-bank$`)
-                          );
-
-                        return (
-                          <li key={subPageId}>
-                            <button
-                              onClick={(e) =>
-                                handleTestBankSubPageClick(
-                                  e,
-                                  subPageId,
-                                  subPageName,
-                                  subPageSlug
-                                )
-                              }
-                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
-                                subPageActive
-                                  ? "bg-indigo-50"
-                                  : "text-gray-600 hover:bg-gray-50"
-                              }`}
-                            >
-                              <span
-                                className={`${
-                                  subPageActive
-                                    ? "text-indigo-600"
-                                    : "text-gray-400"
-                                }`}
-                              >
-                                •
-                              </span>
-                              <span
-                                className={`font-medium ${
-                                  subPageActive
-                                    ? "text-indigo-600"
-                                    : "text-gray-600"
-                                }`}
-                              >
-                                {subPageName}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </li>
-          )}
-
-          {/* Separator after Nursing Test Bank */}
-          {!isCollapsed && nursingTestBankSubPages.length > 0 && (
-            <li className="px-3 py-2">
-              <div className="border-t border-gray-200"></div>
-            </li>
-          )}
-
-          {/* Nursing Exit Exam Section */}
-          {nursingExitExamSubPages.length > 0 && (
-            <li>
-              {isCollapsed ? (
-                <div
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    pathname.startsWith("/nursing-exit-exam") ||
-                    pathname.match(/^\/.+-.+-exit-exam$/)
-                      ? "bg-teal-50"
-                      : "text-gray-700"
-                  }`}
-                  title="Nursing Exit Exam"
-                >
-                  <IconWithBackground
-                    icon="exit-exam"
-                    color="teal"
-                    size="w-8 h-8"
-                  />
-                </div>
-              ) : (
-                <div>
-                  <div
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                      pathname === "/nursing-exit-exam" ||
-                      (pathname.startsWith("/nursing-exit-exam") &&
-                        pathname !== "/nursing-exit-exam")
-                        ? "bg-teal-50"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    <Link
-                      href="/nursing-exit-exam"
-                      className="flex items-center gap-3 flex-1 cursor-pointer"
-                    >
-                      <IconWithBackground
-                        icon="exit-exam"
-                        color="teal"
-                        size="w-8 h-8"
-                      />
-                      <span
-                        className={`text-sm font-medium ${
-                          pathname === "/nursing-exit-exam" ||
-                          (pathname.startsWith("/nursing-exit-exam") &&
-                            pathname !== "/nursing-exit-exam")
-                            ? "text-teal-600"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        Nursing Exit Exam
-                      </span>
-                    </Link>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleExpand("nursing-exit-exam");
-                      }}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer text-gray-700"
-                      aria-label="Toggle Nursing Exit Exam menu"
-                    >
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-200 text-gray-700 ${
-                          expandedItems.has("nursing-exit-exam")
-                            ? "rotate-90"
-                            : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  {expandedItems.has("nursing-exit-exam") && (
-                    <ul className="ml-4 mt-1 space-y-1 pl-2">
-                      {nursingExitExamSubPages.slice(0, 2).map((subPage) => {
-                        const subPageId = subPage.id || subPage.subPageId;
-                        const subPageSlug = subPage.slug || subPageId;
-                        const subPageName =
-                          subPage.pageName ||
-                          subPage.hero?.title ||
-                          formatCategoryName(subPageId);
-                        const subPageUrl = `/nursing-exit-exam/${subPageSlug}`;
-                        const subPageActive =
-                          pathname === subPageUrl ||
-                          pathname.startsWith(subPageUrl + "/");
-
-                        return (
-                          <li key={subPageId}>
-                            <button
-                              onClick={(e) =>
-                                handleExitExamSubPageClick(
-                                  e,
-                                  subPageId,
-                                  subPageName,
-                                  subPageSlug
-                                )
-                              }
-                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
-                                subPageActive
-                                  ? "bg-teal-50"
-                                  : "text-gray-600 hover:bg-gray-50"
-                              }`}
-                            >
-                              <span
-                                className={`${
-                                  subPageActive
-                                    ? "text-teal-600"
-                                    : "text-gray-400"
-                                }`}
-                              >
-                                •
-                              </span>
-                              <span
-                                className={`font-medium ${
-                                  subPageActive
-                                    ? "text-teal-600"
-                                    : "text-gray-600"
-                                }`}
-                              >
-                                {subPageName}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </li>
-          )}
-
-          {/* Separator after Nursing Exit Exam */}
-          {!isCollapsed && nursingExitExamSubPages.length > 0 && (
-            <li className="px-3 py-2">
-              <div className="border-t border-gray-200"></div>
-            </li>
-          )}
-
-          {/* Pillar Pages Section - Show for all users (excluding nursing-entrance-exam which is shown above) */}
+          {/* Pillar Pages Section - Show for all users */}
           <>
-            {/* Other Pillar Pages (excluding nursing-entrance-exam which is shown above) */}
-            {pillarPages
-              .filter((page) => page.id !== "nursing-entrance-exam")
-              .map((pillarPage) => {
+            {/* All Pillar Pages */}
+            {(() => {
+              // Define the desired order: 1. Entrance Exam, 2. Test Bank, 3. Exit Exam
+              const pillarPageOrder = [
+                "nursing-entrance-exam",
+                "nursing-test-bank",
+                "nursing-exit-exam"
+              ];
+              
+              // Filter pillar pages that have categories and sort them
+              const validPillarPages = pillarPages
+                .filter((page) => (pillarCategories[page.id] || []).length > 0)
+                .sort((a, b) => {
+                  const indexA = pillarPageOrder.indexOf(a.id);
+                  const indexB = pillarPageOrder.indexOf(b.id);
+                  // If both are in the order array, sort by their position
+                  if (indexA !== -1 && indexB !== -1) {
+                    return indexA - indexB;
+                  }
+                  // If only one is in the order array, prioritize it
+                  if (indexA !== -1) return -1;
+                  if (indexB !== -1) return 1;
+                  // If neither is in the order array, maintain original order
+                  return 0;
+                });
+              
+              return validPillarPages.map((pillarPage, index) => {
                 const categories = pillarCategories[pillarPage.id] || [];
-                if (categories.length === 0) return null;
 
-                const pillarActive = pathname.startsWith(`/${pillarPage.id}`);
+                // Determine active state based on pillar page type
+                let pillarActive: boolean;
+                if (pillarPage.id === "nursing-entrance-exam") {
+                  pillarActive =
+                    pathname.startsWith(`/${pillarPage.id}`) ||
+                    (pathname.match(/^\/.+-exam$/) && !pathname.endsWith("-exit-exam")) ||
+                    pathname.match(/^\/.+-.+-questions$/);
+                } else if (pillarPage.id === "nursing-exit-exam") {
+                  pillarActive =
+                    pathname === "/nursing-exit-exam" ||
+                    pathname.startsWith("/nursing-exit-exam/") ||
+                    pathname.match(/^\/.+-.+-exit-exam$/);
+                } else if (pillarPage.id === "nursing-test-bank") {
+                  pillarActive =
+                    pathname === "/nursing-test-bank" ||
+                    pathname.startsWith("/nursing-test-bank/") ||
+                    pathname.match(/^\/.+-.+-test-bank$/);
+                } else {
+                  pillarActive = pathname.startsWith(`/${pillarPage.id}`);
+                }
+
                 const isExpanded = expandedItems.has(pillarPage.id);
 
+                // Determine icon and color based on pillar page type
+                let iconType: string;
+                let iconColor: string;
+                let activeBgColor: string;
+                let activeTextColor: string;
+
+                if (pillarPage.id === "nursing-entrance-exam") {
+                  iconType = "entrance-exam";
+                  iconColor = "purple";
+                  activeBgColor = "bg-purple-50";
+                  activeTextColor = "text-purple-600";
+                } else if (pillarPage.id === "nursing-exit-exam") {
+                  iconType = "exit-exam";
+                  iconColor = "teal";
+                  activeBgColor = "bg-teal-50";
+                  activeTextColor = "text-teal-600";
+                } else if (pillarPage.id === "nursing-test-bank") {
+                  iconType = "test-bank";
+                  iconColor = "indigo";
+                  activeBgColor = "bg-indigo-50";
+                  activeTextColor = "text-indigo-600";
+                } else {
+                  iconType = "pillar";
+                  iconColor = "green";
+                  activeBgColor = "bg-green-50";
+                  activeTextColor = "text-green-600";
+                }
+
                 return (
-                  <li key={pillarPage.id}>
+                  <React.Fragment key={pillarPage.id}>
+                    <li>
                     {isCollapsed ? (
-                      <div
+                      <Link
+                        href={`/${pillarPage.id}`}
                         className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                          pillarActive ? "bg-green-50" : "text-gray-700"
+                          pillarActive ? activeBgColor : "text-gray-700"
                         }`}
                         title={getPillarPageName(pillarPage)}
                       >
                         <IconWithBackground
-                          icon="pillar"
-                          color="green"
+                          icon={iconType}
+                          color={iconColor}
                           size="w-8 h-8"
                         />
-                      </div>
+                      </Link>
                     ) : (
                       <div>
                         <div
-                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
-                            pillarActive ? "bg-green-50" : "text-gray-700"
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                            pillarActive ? activeBgColor : "text-gray-700"
                           }`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleExpand(pillarPage.id);
-                          }}
                         >
-                          <div className="flex items-center gap-3 flex-1 cursor-pointer">
+                          <Link
+                            href={`/${pillarPage.id}`}
+                            className="flex items-center gap-3 flex-1 cursor-pointer"
+                            onClick={(e) => {
+                              // Don't prevent default - allow navigation
+                              e.stopPropagation();
+                            }}
+                          >
                             <IconWithBackground
-                              icon="pillar"
-                              color="green"
+                              icon={iconType}
+                              color={iconColor}
                               size="w-8 h-8"
                             />
                             <span
                               className={`text-sm font-medium cursor-pointer ${
                                 pillarActive
-                                  ? "text-green-600"
+                                  ? activeTextColor
                                   : "text-gray-700"
                               }`}
                             >
                               {getPillarPageName(pillarPage)}
                             </span>
-                          </div>
+                          </Link>
                           <button
                             onClick={(e) => {
                               e.preventDefault();
@@ -1539,57 +1170,103 @@ export default function Sidebar({
                         {isExpanded && (
                           <ul className="ml-4 mt-1 space-y-1 pl-2">
                             {categories.map((category) => {
-                              // For nursing-entrance-exam, use the document ID (id or subPageId) as the slug from Firebase
-                              // For other pillar pages, use servicePageId or id
+                              // Get category ID and slug
                               const categoryId =
-                                pillarPage.id === "nursing-entrance-exam"
-                                  ? category.id || category.subPageId // Use document ID from Firebase
-                                  : category.servicePageId || category.id;
-
-                              // Get the slug for URL generation (for nursing-entrance-exam)
+                                category.id || category.subPageId || category.servicePageId;
                               const categorySlug = category.slug || categoryId;
 
-                              // For nursing-entrance-exam, sub-pages are at root level: /{slug}-exam
-                              // For other pillar pages, use: /{pillarPage.id}/{categoryId}
-                              const subPageUrl =
-                                pillarPage.id === "nursing-entrance-exam"
-                                  ? `/${
-                                      categorySlug.endsWith("-exam")
-                                        ? categorySlug
-                                        : `${categorySlug}-exam`
-                                    }`
-                                  : `/${pillarPage.id}/${categoryId}`;
-                              const categoryActive =
-                                pathname === subPageUrl ||
-                                (pillarPage.id === "nursing-entrance-exam" &&
-                                  (pathname === `/${categorySlug}` ||
-                                    pathname === `/${categorySlug}-exam`));
+                              // Determine URL based on pillar page type
+                              let subPageUrl: string;
+                              let categoryActive: boolean;
+
+                              if (pillarPage.id === "nursing-entrance-exam") {
+                                // For nursing-entrance-exam: /{slug}-exam or /{slug}
+                                subPageUrl = `/${
+                                  categorySlug.endsWith("-exam")
+                                    ? categorySlug
+                                    : `${categorySlug}-exam`
+                                }`;
+                                categoryActive =
+                                  pathname === subPageUrl ||
+                                  pathname === `/${categorySlug}` ||
+                                  pathname === `/${categorySlug}-exam` ||
+                                  pathname.match(
+                                    new RegExp(`^/${categorySlug}-.+-questions$`)
+                                  );
+                              } else if (pillarPage.id === "nursing-exit-exam") {
+                                // For nursing-exit-exam: /nursing-exit-exam/{slug} or /{nested}-{parent}-exit-exam
+                                subPageUrl = `/nursing-exit-exam/${categorySlug}`;
+                                categoryActive =
+                                  pathname === subPageUrl ||
+                                  pathname.startsWith(subPageUrl + "/") ||
+                                  pathname.match(
+                                    new RegExp(`^/.+-${categorySlug}-exit-exam$`)
+                                  );
+                              } else if (pillarPage.id === "nursing-test-bank") {
+                                // For nursing-test-bank: /{slug}-test-bank or /{nested}-{parent}-test-bank
+                                subPageUrl = `/${categorySlug}-test-bank`;
+                                categoryActive =
+                                  pathname === subPageUrl ||
+                                  pathname.match(
+                                    new RegExp(`^/.+-${categorySlug}-test-bank$`)
+                                  ) ||
+                                  pathname.match(
+                                    new RegExp(`^/${categorySlug}-.+-test-bank$`)
+                                  );
+                              } else {
+                                // For other pillar pages: /{pillarPage.id}/{categoryId}
+                                subPageUrl = `/${pillarPage.id}/${categoryId}`;
+                                categoryActive =
+                                  pathname === subPageUrl ||
+                                  pathname.startsWith(subPageUrl + "/");
+                              }
+
                               const categoryName =
                                 category.pageName ||
                                 category.hero?.title ||
                                 formatCategoryName(categoryId);
+
+                              // Determine which handler to use based on pillar page
+                              const handleClick = (e: React.MouseEvent) => {
+                                if (pillarPage.id === "nursing-exit-exam") {
+                                  handleExitExamSubPageClick(
+                                    e,
+                                    categoryId,
+                                    categoryName,
+                                    categorySlug
+                                  );
+                                } else if (pillarPage.id === "nursing-test-bank") {
+                                  handleTestBankSubPageClick(
+                                    e,
+                                    categoryId,
+                                    categoryName,
+                                    categorySlug
+                                  );
+                                } else {
+                                  handleSubPageClick(
+                                    e,
+                                    categoryId,
+                                    categoryName,
+                                    pillarPage.id,
+                                    categorySlug
+                                  );
+                                }
+                              };
+
                               return (
                                 <li key={categoryId}>
                                   <button
-                                    onClick={(e) =>
-                                      handleSubPageClick(
-                                        e,
-                                        categoryId,
-                                        categoryName,
-                                        pillarPage.id,
-                                        categorySlug
-                                      )
-                                    }
+                                    onClick={handleClick}
                                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left cursor-pointer ${
                                       categoryActive
-                                        ? "bg-green-50"
+                                        ? activeBgColor
                                         : "text-gray-600 hover:bg-gray-50"
                                     }`}
                                   >
                                     <span
                                       className={`cursor-pointer ${
                                         categoryActive
-                                          ? "text-green-600"
+                                          ? activeTextColor
                                           : "text-gray-400"
                                       }`}
                                     >
@@ -1598,7 +1275,7 @@ export default function Sidebar({
                                     <span
                                       className={`font-medium cursor-pointer ${
                                         categoryActive
-                                          ? "text-green-600"
+                                          ? activeTextColor
                                           : "text-gray-600"
                                       }`}
                                     >
@@ -1613,11 +1290,19 @@ export default function Sidebar({
                       </div>
                     )}
                   </li>
+                  {/* Separator after each pillar page (except the last one) */}
+                  {index < validPillarPages.length - 1 && !isCollapsed && (
+                    <li key={`separator-${pillarPage.id}`} className="px-3 py-2">
+                      <div className="border-t border-gray-200"></div>
+                    </li>
+                  )}
+                </React.Fragment>
                 );
-              })}
+              });
+            })()}
           </>
 
-          {/* Separator after Pillar Pages */}
+          {/* Separator after all Pillar Pages */}
           {!isCollapsed && pillarPages.length > 0 && (
             <li className="px-3 py-2">
               <div className="border-t border-gray-200"></div>
