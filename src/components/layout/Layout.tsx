@@ -112,6 +112,9 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
   const [nestedSubPagesCache, setNestedSubPagesCache] = useState<
     Record<string, any[]>
   >({});
+  const [quizNamesCache, setQuizNamesCache] = useState<
+    Record<string, string>
+  >({});
 
   // Load pillar pages and categories for breadcrumbs
   useEffect(() => {
@@ -169,6 +172,70 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
 
     loadBreadcrumbData();
   }, []);
+
+  // Load quiz names for breadcrumbs when pathname changes
+  useEffect(() => {
+    const loadQuizName = async () => {
+      const pathSegments = pathname.split("/").filter((s) => s);
+      const isQuizPage =
+        pathSegments.length === 2 &&
+        pathSegments[0].endsWith("-questions");
+      
+      if (isQuizPage && nursingSubPages.length > 0) {
+        const nestedMatch = pathSegments[0].match(/^(.+)-(.+)-questions$/);
+        if (nestedMatch) {
+          const parentSubPageId = nestedMatch[1];
+          const nestedSubPageId = nestedMatch[2];
+          const quizSlug = pathSegments[1];
+          const quizCacheKey = `${parentSubPageId}-${nestedSubPageId}-${quizSlug}`;
+
+          // Skip if already cached
+          if (quizNamesCache[quizCacheKey]) return;
+
+          // Find parent sub-page
+          const parentSubPage = nursingSubPages.find((subPage) => {
+            const subPageId = subPage.id || subPage.subPageId;
+            return (
+              subPageId === parentSubPageId ||
+              subPageId === parentSubPageId + "-exam"
+            );
+          });
+
+          if (parentSubPage) {
+            const parentId = parentSubPage.id || parentSubPage.subPageId || parentSubPageId;
+            const {
+              getNursingEntranceExamQuiz,
+            } = await import("@/lib/firestore-operations");
+            const result = await getNursingEntranceExamQuiz(
+              parentId,
+              nestedSubPageId,
+              quizSlug
+            );
+
+            if (result.success && result.data) {
+              const quizData = result.data as any;
+              const quizName =
+                quizData.pageName ||
+                quizData.hero?.title ||
+                formatBreadcrumbLabel(quizSlug);
+              setQuizNamesCache((prev) => ({
+                ...prev,
+                [quizCacheKey]: quizName,
+              }));
+            } else {
+              setQuizNamesCache((prev) => ({
+                ...prev,
+                [quizCacheKey]: formatBreadcrumbLabel(quizSlug),
+              }));
+            }
+          }
+        }
+      }
+    };
+
+    loadQuizName();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, nursingSubPages]);
 
   // Reload test bank sub-pages when navigating to test bank pages to ensure fresh data
   useEffect(() => {
@@ -1070,12 +1137,23 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                       );
                     });
 
-                    // Check if it's a nested sub-page (has -questions pattern)
+                    // Check if it's a quiz page FIRST (pattern: /{parent}-{nested}-questions/{quizSlug})
+                    // This must be checked before nested sub-page check
+                    const pathSegments = pathname.split("/").filter((s) => s);
+                    const isQuizPage =
+                      pathSegments.length === 2 &&
+                      pathSegments[0].endsWith("-questions");
+                    const quizNestedMatch = isQuizPage
+                      ? pathSegments[0].match(/^(.+)-(.+)-questions$/)
+                      : null;
+
+                    // Check if it's a nested sub-page (has -questions pattern, but only 1 segment)
                     const nestedMatch = pathname.match(
                       /^\/(.+)-(.+)-questions$/
                     );
                     const isNestedNursingSubPage =
                       nestedMatch &&
+                      !isQuizPage && // Exclude quiz pages
                       nursingSubPages.some((subPage) => {
                         const subPageId = subPage.id || subPage.subPageId;
                         const parentId = nestedMatch[1];
@@ -1087,7 +1165,8 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                     if (
                       isNursingPage ||
                       isNursingSubPage ||
-                      isNestedNursingSubPage
+                      isNestedNursingSubPage ||
+                      isQuizPage
                     ) {
                       return (
                         <>
@@ -1112,8 +1191,166 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                           </Link>
                           {/* Show sub-page breadcrumbs */}
                           {(() => {
-                            // Check if it's a nested sub-page (has -questions pattern)
-                            if (nestedMatch) {
+                            // Handle quiz page breadcrumbs
+                            if (isQuizPage && quizNestedMatch) {
+                              const parentSubPageId = quizNestedMatch[1];
+                              const nestedSubPageId = quizNestedMatch[2];
+                              const quizSlug = pathSegments[1];
+                              const quizCacheKey = `${parentSubPageId}-${nestedSubPageId}-${quizSlug}`;
+
+                              // Find the parent sub-page to get its actual name
+                              const parentSubPage = nursingSubPages.find(
+                                (subPage) => {
+                                  const subPageId =
+                                    subPage.id || subPage.subPageId;
+                                  return (
+                                    subPageId === parentSubPageId ||
+                                    subPageId === parentSubPageId + "-exam"
+                                  );
+                                }
+                              );
+                              const parentSubPageName =
+                                parentSubPage?.pageName ||
+                                parentSubPage?.hero?.title ||
+                                formatBreadcrumbLabel(parentSubPageId);
+
+                              // Try to find nested sub-page name from cache or use formatted ID
+                              const cacheKey = `entrance-${parentSubPageId}`;
+                              const nestedSubPages =
+                                nestedSubPagesCache[cacheKey] || [];
+                              const nestedSubPage = nestedSubPages.find(
+                                (nsp: any) => {
+                                  const nspId = nsp.id || nsp.nestedSubPageId;
+                                  return nspId === nestedSubPageId;
+                                }
+                              );
+                              const nestedSubPageName =
+                                nestedSubPage?.pageName ||
+                                nestedSubPage?.hero?.title ||
+                                nestedSubPage?.title ||
+                                formatBreadcrumbLabel(nestedSubPageId);
+
+                              // Load nested sub-pages if not in cache
+                              if (
+                                !nestedSubPagesCache[cacheKey] &&
+                                parentSubPageId
+                              ) {
+                                import("@/lib/firestore-operations").then(
+                                  ({ getNestedSubPages }) => {
+                                    getNestedSubPages(parentSubPageId).then(
+                                      (result) => {
+                                        if (result.success && result.data) {
+                                          setNestedSubPagesCache((prev) => ({
+                                            ...prev,
+                                            [cacheKey]: result.data || [],
+                                          }));
+                                        }
+                                      }
+                                    );
+                                  }
+                                );
+                              }
+
+                              // Load quiz data to get quiz name if not in cache
+                              if (!quizNamesCache[quizCacheKey] && parentSubPageId && nestedSubPageId && quizSlug) {
+                                const parentId = parentSubPage?.id || parentSubPage?.subPageId || parentSubPageId;
+                                import("@/lib/firestore-operations").then(
+                                  ({ getNursingEntranceExamQuiz }) => {
+                                    getNursingEntranceExamQuiz(
+                                      parentId,
+                                      nestedSubPageId,
+                                      quizSlug
+                                    ).then((result) => {
+                                      if (result.success && result.data) {
+                                        const quizData = result.data as any;
+                                        const quizName =
+                                          quizData.pageName ||
+                                          quizData.hero?.title ||
+                                          formatBreadcrumbLabel(quizSlug);
+                                        setQuizNamesCache((prev) => ({
+                                          ...prev,
+                                          [quizCacheKey]: quizName,
+                                        }));
+                                      } else {
+                                        setQuizNamesCache((prev) => ({
+                                          ...prev,
+                                          [quizCacheKey]: formatBreadcrumbLabel(quizSlug),
+                                        }));
+                                      }
+                                    });
+                                  }
+                                );
+                              }
+
+                              const displayQuizName = quizNamesCache[quizCacheKey] || formatBreadcrumbLabel(quizSlug);
+                              const parentUrlSlug = parentSubPageId.endsWith("-exam")
+                                ? parentSubPageId
+                                : `${parentSubPageId}-exam`;
+                              const nestedSlug = nestedSubPage?.slug || nestedSubPageId;
+                              const nestedSubPageUrl = `/${parentSubPageId}-${nestedSlug}-questions`;
+
+                              return (
+                                <>
+                                  <svg
+                                    className="w-4 h-4 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                  <Link
+                                    href={`/${parentUrlSlug}`}
+                                    className="hover:text-blue-600 transition-colors font-medium"
+                                  >
+                                    {parentSubPageName}
+                                  </Link>
+                                  <svg
+                                    className="w-4 h-4 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                  <Link
+                                    href={nestedSubPageUrl}
+                                    className="hover:text-blue-600 transition-colors font-medium"
+                                  >
+                                    {nestedSubPageName}
+                                  </Link>
+                                  <svg
+                                    className="w-4 h-4 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                  <span className="font-medium">
+                                    {displayQuizName}
+                                  </span>
+                                </>
+                              );
+                            }
+
+                            // Check if it's a nested sub-page (has -questions pattern, but not a quiz page)
+                            if (nestedMatch && !isQuizPage) {
                               const parentSubPageId = nestedMatch[1];
                               const nestedSubPageId = nestedMatch[2];
 

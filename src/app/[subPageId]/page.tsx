@@ -15,6 +15,7 @@ import {
   getNursingTestBankNestedSubPage,
   getNursingTestBankTopic,
   getNursingTestBankTopics,
+  getNursingEntranceExamQuizzes,
 } from "@/lib/firestore-operations";
 
 // Enable static generation at build time
@@ -1032,6 +1033,8 @@ export default async function SubPage({
       notFound();
     }
 
+    parentSubPageData = parentResult.data; // Store parent data for URL generation
+
     // Get the nested sub-page
     if (!parentSubPageId || !nestedSubPageId) {
       notFound();
@@ -1221,6 +1224,18 @@ export default async function SubPage({
     }
   }
 
+  // Fetch quizzes if this is a nested sub-page of the entrance exam
+  let quizzes: any[] = [];
+  if (isNestedSubPage && !isTestBank && !isExitExam && parentSubPageId && nestedSubPageId) {
+    const quizzesResult = await getNursingEntranceExamQuizzes(
+      parentSubPageId,
+      nestedSubPageId
+    );
+    if (quizzesResult.success && quizzesResult.data) {
+      quizzes = quizzesResult.data;
+    }
+  }
+
   const content: ServiceContent = {
     pageName:
       pageData.pageName || (isNestedSubPage ? nestedSubPageId : subPageId),
@@ -1297,6 +1312,141 @@ export default async function SubPage({
               <ContentRenderer content={content.hero.description || ""} />
             </div>
           </div>
+
+          {/* Quiz Cards - Dashboard Style (for nested sub-pages of entrance exam) */}
+          {isNestedSubPage && !isTestBank && !isExitExam && quizzes.length > 0 && (
+            <div className="mt-6 mb-8">
+              <div className="flex flex-wrap justify-center gap-4">
+                {/* All quizzes */}
+                {quizzes.map((quiz: any, index: number) => {
+                  const quizName =
+                    quiz.pageName ||
+                    quiz.hero?.title ||
+                    quiz.title ||
+                    quiz.quizName ||
+                    quiz.id;
+                  const quizPageId = quiz.id || quiz.quizId;
+                  const quizSlug = quiz.slug || quizPageId;
+
+                  // Get icon and colors based on quiz name
+                  const getCardIcon = (quizName: string, index: number) => {
+                    const nameLower = quizName.toLowerCase();
+                    const colorVariants = [
+                      {
+                        iconBg: "bg-purple-500",
+                        numberColor: "text-purple-600",
+                      },
+                      { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
+                      {
+                        iconBg: "bg-orange-500",
+                        numberColor: "text-orange-600",
+                      },
+                      { iconBg: "bg-green-500", numberColor: "text-green-600" },
+                      { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
+                      {
+                        iconBg: "bg-indigo-500",
+                        numberColor: "text-indigo-600",
+                      },
+                      { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
+                      { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
+                    ];
+
+                    if (nameLower.includes("reading")) {
+                      return {
+                        icon: <BookIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-purple-500",
+                        numberColor: "text-purple-600",
+                      };
+                    } else if (nameLower.includes("math")) {
+                      return {
+                        icon: <CalculatorIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-blue-500",
+                        numberColor: "text-blue-600",
+                      };
+                    } else if (nameLower.includes("science")) {
+                      return {
+                        icon: <FlaskIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-orange-500",
+                        numberColor: "text-orange-600",
+                      };
+                    } else if (nameLower.includes("english")) {
+                      return {
+                        icon: <ABCIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-green-500",
+                        numberColor: "text-green-600",
+                      };
+                    }
+                    // Default fallback - use index-based color rotation for icon and text
+                    const colorVariant =
+                      colorVariants[index % colorVariants.length];
+                    return {
+                      icon: <LaptopIcon className="w-6 h-6 text-white" />,
+                      iconBg: colorVariant.iconBg,
+                      numberColor: colorVariant.numberColor,
+                    };
+                  };
+
+                  const config = getCardIcon(quizName, index);
+                  // Default question count - can be made dynamic later
+                  const questionCount = quiz.questionCount || "0";
+
+                  // Get the slugs for URL generation
+                  // URL format: /{parentSubPageId}-{nestedSubPageId}-questions/{quizSlug}
+                  const parentSlug = parentSubPageData?.slug || parentSubPageId || "";
+                  const nestedSlug = pageData?.slug || nestedSubPageId || "";
+                  // Remove -exam suffix if present
+                  const parentUrlSlug = parentSlug.endsWith("-exam") 
+                    ? parentSlug.slice(0, -5) 
+                    : parentSlug;
+                  const quizUrl = `/${parentUrlSlug}-${nestedSlug}-questions/${quizSlug}`;
+
+                  return (
+                    <Link
+                      key={quizPageId}
+                      href={quizUrl}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
+                        >
+                          {config.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-600 mb-1">
+                            {quizName}
+                          </p>
+                          <p
+                            className={`text-3xl font-bold ${config.numberColor}`}
+                          >
+                            {questionCount}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Questions Available
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <svg
+                            className="w-5 h-5 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Topics Cards - Dashboard Style (for nested sub-pages) */}
           {isNestedSubPage && isTestBank && topics.length > 0 && (

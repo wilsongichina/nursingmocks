@@ -1807,6 +1807,700 @@ export const deleteNestedSubPage = async (
   }
 };
 
+// ==================== NURSING ENTRANCE EXAM QUIZZES OPERATIONS ====================
+
+// Get all quizzes under a nested sub-page (for entrance exam)
+export const getNursingEntranceExamQuizzes = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-entrance-exam",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "quizzes"
+      )
+    );
+    const quizzes: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      quizzes.push({
+        id: doc.id,
+        quizId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: quizzes,
+      message: "All quizzes retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting quizzes:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve quizzes: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific quiz content (for entrance exam)
+export const getNursingEntranceExamQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string
+) => {
+  try {
+    // Get all quizzes to search by slug
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-entrance-exam",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "quizzes"
+      )
+    );
+
+    // First, try to find by slug (this is the primary method for frontend access)
+    for (const doc of querySnapshot.docs) {
+      const quizData = doc.data();
+      const quizSlug = quizData.slug || "";
+
+      // Check if the slug matches (case-insensitive)
+      if (quizSlug.toLowerCase() === quizId.toLowerCase()) {
+        return {
+          success: true,
+          data: {
+            id: doc.id,
+            quizId: doc.id,
+            ...quizData,
+          },
+          message: `Quiz ${quizId} retrieved successfully by slug!`,
+        };
+      }
+    }
+
+    // If not found by slug, try by document ID (for admin panel backward compatibility)
+    // But only if the document ID matches AND there's no slug set (for old quizzes without slugs)
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-entrance-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      quizId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const quizData = docSnap.data();
+      const quizSlug = quizData.slug || "";
+
+      // Only allow document ID access if:
+      // 1. There's no slug set (old quiz without slug), OR
+      // 2. The document ID matches the slug (backward compatibility for quizzes where ID = slug)
+      if (!quizSlug || quizSlug.toLowerCase() === quizId.toLowerCase()) {
+        return {
+          success: true,
+          data: {
+            id: docSnap.id,
+            quizId: docSnap.id,
+            ...quizData,
+          },
+          message: `Quiz ${quizId} retrieved successfully!`,
+        };
+      }
+      // If slug exists and doesn't match, don't return (slug URL must be used)
+    }
+
+    // If still not found, return error
+    return {
+      success: false,
+      message: `No quiz content found for ${quizId}`,
+    };
+  } catch (error) {
+    console.error(`Error getting quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update quiz content (for entrance exam)
+export const uploadNursingEntranceExamQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-entrance-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      quizId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Quiz ${quizId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete quiz (for entrance exam)
+export const deleteNursingEntranceExamQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-entrance-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      quizId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Quiz ${quizId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING ENTRANCE EXAM QUIZ QUESTIONS OPERATIONS ====================
+
+// Get all questions under a quiz (for entrance exam)
+export const getNursingEntranceExamQuizQuestions = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    // The getNursingEntranceExamQuiz function now returns the document ID in the data
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-entrance-exam",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "quizzes",
+        actualQuizId,
+        "questions"
+      )
+    );
+    const questions: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      questions.push({
+        id: doc.id,
+        questionId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: questions,
+      message: "All questions retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting quiz questions:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve questions: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific question content (for entrance exam quiz)
+export const getNursingEntranceExamQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questionId: string
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-entrance-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Question ${questionId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No question content found for ${questionId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update question content (for entrance exam quiz)
+export const uploadNursingEntranceExamQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questionId: string,
+  content: any
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-entrance-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Question ${questionId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Bulk upload questions (for entrance exam quiz)
+export const bulkUploadNursingEntranceExamQuizQuestions = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questions: any[]
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const question of questions) {
+      try {
+        // Parse options - always treat as string and parse JSON
+        let optionsArray: string[] = [];
+
+        if (question.options) {
+          try {
+            // Convert to string if not already
+            const optionsString =
+              typeof question.options === "string"
+                ? question.options
+                : JSON.stringify(question.options);
+
+            // Parse the JSON string
+            const optionsObject = JSON.parse(optionsString);
+
+            // Convert options object to array format
+            optionsArray = Object.keys(optionsObject)
+              .sort()
+              .map((key) => {
+                const option = optionsObject[key];
+                let optionText = "";
+
+                // Extract choice text, handling both object with choice property and direct string
+                if (
+                  typeof option === "object" &&
+                  option !== null &&
+                  option.choice
+                ) {
+                  optionText = String(option.choice).trim();
+                } else if (typeof option === "string") {
+                  optionText = option.trim();
+                } else {
+                  optionText = String(option || "").trim();
+                }
+
+                // Remove quotes from start and end if present (handle multiple quote types)
+                // Keep removing quotes until no more quotes at start/end
+                let cleaned = optionText;
+                let changed = true;
+                const quoteChars = [
+                  '"',
+                  "'",
+                  "\u201C",
+                  "\u201D",
+                  "\u2018",
+                  "\u2019",
+                ]; // straight and curly quotes
+
+                while (changed && cleaned.length >= 2) {
+                  changed = false;
+                  for (const quote of quoteChars) {
+                    if (cleaned.startsWith(quote) && cleaned.endsWith(quote)) {
+                      cleaned = cleaned.slice(1, -1).trim();
+                      changed = true;
+                      break; // Start over to check for nested quotes
+                    }
+                  }
+                }
+
+                return cleaned;
+              });
+          } catch (e) {
+            console.error("Error parsing options:", e);
+          }
+        }
+
+        // Helper function to strip HTML tags and generate slug
+        const stripHtmlTags = (html: string): string => {
+          if (!html) return "";
+          return html.replace(/<[^>]*>/g, "").trim();
+        };
+
+        const generateSlug = (questionText: string): string => {
+          if (!questionText) return "";
+          const cleanText = stripHtmlTags(questionText);
+          const truncated = cleanText.substring(0, 180);
+          const slug = truncated
+            .toLowerCase()
+            .replace(/nbsp/g, "")
+            .replace(/&nbsp;/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          return slug;
+        };
+
+        // Handle correctAnswer based on question type
+        const questionTypeId = question.question_type_id || 1;
+        let correctAnswerToSave: any =
+          question.correctAnswer || question.correct_answer || "";
+
+        // For type 7 (numeric), ensure correctAnswer is an array, not a JSON string
+        if (questionTypeId === 7) {
+          if (typeof correctAnswerToSave === "string") {
+            try {
+              // Try to parse if it's a JSON string
+              const parsed = JSON.parse(correctAnswerToSave);
+              correctAnswerToSave = Array.isArray(parsed) ? parsed : [parsed];
+            } catch {
+              // If not JSON, wrap in array
+              correctAnswerToSave = [correctAnswerToSave];
+            }
+          } else if (!Array.isArray(correctAnswerToSave)) {
+            // If it's not an array, wrap it
+            correctAnswerToSave = [String(correctAnswerToSave)];
+          }
+        }
+
+        // Create question content
+        const questionContent = {
+          question: question.question || "",
+          options: optionsArray,
+          correctAnswer: correctAnswerToSave,
+          explanation: question.solution || question.explanation || "",
+          questionTypeId: questionTypeId,
+          slug: generateSlug(question.question || ""),
+          originalId: question.id?.toString() || "",
+          questionId:
+            question.id?.toString() || question.questionId?.toString() || "",
+          // Meta fields (editable after upload)
+          meta: {
+            title: "",
+            description: "",
+            keywords: "",
+            ogTitle: "",
+            ogDescription: "",
+            ogImage: "",
+            canonicalUrl: "",
+          },
+          schema: "",
+          status: "published",
+          // Additional fields from original data
+          tabs: question.tabs || null,
+          matchOption: question.match_option || null,
+          imagePath: question.image_path || null,
+          units: question.units || null,
+          subquestions: question.subquestions || [],
+        };
+
+        // Use question ID as the document ID, or generate one
+        const questionDocId =
+          question.id?.toString() ||
+          `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const docRef = doc(
+          db,
+          "pillarPages",
+          "nursing-entrance-exam",
+          "subPages",
+          parentSubPageId,
+          "nestedSubPages",
+          nestedSubPageId,
+          "quizzes",
+          actualQuizId,
+          "questions",
+          questionDocId
+        );
+
+        await setDoc(docRef, {
+          ...questionContent,
+          lastUpdated: new Date().toISOString(),
+          version: "1.0",
+        });
+
+        results.push({
+          questionId: questionDocId,
+          originalId: question.id,
+          success: true,
+        });
+      } catch (error) {
+        errors.push({
+          questionId: question.id?.toString() || "unknown",
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      message: `Uploaded ${results.length} questions successfully${
+        errors.length > 0 ? `, ${errors.length} failed` : ""
+      }`,
+      data: {
+        successful: results,
+        failed: errors,
+      },
+    };
+  } catch (error) {
+    console.error("Error bulk uploading questions:", error);
+    return {
+      success: false,
+      message: `Failed to bulk upload questions: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete question (for entrance exam quiz)
+export const deleteNursingEntranceExamQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questionId: string
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-entrance-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Question ${questionId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
 // Image Upload Functions
 export const uploadImage = async (
   file: File,
@@ -2018,6 +2712,242 @@ export const deleteQuestionContent = async (
     return {
       success: false,
       message: `Failed to delete question: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== QUESTION TYPES OPERATIONS ====================
+
+// Get all question types
+export const getAllQuestionTypes = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "questionTypes"));
+    const questionTypes: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      questionTypes.push({
+        id: doc.id,
+        questionTypeId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    // Sort by questionTypeId
+    questionTypes.sort((a, b) => {
+      const idA = parseInt(a.questionTypeId) || 0;
+      const idB = parseInt(b.questionTypeId) || 0;
+      return idA - idB;
+    });
+
+    return {
+      success: true,
+      data: questionTypes,
+      message: "All question types retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting question types:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve question types: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific question type
+export const getQuestionType = async (questionTypeId: string) => {
+  try {
+    const docRef = doc(db, "questionTypes", questionTypeId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Question type ${questionTypeId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No question type found for ${questionTypeId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting question type ${questionTypeId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve question type ${questionTypeId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update question type
+export const uploadQuestionType = async (
+  questionTypeId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(db, "questionTypes", questionTypeId);
+    await setDoc(docRef, {
+      ...content,
+      questionTypeId,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Question type ${questionTypeId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading question type ${questionTypeId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload question type ${questionTypeId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete question type
+export const deleteQuestionType = async (questionTypeId: string) => {
+  try {
+    const docRef = doc(db, "questionTypes", questionTypeId);
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Question type ${questionTypeId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting question type ${questionTypeId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete question type ${questionTypeId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Seed question types (initial data)
+export const seedQuestionTypes = async () => {
+  const questionTypes = [
+    {
+      questionTypeId: "1",
+      questionId: 1,
+      contentDescription:
+        "Standard multiple-choice question with a single correct option and rationales.",
+      questionTypeName: "Single-Select Multiple Choice",
+    },
+    {
+      questionTypeId: "2",
+      questionId: 2,
+      contentDescription:
+        'Multiple-choice question where the user selects more than one correct option (e.g., "Select all that apply") and rationales.',
+      questionTypeName: "Multiple-Select / Select All That Apply (SATA)",
+    },
+    {
+      questionTypeId: "3",
+      questionId: 3,
+      contentDescription: "A statement that requires a True or False answer.",
+      questionTypeName: "True/False",
+    },
+    {
+      questionTypeId: "5",
+      questionId: 5,
+      contentDescription:
+        "Requires matching items from an options list to corresponding explanations/descriptions. The structure includes match_option.",
+      questionTypeName: "Matching (List to Explanation)",
+    },
+    {
+      questionTypeId: "6",
+      questionId: 6,
+      contentDescription:
+        "Requires putting a series of steps (medication administration order) into the correct sequence.",
+      questionTypeName: "Ordering / Sequencing",
+    },
+    {
+      questionTypeId: "7",
+      questionId: 7,
+      contentDescription:
+        "A calculation problem (dosage calculation) requiring a numerical answer to be rounded.",
+      questionTypeName: "Calculation / Fill-in-the-Blank (Numeric)",
+    },
+    {
+      questionTypeId: "9",
+      questionId: 9,
+      contentDescription:
+        "Requires the user to click a specific location on an image to select the answer (xRanges and yRanges coordinates).",
+      questionTypeName: "Hot Spot / Image-Based Selection",
+    },
+    {
+      questionTypeId: "10",
+      questionId: 10,
+      contentDescription:
+        'Requires classifying multiple interventions as either "Indicated" or "Not Indicated" based on client data (Exhibit/Tabs format).',
+      questionTypeName: "Classification / Indicated vs. Not Indicated",
+    },
+    {
+      questionTypeId: "11",
+      questionId: 11,
+      contentDescription:
+        "Requires the user to click on specific text-based findings to highlight the correct answers.",
+      questionTypeName: "Highlight / Text-Based Selection",
+    },
+    {
+      questionTypeId: "12",
+      questionId: 12,
+      contentDescription:
+        "Requires dragging/selecting multiple choices to complete a diagram, assigning condition, actions, and monitoring parameters.",
+      questionTypeName: "Drag-and-Drop / Complete the Diagram",
+    },
+    {
+      questionTypeId: "13",
+      questionId: 13,
+      contentDescription:
+        "Requires selecting options from dropdown lists to complete a sentence based on the clinical data.",
+      questionTypeName: "Dropdown / Cloze",
+    },
+    {
+      questionTypeId: "14",
+      questionId: 14,
+      contentDescription:
+        "Requires classifying multiple findings against two different disease processes (Preeclampsia vs. HELLP Syndrome).",
+      questionTypeName: "Matrix / Classification (Multiple Columns)",
+    },
+  ];
+
+  try {
+    const results = [];
+    for (const questionType of questionTypes) {
+      const result = await uploadQuestionType(
+        questionType.questionTypeId,
+        questionType
+      );
+      results.push({
+        questionTypeId: questionType.questionTypeId,
+        success: result.success,
+        message: result.message,
+      });
+    }
+
+    return {
+      success: true,
+      data: results,
+      message: "Question types seeded successfully!",
+    };
+  } catch (error) {
+    console.error("Error seeding question types:", error);
+    return {
+      success: false,
+      message: `Failed to seed question types: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };
