@@ -9,6 +9,11 @@ import {
   getNursingEntranceExamSubPage,
   getNestedSubPage,
   getNursingEntranceExamSubPages,
+  getNursingExitExamQuiz,
+  getNursingExitExamQuizQuestions,
+  getNursingExitExamSubPage,
+  getNursingExitExamNestedSubPage,
+  getNursingExitExamSubPages,
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 
@@ -27,6 +32,9 @@ export async function generateStaticParams() {
       getNursingEntranceExamSubPages,
       getNestedSubPages,
       getNursingEntranceExamQuizzes,
+      getNursingExitExamSubPages,
+      getNursingExitExamNestedSubPages,
+      getNursingExitExamQuizzes,
     } = await import("@/lib/firestore-operations");
 
     // Get all entrance exam sub-pages
@@ -67,6 +75,44 @@ export async function generateStaticParams() {
       }
     }
 
+    // Get all exit exam sub-pages
+    const exitSubPages = await getNursingExitExamSubPages();
+    if (exitSubPages.success && exitSubPages.data) {
+      for (const parentSubPage of exitSubPages.data) {
+        const parentId = parentSubPage.id || parentSubPage.subPageId;
+        const parentSlug = parentSubPage.slug || parentId;
+        // Remove -exit-exam suffix if present for nested URLs
+        const parentUrlSlug = parentSlug.endsWith("-exit-exam")
+          ? parentSlug.slice(0, -10)
+          : parentSlug;
+
+        // Get all nested sub-pages for this parent
+        const nestedSubPages = await getNursingExitExamNestedSubPages(parentId);
+        if (nestedSubPages.success && nestedSubPages.data) {
+          for (const nestedSubPage of nestedSubPages.data) {
+            const nestedId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+            const nestedSlug = nestedSubPage.slug || nestedId;
+            const subPageId = `${nestedSlug}-${parentUrlSlug}-exit-exam`;
+
+            // Get all quizzes for this nested sub-page
+            const quizzesResult = await getNursingExitExamQuizzes(
+              parentId,
+              nestedId
+            );
+            if (quizzesResult.success && quizzesResult.data) {
+              for (const quiz of quizzesResult.data) {
+                const quizSlug = quiz.slug || quiz.id || quiz.quizId;
+                params.push({
+                  subPageId,
+                  quizId: quizSlug,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
     console.log(
       `[Static Generation] Generated ${params.length} static params for [subPageId]/[quizId] route`
     );
@@ -89,47 +135,87 @@ export async function generateMetadata({
   const { subPageId, quizId } = await params;
 
   // Parse the subPageId to extract parent and nested sub-page IDs
+  // Check for entrance exam pattern: {parentSubPageId}-{nestedSubPageId}-questions
   const entranceExamNestedMatch = subPageId.match(/^(.+)-(.+)-questions$/);
-  if (!entranceExamNestedMatch) {
+  // Check for exit exam pattern: {nestedSubPageId}-{parentSubPageId}-exit-exam
+  const exitExamNestedMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);
+
+  let quizResult: any = null;
+  let quizData: any = null;
+
+  if (entranceExamNestedMatch) {
+    // Entrance exam quiz
+    let parentSubPageId = entranceExamNestedMatch[1];
+    const nestedSubPageId = entranceExamNestedMatch[2];
+
+    // Try to find parent sub-page
+    let parentResult = await getNursingEntranceExamSubPage(parentSubPageId);
+    if (!parentResult.success || !parentResult.data) {
+      parentResult = await getNursingEntranceExamSubPage(parentSubPageId + "-exam");
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = parentSubPageId + "-exam";
+      } else {
+        // Try to find by slug
+        const allSubPagesResult = await getNursingEntranceExamSubPages();
+        if (allSubPagesResult.success && allSubPagesResult.data) {
+          const foundParent = allSubPagesResult.data.find((subPage: any) => {
+            const subPageSlug = (subPage.slug || subPage.id || "").toLowerCase();
+            return subPageSlug === parentSubPageId.toLowerCase();
+          });
+          if (foundParent) {
+            parentSubPageId = foundParent.id || foundParent.subPageId;
+          }
+        }
+      }
+    }
+
+    // Get quiz data
+    quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+  } else if (exitExamNestedMatch) {
+    // Exit exam quiz
+    const nestedSubPageId = exitExamNestedMatch[1];
+    let parentSubPageId = exitExamNestedMatch[2];
+
+    // Try to find parent sub-page
+    let parentResult = await getNursingExitExamSubPage(parentSubPageId);
+    if (!parentResult.success || !parentResult.data) {
+      parentResult = await getNursingExitExamSubPage(parentSubPageId + "-exit-exam");
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = parentSubPageId + "-exit-exam";
+      } else {
+        // Try to find by slug
+        const allSubPagesResult = await getNursingExitExamSubPages();
+        if (allSubPagesResult.success && allSubPagesResult.data) {
+          const foundParent = allSubPagesResult.data.find((subPage: any) => {
+            const subPageSlug = (subPage.slug || subPage.id || "").toLowerCase();
+            return subPageSlug === parentSubPageId.toLowerCase();
+          });
+          if (foundParent) {
+            parentSubPageId = foundParent.id || foundParent.subPageId;
+          }
+        }
+      }
+    }
+
+    // Get quiz data
+    quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+  } else {
     return {
       title: "Quiz Not Found | TeasGurus",
       description: "Quiz page not found",
     };
   }
 
-  let parentSubPageId = entranceExamNestedMatch[1];
-  const nestedSubPageId = entranceExamNestedMatch[2];
-
-  // Try to find parent sub-page
-  let parentResult = await getNursingEntranceExamSubPage(parentSubPageId);
-  if (!parentResult.success || !parentResult.data) {
-    parentResult = await getNursingEntranceExamSubPage(parentSubPageId + "-exam");
-    if (parentResult.success && parentResult.data) {
-      parentSubPageId = parentSubPageId + "-exam";
-    } else {
-      // Try to find by slug
-      const allSubPagesResult = await getNursingEntranceExamSubPages();
-      if (allSubPagesResult.success && allSubPagesResult.data) {
-        const foundParent = allSubPagesResult.data.find((subPage: any) => {
-          const subPageSlug = (subPage.slug || subPage.id || "").toLowerCase();
-          return subPageSlug === parentSubPageId.toLowerCase();
-        });
-        if (foundParent) {
-          parentSubPageId = foundParent.id || foundParent.subPageId;
-        }
-      }
-    }
-  }
-
-  // Get quiz data
-  const quizResult = await getNursingEntranceExamQuiz(
-    parentSubPageId,
-    nestedSubPageId,
-    quizId
-  );
-
   if (quizResult.success && quizResult.data) {
-    const quizData = quizResult.data as any;
+    quizData = quizResult.data as any;
     const meta = quizData.meta || {};
 
     return {
@@ -169,54 +255,136 @@ export default async function QuizPage({
   const { subPageId, quizId } = await params;
 
   // Parse the subPageId to extract parent and nested sub-page IDs
+  // Check for entrance exam pattern: {parentSubPageId}-{nestedSubPageId}-questions
   const entranceExamNestedMatch = subPageId.match(/^(.+)-(.+)-questions$/);
-  if (!entranceExamNestedMatch) {
-    notFound();
-  }
+  // Check for exit exam pattern: {nestedSubPageId}-{parentSubPageId}-exit-exam
+  const exitExamNestedMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);
 
-  let parentSubPageId = entranceExamNestedMatch[1];
-  const nestedSubPageId = entranceExamNestedMatch[2];
+  let parentSubPageId: string | null = null;
+  let nestedSubPageId: string | null = null;
+  let quizResult: any = null;
+  let questionsResult: any = null;
 
-  // Try to find parent sub-page
-  let parentResult = await getNursingEntranceExamSubPage(parentSubPageId);
-  if (!parentResult.success || !parentResult.data) {
-    parentResult = await getNursingEntranceExamSubPage(parentSubPageId + "-exam");
-    if (parentResult.success && parentResult.data) {
-      parentSubPageId = parentSubPageId + "-exam";
-    } else {
-      // Try to find by slug
-      const allSubPagesResult = await getNursingEntranceExamSubPages();
-      if (allSubPagesResult.success && allSubPagesResult.data) {
-        const foundParent = allSubPagesResult.data.find((subPage: any) => {
-          const subPageSlug = (subPage.slug || subPage.id || "").toLowerCase();
-          return subPageSlug === parentSubPageId.toLowerCase();
-        });
-        if (foundParent) {
-          parentSubPageId = foundParent.id || foundParent.subPageId;
-          parentResult = await getNursingEntranceExamSubPage(parentSubPageId);
+  if (entranceExamNestedMatch) {
+    // Entrance exam quiz
+    parentSubPageId = entranceExamNestedMatch[1];
+    nestedSubPageId = entranceExamNestedMatch[2];
+
+    // Try to find parent sub-page
+    let parentResult = await getNursingEntranceExamSubPage(parentSubPageId);
+    if (!parentResult.success || !parentResult.data) {
+      parentResult = await getNursingEntranceExamSubPage(parentSubPageId + "-exam");
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = parentSubPageId + "-exam";
+      } else {
+        // Try to find by slug
+        const allSubPagesResult = await getNursingEntranceExamSubPages();
+        if (allSubPagesResult.success && allSubPagesResult.data && parentSubPageId) {
+          const searchParentId = parentSubPageId; // Store in const for type narrowing
+          const foundParent = allSubPagesResult.data.find((subPage: any) => {
+            const subPageSlug = (subPage.slug || subPage.id || "").toLowerCase();
+            return subPageSlug === searchParentId.toLowerCase();
+          });
+          if (foundParent) {
+            const foundId = foundParent.id || foundParent.subPageId;
+            if (foundId && typeof foundId === "string") {
+              parentSubPageId = foundId;
+              parentResult = await getNursingEntranceExamSubPage(foundId);
+            }
+          }
         }
       }
     }
-  }
 
-  if (!parentResult.success || !parentResult.data) {
-    notFound();
-  }
+    if (!parentResult.success || !parentResult.data) {
+      notFound();
+    }
 
-  // Get nested sub-page
-  const nestedResult = await getNestedSubPage(parentSubPageId, nestedSubPageId);
-  if (!nestedResult.success || !nestedResult.data) {
-    notFound();
-  }
+    // Get nested sub-page
+    const nestedResult = await getNestedSubPage(parentSubPageId, nestedSubPageId);
+    if (!nestedResult.success || !nestedResult.data) {
+      notFound();
+    }
 
-  // Get quiz data
-  const quizResult = await getNursingEntranceExamQuiz(
-    parentSubPageId,
-    nestedSubPageId,
-    quizId
-  );
+    // Get quiz data
+    quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
 
-  if (!quizResult.success || !quizResult.data) {
+    if (!quizResult.success || !quizResult.data) {
+      notFound();
+    }
+
+    // Get quiz questions
+    questionsResult = await getNursingEntranceExamQuizQuestions(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+  } else if (exitExamNestedMatch) {
+    // Exit exam quiz
+    nestedSubPageId = exitExamNestedMatch[1];
+    parentSubPageId = exitExamNestedMatch[2];
+
+    // Try to find parent sub-page
+    let parentResult = await getNursingExitExamSubPage(parentSubPageId);
+    if (!parentResult.success || !parentResult.data) {
+      parentResult = await getNursingExitExamSubPage(parentSubPageId + "-exit-exam");
+      if (parentResult.success && parentResult.data) {
+        parentSubPageId = parentSubPageId + "-exit-exam";
+      } else {
+        // Try to find by slug
+        const allSubPagesResult = await getNursingExitExamSubPages();
+        if (allSubPagesResult.success && allSubPagesResult.data && parentSubPageId) {
+          const searchParentId = parentSubPageId; // Store in const for type narrowing
+          const foundParent = allSubPagesResult.data.find((subPage: any) => {
+            const subPageSlug = (subPage.slug || subPage.id || "").toLowerCase();
+            return subPageSlug === searchParentId.toLowerCase();
+          });
+          if (foundParent) {
+            const foundId = foundParent.id || foundParent.subPageId;
+            if (foundId && typeof foundId === "string") {
+              parentSubPageId = foundId;
+              parentResult = await getNursingExitExamSubPage(foundId);
+            }
+          }
+        }
+      }
+    }
+
+    if (!parentResult.success || !parentResult.data) {
+      notFound();
+    }
+
+    // Get nested sub-page
+    const nestedResult = await getNursingExitExamNestedSubPage(
+      parentSubPageId,
+      nestedSubPageId
+    );
+    if (!nestedResult.success || !nestedResult.data) {
+      notFound();
+    }
+
+    // Get quiz data
+    quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    if (!quizResult.success || !quizResult.data) {
+      notFound();
+    }
+
+    // Get quiz questions
+    questionsResult = await getNursingExitExamQuizQuestions(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+  } else {
     notFound();
   }
 
@@ -236,13 +404,6 @@ export default async function QuizPage({
     );
     return type?.questionTypeName || `Type ${questionTypeId}`;
   };
-
-  // Get quiz questions
-  const questionsResult = await getNursingEntranceExamQuizQuestions(
-    parentSubPageId,
-    nestedSubPageId,
-    quizId
-  );
 
   // Filter questions to only show types 1, 2, 3, and 7
   const allowedQuestionTypes = [1, 2, 3, 7];

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useRef, useEffect } from "react";
+import React, { ReactNode, useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -115,6 +115,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
   const [quizNamesCache, setQuizNamesCache] = useState<
     Record<string, string>
   >({});
+  const [breadcrumbDataLoaded, setBreadcrumbDataLoaded] = useState(false);
 
   // Load pillar pages and categories for breadcrumbs
   useEffect(() => {
@@ -165,8 +166,12 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
           }
           setPillarCategories(categoriesByPillar);
         }
+        // Mark breadcrumb data as loaded
+        setBreadcrumbDataLoaded(true);
       } catch (error) {
         console.error("Error loading breadcrumb data:", error);
+        // Still mark as loaded to avoid infinite loading state
+        setBreadcrumbDataLoaded(true);
       }
     };
 
@@ -446,6 +451,68 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                   </Link>
                   {/* Generate breadcrumbs based on pathname */}
                   {(() => {
+                    // Don't render dynamic breadcrumbs until data is loaded to avoid flash
+                    // For simple static routes, we can render immediately
+                    const isStaticRoute = 
+                      pathname === "/nursing-test-bank" ||
+                      pathname === "/nursing-exit-exam" ||
+                      pathname === "/nursing-entrance-exam";
+                    
+                    // For dynamic routes, show skeleton loaders while data is loading
+                    if (!isStaticRoute && !breadcrumbDataLoaded) {
+                      // Determine number of breadcrumb items based on pathname
+                      const pathSegments = pathname.split("/").filter((s) => s);
+                      let skeletonCount = 1; // At least one (the main category)
+                      
+                      // Check for quiz pages (Home > Category > Parent > Nested > Quiz = 4 items)
+                      const isQuizPage = pathSegments.length === 2 && (
+                        pathSegments[0].endsWith("-questions") ||
+                        pathSegments[0].endsWith("-exit-exam")
+                      );
+                      
+                      // Check for nested sub-pages (Home > Category > Parent > Nested = 3 items)
+                      const isNestedSubPage = pathSegments.length === 1 && (
+                        pathname.match(/^\/.+-.+-questions$/) ||
+                        pathname.match(/^\/.+-.+-exit-exam$/) ||
+                        pathname.match(/^\/.+-.+-test-bank$/)
+                      );
+                      
+                      // Check for regular sub-pages (Home > Category > SubPage = 2 items)
+                      const isRegularSubPage = pathSegments.length === 1 && !isNestedSubPage;
+                      
+                      if (isQuizPage) {
+                        skeletonCount = 4; // Home > Category > Parent > Nested > Quiz
+                      } else if (isNestedSubPage) {
+                        skeletonCount = 3; // Home > Category > Parent > Nested
+                      } else if (isRegularSubPage) {
+                        skeletonCount = 2; // Home > Category > SubPage
+                      }
+                      
+                      // Render skeleton loaders
+                      return (
+                        <>
+                          {Array.from({ length: skeletonCount }).map((_, index) => (
+                            <React.Fragment key={index}>
+                              <svg
+                                className="w-4 h-4 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                            </React.Fragment>
+                          ))}
+                        </>
+                      );
+                    }
+
                     // For nursing-test-bank pages
                     // Check if it's the main page
                     if (pathname === "/nursing-test-bank") {
@@ -492,17 +559,200 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                       );
                     }
 
+                    // Check if it's an exit exam quiz page FIRST (pattern: /{nested}-{parent}-exit-exam/{quizSlug})
+                    const pathSegmentsForExitExam = pathname.split("/").filter((s) => s);
+                    const isExitExamQuizPage =
+                      pathSegmentsForExitExam.length === 2 &&
+                      pathSegmentsForExitExam[0].endsWith("-exit-exam");
+                    const exitExamQuizNestedMatch = isExitExamQuizPage
+                      ? pathSegmentsForExitExam[0].match(/^(.+)-(.+)-exit-exam$/)
+                      : null;
+
                     // Check if it's an exit exam nested sub-page (pattern: [nestedSubPageId]-[parentSubPageId]-exit-exam)
                     const exitExamNestedMatch = pathname.match(
                       /^\/(.+)-(.+)-exit-exam$/
                     );
                     const isExitExamNestedSubPage =
                       exitExamNestedMatch &&
+                      !isExitExamQuizPage && // Exclude exit exam quiz pages
                       nursingExitExamSubPages.some((subPage) => {
                         const subPageId = subPage.id || subPage.subPageId;
                         const parentId = exitExamNestedMatch[2]; // parentSubPageId is the second group
                         return subPageId === parentId;
                       });
+
+                    // Handle exit exam quiz page breadcrumbs
+                    if (isExitExamQuizPage && exitExamQuizNestedMatch) {
+                      const nestedSubPageId = exitExamQuizNestedMatch[1];
+                      const parentSubPageId = exitExamQuizNestedMatch[2];
+                      const quizSlug = pathSegmentsForExitExam[1];
+                      const quizCacheKey = `exit-${parentSubPageId}-${nestedSubPageId}-${quizSlug}`;
+
+                      // Find the parent sub-page to get its actual name
+                      const parentSubPage = nursingExitExamSubPages.find(
+                        (subPage) => {
+                          const subPageId = subPage.id || subPage.subPageId;
+                          return (
+                            subPageId === parentSubPageId ||
+                            subPageId === parentSubPageId + "-exit-exam"
+                          );
+                        }
+                      );
+                      const parentSubPageName =
+                        parentSubPage?.pageName ||
+                        parentSubPage?.hero?.title ||
+                        formatBreadcrumbLabel(parentSubPageId);
+
+                      // Try to find nested sub-page name from cache or use formatted ID
+                      const cacheKey = `exit-${parentSubPageId}`;
+                      const nestedSubPages =
+                        nestedSubPagesCache[cacheKey] || [];
+                      const nestedSubPage = nestedSubPages.find(
+                        (nsp: any) => {
+                          const nspId = nsp.id || nsp.nestedSubPageId;
+                          return nspId === nestedSubPageId;
+                        }
+                      );
+                      const nestedSubPageName =
+                        nestedSubPage?.pageName ||
+                        nestedSubPage?.hero?.title ||
+                        nestedSubPage?.title ||
+                        formatBreadcrumbLabel(nestedSubPageId);
+
+                      // Load nested sub-pages if not in cache
+                      if (
+                        !nestedSubPagesCache[cacheKey] &&
+                        parentSubPageId
+                      ) {
+                        import("@/lib/firestore-operations").then(
+                          ({ getNursingExitExamNestedSubPages }) => {
+                            getNursingExitExamNestedSubPages(
+                              parentSubPageId
+                            ).then((result) => {
+                              if (result.success && result.data) {
+                                setNestedSubPagesCache((prev) => ({
+                                  ...prev,
+                                  [cacheKey]: result.data || [],
+                                }));
+                              }
+                            });
+                          }
+                        );
+                      }
+
+                      // Load quiz data to get quiz name if not in cache
+                      if (!quizNamesCache[quizCacheKey] && parentSubPageId && nestedSubPageId && quizSlug) {
+                        const parentId = parentSubPage?.id || parentSubPage?.subPageId || parentSubPageId;
+                        import("@/lib/firestore-operations").then(
+                          ({ getNursingExitExamQuiz }) => {
+                            getNursingExitExamQuiz(
+                              parentId,
+                              nestedSubPageId,
+                              quizSlug
+                            ).then((result) => {
+                              if (result.success && result.data) {
+                                const quizData = result.data as any;
+                                const quizName =
+                                  quizData.pageName ||
+                                  quizData.hero?.title ||
+                                  formatBreadcrumbLabel(quizSlug);
+                                setQuizNamesCache((prev) => ({
+                                  ...prev,
+                                  [quizCacheKey]: quizName,
+                                }));
+                              } else {
+                                setQuizNamesCache((prev) => ({
+                                  ...prev,
+                                  [quizCacheKey]: formatBreadcrumbLabel(quizSlug),
+                                }));
+                              }
+                            });
+                          }
+                        );
+                      }
+
+                      const displayQuizName = quizNamesCache[quizCacheKey] || formatBreadcrumbLabel(quizSlug);
+                      const nestedSubPageUrl = `/${nestedSubPageId}-${parentSubPageId}-exit-exam`;
+                      const parentSubPageUrl = `/nursing-exit-exam/${parentSubPageId}`;
+
+                      return (
+                        <>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href="/nursing-exit-exam"
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            Nursing Exit Exam
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href={parentSubPageUrl}
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            {parentSubPageName}
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <Link
+                            href={nestedSubPageUrl}
+                            className="hover:text-blue-600 transition-colors font-medium"
+                          >
+                            {nestedSubPageName}
+                          </Link>
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="font-medium">
+                            {displayQuizName}
+                          </span>
+                        </>
+                      );
+                    }
 
                     if (isExitExamNestedSubPage && exitExamNestedMatch) {
                       const nestedSubPageId = exitExamNestedMatch[1];
@@ -1137,7 +1387,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                       );
                     });
 
-                    // Check if it's a quiz page FIRST (pattern: /{parent}-{nested}-questions/{quizSlug})
+                    // Check if it's an entrance exam quiz page (pattern: /{parent}-{nested}-questions/{quizSlug})
                     // This must be checked before nested sub-page check
                     const pathSegments = pathname.split("/").filter((s) => s);
                     const isQuizPage =

@@ -1165,7 +1165,11 @@ export const getNursingExitExamNestedSubPage = async (
     if (docSnap.exists()) {
       return {
         success: true,
-        data: docSnap.data(),
+        data: {
+          id: docSnap.id,
+          nestedSubPageId: docSnap.id,
+          ...docSnap.data(),
+        },
         message: `Nested sub-page ${nestedSubPageId} retrieved successfully!`,
       };
     } else {
@@ -1912,10 +1916,15 @@ export const getNursingEntranceExamQuiz = async (
       const quizData = docSnap.data();
       const quizSlug = quizData.slug || "";
 
-      // Only allow document ID access if:
+      // Allow document ID access if:
       // 1. There's no slug set (old quiz without slug), OR
-      // 2. The document ID matches the slug (backward compatibility for quizzes where ID = slug)
-      if (!quizSlug || quizSlug.toLowerCase() === quizId.toLowerCase()) {
+      // 2. The document ID matches the slug (backward compatibility for quizzes where ID = slug), OR
+      // 3. The document ID matches the quizId (allow access by document ID even if slug exists)
+      if (
+        !quizSlug ||
+        quizSlug.toLowerCase() === quizId.toLowerCase() ||
+        docSnap.id.toLowerCase() === quizId.toLowerCase()
+      ) {
         return {
           success: true,
           data: {
@@ -1926,7 +1935,7 @@ export const getNursingEntranceExamQuiz = async (
           message: `Quiz ${quizId} retrieved successfully!`,
         };
       }
-      // If slug exists and doesn't match, don't return (slug URL must be used)
+      // If slug exists and doesn't match, and document ID doesn't match, don't return
     }
 
     // If still not found, return error
@@ -2475,6 +2484,702 @@ export const deleteNursingEntranceExamQuizQuestion = async (
       db,
       "pillarPages",
       "nursing-entrance-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Question ${questionId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING EXIT EXAM QUIZ OPERATIONS ====================
+
+// Get all quizzes under a nested sub-page (for exit exam)
+export const getNursingExitExamQuizzes = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-exit-exam",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "quizzes"
+      )
+    );
+    const quizzes: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      quizzes.push({
+        id: doc.id,
+        quizId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: quizzes,
+      message: "All quizzes retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting quizzes:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve quizzes: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific quiz content (for exit exam)
+export const getNursingExitExamQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string
+) => {
+  try {
+    // Get all quizzes to search by slug
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-exit-exam",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "quizzes"
+      )
+    );
+
+    // First, try to find by slug (this is the primary method for frontend access)
+    for (const doc of querySnapshot.docs) {
+      const quizData = doc.data();
+      const quizSlug = quizData.slug || "";
+
+      // Check if the slug matches (case-insensitive)
+      if (quizSlug.toLowerCase() === quizId.toLowerCase()) {
+        return {
+          success: true,
+          data: {
+            id: doc.id,
+            quizId: doc.id,
+            ...quizData,
+          },
+          message: `Quiz ${quizId} retrieved successfully by slug!`,
+        };
+      }
+    }
+
+    // If not found by slug, try by document ID (for admin panel backward compatibility)
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      quizId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const quizData = docSnap.data();
+      const quizSlug = quizData.slug || "";
+
+      // Allow document ID access if:
+      // 1. There's no slug set (old quiz without slug), OR
+      // 2. The document ID matches the slug (backward compatibility for quizzes where ID = slug), OR
+      // 3. The document ID matches the quizId (allow access by document ID even if slug exists)
+      if (
+        !quizSlug ||
+        quizSlug.toLowerCase() === quizId.toLowerCase() ||
+        docSnap.id.toLowerCase() === quizId.toLowerCase()
+      ) {
+        return {
+          success: true,
+          data: {
+            id: docSnap.id,
+            quizId: docSnap.id,
+            ...quizData,
+          },
+          message: `Quiz ${quizId} retrieved successfully!`,
+        };
+      }
+      // If slug exists and doesn't match, and document ID doesn't match, don't return
+    }
+
+    // If still not found, return error
+    return {
+      success: false,
+      message: `No quiz content found for ${quizId}`,
+    };
+  } catch (error) {
+    console.error(`Error getting quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update quiz content (for exit exam)
+export const uploadNursingExitExamQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  content: any
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      quizId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Quiz ${quizId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete quiz (for exit exam)
+export const deleteNursingExitExamQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string
+) => {
+  try {
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      quizId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Quiz ${quizId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING EXIT EXAM QUIZ QUESTIONS OPERATIONS ====================
+
+// Get all questions under a quiz (for exit exam)
+export const getNursingExitExamQuizQuestions = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-exit-exam",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "quizzes",
+        actualQuizId,
+        "questions"
+      )
+    );
+    const questions: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      questions.push({
+        id: doc.id,
+        questionId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: questions,
+      message: "All questions retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting quiz questions:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve questions: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific question content (for exit exam quiz)
+export const getNursingExitExamQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questionId: string
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Question ${questionId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No question content found for ${questionId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update question content (for exit exam quiz)
+export const uploadNursingExitExamQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questionId: string,
+  content: any
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Question ${questionId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Bulk upload questions (for exit exam quiz)
+export const bulkUploadNursingExitExamQuizQuestions = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questions: any[]
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const question of questions) {
+      try {
+        // Parse options - always treat as string and parse JSON
+        let optionsArray: string[] = [];
+
+        if (question.options) {
+          try {
+            // Convert to string if not already
+            const optionsString =
+              typeof question.options === "string"
+                ? question.options
+                : JSON.stringify(question.options);
+
+            // Parse the JSON string
+            const optionsObject = JSON.parse(optionsString);
+
+            // Convert options object to array format
+            optionsArray = Object.keys(optionsObject)
+              .sort()
+              .map((key) => {
+                const option = optionsObject[key];
+                let optionText = "";
+
+                // Extract choice text, handling both object with choice property and direct string
+                if (
+                  typeof option === "object" &&
+                  option !== null &&
+                  option.choice
+                ) {
+                  optionText = String(option.choice).trim();
+                } else if (typeof option === "string") {
+                  optionText = option.trim();
+                } else {
+                  optionText = String(option || "").trim();
+                }
+
+                // Remove quotes from start and end if present (handle multiple quote types)
+                let cleaned = optionText;
+                let changed = true;
+                const quoteChars = [
+                  '"',
+                  "'",
+                  "\u201C",
+                  "\u201D",
+                  "\u2018",
+                  "\u2019",
+                ]; // straight and curly quotes
+
+                while (changed && cleaned.length >= 2) {
+                  changed = false;
+                  for (const quote of quoteChars) {
+                    if (cleaned.startsWith(quote) && cleaned.endsWith(quote)) {
+                      cleaned = cleaned.slice(1, -1).trim();
+                      changed = true;
+                      break;
+                    }
+                  }
+                }
+
+                return cleaned;
+              });
+          } catch (e) {
+            console.error("Error parsing options:", e);
+          }
+        }
+
+        // Helper function to strip HTML tags and generate slug
+        const stripHtmlTags = (html: string): string => {
+          if (!html) return "";
+          return html.replace(/<[^>]*>/g, "").trim();
+        };
+
+        const generateSlug = (questionText: string): string => {
+          if (!questionText) return "";
+          const cleanText = stripHtmlTags(questionText);
+          const truncated = cleanText.substring(0, 180);
+          const slug = truncated
+            .toLowerCase()
+            .replace(/nbsp/g, "")
+            .replace(/&nbsp;/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          return slug;
+        };
+
+        // Handle correctAnswer based on question type
+        const questionTypeId = question.question_type_id || 1;
+        let correctAnswerToSave: any =
+          question.correctAnswer || question.correct_answer || "";
+
+        // For type 7 (numeric), ensure correctAnswer is an array, not a JSON string
+        if (questionTypeId === 7) {
+          if (typeof correctAnswerToSave === "string") {
+            try {
+              // Try to parse if it's a JSON string
+              const parsed = JSON.parse(correctAnswerToSave);
+              correctAnswerToSave = Array.isArray(parsed) ? parsed : [parsed];
+            } catch {
+              // If not JSON, wrap in array
+              correctAnswerToSave = [correctAnswerToSave];
+            }
+          } else if (!Array.isArray(correctAnswerToSave)) {
+            // If it's not an array, wrap it
+            correctAnswerToSave = [String(correctAnswerToSave)];
+          }
+        }
+
+        // Create question content
+        const questionContent = {
+          question: question.question || "",
+          options: optionsArray,
+          correctAnswer: correctAnswerToSave,
+          explanation: question.solution || question.explanation || "",
+          questionTypeId: questionTypeId,
+          slug: generateSlug(question.question || ""),
+          originalId: question.id?.toString() || "",
+          questionId:
+            question.id?.toString() || question.questionId?.toString() || "",
+          // Meta fields (editable after upload)
+          meta: {
+            title: "",
+            description: "",
+            keywords: "",
+            ogTitle: "",
+            ogDescription: "",
+            ogImage: "",
+            canonicalUrl: "",
+          },
+          schema: "",
+          status: "published",
+          // Additional fields from original data
+          tabs: question.tabs || null,
+          matchOption: question.match_option || null,
+          imagePath: question.image_path || null,
+          units: question.units || null,
+          subquestions: question.subquestions || [],
+        };
+
+        // Use question ID as the document ID, or generate one
+        const questionDocId =
+          question.id?.toString() ||
+          `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const docRef = doc(
+          db,
+          "pillarPages",
+          "nursing-exit-exam",
+          "subPages",
+          parentSubPageId,
+          "nestedSubPages",
+          nestedSubPageId,
+          "quizzes",
+          actualQuizId,
+          "questions",
+          questionDocId
+        );
+
+        await setDoc(docRef, {
+          ...questionContent,
+          lastUpdated: new Date().toISOString(),
+          version: "1.0",
+        });
+
+        results.push({
+          questionId: questionDocId,
+          originalId: question.id,
+          success: true,
+        });
+      } catch (error) {
+        errors.push({
+          questionId: question.id?.toString() || "unknown",
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      message: `Uploaded ${results.length} questions successfully${
+        errors.length > 0 ? `, ${errors.length} failed` : ""
+      }`,
+      data: {
+        successful: results,
+        failed: errors,
+      },
+    };
+  } catch (error) {
+    console.error("Error bulk uploading questions:", error);
+    return {
+      success: false,
+      message: `Failed to bulk upload questions: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete question (for exit exam quiz)
+export const deleteNursingExitExamQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  quizId: string,
+  questionId: string
+) => {
+  try {
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      "nursing-exit-exam",
       "subPages",
       parentSubPageId,
       "nestedSubPages",

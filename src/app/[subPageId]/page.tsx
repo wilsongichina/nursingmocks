@@ -16,6 +16,7 @@ import {
   getNursingTestBankTopic,
   getNursingTestBankTopics,
   getNursingEntranceExamQuizzes,
+  getNursingExitExamQuizzes,
 } from "@/lib/firestore-operations";
 
 // Enable static generation at build time
@@ -884,21 +885,24 @@ export default async function SubPage({
       }
     }
 
-    // If still not found, try to find by slug
+    // If still not found, try to find by slug (case-insensitive)
     if (!parentResult.success || !parentResult.data) {
       const { getNursingExitExamSubPages } = await import(
         "@/lib/firestore-operations"
       );
       const allSubPagesResult = await getNursingExitExamSubPages();
-      if (allSubPagesResult.success && allSubPagesResult.data) {
+      if (allSubPagesResult.success && allSubPagesResult.data && parentSubPageId) {
+        const searchParentSlug = parentSubPageId.toLowerCase();
         const foundParent = allSubPagesResult.data.find((subPage: any) => {
-          const subPageSlug = subPage.slug || subPage.id || subPage.subPageId;
-          const subPageId = subPage.id || subPage.subPageId;
+          const subPageSlug = (subPage.slug || subPage.id || subPage.subPageId || "").toLowerCase();
+          const subPageId = (subPage.id || subPage.subPageId || "").toLowerCase();
           return (
-            subPageSlug === parentSubPageId ||
-            subPageId === parentSubPageId ||
-            subPageSlug === parentSubPageId + "-exit-exam" ||
-            subPageId === parentSubPageId + "-exit-exam"
+            subPageSlug === searchParentSlug ||
+            subPageId === searchParentSlug ||
+            subPageSlug === searchParentSlug + "-exit-exam" ||
+            subPageId === searchParentSlug + "-exit-exam" ||
+            subPageSlug === searchParentSlug.replace("-exit-exam", "") ||
+            subPageId === searchParentSlug.replace("-exit-exam", "")
           );
         });
         if (foundParent) {
@@ -920,21 +924,81 @@ export default async function SubPage({
       notFound();
     }
 
-    // Get the nested sub-page
+    // Get the nested sub-page - try to find by slug first
     if (!parentSubPageId || !nestedSubPageId) {
       notFound();
     }
-    const nestedResult = await getNursingExitExamNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (!nestedResult.success || !nestedResult.data) {
+    
+    // Get all nested sub-pages for this parent first, then find by slug
+    // parentSubPageId is guaranteed to be non-null after the check above
+    const { getNursingExitExamNestedSubPages } = await import("@/lib/firestore-operations");
+    const allNestedSubPagesResult = await getNursingExitExamNestedSubPages(parentSubPageId!);
+    let nestedResult: any = null;
+    let resolvedNestedSubPageId: string | null = null;
+    
+    if (allNestedSubPagesResult.success && allNestedSubPagesResult.data && nestedSubPageId) {
+      // Try to find by slug first (since URL uses slugs)
+      const searchNestedId = nestedSubPageId; // Store in const for type narrowing
+      const foundNested = allNestedSubPagesResult.data.find((nestedSubPage: any) => {
+        const nestedSlug = nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
+        const nestedId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+        const searchSlug = searchNestedId.toLowerCase();
+        return (
+          (nestedSlug && nestedSlug.toLowerCase() === searchSlug) ||
+          (nestedId && nestedId.toLowerCase() === searchSlug)
+        );
+      });
+      
+      if (foundNested) {
+        resolvedNestedSubPageId = foundNested.id || foundNested.nestedSubPageId;
+        if (resolvedNestedSubPageId) {
+          nestedResult = await getNursingExitExamNestedSubPage(
+            parentSubPageId,
+            resolvedNestedSubPageId
+          );
+        }
+      }
+    }
+    
+    // If not found by slug, try direct ID lookup as fallback
+    if (!nestedResult || !nestedResult.success || !nestedResult.data) {
+      nestedResult = await getNursingExitExamNestedSubPage(
+        parentSubPageId,
+        nestedSubPageId
+      );
+      if (nestedResult.success && nestedResult.data) {
+        resolvedNestedSubPageId = nestedSubPageId;
+      }
+    }
+    
+    if (!nestedResult || !nestedResult.success || !nestedResult.data) {
       notFound();
     }
 
     pageData = nestedResult.data;
+    parentSubPageData = parentResult.data; // Store parent data for URL generation
+    // Use the resolved document ID (either from slug lookup or direct ID)
+    nestedSubPageId = resolvedNestedSubPageId || nestedResult.data.id || nestedResult.data.nestedSubPageId || nestedSubPageId;
+    // Use the actual document ID from the parent result
+    const resolvedParentSubPageId = parentResult.data.id || parentResult.data.subPageId || parentSubPageId;
+    if (!resolvedParentSubPageId || typeof resolvedParentSubPageId !== "string") {
+      notFound();
+    }
+    parentSubPageId = resolvedParentSubPageId;
+    // Ensure nestedSubPageId is also a string
+    if (!nestedSubPageId || typeof nestedSubPageId !== "string") {
+      notFound();
+    }
     isNestedSubPage = true;
     isExitExam = true;
+    
+    // Debug logging
+    console.log("[DEBUG] Exit exam nested sub-page resolved IDs:", {
+      originalParentSlug: exitExamNestedMatch[2],
+      resolvedParentSubPageId: parentSubPageId,
+      originalNestedSlug: exitExamNestedMatch[1],
+      resolvedNestedSubPageId: nestedSubPageId
+    });
   } else if (entranceExamNestedMatch) {
     // This is an entrance exam nested sub-page
     // Parent ID in nested URLs doesn't have -exam suffix
@@ -1224,15 +1288,37 @@ export default async function SubPage({
     }
   }
 
-  // Fetch quizzes if this is a nested sub-page of the entrance exam
+  // Fetch quizzes if this is a nested sub-page
   let quizzes: any[] = [];
-  if (isNestedSubPage && !isTestBank && !isExitExam && parentSubPageId && nestedSubPageId) {
-    const quizzesResult = await getNursingEntranceExamQuizzes(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (quizzesResult.success && quizzesResult.data) {
-      quizzes = quizzesResult.data;
+  if (isNestedSubPage && !isTestBank && parentSubPageId && nestedSubPageId) {
+    if (isExitExam) {
+      // Fetch exit exam quizzes using resolved Firestore document IDs
+      console.log("[DEBUG] Fetching exit exam quizzes:", {
+        parentSubPageId,
+        nestedSubPageId,
+        isExitExam
+      });
+      const quizzesResult = await getNursingExitExamQuizzes(
+        parentSubPageId,
+        nestedSubPageId
+      );
+      console.log("[DEBUG] Exit exam quizzes result:", {
+        success: quizzesResult.success,
+        message: quizzesResult.message,
+        quizCount: quizzesResult.data?.length || 0
+      });
+      if (quizzesResult.success && quizzesResult.data) {
+        quizzes = quizzesResult.data;
+      }
+    } else {
+      // Fetch entrance exam quizzes
+      const quizzesResult = await getNursingEntranceExamQuizzes(
+        parentSubPageId,
+        nestedSubPageId
+      );
+      if (quizzesResult.success && quizzesResult.data) {
+        quizzes = quizzesResult.data;
+      }
     }
   }
 
@@ -1399,6 +1485,139 @@ export default async function SubPage({
                     ? parentSlug.slice(0, -5) 
                     : parentSlug;
                   const quizUrl = `/${parentUrlSlug}-${nestedSlug}-questions/${quizSlug}`;
+
+                  return (
+                    <Link
+                      key={quizPageId}
+                      href={quizUrl}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
+                        >
+                          {config.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-600 mb-1">
+                            {quizName}
+                          </p>
+                          <p
+                            className={`text-3xl font-bold ${config.numberColor}`}
+                          >
+                            {questionCount}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Questions Available
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <svg
+                            className="w-5 h-5 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Quiz Cards - Dashboard Style (for nested sub-pages of exit exam) */}
+          {isNestedSubPage && !isTestBank && isExitExam && quizzes.length > 0 && (
+            <div className="mt-6 mb-8">
+              <div className="flex flex-wrap justify-center gap-4">
+                {/* All quizzes */}
+                {quizzes.map((quiz: any, index: number) => {
+                  const quizName =
+                    quiz.pageName ||
+                    quiz.hero?.title ||
+                    quiz.title ||
+                    quiz.quizName ||
+                    quiz.id;
+                  const quizPageId = quiz.id || quiz.quizId;
+                  const quizSlug = quiz.slug || quizPageId;
+
+                  // Get icon and colors based on quiz name
+                  const getCardIcon = (quizName: string, index: number) => {
+                    const nameLower = quizName.toLowerCase();
+                    const colorVariants = [
+                      {
+                        iconBg: "bg-purple-500",
+                        numberColor: "text-purple-600",
+                      },
+                      { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
+                      {
+                        iconBg: "bg-orange-500",
+                        numberColor: "text-orange-600",
+                      },
+                      { iconBg: "bg-green-500", numberColor: "text-green-600" },
+                      { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
+                      {
+                        iconBg: "bg-indigo-500",
+                        numberColor: "text-indigo-600",
+                      },
+                      { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
+                      { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
+                    ];
+
+                    if (nameLower.includes("reading")) {
+                      return {
+                        icon: <BookIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-purple-500",
+                        numberColor: "text-purple-600",
+                      };
+                    } else if (nameLower.includes("math")) {
+                      return {
+                        icon: <CalculatorIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-blue-500",
+                        numberColor: "text-blue-600",
+                      };
+                    } else if (nameLower.includes("science")) {
+                      return {
+                        icon: <FlaskIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-orange-500",
+                        numberColor: "text-orange-600",
+                      };
+                    } else if (nameLower.includes("english")) {
+                      return {
+                        icon: <ABCIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-green-500",
+                        numberColor: "text-green-600",
+                      };
+                    }
+                    // Default fallback - use index-based color rotation for icon and text
+                    const colorVariant =
+                      colorVariants[index % colorVariants.length];
+                    return {
+                      icon: <LaptopIcon className="w-6 h-6 text-white" />,
+                      iconBg: colorVariant.iconBg,
+                      numberColor: colorVariant.numberColor,
+                    };
+                  };
+
+                  const config = getCardIcon(quizName, index);
+                  // Default question count - can be made dynamic later
+                  const questionCount = quiz.questionCount || "0";
+
+                  // Get the slugs for URL generation
+                  // URL format: /{nestedSubPageId}-{parentSubPageId}-exit-exam/{quizSlug}
+                  // Extract original slugs from the URL pattern
+                  const exitExamMatch = subPageId.match(/^(.+)-(.+)-exit-exam$/);
+                  const nestedSlugForUrl = exitExamMatch ? exitExamMatch[1] : (pageData?.slug || nestedSubPageId || "");
+                  const parentSlugForUrl = exitExamMatch ? exitExamMatch[2] : (parentSubPageData?.slug || parentSubPageId || "");
+                  const quizUrl = `/${nestedSlugForUrl}-${parentSlugForUrl}-exit-exam/${quizSlug}`;
 
                   return (
                     <Link

@@ -7,6 +7,7 @@ import {
   getNursingExitExamSubPage,
   getNursingExitExamNestedSubPage,
   getNursingExitExamNestedSubPages,
+  getNursingExitExamQuizzes,
 } from "@/lib/firestore-operations";
 
 // Enable static generation at build time
@@ -497,12 +498,17 @@ export default async function SubPage({
   let isNestedSubPage = false;
   let parentSubPageId: string | null = null;
   let nestedSubPageId: string | null = null;
+  let parentSlugForUrl: string | null = null; // Store original slug for URL generation
+  let nestedSlugForUrl: string | null = null; // Store original slug for URL generation
   const lookupId: string = subPageId;
 
   if (nestedSubPageMatch) {
     // This is a nested sub-page
     nestedSubPageId = nestedSubPageMatch[1];
     parentSubPageId = nestedSubPageMatch[2];
+    // Store original slugs for URL generation
+    nestedSlugForUrl = nestedSubPageId;
+    parentSlugForUrl = parentSubPageId;
 
     // First verify the parent sub-page exists
     // Try with the parent ID as-is first
@@ -516,28 +522,22 @@ export default async function SubPage({
       }
     }
     
-    // If still not found, try without -rn or other suffixes
-    if ((!parentResult.success || !parentResult.data) && parentSubPageId.endsWith("-rn")) {
-      const baseId = parentSubPageId.slice(0, -3); // Remove "-rn"
-      parentResult = await getNursingExitExamSubPage(baseId);
-      if (parentResult.success && parentResult.data) {
-        parentSubPageId = baseId;
-      }
-    }
-    
-    // If still not found, try to find by slug
+    // If still not found, try to find by slug (this should be the primary method since URL uses slugs)
     if (!parentResult.success || !parentResult.data) {
       const { getNursingExitExamSubPages } = await import("@/lib/firestore-operations");
       const allSubPagesResult = await getNursingExitExamSubPages();
-      if (allSubPagesResult.success && allSubPagesResult.data) {
+      if (allSubPagesResult.success && allSubPagesResult.data && parentSubPageId) {
+        const searchSlug = parentSubPageId.toLowerCase();
         const foundParent = allSubPagesResult.data.find((subPage: any) => {
-          const subPageSlug = subPage.slug || subPage.id || subPage.subPageId;
-          const subPageId = subPage.id || subPage.subPageId;
+          const subPageSlug = (subPage.slug || subPage.id || subPage.subPageId || "").toLowerCase();
+          const subPageId = (subPage.id || subPage.subPageId || "").toLowerCase();
           return (
-            subPageSlug === parentSubPageId ||
-            subPageId === parentSubPageId ||
-            subPageSlug === parentSubPageId + "-exit-exam" ||
-            subPageId === parentSubPageId + "-exit-exam"
+            subPageSlug === searchSlug ||
+            subPageId === searchSlug ||
+            subPageSlug === searchSlug + "-exit-exam" ||
+            subPageId === searchSlug + "-exit-exam" ||
+            subPageSlug === searchSlug.replace("-exit-exam", "") ||
+            subPageId === searchSlug.replace("-exit-exam", "")
           );
         });
         if (foundParent) {
@@ -554,16 +554,68 @@ export default async function SubPage({
       notFound();
     }
 
-    // Get the nested sub-page
-    const nestedResult = await getNursingExitExamNestedSubPage(
-      parentSubPageId,
-      nestedSubPageId
-    );
-    if (!nestedResult.success || !nestedResult.data) {
+    // Use the actual document ID from the parent result
+    const resolvedParentSubPageId = parentResult.data.id || parentResult.data.subPageId || parentSubPageId;
+    if (!resolvedParentSubPageId || typeof resolvedParentSubPageId !== "string") {
+      notFound();
+    }
+    parentSubPageId = resolvedParentSubPageId;
+
+    // Get all nested sub-pages for this parent first, then find by slug
+    // This is more reliable than trying by ID first since the URL uses slugs
+    const { getNursingExitExamNestedSubPages } = await import("@/lib/firestore-operations");
+    const allNestedSubPagesResult = await getNursingExitExamNestedSubPages(parentSubPageId);
+    let nestedResult: any = null;
+    let resolvedNestedSubPageId: string | null = null;
+    
+    if (allNestedSubPagesResult.success && allNestedSubPagesResult.data && nestedSubPageId) {
+      // Try to find by slug first (since URL uses slugs)
+      const searchNestedId = nestedSubPageId; // Store in const for type narrowing
+      const foundNested = allNestedSubPagesResult.data.find((nestedSubPage: any) => {
+        const nestedSlug = nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
+        const nestedId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+        const searchSlug = searchNestedId.toLowerCase();
+        return (
+          (nestedSlug && nestedSlug.toLowerCase() === searchSlug) ||
+          (nestedId && nestedId.toLowerCase() === searchSlug)
+        );
+      });
+      
+      if (foundNested) {
+        resolvedNestedSubPageId = foundNested.id || foundNested.nestedSubPageId;
+        if (resolvedNestedSubPageId) {
+          nestedResult = await getNursingExitExamNestedSubPage(
+            parentSubPageId,
+            resolvedNestedSubPageId
+          );
+        }
+      }
+    }
+    
+    // If not found by slug, try direct ID lookup as fallback
+    if (!nestedResult || !nestedResult.success || !nestedResult.data) {
+      nestedResult = await getNursingExitExamNestedSubPage(
+        parentSubPageId,
+        nestedSubPageId
+      );
+      if (nestedResult.success && nestedResult.data) {
+        resolvedNestedSubPageId = nestedSubPageId;
+      }
+    }
+    
+    if (!nestedResult || !nestedResult.success || !nestedResult.data) {
       notFound();
     }
 
     pageData = nestedResult.data;
+    // Use the resolved document ID (either from slug lookup or direct ID)
+    nestedSubPageId = resolvedNestedSubPageId || nestedResult.data.id || nestedResult.data.nestedSubPageId || nestedSubPageId;
+    console.log("[DEBUG] Resolved IDs for nested sub-page:", {
+      originalNestedSlug: nestedSlugForUrl,
+      resolvedNestedSubPageId: nestedSubPageId,
+      originalParentSlug: parentSlugForUrl,
+      resolvedParentSubPageId: parentSubPageId
+    });
     isNestedSubPage = true;
   } else {
     // This is a regular sub-page
@@ -583,6 +635,35 @@ export default async function SubPage({
     if (nestedSubPagesResult.success && nestedSubPagesResult.data) {
       nestedSubPages = nestedSubPagesResult.data;
     }
+  }
+
+  // Fetch quizzes if this is a nested sub-page
+  let quizzes: any[] = [];
+  if (isNestedSubPage && parentSubPageId && nestedSubPageId) {
+    // Use the resolved parentSubPageId and nestedSubPageId (the actual document IDs from Firestore)
+    console.log("[DEBUG] Fetching quizzes for exit exam nested sub-page:", {
+      parentSubPageId,
+      nestedSubPageId,
+      isNestedSubPage
+    });
+    const quizzesResult = await getNursingExitExamQuizzes(
+      parentSubPageId,
+      nestedSubPageId
+    );
+    console.log("[DEBUG] Quiz fetch result:", {
+      success: quizzesResult.success,
+      message: quizzesResult.message,
+      quizCount: quizzesResult.data?.length || 0
+    });
+    if (quizzesResult.success && quizzesResult.data) {
+      quizzes = quizzesResult.data;
+    }
+  } else {
+    console.log("[DEBUG] Not fetching quizzes:", {
+      isNestedSubPage,
+      parentSubPageId,
+      nestedSubPageId
+    });
   }
 
   const content: ServiceContent = {
@@ -656,15 +737,144 @@ export default async function SubPage({
             </div>
           </div>
 
-          {/* Show Take Test button only for nested sub-pages */}
-          {isNestedSubPage && (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-              <Link
-                href="/contact"
-                className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors"
-              >
-                Take Test
-              </Link>
+          {/* Quiz Cards - Dashboard Style (for nested sub-pages of exit exam) */}
+          {(() => {
+            console.log("[DEBUG] Quiz cards rendering check:", {
+              isNestedSubPage,
+              quizzesLength: quizzes.length,
+              willRender: isNestedSubPage && quizzes.length > 0,
+              quizzes: quizzes.map((q: any) => ({ id: q.id, name: q.pageName || q.hero?.title }))
+            });
+            return null;
+          })()}
+          {isNestedSubPage && quizzes.length > 0 && (
+            <div className="mt-6 mb-8">
+              <div className="flex flex-wrap justify-center gap-4">
+                {/* All quizzes */}
+                {quizzes.map((quiz: any, index: number) => {
+                  const quizName =
+                    quiz.pageName ||
+                    quiz.hero?.title ||
+                    quiz.title ||
+                    quiz.quizName ||
+                    quiz.id;
+                  const quizPageId = quiz.id || quiz.quizId;
+                  const quizSlug = quiz.slug || quizPageId;
+
+                  // Get icon and colors based on quiz name
+                  const getCardIcon = (quizName: string, index: number) => {
+                    const nameLower = quizName.toLowerCase();
+                    const colorVariants = [
+                      {
+                        iconBg: "bg-purple-500",
+                        numberColor: "text-purple-600",
+                      },
+                      { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
+                      {
+                        iconBg: "bg-orange-500",
+                        numberColor: "text-orange-600",
+                      },
+                      { iconBg: "bg-green-500", numberColor: "text-green-600" },
+                      { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
+                      {
+                        iconBg: "bg-indigo-500",
+                        numberColor: "text-indigo-600",
+                      },
+                      { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
+                      { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
+                    ];
+
+                    if (nameLower.includes("reading")) {
+                      return {
+                        icon: <BookIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-purple-500",
+                        numberColor: "text-purple-600",
+                      };
+                    } else if (nameLower.includes("math")) {
+                      return {
+                        icon: <CalculatorIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-blue-500",
+                        numberColor: "text-blue-600",
+                      };
+                    } else if (nameLower.includes("science")) {
+                      return {
+                        icon: <FlaskIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-orange-500",
+                        numberColor: "text-orange-600",
+                      };
+                    } else if (nameLower.includes("english")) {
+                      return {
+                        icon: <ABCIcon className="w-6 h-6 text-white" />,
+                        iconBg: "bg-green-500",
+                        numberColor: "text-green-600",
+                      };
+                    }
+                    // Default fallback - use index-based color rotation for icon and text
+                    const colorVariant =
+                      colorVariants[index % colorVariants.length];
+                    return {
+                      icon: <LaptopIcon className="w-6 h-6 text-white" />,
+                      iconBg: colorVariant.iconBg,
+                      numberColor: colorVariant.numberColor,
+                    };
+                  };
+
+                  const config = getCardIcon(quizName, index);
+                  // Default question count - can be made dynamic later
+                  const questionCount = quiz.questionCount || "0";
+
+                  // Get the slugs for URL generation
+                  // URL format: /{nestedSubPageId}-{parentSubPageId}-exit-exam/{quizSlug}
+                  // Use the original slugs from the URL, not the resolved document IDs
+                  const parentUrlSlug = parentSlugForUrl || parentSubPageId || "";
+                  const nestedUrlSlug = nestedSlugForUrl || pageData?.slug || nestedSubPageId || "";
+                  const quizUrl = `/${nestedUrlSlug}-${parentUrlSlug}-exit-exam/${quizSlug}`;
+
+                  return (
+                    <Link
+                      key={quizPageId}
+                      href={quizUrl}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
+                        >
+                          {config.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-600 mb-1">
+                            {quizName}
+                          </p>
+                          <p
+                            className={`text-3xl font-bold ${config.numberColor}`}
+                          >
+                            {questionCount}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Questions Available
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <svg
+                            className="w-5 h-5 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           )}
 
