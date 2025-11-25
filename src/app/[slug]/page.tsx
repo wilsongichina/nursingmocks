@@ -344,6 +344,13 @@ const getIconComponent = (iconName: string) => {
 export async function generateStaticParams() {
   const params: { slug: string }[] = [];
 
+  // Pillar pages are handled by dedicated route files, exclude them from dynamic route
+  const pillarPageSlugs = new Set([
+    "nursing-entrance-exam",
+    "nursing-exit-exam",
+    "nursing-test-bank",
+  ]);
+
   try {
     const { getAllRouteMappings } = await import("@/lib/firestore-operations");
     const result = await getAllRouteMappings();
@@ -352,36 +359,33 @@ export async function generateStaticParams() {
       // Extract all unique slugs from route mappings
       const slugs = new Set<string>();
       result.data.forEach((mapping: any) => {
-        if (mapping.slug) {
+        if (mapping.slug && !pillarPageSlugs.has(mapping.slug)) {
           slugs.add(mapping.slug);
         }
       });
 
-      // Also include pillar page slugs from sidebar data
+      // Add sub-page slugs from categories (but exclude pillar pages)
       try {
         const { sidebarData } = await import("@/lib/data/sidebar-data");
-        if (sidebarData?.pillarPages) {
-          sidebarData.pillarPages.forEach((page: any) => {
-            if (page.id) {
-              slugs.add(page.id);
-            }
-          });
-        }
-        // Add sub-page slugs from categories
         if (sidebarData?.pillarCategories) {
-          Object.values(sidebarData.pillarCategories).forEach((categories: any) => {
-            if (Array.isArray(categories)) {
-              categories.forEach((category: any) => {
-                if (category.slug) {
-                  slugs.add(category.slug);
-                } else if (category.id) {
-                  slugs.add(category.id);
-                } else if (category.servicePageId) {
-                  slugs.add(category.servicePageId);
-                }
-              });
+          Object.values(sidebarData.pillarCategories).forEach(
+            (categories: any) => {
+              if (Array.isArray(categories)) {
+                categories.forEach((category: any) => {
+                  if (category.slug && !pillarPageSlugs.has(category.slug)) {
+                    slugs.add(category.slug);
+                  } else if (category.id && !pillarPageSlugs.has(category.id)) {
+                    slugs.add(category.id);
+                  } else if (
+                    category.servicePageId &&
+                    !pillarPageSlugs.has(category.servicePageId)
+                  ) {
+                    slugs.add(category.servicePageId);
+                  }
+                });
+              }
             }
-          });
+          );
         }
       } catch (error) {
         console.warn("[Static Generation] Could not load sidebar data:", error);
@@ -389,7 +393,7 @@ export async function generateStaticParams() {
 
       params.push(...Array.from(slugs).map((slug) => ({ slug })));
       console.log(
-        `[Static Generation] Generated ${params.length} static params for [slug] route`
+        `[Static Generation] Generated ${params.length} static params for [slug] route (excluded pillar pages)`
       );
     } else {
       console.warn(
@@ -418,6 +422,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
 
+  // Pillar pages are handled by dedicated route files, not this dynamic route
+  const pillarPageSlugs = [
+    "nursing-entrance-exam",
+    "nursing-exit-exam",
+    "nursing-test-bank",
+  ];
+
+  if (pillarPageSlugs.includes(slug)) {
+    return {
+      title: `${slug} | TeasGurus`,
+      description: `Content for ${slug}`,
+    };
+  }
+
   const routeMappingResult = await getRouteMappingBySlugOnly(slug);
   if (!routeMappingResult.success || !routeMappingResult.data) {
     return {
@@ -428,7 +446,7 @@ export async function generateMetadata({
 
   const mapping = routeMappingResult.data as any;
   const contentResult = await getPageByContentPath(mapping.refPath);
-  
+
   if (contentResult.success && contentResult.data) {
     const data = contentResult.data as any;
     if (data.meta) {
@@ -469,6 +487,17 @@ export default async function DynamicPage({
 }) {
   const { slug } = await params;
 
+  // Pillar pages are handled by dedicated route files, not this dynamic route
+  const pillarPageSlugs = [
+    "nursing-entrance-exam",
+    "nursing-exit-exam",
+    "nursing-test-bank",
+  ];
+
+  if (pillarPageSlugs.includes(slug)) {
+    notFound(); // Let Next.js fall back to the dedicated route files
+  }
+
   // Get route mapping
   const routeMappingResult = await getRouteMappingBySlugOnly(slug);
   if (!routeMappingResult.success || !routeMappingResult.data) {
@@ -476,7 +505,7 @@ export default async function DynamicPage({
   }
 
   const mapping = routeMappingResult.data as any;
-  
+
   // Load content using refPath
   const contentResult = await getPageByContentPath(mapping.refPath);
   if (!contentResult.success || !contentResult.data) {
@@ -514,9 +543,10 @@ export default async function DynamicPage({
 
     // Load question types
     const questionTypesResult = await getAllQuestionTypes();
-    const questionTypes = questionTypesResult.success && questionTypesResult.data 
-      ? questionTypesResult.data 
-      : [];
+    const questionTypes =
+      questionTypesResult.success && questionTypesResult.data
+        ? questionTypesResult.data
+        : [];
 
     const getQuestionTypeName = (questionTypeId: number) => {
       if (!questionTypeId) return "Unknown";
@@ -529,12 +559,13 @@ export default async function DynamicPage({
     // Filter questions to only show types 1, 2, 3, and 7
     const allowedQuestionTypes = [1, 2, 3, 7];
     const allQuestions =
-      questionsResult && questionsResult.success && questionsResult.data 
-        ? questionsResult.data 
+      questionsResult && questionsResult.success && questionsResult.data
+        ? questionsResult.data
         : [];
 
     const questions = allQuestions.filter((question: any) => {
-      const questionTypeId = question.questionTypeId || question.question_type_id;
+      const questionTypeId =
+        question.questionTypeId || question.question_type_id;
       return allowedQuestionTypes.includes(questionTypeId);
     });
 
@@ -944,80 +975,89 @@ export default async function DynamicPage({
           </div>
 
           {/* Quiz Cards (for topic pages - show first) */}
-          {pageType === "topic" && pillarId === "nursing-test-bank" && quizzes.length > 0 && (
-            <div id="quiz-cards" className="mt-6 mb-8">
-              <div className="flex flex-wrap justify-center gap-4">
-                {quizzes.map((quiz: any, index: number) => {
-                  // Use route mapping slug if available, otherwise fall back to document slug or id
-                  const quizSlug = quizSlugMap[quiz.id] || quiz.slug || quiz.id;
-                  const quizName =
-                    quiz.pageName ||
-                    quiz.hero?.title ||
-                    quiz.title ||
-                    quiz.quizName ||
-                    quiz.id;
-                  const config = getCardIcon(quizName, index);
-                  const questionCount = quiz.questionCount || "0";
+          {pageType === "topic" &&
+            pillarId === "nursing-test-bank" &&
+            quizzes.length > 0 && (
+              <div id="quiz-cards" className="mt-6 mb-8">
+                <div className="flex flex-wrap justify-center gap-4">
+                  {quizzes.map((quiz: any, index: number) => {
+                    // Use route mapping slug if available, otherwise fall back to document slug or id
+                    const quizSlug =
+                      quizSlugMap[quiz.id] || quiz.slug || quiz.id;
+                    const quizName =
+                      quiz.pageName ||
+                      quiz.hero?.title ||
+                      quiz.title ||
+                      quiz.quizName ||
+                      quiz.id;
+                    const config = getCardIcon(quizName, index);
+                    const questionCount = quiz.questionCount || "0";
 
-                  return (
-                    <Link
-                      key={quiz.id}
-                      href={`/${quizSlug}`}
-                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                        >
-                          {config.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-600 mb-1">
-                            {quizName}
-                          </p>
-                          <p
-                            className={`text-3xl font-bold ${config.numberColor}`}
+                    return (
+                      <Link
+                        key={quiz.id}
+                        href={`/${quizSlug}`}
+                        className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
                           >
-                            {questionCount}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
-                          </p>
+                            {config.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-600 mb-1">
+                              {quizName}
+                            </p>
+                            <p
+                              className={`text-3xl font-bold ${config.numberColor}`}
+                            >
+                              {questionCount}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Questions Available
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <svg
+                              className="w-5 h-5 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </div>
                         </div>
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="w-5 h-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Start Test Button (for topic pages with quizzes) */}
-          {pageType === "topic" && pillarId === "nursing-test-bank" && quizzes.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-              <a
-                href={`/${quizSlugMap[quizzes[0]?.id] || quizzes[0]?.slug || quizzes[0]?.id}`}
-                className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors text-center"
-              >
-                Start Test
-              </a>
-            </div>
-          )}
+          {pageType === "topic" &&
+            pillarId === "nursing-test-bank" &&
+            quizzes.length > 0 && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                <a
+                  href={`/${
+                    quizSlugMap[quizzes[0]?.id] ||
+                    quizzes[0]?.slug ||
+                    quizzes[0]?.id
+                  }`}
+                  className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors text-center"
+                >
+                  Start Test
+                </a>
+              </div>
+            )}
 
           {/* Nested Sub-Pages Cards */}
           {nestedPages.length > 0 && (
@@ -1025,7 +1065,10 @@ export default async function DynamicPage({
               <div className="flex flex-wrap justify-center gap-4">
                 {nestedPages.map((nestedPage: any, index: number) => {
                   // Use route mapping slug if available, otherwise fall back to document slug or id
-                  const nestedSlug = nestedPageSlugMap[nestedPage.id] || nestedPage.slug || nestedPage.id;
+                  const nestedSlug =
+                    nestedPageSlugMap[nestedPage.id] ||
+                    nestedPage.slug ||
+                    nestedPage.id;
                   const pageName =
                     nestedPage.pageName ||
                     nestedPage.hero?.title ||
@@ -1109,7 +1152,8 @@ export default async function DynamicPage({
               <div className="flex flex-wrap justify-center gap-4">
                 {topics.map((topic: any, index: number) => {
                   // Use route mapping slug if available, otherwise fall back to document slug or id
-                  const topicSlug = topicSlugMap[topic.id] || topic.slug || topic.id;
+                  const topicSlug =
+                    topicSlugMap[topic.id] || topic.slug || topic.id;
                   const topicName =
                     topic.pageName || topic.hero?.title || topic.id;
                   const config = getCardIcon(topicName, index);
@@ -1164,68 +1208,70 @@ export default async function DynamicPage({
           )}
 
           {/* Quiz Cards (for nested pages only - topic pages handled above) */}
-          {quizzes.length > 0 && !(pageType === "topic" && pillarId === "nursing-test-bank") && (
-            <div id="quiz-cards" className="mt-6 mb-8">
-              <div className="flex flex-wrap justify-center gap-4">
-                {quizzes.map((quiz: any, index: number) => {
-                  // Use route mapping slug if available, otherwise fall back to document slug or id
-                  const quizSlug = quizSlugMap[quiz.id] || quiz.slug || quiz.id;
-                  const quizName =
-                    quiz.pageName ||
-                    quiz.hero?.title ||
-                    quiz.title ||
-                    quiz.quizName ||
-                    quiz.id;
-                  const config = getCardIcon(quizName, index);
-                  const questionCount = quiz.questionCount || "0";
+          {quizzes.length > 0 &&
+            !(pageType === "topic" && pillarId === "nursing-test-bank") && (
+              <div id="quiz-cards" className="mt-6 mb-8">
+                <div className="flex flex-wrap justify-center gap-4">
+                  {quizzes.map((quiz: any, index: number) => {
+                    // Use route mapping slug if available, otherwise fall back to document slug or id
+                    const quizSlug =
+                      quizSlugMap[quiz.id] || quiz.slug || quiz.id;
+                    const quizName =
+                      quiz.pageName ||
+                      quiz.hero?.title ||
+                      quiz.title ||
+                      quiz.quizName ||
+                      quiz.id;
+                    const config = getCardIcon(quizName, index);
+                    const questionCount = quiz.questionCount || "0";
 
-                  return (
-                    <Link
-                      key={quiz.id}
-                      href={`/${quizSlug}`}
-                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                        >
-                          {config.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-600 mb-1">
-                            {quizName}
-                          </p>
-                          <p
-                            className={`text-3xl font-bold ${config.numberColor}`}
+                    return (
+                      <Link
+                        key={quiz.id}
+                        href={`/${quizSlug}`}
+                        className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
                           >
-                            {questionCount}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
-                          </p>
+                            {config.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-600 mb-1">
+                              {quizName}
+                            </p>
+                            <p
+                              className={`text-3xl font-bold ${config.numberColor}`}
+                            >
+                              {questionCount}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Questions Available
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <svg
+                              className="w-5 h-5 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </div>
                         </div>
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="w-5 h-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </section>
 

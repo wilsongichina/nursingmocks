@@ -504,7 +504,10 @@ export default function Sidebar({
           }
         }
       } catch (error) {
-        console.warn("[Sidebar] Could not load static data, falling back to Firestore:", error);
+        console.warn(
+          "[Sidebar] Could not load static data, falling back to Firestore:",
+          error
+        );
       }
       return false;
     };
@@ -591,7 +594,10 @@ export default function Sidebar({
           return newSet;
         });
       } catch (error) {
-        console.error("Error loading pillar pages and categories from Firestore:", error);
+        console.error(
+          "Error loading pillar pages and categories from Firestore:",
+          error
+        );
       }
     };
 
@@ -666,12 +672,10 @@ export default function Sidebar({
     }
   };
 
-  const handleNestedSubPageClick = (
+  const handleNestedSubPageClick = async (
     nestedSubPage: any,
     parentSubPageId: string
   ) => {
-    const nestedPageId =
-      nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
     // Get parent slug from selectedSubPage (prefer slug over id) or use parentSubPageId
     const parentSlug =
       selectedSubPage?.slug || selectedSubPage?.id || parentSubPageId;
@@ -679,25 +683,63 @@ export default function Sidebar({
     // Check if this is for exit exam, test bank, or entrance exam
     const isExitExam = selectedSubPage?.parentPillarId === "nursing-exit-exam";
     const isTestBank = selectedSubPage?.parentPillarId === "nursing-test-bank";
+    const pillarId = selectedSubPage?.parentPillarId || "nursing-entrance-exam";
 
-    if (isTestBank) {
-      // Test bank URL pattern: /{nestedPageId}-{parentSlug}-test-bank
-      const nestedSubPageUrl = `/${nestedPageId}-${parentSlug}-test-bank`;
-      router.push(nestedSubPageUrl);
-    } else if (isExitExam) {
-      // Exit exam URL pattern: /{nestedPageId}-{parentSlug}-exit-exam
-      const nestedSubPageUrl = `/${nestedPageId}-${parentSlug}-exit-exam`;
-      router.push(nestedSubPageUrl);
-    } else {
-      // Entrance exam URL pattern: /{parentSlug}-{nestedPageId}-questions
-      // Remove -exam suffix if present for nested sub-page URLs
-      const parentUrlSlug = parentSlug.endsWith("-exam")
-        ? parentSlug.slice(0, -5)
-        : parentSlug;
-      const nestedSubPageUrl = `/${parentUrlSlug}-${nestedPageId}-questions`;
-      router.push(nestedSubPageUrl);
+    // Try to get route mapping slug for the nested sub-page (most reliable)
+    let nestedSubPageUrl: string | null = null;
+    const nestedPageId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+
+    try {
+      const { getRouteMappingById } = await import(
+        "@/lib/firestore-operations"
+      );
+      const routeMappingResult = await getRouteMappingById({
+        pillarId: pillarId,
+        type: "nested",
+        id: nestedPageId,
+        subPageId: parentSubPageId,
+      });
+
+      if (routeMappingResult.success && routeMappingResult.data) {
+        const mapping = routeMappingResult.data as any;
+        if (mapping.slug) {
+          // Use the route mapping slug directly (this is the final URL slug)
+          nestedSubPageUrl = `/${mapping.slug}`;
+        }
+      }
+    } catch (error) {
+      console.warn("Error getting route mapping for nested sub-page:", error);
     }
 
+    // If route mapping not found, construct URL based on pillar page type
+    if (!nestedSubPageUrl) {
+      const nestedPageSlug =
+        nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
+
+      if (isTestBank) {
+        // Test bank URL pattern: /{nestedPageSlug}-{parentSlug}-test-bank
+        // Note: nestedPageSlug might already contain parent prefix, but we need the full format
+        nestedSubPageUrl = `/${nestedPageSlug}-${parentSlug}-test-bank`;
+      } else if (isExitExam) {
+        // Exit exam: nested slug already contains parent prefix, so just use the nested slug
+        // The nested slug format is: {parentSlug}-{nestedBaseSlug}
+        nestedSubPageUrl = `/${nestedPageSlug}`;
+      } else {
+        // Entrance exam URL pattern: /{parentSlug}-{nestedBaseSlug}-questions
+        // Extract nested base slug if nested slug contains parent prefix
+        let nestedBaseSlug = nestedPageSlug;
+        if (nestedPageSlug.startsWith(parentSlug + "-")) {
+          nestedBaseSlug = nestedPageSlug.substring(parentSlug.length + 1);
+        }
+        // Remove -exam suffix if present for nested sub-page URLs
+        const parentUrlSlug = parentSlug.endsWith("-exam")
+          ? parentSlug.slice(0, -5)
+          : parentSlug;
+        nestedSubPageUrl = `/${parentUrlSlug}-${nestedBaseSlug}-questions`;
+      }
+    }
+
+    router.push(nestedSubPageUrl);
     setIsModalOpen(false);
     setSelectedSubPage(null);
     setNestedSubPages([]);
@@ -1018,9 +1060,9 @@ export default function Sidebar({
               const pillarPageOrder = [
                 "nursing-entrance-exam",
                 "nursing-test-bank",
-                "nursing-exit-exam"
+                "nursing-exit-exam",
               ];
-              
+
               // Filter pillar pages that have categories and sort them
               const validPillarPages = pillarPages
                 .filter((page) => (pillarCategories[page.id] || []).length > 0)
@@ -1037,7 +1079,7 @@ export default function Sidebar({
                   // If neither is in the order array, maintain original order
                   return 0;
                 });
-              
+
               return validPillarPages.map((pillarPage, index) => {
                 const categories = pillarCategories[pillarPage.id] || [];
 
@@ -1046,7 +1088,8 @@ export default function Sidebar({
                 if (pillarPage.id === "nursing-entrance-exam") {
                   pillarActive =
                     pathname.startsWith(`/${pillarPage.id}`) ||
-                    (!!pathname.match(/^\/.+-exam$/) && !pathname.endsWith("-exit-exam")) ||
+                    (!!pathname.match(/^\/.+-exam$/) &&
+                      !pathname.endsWith("-exit-exam")) ||
                     !!pathname.match(/^\/.+-.+-questions$/);
                 } else if (pillarPage.id === "nursing-exit-exam") {
                   pillarActive =
@@ -1095,208 +1138,228 @@ export default function Sidebar({
                 return (
                   <React.Fragment key={pillarPage.id}>
                     <li>
-                    {isCollapsed ? (
-                      <Link
-                        href={`/${pillarPage.id}`}
-                        className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                          pillarActive ? activeBgColor : "text-gray-700"
-                        }`}
-                        title={getPillarPageName(pillarPage)}
-                      >
-                        <IconWithBackground
-                          icon={iconType}
-                          color={iconColor}
-                          size="w-8 h-8"
-                        />
-                      </Link>
-                    ) : (
-                      <div>
-                        <div
-                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      {isCollapsed ? (
+                        <Link
+                          href={`/${pillarPage.id}`}
+                          className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
                             pillarActive ? activeBgColor : "text-gray-700"
                           }`}
+                          title={getPillarPageName(pillarPage)}
                         >
-                          <Link
-                            href={`/${pillarPage.id}`}
-                            className="flex items-center gap-3 flex-1 cursor-pointer"
-                            onClick={(e) => {
-                              // Don't prevent default - allow navigation
-                              e.stopPropagation();
-                            }}
+                          <IconWithBackground
+                            icon={iconType}
+                            color={iconColor}
+                            size="w-8 h-8"
+                          />
+                        </Link>
+                      ) : (
+                        <div>
+                          <div
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                              pillarActive ? activeBgColor : "text-gray-700"
+                            }`}
                           >
-                            <IconWithBackground
-                              icon={iconType}
-                              color={iconColor}
-                              size="w-8 h-8"
-                            />
-                            <span
-                              className={`text-sm font-medium cursor-pointer ${
-                                pillarActive
-                                  ? activeTextColor
-                                  : "text-gray-700"
-                              }`}
+                            <Link
+                              href={`/${pillarPage.id}`}
+                              className="flex items-center gap-3 flex-1 cursor-pointer"
+                              onClick={(e) => {
+                                // Don't prevent default - allow navigation
+                                e.stopPropagation();
+                              }}
                             >
-                              {getPillarPageName(pillarPage)}
-                            </span>
-                          </Link>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleExpand(pillarPage.id);
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
-                            aria-label={`Toggle ${getPillarPageName(
-                              pillarPage
-                            )} menu`}
-                          >
-                            <svg
-                              className={`w-4 h-4 transition-transform duration-200 ${
-                                isExpanded ? "rotate-90" : ""
-                              }`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
+                              <IconWithBackground
+                                icon={iconType}
+                                color={iconColor}
+                                size="w-8 h-8"
                               />
-                            </svg>
-                          </button>
-                        </div>
-                        {isExpanded && (
-                          <ul className="ml-4 mt-1 space-y-1 pl-2">
-                            {categories.map((category) => {
-                              // Get category ID and slug
-                              const categoryId =
-                                category.id || category.subPageId || category.servicePageId;
-                              const categorySlug = category.slug || categoryId;
+                              <span
+                                className={`text-sm font-medium cursor-pointer ${
+                                  pillarActive
+                                    ? activeTextColor
+                                    : "text-gray-700"
+                                }`}
+                              >
+                                {getPillarPageName(pillarPage)}
+                              </span>
+                            </Link>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleExpand(pillarPage.id);
+                              }}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
+                              aria-label={`Toggle ${getPillarPageName(
+                                pillarPage
+                              )} menu`}
+                            >
+                              <svg
+                                className={`w-4 h-4 transition-transform duration-200 ${
+                                  isExpanded ? "rotate-90" : ""
+                                }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          {isExpanded && (
+                            <ul className="ml-4 mt-1 space-y-1 pl-2">
+                              {categories.map((category) => {
+                                // Get category ID and slug
+                                const categoryId =
+                                  category.id ||
+                                  category.subPageId ||
+                                  category.servicePageId;
+                                const categorySlug =
+                                  category.slug || categoryId;
 
-                              // Determine URL based on pillar page type
-                              let subPageUrl: string;
-                              let categoryActive: boolean;
+                                // Determine URL based on pillar page type
+                                let subPageUrl: string;
+                                let categoryActive: boolean;
 
-                              if (pillarPage.id === "nursing-entrance-exam") {
-                                // For nursing-entrance-exam: /{slug}-exam or /{slug}
-                                subPageUrl = `/${
-                                  categorySlug.endsWith("-exam")
-                                    ? categorySlug
-                                    : `${categorySlug}-exam`
-                                }`;
-                                categoryActive =
-                                  pathname === subPageUrl ||
-                                  pathname === `/${categorySlug}` ||
-                                  pathname === `/${categorySlug}-exam` ||
-                                  !!pathname.match(
-                                    new RegExp(`^/${categorySlug}-.+-questions$`)
-                                  );
-                              } else if (pillarPage.id === "nursing-exit-exam") {
-                                // For nursing-exit-exam: /nursing-exit-exam/{slug} or /{nested}-{parent}-exit-exam
-                                subPageUrl = `/nursing-exit-exam/${categorySlug}`;
-                                categoryActive =
-                                  pathname === subPageUrl ||
-                                  pathname.startsWith(subPageUrl + "/") ||
-                                  !!pathname.match(
-                                    new RegExp(`^/.+-${categorySlug}-exit-exam$`)
-                                  );
-                              } else if (pillarPage.id === "nursing-test-bank") {
-                                // For nursing-test-bank: /{slug}-test-bank or /{nested}-{parent}-test-bank
-                                subPageUrl = `/${categorySlug}-test-bank`;
-                                categoryActive =
-                                  pathname === subPageUrl ||
-                                  !!pathname.match(
-                                    new RegExp(`^/.+-${categorySlug}-test-bank$`)
-                                  ) ||
-                                  !!pathname.match(
-                                    new RegExp(`^/${categorySlug}-.+-test-bank$`)
-                                  );
-                              } else {
-                                // For other pillar pages: /{pillarPage.id}/{categoryId}
-                                subPageUrl = `/${pillarPage.id}/${categoryId}`;
-                                categoryActive =
-                                  pathname === subPageUrl ||
-                                  pathname.startsWith(subPageUrl + "/");
-                              }
-
-                              const categoryName =
-                                category.pageName ||
-                                category.hero?.title ||
-                                formatCategoryName(categoryId);
-
-                              // Determine which handler to use based on pillar page
-                              const handleClick = (e: React.MouseEvent) => {
-                                if (pillarPage.id === "nursing-exit-exam") {
-                                  handleExitExamSubPageClick(
-                                    e,
-                                    categoryId,
-                                    categoryName,
-                                    categorySlug
-                                  );
-                                } else if (pillarPage.id === "nursing-test-bank") {
-                                  handleTestBankSubPageClick(
-                                    e,
-                                    categoryId,
-                                    categoryName,
-                                    categorySlug
-                                  );
+                                if (pillarPage.id === "nursing-entrance-exam") {
+                                  // For nursing-entrance-exam: /{slug}-exam or /{slug}
+                                  subPageUrl = `/${
+                                    categorySlug.endsWith("-exam")
+                                      ? categorySlug
+                                      : `${categorySlug}-exam`
+                                  }`;
+                                  categoryActive =
+                                    pathname === subPageUrl ||
+                                    pathname === `/${categorySlug}` ||
+                                    pathname === `/${categorySlug}-exam` ||
+                                    !!pathname.match(
+                                      new RegExp(
+                                        `^/${categorySlug}-.+-questions$`
+                                      )
+                                    );
+                                } else if (
+                                  pillarPage.id === "nursing-exit-exam"
+                                ) {
+                                  // For nursing-exit-exam: /nursing-exit-exam/{slug} or /{nested}-{parent}-exit-exam
+                                  subPageUrl = `/nursing-exit-exam/${categorySlug}`;
+                                  categoryActive =
+                                    pathname === subPageUrl ||
+                                    pathname.startsWith(subPageUrl + "/") ||
+                                    !!pathname.match(
+                                      new RegExp(
+                                        `^/.+-${categorySlug}-exit-exam$`
+                                      )
+                                    );
+                                } else if (
+                                  pillarPage.id === "nursing-test-bank"
+                                ) {
+                                  // For nursing-test-bank: /{slug}-test-bank or /{nested}-{parent}-test-bank
+                                  subPageUrl = `/${categorySlug}-test-bank`;
+                                  categoryActive =
+                                    pathname === subPageUrl ||
+                                    !!pathname.match(
+                                      new RegExp(
+                                        `^/.+-${categorySlug}-test-bank$`
+                                      )
+                                    ) ||
+                                    !!pathname.match(
+                                      new RegExp(
+                                        `^/${categorySlug}-.+-test-bank$`
+                                      )
+                                    );
                                 } else {
-                                  handleSubPageClick(
-                                    e,
-                                    categoryId,
-                                    categoryName,
-                                    pillarPage.id,
-                                    categorySlug
-                                  );
+                                  // For other pillar pages: /{pillarPage.id}/{categoryId}
+                                  subPageUrl = `/${pillarPage.id}/${categoryId}`;
+                                  categoryActive =
+                                    pathname === subPageUrl ||
+                                    pathname.startsWith(subPageUrl + "/");
                                 }
-                              };
 
-                              return (
-                                <li key={categoryId}>
-                                  <button
-                                    onClick={handleClick}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left cursor-pointer ${
-                                      categoryActive
-                                        ? activeBgColor
-                                        : "text-gray-600 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    <span
-                                      className={`cursor-pointer ${
+                                const categoryName =
+                                  category.pageName ||
+                                  category.hero?.title ||
+                                  formatCategoryName(categoryId);
+
+                                // Determine which handler to use based on pillar page
+                                const handleClick = (e: React.MouseEvent) => {
+                                  if (pillarPage.id === "nursing-exit-exam") {
+                                    handleExitExamSubPageClick(
+                                      e,
+                                      categoryId,
+                                      categoryName,
+                                      categorySlug
+                                    );
+                                  } else if (
+                                    pillarPage.id === "nursing-test-bank"
+                                  ) {
+                                    handleTestBankSubPageClick(
+                                      e,
+                                      categoryId,
+                                      categoryName,
+                                      categorySlug
+                                    );
+                                  } else {
+                                    handleSubPageClick(
+                                      e,
+                                      categoryId,
+                                      categoryName,
+                                      pillarPage.id,
+                                      categorySlug
+                                    );
+                                  }
+                                };
+
+                                return (
+                                  <li key={categoryId}>
+                                    <button
+                                      onClick={handleClick}
+                                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left cursor-pointer ${
                                         categoryActive
-                                          ? activeTextColor
-                                          : "text-gray-400"
+                                          ? activeBgColor
+                                          : "text-gray-600 hover:bg-gray-50"
                                       }`}
                                     >
-                                      •
-                                    </span>
-                                    <span
-                                      className={`font-medium cursor-pointer ${
-                                        categoryActive
-                                          ? activeTextColor
-                                          : "text-gray-600"
-                                      }`}
-                                    >
-                                      {categoryName}
-                                    </span>
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                  {/* Separator after each pillar page (except the last one) */}
-                  {index < validPillarPages.length - 1 && !isCollapsed && (
-                    <li key={`separator-${pillarPage.id}`} className="px-3 py-2">
-                      <div className="border-t border-gray-200"></div>
+                                      <span
+                                        className={`cursor-pointer ${
+                                          categoryActive
+                                            ? activeTextColor
+                                            : "text-gray-400"
+                                        }`}
+                                      >
+                                        •
+                                      </span>
+                                      <span
+                                        className={`font-medium cursor-pointer ${
+                                          categoryActive
+                                            ? activeTextColor
+                                            : "text-gray-600"
+                                        }`}
+                                      >
+                                        {categoryName}
+                                      </span>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </div>
+                      )}
                     </li>
-                  )}
-                </React.Fragment>
+                    {/* Separator after each pillar page (except the last one) */}
+                    {index < validPillarPages.length - 1 && !isCollapsed && (
+                      <li
+                        key={`separator-${pillarPage.id}`}
+                        className="px-3 py-2"
+                      >
+                        <div className="border-t border-gray-200"></div>
+                      </li>
+                    )}
+                  </React.Fragment>
                 );
               });
             })()}
