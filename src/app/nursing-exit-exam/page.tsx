@@ -407,13 +407,13 @@ export default async function NursingExitExamPage() {
                   
                   const config = cardConfigs[index] || cardConfigs[0];
                   
-                  // Get the slug for URL generation
+                  // Get the slug for URL generation - use slug directly (no prefix for subpages)
                   const pageSlug = subPage.slug || pageId;
                   
                   return (
                     <Link
                       key={pageId}
-                      href={`/nursing-exit-exam/${pageSlug}`}
+                      href={`/${pageSlug}`}
                       className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm"
                     >
                       <div className="flex items-center gap-4">

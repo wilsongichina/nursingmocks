@@ -133,7 +133,7 @@ export default function NursingTestBankAdminPage() {
           ogTitle: `${newSubPageName} | Nursing Test Bank`,
           ogDescription: `Content for ${newSubPageName} under Nursing Test Bank.`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${normalizedSubPageId}-test-bank`,
+          canonicalUrl: `https://teasgurus.com/${normalizedSubPageId}`,
         },
         hero: {
           badge: "Nursing Test Bank",
@@ -453,7 +453,7 @@ export default function NursingTestBankAdminPage() {
                     </div>
                     <div className="mt-4">
                       <Link
-                        href={`/${pageSlug}-test-bank`}
+                        href={`/${pageSlug}`}
                         target="_blank"
                         className="text-purple-600 hover:text-purple-800 text-sm font-medium"
                       >
@@ -597,13 +597,9 @@ export default function NursingTestBankAdminPage() {
                     placeholder="e.g., math-review, reading-strategies"
                     required
                   />
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
-                    -test-bank
-                  </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
                   This will create a page at /{newSubPageId || "sub-page-id"}
-                  -test-bank
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

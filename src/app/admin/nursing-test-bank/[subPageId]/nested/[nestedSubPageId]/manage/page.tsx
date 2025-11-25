@@ -42,7 +42,7 @@ export default function ManageTopics({
   const [saving, setSaving] = useState(false);
   const [parentSubPageName, setParentSubPageName] = useState("");
   const [nestedSubPageName, setNestedSubPageName] = useState("");
-  const [parentSlug, setParentSlug] = useState("");
+  // const [parentSlug, setParentSlug] = useState("");
   const [nestedSlug, setNestedSlug] = useState("");
   const [nestedSubPageContent, setNestedSubPageContent] = useState<any>(null);
 
@@ -74,7 +74,7 @@ export default function ManageTopics({
       if (parentResult.success && parentResult.data) {
         const parentData = parentResult.data as any;
         setParentSubPageName(parentData.pageName || resolvedParams.subPageId);
-        setParentSlug(parentData.slug || resolvedParams.subPageId);
+        // setParentSlug(parentData.slug || resolvedParams.subPageId);
       }
 
       const nestedResult = await getNursingTestBankNestedSubPage(
@@ -155,9 +155,16 @@ export default function ManageTopics({
       setError("");
       setSuccess("");
 
+      // The backend will automatically create the slug as: [nestedSlug]-[userSlug]
+      // Since nestedSlug already contains the parent prefix, the final slug will be correct
+      // For canonicalUrl, we'll use the nested slug + user slug format
+      const finalSlug = nestedSlug
+        ? `${nestedSlug}-${normalizedTopicId}`
+        : normalizedTopicId;
+
       const defaultTopicContent = {
         pageName: newTopicName,
-        slug: normalizedTopicId,
+        slug: normalizedTopicId, // Just the user-entered base slug, backend will prepend nestedSlug
         meta: {
           title: `${newTopicName} | TeasGurus`,
           description: `Content for ${newTopicName} under ${
@@ -167,9 +174,7 @@ export default function ManageTopics({
           ogTitle: `${newTopicName} | TeasGurus`,
           ogDescription: `Content for ${newTopicName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${
-            nestedSlug || resolvedParams.nestedSubPageId
-          }-${parentSlug || resolvedParams.subPageId}-${normalizedTopicId}`,
+          canonicalUrl: `https://teasgurus.com/${finalSlug}`,
         },
         hero: {
           badge: nestedSubPageName || resolvedParams.nestedSubPageId,
@@ -279,9 +284,7 @@ export default function ManageTopics({
               </Link>
               {resolvedParams && (
                 <Link
-                  href={`/${nestedSlug || resolvedParams.nestedSubPageId}-${
-                    parentSlug || resolvedParams.subPageId
-                  }-test-bank`}
+                  href={`/${nestedSlug || resolvedParams.nestedSubPageId}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -369,14 +372,11 @@ export default function ManageTopics({
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${nestedSlug || resolvedParams.nestedSubPageId}-${
-                  parentSlug || resolvedParams.subPageId
-                }-test-bank`}
+                href={`/${nestedSlug || resolvedParams.nestedSubPageId}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                /{nestedSlug || resolvedParams.nestedSubPageId}-
-                {parentSlug || resolvedParams.subPageId}-test-bank
+                /{nestedSlug || resolvedParams.nestedSubPageId}
               </a>
             </p>
           </div>
@@ -433,9 +433,8 @@ export default function ManageTopics({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {topics.map((topic) => {
                 const topicSlug = topic.slug || topic.id;
-                const topicUrl = `/${
-                  nestedSlug || resolvedParams.nestedSubPageId
-                }-${parentSlug || resolvedParams.subPageId}-${topicSlug}`;
+                // Use the topic slug directly (it already contains the nested page prefix from backend)
+                const topicUrl = `/${topicSlug}`;
                 return (
                   <div
                     key={topic.id}
@@ -457,7 +456,26 @@ export default function ManageTopics({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 flex-wrap gap-2">
+                      <Link
+                        href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${topic.id}/manage`}
+                        className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center space-x-1"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        <span>Manage Quizzes</span>
+                      </Link>
                       <Link
                         href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${topic.id}`}
                         className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
@@ -525,6 +543,7 @@ export default function ManageTopics({
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
                     https://teasgurus.com/
+                    {nestedSlug || resolvedParams.nestedSubPageId}-
                   </span>
                   <input
                     type="text"
@@ -535,19 +554,12 @@ export default function ManageTopics({
                       )
                     }
                     className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., anatomy-physiology"
+                    placeholder="e.g., topic-name"
                     required
                   />
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
-                    {nestedSlug || resolvedParams.nestedSubPageId}-
-                    {parentSlug || resolvedParams.subPageId}-
-                  </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /
-                  {nestedSlug || resolvedParams.nestedSubPageId}-
-                  {parentSlug || resolvedParams.subPageId}-
-                  {newTopicId || "topic-id"}
+                  This will create a page at /{nestedSlug || resolvedParams.nestedSubPageId || "nested-page-id"}-{newTopicId || "topic-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

@@ -124,7 +124,7 @@ export default function EditSubPage({
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${resolvedParams.subPageId}-test-bank`,
+            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${pageData.slug || resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -173,7 +173,7 @@ export default function EditSubPage({
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}-test-bank`,
+            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {
@@ -429,7 +429,7 @@ export default function EditSubPage({
               </Link>
               {resolvedParams?.subPageId && (
                 <Link
-                  href={`/${slug || resolvedParams.subPageId}-test-bank`}
+                  href={`/${slug || resolvedParams.subPageId}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -573,7 +573,7 @@ export default function EditSubPage({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  URL slug (editable). The URL will be: /{slug || resolvedParams?.subPageId || ""}-test-bank
+                  URL slug (editable). The URL will be: /{slug || resolvedParams?.subPageId || ""}
                 </p>
               </div>
             </div>

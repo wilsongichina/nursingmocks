@@ -425,11 +425,7 @@ export default function NursingEntranceExamAdminPage() {
                   </div>
                   <div className="mt-4">
                     <Link
-                      href={`/${
-                        (subPage.slug || subPage.id).endsWith("-exam")
-                          ? subPage.slug || subPage.id
-                          : `${subPage.slug || subPage.id}-exam`
-                      }`}
+                      href={`/${subPage.slug || subPage.id}`}
                       target="_blank"
                       className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                     >
@@ -575,7 +571,6 @@ export default function NursingEntranceExamAdminPage() {
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
                   This will create a page at /{newSubPageId || "sub-page-id"}
-                  -exam
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

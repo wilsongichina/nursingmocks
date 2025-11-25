@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  getNursingExitExamQuizQuestion,
-  uploadNursingExitExamQuizQuestion,
+  getNursingTestBankQuizQuestion,
+  uploadNursingTestBankQuizQuestion,
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
@@ -39,12 +39,45 @@ interface QuestionData {
   [key: string]: any;
 }
 
+// Helper function to strip HTML tags
+const stripHtmlTags = (html: string): string => {
+  if (!html) return "";
+  if (typeof window === "undefined") {
+    return html.replace(/<[^>]*>/g, "").trim();
+  }
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = html;
+  return (tempDiv.textContent || tempDiv.innerText || html).trim();
+};
+
+// Generate slug from question text (first 180 characters)
+const generateSlug = (questionText: string): string => {
+  if (!questionText) return "";
+  
+  // Strip HTML tags
+  const cleanText = stripHtmlTags(questionText);
+  
+  // Take first 180 characters
+  const truncated = cleanText.substring(0, 180);
+  
+  // Convert to URL-friendly slug
+  const slug = truncated
+    .toLowerCase()
+    .replace(/nbsp/g, "")
+    .replace(/&nbsp;/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  
+  return slug;
+};
+
 export default function EditQuestion({
   params,
 }: {
   params: Promise<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
     questionId: string;
   }>;
@@ -53,6 +86,7 @@ export default function EditQuestion({
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
     questionId: string;
   } | null>(null);
@@ -62,38 +96,6 @@ export default function EditQuestion({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // Helper function to strip HTML tags
-  const stripHtmlTags = (html: string): string => {
-    if (!html) return "";
-    if (typeof window === "undefined") {
-      return html.replace(/<[^>]*>/g, "").trim();
-    }
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = html;
-    return (tempDiv.textContent || tempDiv.innerText || html).trim();
-  };
-
-  // Generate slug from question text (first 180 characters)
-  const generateSlug = useCallback((questionText: string): string => {
-    if (!questionText) return "";
-    
-    // Strip HTML tags
-    const cleanText = stripHtmlTags(questionText);
-    
-    // Take first 180 characters
-    const truncated = cleanText.substring(0, 180);
-    
-    // Convert to URL-friendly slug
-    const slug = truncated
-      .toLowerCase()
-      .replace(/nbsp/g, "")
-      .replace(/&nbsp;/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    
-    return slug;
-  }, []);
 
   useEffect(() => {
     const resolveParams = async () => {
@@ -118,141 +120,142 @@ export default function EditQuestion({
     loadQuestionTypes();
   }, []);
 
-  const loadQuestion = useCallback(async () => {
+  useEffect(() => {
     if (!resolvedParams) return;
 
-    try {
-      setLoading(true);
-      setError("");
+    const loadQuestion = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-      const result = await getNursingExitExamQuizQuestion(
-        resolvedParams.subPageId,
-        resolvedParams.nestedSubPageId,
-        resolvedParams.quizId,
-        resolvedParams.questionId
-      );
+        const result = await getNursingTestBankQuizQuestion(
+          resolvedParams.subPageId,
+          resolvedParams.nestedSubPageId,
+          resolvedParams.topicId,
+          resolvedParams.quizId,
+          resolvedParams.questionId
+        );
 
-      if (result.success && result.data) {
-        const data = result.data as QuestionData;
-        const questionTypeId = data.questionTypeId || data.question_type_id || 1;
-        
-        // Parse options based on question type
-        let optionsArray: string[] = [];
-        if (data.options) {
-          if (Array.isArray(data.options)) {
-            optionsArray = data.options;
-          } else if (typeof data.options === "string") {
-            try {
-              const parsed = JSON.parse(data.options);
-              if (typeof parsed === "object" && !Array.isArray(parsed)) {
-                // Convert object to array (for types 1, 2, 3)
-                optionsArray = Object.keys(parsed)
-                  .sort()
-                  .map((key) => {
-                    const option = parsed[key];
-                    return option.choice || option || "";
-                  });
-              } else if (Array.isArray(parsed)) {
-                optionsArray = parsed;
+        if (result.success && result.data) {
+          const data = result.data as QuestionData;
+          const questionTypeId = data.questionTypeId || data.question_type_id || 1;
+          
+          // Parse options based on question type
+          let optionsArray: string[] = [];
+          if (data.options) {
+            if (Array.isArray(data.options)) {
+              optionsArray = data.options;
+            } else if (typeof data.options === "string") {
+              try {
+                const parsed = JSON.parse(data.options);
+                if (typeof parsed === "object" && !Array.isArray(parsed)) {
+                  // Convert object to array (for types 1, 2, 3)
+                  optionsArray = Object.keys(parsed)
+                    .sort()
+                    .map((key) => {
+                      const option = parsed[key];
+                      return option.choice || option || "";
+                    });
+                } else if (Array.isArray(parsed)) {
+                  optionsArray = parsed;
+                }
+              } catch {
+                // If parsing fails, treat as single string
+                optionsArray = [data.options];
               }
-            } catch {
-              // If parsing fails, treat as single string
-              optionsArray = [data.options];
             }
           }
-        }
-        
-        // Handle default options based on question type
-        if (questionTypeId === 3 && optionsArray.length === 0) {
-          // True/False
-          optionsArray = ["True", "False"];
-        } else if (questionTypeId === 7 && optionsArray.length === 0) {
-          // Numeric/Fill-in
-          optionsArray = [""];
-        } else if (optionsArray.length === 0) {
-          // Default for single/multiple choice
-          optionsArray = ["", "", "", ""];
-        }
-        
-        // Parse correct answer based on question type
-        let correctAnswer: string | string[] = "";
-        if (data.correctAnswer) {
-          if (questionTypeId === 7) {
-            // Type 7: Numeric - should be an array
-            if (Array.isArray(data.correctAnswer)) {
-              correctAnswer = data.correctAnswer;
-            } else if (typeof data.correctAnswer === "string") {
-              try {
-                // Try to parse if it's a JSON string
-                const parsed = JSON.parse(data.correctAnswer);
-                correctAnswer = Array.isArray(parsed) ? parsed : [parsed];
-              } catch {
-                // If not JSON, wrap in array
-                correctAnswer = [data.correctAnswer];
+          
+          // Handle default options based on question type
+          if (questionTypeId === 3 && optionsArray.length === 0) {
+            // True/False
+            optionsArray = ["True", "False"];
+          } else if (questionTypeId === 7 && optionsArray.length === 0) {
+            // Numeric/Fill-in
+            optionsArray = [""];
+          } else if (optionsArray.length === 0) {
+            // Default for single/multiple choice
+            optionsArray = ["", "", "", ""];
+          }
+          
+          // Parse correct answer based on question type
+          let correctAnswer: string | string[] = "";
+          if (data.correctAnswer) {
+            if (questionTypeId === 7) {
+              // Type 7: Numeric - should be an array
+              if (Array.isArray(data.correctAnswer)) {
+                correctAnswer = data.correctAnswer;
+              } else if (typeof data.correctAnswer === "string") {
+                try {
+                  // Try to parse if it's a JSON string
+                  const parsed = JSON.parse(data.correctAnswer);
+                  correctAnswer = Array.isArray(parsed) ? parsed : [parsed];
+                } catch {
+                  // If not JSON, wrap in array
+                  correctAnswer = [data.correctAnswer];
+                }
+              } else {
+                correctAnswer = [String(data.correctAnswer)];
+              }
+            } else if (questionTypeId === 2) {
+              // Type 2: Multiple choice - should be JSON array string
+              if (typeof data.correctAnswer === "string") {
+                try {
+                  const parsed = JSON.parse(data.correctAnswer);
+                  correctAnswer = Array.isArray(parsed) ? parsed : [data.correctAnswer];
+                } catch {
+                  correctAnswer = [data.correctAnswer];
+                }
+              } else if (Array.isArray(data.correctAnswer)) {
+                correctAnswer = data.correctAnswer;
+              } else {
+                correctAnswer = [String(data.correctAnswer)];
               }
             } else {
-              correctAnswer = [String(data.correctAnswer)];
-            }
-          } else if (questionTypeId === 2) {
-            // Type 2: Multiple choice - should be JSON array string
-            if (typeof data.correctAnswer === "string") {
-              try {
-                const parsed = JSON.parse(data.correctAnswer);
-                correctAnswer = Array.isArray(parsed) ? parsed : [data.correctAnswer];
-              } catch {
-                correctAnswer = [data.correctAnswer];
+              // Type 1 and 3: Single answer - string
+              if (typeof data.correctAnswer === "string") {
+                correctAnswer = data.correctAnswer;
+              } else if (Array.isArray(data.correctAnswer)) {
+                correctAnswer = data.correctAnswer[0] || "";
+              } else {
+                correctAnswer = String(data.correctAnswer);
               }
-            } else if (Array.isArray(data.correctAnswer)) {
-              correctAnswer = data.correctAnswer;
-            } else {
-              correctAnswer = [String(data.correctAnswer)];
-            }
-          } else {
-            // Type 1 and 3: Single answer - string
-            if (typeof data.correctAnswer === "string") {
-              correctAnswer = data.correctAnswer;
-            } else if (Array.isArray(data.correctAnswer)) {
-              correctAnswer = data.correctAnswer[0] || "";
-            } else {
-              correctAnswer = String(data.correctAnswer);
             }
           }
+          
+          setQuestionData({
+            question: data.question || "",
+            options: optionsArray,
+            correctAnswer: correctAnswer,
+            explanation: data.explanation || "",
+            questionTypeId: questionTypeId,
+            slug: data.slug || generateSlug(data.question || ""),
+            units: data.units || "",
+            meta: data.meta || {
+              title: "",
+              description: "",
+              keywords: "",
+              ogTitle: "",
+              ogDescription: "",
+              ogImage: "",
+              canonicalUrl: "",
+            },
+            schema: data.schema || "",
+            status: data.status || "published",
+          });
+        } else {
+          setError(result.message || "Failed to load question");
         }
-        
-        setQuestionData({
-          question: data.question || "",
-          options: optionsArray,
-          correctAnswer: correctAnswer,
-          explanation: data.explanation || "",
-          questionTypeId: questionTypeId,
-          slug: data.slug || generateSlug(data.question || ""),
-          units: data.units || "",
-          meta: data.meta || {
-            title: "",
-            description: "",
-            keywords: "",
-            ogTitle: "",
-            ogDescription: "",
-            ogImage: "",
-            canonicalUrl: "",
-          },
-          schema: data.schema || "",
-          status: data.status || "published",
-        });
-      } else {
-        setError(result.message || "Failed to load question");
+      } catch (err) {
+        setError("Failed to load question");
+        console.error("Error loading question:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError("Failed to load question");
-      console.error("Error loading question:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [resolvedParams, generateSlug]);
+    };
 
-  useEffect(() => {
     loadQuestion();
-  }, [loadQuestion]);
+  }, [resolvedParams]);
 
   const handleInputChange = (field: string, value: any) => {
     if (!questionData) return;
@@ -440,9 +443,10 @@ export default function EditQuestion({
         contentToSave.units = questionData.units;
       }
 
-      const result = await uploadNursingExitExamQuizQuestion(
+      const result = await uploadNursingTestBankQuizQuestion(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
+        resolvedParams.topicId,
         resolvedParams.quizId,
         resolvedParams.questionId,
         contentToSave
@@ -452,7 +456,7 @@ export default function EditQuestion({
         setSuccess("Question saved successfully!");
         setTimeout(() => {
           router.push(
-            `/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
+            `/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`
           );
         }, 1500);
       } else {
@@ -483,7 +487,7 @@ export default function EditQuestion({
         <div className="text-center">
           <p className="text-red-600 mb-4">Question not found</p>
           <Link
-            href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+            href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
             className="text-indigo-600 hover:underline"
           >
             Back to Questions
@@ -511,7 +515,7 @@ export default function EditQuestion({
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -789,12 +793,12 @@ export default function EditQuestion({
                 {questionData.options?.map((option: string, index: number) => (
                   <div key={index} className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-gray-600 min-w-[30px]">
-                      {ANSWER_LABELS[index] || String(index + 1)}:
+                      {ANSWER_LABELS[index]}:
                     </span>
                     <RichTextEditor
                       value={option}
                       onChange={(val) => handleOptionChange(index, val)}
-                      placeholder={`Option ${ANSWER_LABELS[index] || String(index + 1)}`}
+                      placeholder={`Option ${ANSWER_LABELS[index]}`}
                     />
                     {questionData.questionTypeId !== 3 && questionData.questionTypeId !== 7 && (
                       <button

@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  getNursingExitExamQuiz,
-  uploadNursingExitExamQuiz,
-  getNestedSubPage,
-  getNursingExitExamSubPage,
+  getNursingTestBankQuiz,
+  uploadNursingTestBankQuiz,
+  getNursingTestBankTopic,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -32,6 +31,7 @@ export default function EditQuiz({
   params: Promise<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
   }>;
 }) {
@@ -40,12 +40,14 @@ export default function EditQuiz({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [parentSlug, setParentSlug] = useState("");
-  const [nestedSlug, setNestedSlug] = useState("");
+  // const [parentSlug, setParentSlug] = useState("");
+  // const [nestedSlug, setNestedSlug] = useState("");
+  const [topicSlug, setTopicSlug] = useState("");
   const [quizSlug, setQuizSlug] = useState("");
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
   } | null>(null);
 
@@ -65,54 +67,60 @@ export default function EditQuiz({
       setError("");
 
       // Load parent sub-page to get its slug
-      const parentResult = await getNursingExitExamSubPage(
-        resolvedParams.subPageId
-      );
-      if (parentResult.success && parentResult.data) {
-        const parentData = parentResult.data as any;
-        setParentSlug(parentData.slug || resolvedParams.subPageId);
-      } else {
-        setParentSlug(resolvedParams.subPageId);
-      }
+      // const parentResult = await getNursingTestBankSubPage(
+      //   resolvedParams.subPageId
+      // );
+      // if (parentResult.success && parentResult.data) {
+      //   const parentData = parentResult.data as any;
+      //   setParentSlug(parentData.slug || resolvedParams.subPageId);
+      // } else {
+      //   setParentSlug(resolvedParams.subPageId);
+      // }
 
       // Load nested sub-page to get its slug
-      const nestedResult = await getNestedSubPage(
-        resolvedParams.subPageId,
-        resolvedParams.nestedSubPageId
-      );
-      const currentNestedSlug =
-        nestedResult.success && nestedResult.data
-          ? (nestedResult.data as any).slug || resolvedParams.nestedSubPageId
-          : resolvedParams.nestedSubPageId;
-      setNestedSlug(currentNestedSlug);
+      // const nestedResult = await getNursingTestBankNestedSubPage(
+      //   resolvedParams.subPageId,
+      //   resolvedParams.nestedSubPageId
+      // );
+      // const currentNestedSlug =
+      //   nestedResult.success && nestedResult.data
+      //     ? (nestedResult.data as any).slug || resolvedParams.nestedSubPageId
+      //     : resolvedParams.nestedSubPageId;
+      // setNestedSlug(currentNestedSlug);
 
-      const result = await getNursingExitExamQuiz(
+      // Load topic to get its slug
+      const topicResult = await getNursingTestBankTopic(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
+        resolvedParams.topicId
+      );
+      const currentTopicSlug =
+        topicResult.success && topicResult.data
+          ? (topicResult.data as any).slug || resolvedParams.topicId
+          : resolvedParams.topicId;
+      setTopicSlug(currentTopicSlug);
+
+      const result = await getNursingTestBankQuiz(
+        resolvedParams.subPageId,
+        resolvedParams.nestedSubPageId,
+        resolvedParams.topicId,
         resolvedParams.quizId
       );
 
       if (result.success && result.data) {
         const pageData = result.data as any;
 
-        // Get current parent and nested slugs
-        const currentParentSlug = parentSlug || resolvedParams.subPageId;
-        const currentNestedSlugFinal = currentNestedSlug || resolvedParams.nestedSubPageId;
-        
-        // Extract base quiz slug from full slug (full slug format: [parentSlug]-[nestedSlug]-[quizBaseSlug])
+        // Extract base slug from full slug (full slug format: [topicSlug]-[quizBaseSlug])
+        // Note: topicSlug already contains parent and nested prefixes
         const fullSlug = pageData.slug || resolvedParams.quizId;
-        const expectedPrefix = `${currentParentSlug}-${currentNestedSlugFinal}-`;
-        let baseQuizSlug = fullSlug;
+        let baseSlug = fullSlug;
         
-        // If full slug starts with parent-nested prefix, extract the base part
-        if (fullSlug.startsWith(expectedPrefix)) {
-          baseQuizSlug = fullSlug.substring(expectedPrefix.length);
+        // If full slug starts with topic slug, extract the base part
+        if (fullSlug.startsWith(currentTopicSlug + "-")) {
+          baseSlug = fullSlug.substring(currentTopicSlug.length + 1);
         }
         
-        setQuizSlug(baseQuizSlug);
-
-        // For exit exam, URL format is: /{parentSlug}-{nestedSlug}-{quizBaseSlug}
-        const canonicalUrl = `https://teasgurus.com/${currentParentSlug}-${currentNestedSlugFinal}-${baseQuizSlug}`;
+        setQuizSlug(baseSlug);
 
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
@@ -125,7 +133,9 @@ export default function EditQuiz({
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || canonicalUrl,
+            canonicalUrl:
+              pageData.meta?.canonicalUrl ||
+              `https://teasgurus.com/${currentTopicSlug}-${baseSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -139,21 +149,16 @@ export default function EditQuiz({
         setContent(initializedContent);
       } else {
         // Initialize with default content structure
-        const currentParentSlug = parentSlug || resolvedParams.subPageId;
-        const currentNestedSlugFinal = currentNestedSlug || resolvedParams.nestedSubPageId;
-
-        const canonicalUrl = `https://teasgurus.com/${currentParentSlug}-${currentNestedSlugFinal}-${resolvedParams.quizId}`;
-
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.quizId,
           meta: {
             title: `${resolvedParams.quizId} | TeasGurus`,
             description: `Content for ${resolvedParams.quizId}`,
-            keywords: `${resolvedParams.quizId}, ${resolvedParams.nestedSubPageId}, ${resolvedParams.subPageId}, nursing exit exam`,
+            keywords: `${resolvedParams.quizId}, ${resolvedParams.topicId}, ${resolvedParams.nestedSubPageId}, ${resolvedParams.subPageId}, nursing test bank`,
             ogTitle: `${resolvedParams.quizId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.quizId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: canonicalUrl,
+            canonicalUrl: `https://teasgurus.com/${currentTopicSlug}-${resolvedParams.quizId}`,
           },
           schema: "",
           hero: {
@@ -168,7 +173,7 @@ export default function EditQuiz({
     } finally {
       setLoading(false);
     }
-  }, [resolvedParams, parentSlug]);
+  }, [resolvedParams]);
 
   useEffect(() => {
     loadContent();
@@ -182,6 +187,12 @@ export default function EditQuiz({
       setError("");
       setSuccess("");
 
+      // Construct full slug: [topicSlug]-[quizBaseSlug]
+      // Note: topicSlug already contains parent and nested prefixes
+      const currentTopicSlugFinal = topicSlug || resolvedParams.topicId;
+      const baseSlug = quizSlug.trim() || resolvedParams.quizId;
+      const fullSlug = `${currentTopicSlugFinal}-${baseSlug}`;
+      
       // Only save the necessary fields to Firebase
       const contentToSave: ServiceContent & { slug: string } = {
         pageName: content.pageName,
@@ -198,13 +209,13 @@ export default function EditQuiz({
         hero: {
           title: content.hero.title,
         },
-        // Pass only the base quiz slug - firestore operation will construct the full slug
-        slug: quizSlug.trim() || resolvedParams.quizId,
+        slug: fullSlug,
       };
 
-      const result = await uploadNursingExitExamQuiz(
+      const result = await uploadNursingTestBankQuiz(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
+        resolvedParams.topicId,
         resolvedParams.quizId,
         contentToSave
       );
@@ -261,11 +272,6 @@ export default function EditQuiz({
     return null;
   }
 
-  // For exit exam, URL format is: /{parentSlug}-{nestedSlug}-{quizBaseSlug}
-  const parentUrlSlug = parentSlug || resolvedParams.subPageId;
-  const nestedUrlSlug = nestedSlug || resolvedParams.nestedSubPageId;
-  const fullQuizSlug = `${parentUrlSlug}-${nestedUrlSlug}-${quizSlug || resolvedParams.quizId}`;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -299,7 +305,7 @@ export default function EditQuiz({
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
-                href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
+                href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/manage`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -319,7 +325,7 @@ export default function EditQuiz({
               </Link>
               {resolvedParams && quizSlug && (
                 <Link
-                  href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${quizSlug}/manage`}
+                  href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${quizSlug}/manage`}
                   className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 font-medium"
                 >
                   <svg
@@ -340,7 +346,7 @@ export default function EditQuiz({
               )}
               {resolvedParams && (
                 <Link
-                  href={`/${fullQuizSlug}`}
+                  href={`/${topicSlug || resolvedParams.topicId}-${quizSlug || resolvedParams.quizId}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -498,10 +504,7 @@ export default function EditQuiz({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Base slug (editable). Full URL: /{parentUrlSlug}-{nestedUrlSlug}-{quizSlug || resolvedParams?.quizId || ""}
-                </p>
-                <p className="text-xs text-gray-400 mt-1 italic">
-                  Only the base slug is editable. The full slug includes the parent and nested slug prefixes.
+                  Base slug (editable). Full URL will be: /{topicSlug || resolvedParams?.topicId || ""}-{quizSlug || resolvedParams?.quizId || ""}
                 </p>
               </div>
             </div>

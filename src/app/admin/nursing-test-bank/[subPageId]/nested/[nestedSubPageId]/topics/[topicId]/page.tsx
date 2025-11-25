@@ -5,7 +5,6 @@ import {
   getNursingTestBankTopic,
   uploadNursingTestBankTopic,
   getNursingTestBankNestedSubPage,
-  getNursingTestBankSubPage,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
@@ -92,7 +91,7 @@ export default function EditTopic({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [parentSlug, setParentSlug] = useState("");
+  // const [parentSlug, setParentSlug] = useState("");
   const [nestedSlug, setNestedSlug] = useState("");
   const [topicSlug, setTopicSlug] = useState("");
   const [resolvedParams, setResolvedParams] = useState<{
@@ -117,13 +116,13 @@ export default function EditTopic({
       setError("");
 
       // Load parent sub-page to get its slug
-      const parentResult = await getNursingTestBankSubPage(
-        resolvedParams.subPageId
-      );
-      const currentParentSlug = parentResult.success && parentResult.data
-        ? (parentResult.data as any).slug || resolvedParams.subPageId
-        : resolvedParams.subPageId;
-      setParentSlug(currentParentSlug);
+      // const parentResult = await getNursingTestBankSubPage(
+      //   resolvedParams.subPageId
+      // );
+      // const currentParentSlug = parentResult.success && parentResult.data
+      //   ? (parentResult.data as any).slug || resolvedParams.subPageId
+      //   : resolvedParams.subPageId;
+      // setParentSlug(currentParentSlug);
 
       // Load nested sub-page to get its slug
       const nestedResult = await getNursingTestBankNestedSubPage(
@@ -144,8 +143,17 @@ export default function EditTopic({
       if (result.success && result.data) {
         const pageData = result.data as any;
 
-        // Load topic slug
-        setTopicSlug(pageData.slug || resolvedParams.topicId);
+        // Extract base slug from full slug (full slug format: [parentSlug]-[nestedSlug]-[topicBaseSlug])
+        // Note: nestedSlug already contains parent prefix, so topic slug should be [nestedSlug]-[topicBaseSlug]
+        const fullSlug = pageData.slug || resolvedParams.topicId;
+        let baseSlug = fullSlug;
+        
+        // If full slug starts with nested slug, extract the base part
+        if (fullSlug.startsWith(currentNestedSlug + "-")) {
+          baseSlug = fullSlug.substring(currentNestedSlug.length + 1);
+        }
+        
+        setTopicSlug(baseSlug);
 
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
@@ -160,9 +168,7 @@ export default function EditTopic({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${currentNestedSlug}-${currentParentSlug}-${
-                resolvedParams.topicId
-              }`,
+              `https://teasgurus.com/${currentNestedSlug}-${baseSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -214,9 +220,7 @@ export default function EditTopic({
             ogTitle: `${resolvedParams.topicId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.topicId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${currentNestedSlug}-${currentParentSlug}-${
-              resolvedParams.topicId
-            }`,
+            canonicalUrl: `https://teasgurus.com/${currentNestedSlug}-${resolvedParams.topicId}`,
           },
           schema: "",
           hero: {
@@ -274,10 +278,16 @@ export default function EditTopic({
       setError("");
       setSuccess("");
 
+      // Construct full slug: [nestedSlug]-[topicBaseSlug]
+      // Note: nestedSlug already contains parent prefix
+      const currentNestedSlugFinal = nestedSlug || resolvedParams.nestedSubPageId;
+      const baseSlug = topicSlug.trim() || resolvedParams.topicId;
+      const fullSlug = `${currentNestedSlugFinal}-${baseSlug}`;
+      
       // Include slug in the content to be saved
       const contentWithSlug = {
         ...content,
-        slug: topicSlug.trim() || resolvedParams.topicId,
+        slug: fullSlug,
       };
 
       const result = await uploadNursingTestBankTopic(
@@ -476,9 +486,7 @@ export default function EditTopic({
               </Link>
               {resolvedParams && (
                 <Link
-                  href={`/${nestedSlug || resolvedParams.nestedSubPageId}-${
-                    parentSlug || resolvedParams.subPageId
-                  }-${topicSlug || resolvedParams.topicId}`}
+                  href={`/${nestedSlug || resolvedParams.nestedSubPageId}-${topicSlug || resolvedParams.topicId}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -624,10 +632,7 @@ export default function EditTopic({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  URL slug (editable). The URL will be: /
-                  {nestedSlug || resolvedParams?.nestedSubPageId || ""}-
-                  {parentSlug || resolvedParams?.subPageId || ""}-
-                  {topicSlug || resolvedParams?.topicId || ""}
+                  Base slug (editable). Full URL will be: /{nestedSlug || resolvedParams?.nestedSubPageId || ""}-{topicSlug || resolvedParams?.topicId || ""}
                 </p>
               </div>
             </div>

@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  getNestedSubPage,
-  getNursingEntranceExamQuizzes,
-  uploadNursingEntranceExamQuiz,
-  deleteNursingEntranceExamQuiz,
-  getNursingEntranceExamSubPage,
-  getPillarPageContent,
+  getNursingTestBankTopic,
+  getNursingTestBankQuizzes,
+  uploadNursingTestBankQuiz,
+  deleteNursingTestBankQuiz,
+  getNursingTestBankSubPage,
+  getNursingTestBankNestedSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -26,7 +26,7 @@ interface Quiz {
 export default function ManageQuizzes({
   params,
 }: {
-  params: Promise<{ subPageId: string; nestedSubPageId: string }>;
+  params: Promise<{ subPageId: string; nestedSubPageId: string; topicId: string }>;
 }) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,7 @@ export default function ManageQuizzes({
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
   } | null>(null);
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
   const [newQuizId, setNewQuizId] = useState("");
@@ -43,11 +44,14 @@ export default function ManageQuizzes({
   const [saving, setSaving] = useState(false);
   const [parentSubPageName, setParentSubPageName] = useState("");
   const [nestedSubPageName, setNestedSubPageName] = useState("");
-  const [parentSlug, setParentSlug] = useState("");
-  const [nestedSlug, setNestedSlug] = useState("");
-  const [nestedSubPageContent, setNestedSubPageContent] = useState<any>(null);
-  const [pillarPageContent, setPillarPageContent] = useState<any>(null);
-  const [parentSubPageContent, setParentSubPageContent] = useState<any>(null);
+  const [topicName, setTopicName] = useState("");
+  // const [parentSlug, setParentSlug] = useState("");
+  // const [nestedSlug, setNestedSlug] = useState("");
+  const [topicSlug, setTopicSlug] = useState("");
+  const [topicContent, setTopicContent] = useState<any>(null);
+  // const [pillarPageContent, setPillarPageContent] = useState<any>(null);
+  // const [parentSubPageContent, setParentSubPageContent] = useState<any>(null);
+  // const [nestedSubPageContent, setNestedSubPageContent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -63,42 +67,57 @@ export default function ManageQuizzes({
 
     try {
       setLoading(true);
-      const result = await getNursingEntranceExamQuizzes(
+      const result = await getNursingTestBankQuizzes(
         resolvedParams.subPageId,
-        resolvedParams.nestedSubPageId
+        resolvedParams.nestedSubPageId,
+        resolvedParams.topicId
       );
       if (result.success && result.data) {
         setQuizzes(result.data);
       }
 
       // Load pillar page content
-      const pillarResult = await getPillarPageContent("nursing-entrance-exam");
-      if (pillarResult.success && pillarResult.data) {
-        setPillarPageContent(pillarResult.data);
-      }
+      // const pillarResult = await getPillarPageContent("nursing-test-bank");
+      // if (pillarResult.success && pillarResult.data) {
+      //   setPillarPageContent(pillarResult.data);
+      // }
 
-      // Load parent and nested sub-page names for display
-      const parentResult = await getNursingEntranceExamSubPage(
+      // Load parent sub-page
+      const parentResult = await getNursingTestBankSubPage(
         resolvedParams.subPageId
       );
       if (parentResult.success && parentResult.data) {
         const parentData = parentResult.data as any;
-        setParentSubPageContent(parentData);
+        // setParentSubPageContent(parentData);
         setParentSubPageName(parentData.pageName || resolvedParams.subPageId);
-        setParentSlug(parentData.slug || resolvedParams.subPageId);
+        // setParentSlug(parentData.slug || resolvedParams.subPageId);
       }
 
-      const nestedResult = await getNestedSubPage(
+      // Load nested sub-page
+      const nestedResult = await getNursingTestBankNestedSubPage(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId
       );
       if (nestedResult.success && nestedResult.data) {
         const nestedData = nestedResult.data as any;
-        setNestedSubPageContent(nestedData);
+        // setNestedSubPageContent(nestedData);
         setNestedSubPageName(
           nestedData.pageName || resolvedParams.nestedSubPageId
         );
-        setNestedSlug(nestedData.slug || resolvedParams.nestedSubPageId);
+        // setNestedSlug(nestedData.slug || resolvedParams.nestedSubPageId);
+      }
+
+      // Load topic
+      const topicResult = await getNursingTestBankTopic(
+        resolvedParams.subPageId,
+        resolvedParams.nestedSubPageId,
+        resolvedParams.topicId
+      );
+      if (topicResult.success && topicResult.data) {
+        const topicData = topicResult.data as any;
+        setTopicContent(topicData);
+        setTopicName(topicData.pageName || resolvedParams.topicId);
+        setTopicSlug(topicData.slug || resolvedParams.topicId);
       }
     } catch (err) {
       console.error("Error loading quizzes:", err);
@@ -120,9 +139,10 @@ export default function ManageQuizzes({
     }
 
     try {
-      const result = await deleteNursingEntranceExamQuiz(
+      const result = await deleteNursingTestBankQuiz(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
+        resolvedParams.topicId,
         quizId
       );
       if (result.success) {
@@ -166,22 +186,21 @@ export default function ManageQuizzes({
       setError("");
       setSuccess("");
 
-      // The backend will automatically create the slug as: [nestedSlug]-[userSlug]
-      // Since nestedSlug already contains the parent prefix, the final slug will be correct
-      // For canonicalUrl, we'll use the nested slug + user slug format
-      const finalSlug = nestedSlug 
-        ? `${nestedSlug}-${normalizedQuizId}`
+      // The backend will automatically create the slug as: [topicSlug]-[userSlug]
+      // Since topicSlug already contains the nested and parent prefix, the final slug will be correct
+      const finalSlug = topicSlug 
+        ? `${topicSlug}-${normalizedQuizId}`
         : normalizedQuizId;
 
       const defaultQuizContent = {
         pageName: newQuizName,
-        slug: normalizedQuizId, // Just the user-entered slug, backend will add prefix
+        slug: normalizedQuizId, // Just the user-entered base slug, backend will prepend topicSlug
         meta: {
           title: `${newQuizName} | TeasGurus`,
           description: `Content for ${newQuizName} under ${
-            nestedSubPageName || resolvedParams.nestedSubPageId
+            topicName || resolvedParams.topicId
           }.`,
-          keywords: `${newQuizName}, ${nestedSubPageName}, ${parentSubPageName}, nursing entrance exam`,
+          keywords: `${newQuizName}, ${topicName}, ${nestedSubPageName}, ${parentSubPageName}, nursing test bank`,
           ogTitle: `${newQuizName} | TeasGurus`,
           ogDescription: `Content for ${newQuizName}`,
           ogImage: "/teas-gurus-logo.png",
@@ -193,9 +212,10 @@ export default function ManageQuizzes({
         schema: "",
       };
 
-      const result = await uploadNursingEntranceExamQuiz(
+      const result = await uploadNursingTestBankQuiz(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
+        resolvedParams.topicId,
         normalizedQuizId,
         defaultQuizContent
       );
@@ -230,8 +250,8 @@ export default function ManageQuizzes({
     );
   }
 
-  // Use the nested slug directly for URLs (it already contains the parent prefix)
-  const nestedPageUrl = nestedSlug || resolvedParams.nestedSubPageId;
+  // Use the topic slug directly for URLs (it already contains the nested and parent prefix)
+  const topicPageUrl = topicSlug || resolvedParams.topicId;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -241,15 +261,15 @@ export default function ManageQuizzes({
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Manage Quizzes: {nestedSubPageName || resolvedParams.nestedSubPageId}
+                Manage Quizzes: {topicName || resolvedParams.topicId}
               </h1>
               <p className="text-gray-600 text-sm mt-1">
-                Edit this nested sub-page and manage its quizzes
+                Manage quizzes for this topic
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/manage`}
+                href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -269,7 +289,7 @@ export default function ManageQuizzes({
               </Link>
               {resolvedParams && (
                 <Link
-                  href={`/${nestedPageUrl}`}
+                  href={`/${topicPageUrl}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -292,7 +312,7 @@ export default function ManageQuizzes({
                       d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                     />
                   </svg>
-                  <span>View Page</span>
+                  <span>View Topic Page</span>
                 </Link>
               )}
             </div>
@@ -315,14 +335,12 @@ export default function ManageQuizzes({
           </div>
         )}
 
-        {/* Pillar Page Section */}
+        {/* Topic Section */}
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Pillar Page
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900">Topic</h2>
             <Link
-              href="/admin/nursing-entrance-exam/edit"
+              href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}`}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
             >
               <svg
@@ -338,126 +356,26 @@ export default function ManageQuizzes({
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                 />
               </svg>
-              <span>Edit Pillar Page</span>
+              <span>Edit Topic</span>
             </Link>
           </div>
           <div className="bg-gray-50 rounded-lg p-4">
             <p className="text-gray-600 mb-2">
               <strong>Page Name:</strong>{" "}
-              {pillarPageContent?.hero?.title || "Nursing Entrance Exam"}
-            </p>
-            <p className="text-gray-600">
-              <strong>URL:</strong>{" "}
-              <a
-                href="/nursing-entrance-exam"
-                target="_blank"
-                className="text-indigo-600 hover:underline"
-              >
-                /nursing-entrance-exam
-              </a>
-            </p>
-          </div>
-        </div>
-
-        {/* Sub-Page Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Sub-Page
-            </h2>
-            <Link
-              href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}`}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-              <span>Edit Sub-Page</span>
-            </Link>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-gray-600 mb-2">
-              <strong>Page Name:</strong>{" "}
-              {parentSubPageContent?.pageName ||
-                parentSubPageName ||
-                resolvedParams.subPageId}
+              {topicContent?.pageName || topicName || resolvedParams.topicId}
             </p>
             <p className="text-gray-600 mb-2">
               <strong>Title:</strong>{" "}
-              {parentSubPageContent?.hero?.title ||
-                parentSubPageName ||
-                resolvedParams.subPageId}
+              {topicContent?.hero?.title || topicName || resolvedParams.topicId}
             </p>
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${parentSlug || resolvedParams.subPageId}`}
+                href={`/${topicPageUrl}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                /{parentSlug || resolvedParams.subPageId}
-              </a>
-            </p>
-          </div>
-        </div>
-
-        {/* Edit Nested Sub-Page Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Edit Nested Sub-Page
-            </h2>
-            <Link
-              href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}`}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-              <span>Edit Full Content</span>
-            </Link>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-gray-600 mb-2">
-              <strong>Page Name:</strong>{" "}
-              {nestedSubPageContent?.pageName ||
-                nestedSubPageName ||
-                resolvedParams.nestedSubPageId}
-            </p>
-            <p className="text-gray-600 mb-2">
-              <strong>Title:</strong>{" "}
-              {nestedSubPageContent?.hero?.title ||
-                nestedSubPageName ||
-                resolvedParams.nestedSubPageId}
-            </p>
-            <p className="text-gray-600">
-              <strong>URL:</strong>{" "}
-              <a
-                href={`/${nestedPageUrl}`}
-                target="_blank"
-                className="text-indigo-600 hover:underline"
-              >
-                /{nestedPageUrl}
+                /{topicPageUrl}
               </a>
             </p>
           </div>
@@ -607,7 +525,7 @@ export default function ManageQuizzes({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredQuizzes.map((quiz) => {
                 const quizSlug = quiz.slug || quiz.id;
-                // Use the quiz slug directly (it already contains the nested page prefix from backend)
+                // Use the quiz slug directly (it already contains the topic prefix from backend)
                 const quizUrl = `/${quizSlug}`;
                 return (
                   <div
@@ -632,7 +550,7 @@ export default function ManageQuizzes({
                     </div>
                     <div className="flex items-center space-x-2 flex-wrap gap-2">
                       <Link
-                        href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${quizSlug}/manage`}
+                        href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${quizSlug}/manage`}
                         className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center space-x-1"
                       >
                         <svg
@@ -651,7 +569,7 @@ export default function ManageQuizzes({
                         <span>Manage</span>
                       </Link>
                       <Link
-                        href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${quizSlug}`}
+                        href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${quizSlug}`}
                         className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
                       >
                         Edit
@@ -707,7 +625,7 @@ export default function ManageQuizzes({
                   value={newQuizName}
                   onChange={(e) => setNewQuizName(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                  placeholder="e.g., Math Practice Quiz 1"
+                  placeholder="e.g., Practice Quiz 1"
                   required
                 />
               </div>
@@ -717,7 +635,7 @@ export default function ManageQuizzes({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    https://teasgurus.com/{nestedPageUrl}-
+                    https://teasgurus.com/{topicPageUrl}-
                   </span>
                   <input
                     type="text"
@@ -733,9 +651,9 @@ export default function ManageQuizzes({
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a quiz at /{nestedPageUrl}-{newQuizId || "quiz-id"}
+                  This will create a quiz at /{topicPageUrl}-{newQuizId || "quiz-id"}
                   <br />
-                  <span className="text-xs">(The backend will automatically add the nested page prefix)</span>
+                  <span className="text-xs">(The backend will automatically add the topic prefix)</span>
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  bulkUploadNursingEntranceExamQuizQuestions,
-  getNursingEntranceExamQuiz,
+  bulkUploadNursingTestBankQuizQuestions,
+  getNursingTestBankQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -24,6 +24,7 @@ export default function BulkUploadQuestions({
   params: Promise<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
   }>;
 }) {
@@ -31,6 +32,7 @@ export default function BulkUploadQuestions({
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
   } | null>(null);
   const [jsonInput, setJsonInput] = useState("");
@@ -58,9 +60,10 @@ export default function BulkUploadQuestions({
 
       try {
         setLoading(true);
-        const quizResult = await getNursingEntranceExamQuiz(
+        const quizResult = await getNursingTestBankQuiz(
           resolvedParams.subPageId,
           resolvedParams.nestedSubPageId,
+          resolvedParams.topicId,
           resolvedParams.quizId
         );
         if (quizResult.success && quizResult.data) {
@@ -158,9 +161,10 @@ export default function BulkUploadQuestions({
       setError("");
       setSuccess("");
 
-      const result = await bulkUploadNursingEntranceExamQuizQuestions(
+      const result = await bulkUploadNursingTestBankQuizQuestions(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
+        resolvedParams.topicId,
         resolvedParams.quizId,
         parsedQuestions
       );
@@ -169,7 +173,7 @@ export default function BulkUploadQuestions({
         setSuccess(result.message || "Questions uploaded successfully!");
         setTimeout(() => {
           router.push(
-            `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
+            `/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`
           );
         }, 2000);
       } else {
@@ -235,7 +239,7 @@ export default function BulkUploadQuestions({
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -683,3 +687,5 @@ export default function BulkUploadQuestions({
     </div>
   );
 }
+
+

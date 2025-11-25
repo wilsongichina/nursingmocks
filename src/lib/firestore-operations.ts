@@ -6,6 +6,9 @@ import {
   collection,
   getDocs,
   deleteDoc,
+  addDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import {
   ref,
@@ -837,23 +840,43 @@ export const getNursingEntranceExamSubPages = async () => {
   }
 };
 
-// Get a specific sub-page content
+// Get a specific sub-page content (searches by slug field, falls back to document ID for backward compatibility)
 export const getNursingEntranceExamSubPage = async (subPageId: string) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-entrance-exam",
-      "subPages",
-      subPageId
-    );
+    const pillarId = "nursing-entrance-exam";
+    const normalizedSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // First, try to find by slug field
+    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const slugQuery = query(subPagesRef, where("slug", "==", normalizedSlug));
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      const doc = slugSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          subPageId: doc.id,
+          ...doc.data(),
+        },
+        message: `Sub-page ${subPageId} retrieved successfully by slug!`,
+      };
+    }
+
+    // Fallback: try by document ID for backward compatibility
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       return {
         success: true,
-        data: docSnap.data(),
-        message: `Sub-page ${subPageId} retrieved successfully!`,
+        data: {
+          id: docSnap.id,
+          subPageId: docSnap.id,
+          ...docSnap.data(),
+        },
+        message: `Sub-page ${subPageId} retrieved successfully by ID!`,
       };
     } else {
       return {
@@ -872,28 +895,145 @@ export const getNursingEntranceExamSubPage = async (subPageId: string) => {
   }
 };
 
-// Upload/update sub-page content
+// Upload/update sub-page content (uses auto-generated document IDs, slug stored as field)
 export const uploadNursingEntranceExamSubPage = async (
   subPageId: string,
   content: any
 ) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-entrance-exam",
-      "subPages",
-      subPageId
+    const pillarId = "nursing-entrance-exam";
+    const newSlug = content.slug?.trim() || subPageId;
+    const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedOldSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find document by slug (or document ID for backward compatibility)
+    let docId: string | null = null;
+
+    // First, try to find by slug field
+    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const slugQuery = query(
+      subPagesRef,
+      where("slug", "==", normalizedOldSlug)
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      docId = slugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID for backward compatibility
+      const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        docId = docSnap.id;
+      }
+    }
+
+    if (!docId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug already exists in route mappings (must be unique)
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        return {
+          success: false,
+          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+        };
+      }
+
+      const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const newDocRef = await addDoc(subPagesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "sub",
+        parentId: pillarId, // Parent is the pillar page
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${newDocRef.id}`;
+      const docRef = doc(db, "pillarPages", pillarId, "subPages", newDocRef.id);
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "sub",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: newDocRef.id,
+        nestedPageId: null,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Sub-page created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    // Check if the new slug is different and already exists (for another page)
+    if (normalizedNewSlug !== normalizedOldSlug) {
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `pillarPages/${pillarId}/subPages/${docId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    }
+
+    const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug, // Update slug field
+        type: "sub",
+        parentId: pillarId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "sub",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: docId,
+      nestedPageId: null,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Sub-page ${subPageId} uploaded successfully!`,
+      message: `Sub-page updated successfully!`,
+      data: { id: docId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading sub-page ${subPageId}:`, error);
@@ -909,14 +1049,20 @@ export const uploadNursingEntranceExamSubPage = async (
 // Delete sub-page
 export const deleteNursingEntranceExamSubPage = async (subPageId: string) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-entrance-exam",
-      "subPages",
-      subPageId
-    );
+    const pillarId = "nursing-entrance-exam";
+    const refPath = `pillarPages/${pillarId}/subPages/${subPageId}`;
+
+    // Delete the document
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId,
+    });
 
     return {
       success: true,
@@ -967,23 +1113,43 @@ export const getNursingExitExamSubPages = async () => {
   }
 };
 
-// Get a specific sub-page content
+// Get a specific sub-page content (searches by slug field, falls back to document ID for backward compatibility)
 export const getNursingExitExamSubPage = async (subPageId: string) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-exit-exam",
-      "subPages",
-      subPageId
-    );
+    const pillarId = "nursing-exit-exam";
+    const normalizedSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // First, try to find by slug field
+    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const slugQuery = query(subPagesRef, where("slug", "==", normalizedSlug));
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      const doc = slugSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          subPageId: doc.id,
+          ...doc.data(),
+        },
+        message: `Sub-page ${subPageId} retrieved successfully by slug!`,
+      };
+    }
+
+    // Fallback: try by document ID for backward compatibility
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       return {
         success: true,
-        data: docSnap.data(),
-        message: `Sub-page ${subPageId} retrieved successfully!`,
+        data: {
+          id: docSnap.id,
+          subPageId: docSnap.id,
+          ...docSnap.data(),
+        },
+        message: `Sub-page ${subPageId} retrieved successfully by ID!`,
       };
     } else {
       return {
@@ -1002,28 +1168,127 @@ export const getNursingExitExamSubPage = async (subPageId: string) => {
   }
 };
 
-// Upload/update sub-page content
+// Upload/update sub-page content (uses auto-generated document IDs, slug stored as field)
 export const uploadNursingExitExamSubPage = async (
   subPageId: string,
   content: any
 ) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-exit-exam",
-      "subPages",
-      subPageId
+    const pillarId = "nursing-exit-exam";
+    const newSlug = content.slug?.trim() || subPageId;
+    const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedOldSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find document by slug (or document ID for backward compatibility)
+    let docId: string | null = null;
+
+    // First, try to find by slug field
+    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const slugQuery = query(
+      subPagesRef,
+      where("slug", "==", normalizedOldSlug)
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      docId = slugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID for backward compatibility
+      const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        docId = docSnap.id;
+      }
+    }
+
+    if (!docId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug already exists in route mappings (must be unique)
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        return {
+          success: false,
+          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+        };
+      }
+
+      const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const newDocRef = await addDoc(subPagesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "sub",
+        parentId: pillarId, // Parent is the pillar page
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${newDocRef.id}`;
+      const docRef = doc(db, "pillarPages", pillarId, "subPages", newDocRef.id);
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "sub",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: newDocRef.id,
+        nestedPageId: null,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Sub-page created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug, // Update slug field
+        type: "sub",
+        parentId: pillarId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "sub",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: docId,
+      nestedPageId: null,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Sub-page ${subPageId} uploaded successfully!`,
+      message: `Sub-page updated successfully!`,
+      data: { id: docId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading sub-page ${subPageId}:`, error);
@@ -1039,14 +1304,20 @@ export const uploadNursingExitExamSubPage = async (
 // Delete sub-page
 export const deleteNursingExitExamSubPage = async (subPageId: string) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-exit-exam",
-      "subPages",
-      subPageId
-    );
+    const pillarId = "nursing-exit-exam";
+    const refPath = `pillarPages/${pillarId}/subPages/${subPageId}`;
+
+    // Delete the document
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId,
+    });
 
     return {
       success: true,
@@ -1068,13 +1339,52 @@ export const deleteNursingExitExamSubPage = async (subPageId: string) => {
 // Get all nested sub-pages under a specific sub-page (for entrance exam)
 export const getNestedSubPages = async (parentSubPageId: string) => {
   try {
+    const pillarId = "nursing-entrance-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-entrance-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages"
       )
     );
@@ -1109,13 +1419,52 @@ export const getNursingExitExamNestedSubPages = async (
   parentSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-exit-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages"
       )
     );
@@ -1145,18 +1494,86 @@ export const getNursingExitExamNestedSubPages = async (
   }
 };
 
-// Get a specific nested sub-page content (for exit exam)
+// Get a specific nested sub-page content (for exit exam) - searches by slug field, falls back to document ID
 export const getNursingExitExamNestedSubPage = async (
   parentSubPageId: string,
   nestedSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+    const normalizedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // First, try to find by slug field
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const slugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedSlug)
+    );
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      const doc = slugSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          nestedSubPageId: doc.id,
+          ...doc.data(),
+        },
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully by slug!`,
+      };
+    }
+
+    // Fallback: try by document ID for backward compatibility
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
       nestedSubPageId
     );
@@ -1170,7 +1587,7 @@ export const getNursingExitExamNestedSubPage = async (
           nestedSubPageId: docSnap.id,
           ...docSnap.data(),
         },
-        message: `Nested sub-page ${nestedSubPageId} retrieved successfully!`,
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully by ID!`,
       };
     } else {
       return {
@@ -1189,31 +1606,207 @@ export const getNursingExitExamNestedSubPage = async (
   }
 };
 
-// Upload/update nested sub-page content (for exit exam)
+// Upload/update nested sub-page content (for exit exam) - uses auto-generated document IDs
 export const uploadNursingExitExamNestedSubPage = async (
   parentSubPageId: string,
   nestedSubPageId: string,
   content: any
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    let parentSlug: string = "";
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+      const parentData = parentSlugSnapshot.docs[0].data();
+      parentSlug = (parentData.slug || parentSubPageId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+        const parentData = parentDocSnap.data();
+        parentSlug = (parentData.slug || parentSubPageId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get user-provided slug and prepend parent slug
+    const userSlug = content.slug?.trim() || nestedSubPageId;
+    const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
+    // Prepend parent slug if not already present
+    const finalSlug = normalizedUserSlug.startsWith(parentSlug + "-")
+      ? normalizedUserSlug
+      : `${parentSlug}-${normalizedUserSlug}`;
+    const normalizedNewSlug = finalSlug;
+    const normalizedOldSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    // Find nested sub-page by slug (or document ID for backward compatibility)
+    let nestedDocId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedOldSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      nestedDocId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        nestedDocId = nestedDocSnap.id;
+      }
+    }
+
+    if (!nestedDocId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages"
+      );
+      const newDocRef = await addDoc(nestedSubPagesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "nested",
+        parentId: resolvedParentId,
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`;
+      const docRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        newDocRef.id
+      );
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "nested",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: resolvedParentId,
+        nestedPageId: newDocRef.id,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Nested sub-page created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId
+      nestedDocId
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "nested",
+        parentId: resolvedParentId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "nested",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: resolvedParentId,
+      nestedPageId: nestedDocId,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Nested sub-page ${nestedSubPageId} uploaded successfully!`,
+      message: `Nested sub-page updated successfully!`,
+      data: { id: nestedDocId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading nested sub-page ${nestedSubPageId}:`, error);
@@ -1232,16 +1825,29 @@ export const deleteNursingExitExamNestedSubPage = async (
   nestedSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+    const refPath = `pillarPages/${pillarId}/subPages/${parentSubPageId}/nestedSubPages/${nestedSubPageId}`;
+
+    // Delete the document
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      pillarId,
       "subPages",
       parentSubPageId,
       "nestedSubPages",
       nestedSubPageId
     );
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId: parentSubPageId,
+      nestedPageId: nestedSubPageId,
+    });
 
     return {
       success: true,
@@ -1327,28 +1933,127 @@ export const getNursingTestBankSubPage = async (subPageId: string) => {
   }
 };
 
-// Upload/update sub-page content
+// Upload/update sub-page content (uses auto-generated document IDs, slug stored as field)
 export const uploadNursingTestBankSubPage = async (
   subPageId: string,
   content: any
 ) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-test-bank",
-      "subPages",
-      subPageId
+    const pillarId = "nursing-test-bank";
+    const newSlug = content.slug?.trim() || subPageId;
+    const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedOldSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find document by slug (or document ID for backward compatibility)
+    let docId: string | null = null;
+
+    // First, try to find by slug field
+    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const slugQuery = query(
+      subPagesRef,
+      where("slug", "==", normalizedOldSlug)
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      docId = slugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID for backward compatibility
+      const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        docId = docSnap.id;
+      }
+    }
+
+    if (!docId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug already exists in route mappings (must be unique)
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        return {
+          success: false,
+          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+        };
+      }
+
+      const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const newDocRef = await addDoc(subPagesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "sub",
+        parentId: pillarId, // Parent is the pillar page
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${newDocRef.id}`;
+      const docRef = doc(db, "pillarPages", pillarId, "subPages", newDocRef.id);
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "sub",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: newDocRef.id,
+        nestedPageId: null,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Sub-page created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug, // Update slug field
+        type: "sub",
+        parentId: pillarId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "sub",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: docId,
+      nestedPageId: null,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Sub-page ${subPageId} uploaded successfully!`,
+      message: `Sub-page updated successfully!`,
+      data: { id: docId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading sub-page ${subPageId}:`, error);
@@ -1364,14 +2069,20 @@ export const uploadNursingTestBankSubPage = async (
 // Delete sub-page
 export const deleteNursingTestBankSubPage = async (subPageId: string) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-test-bank",
-      "subPages",
-      subPageId
-    );
+    const pillarId = "nursing-test-bank";
+    const refPath = `pillarPages/${pillarId}/subPages/${subPageId}`;
+
+    // Delete the document
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId,
+    });
 
     return {
       success: true,
@@ -1393,13 +2104,52 @@ export const getNursingTestBankNestedSubPages = async (
   parentSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-test-bank",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages"
       )
     );
@@ -1425,22 +2175,91 @@ export const getNursingTestBankNestedSubPages = async (
       message: `Failed to retrieve nested sub-pages: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
+      data: [],
     };
   }
 };
 
-// Get a specific nested sub-page content (for test bank)
+// Get a specific nested sub-page content (for test bank) - searches by slug field, falls back to document ID
 export const getNursingTestBankNestedSubPage = async (
   parentSubPageId: string,
   nestedSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+    const normalizedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // First, try to find by slug field
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const slugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedSlug)
+    );
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      const doc = slugSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          nestedSubPageId: doc.id,
+          ...doc.data(),
+        },
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully by slug!`,
+      };
+    }
+
+    // Fallback: try by document ID for backward compatibility
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-test-bank",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
       nestedSubPageId
     );
@@ -1449,8 +2268,12 @@ export const getNursingTestBankNestedSubPage = async (
     if (docSnap.exists()) {
       return {
         success: true,
-        data: docSnap.data(),
-        message: `Nested sub-page ${nestedSubPageId} retrieved successfully!`,
+        data: {
+          id: docSnap.id,
+          nestedSubPageId: docSnap.id,
+          ...docSnap.data(),
+        },
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully by ID!`,
       };
     } else {
       return {
@@ -1469,31 +2292,207 @@ export const getNursingTestBankNestedSubPage = async (
   }
 };
 
-// Upload/update nested sub-page content (for test bank)
+// Upload/update nested sub-page content (for test bank) - uses auto-generated document IDs
 export const uploadNursingTestBankNestedSubPage = async (
   parentSubPageId: string,
   nestedSubPageId: string,
   content: any
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    let parentSlug: string = "";
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+      const parentData = parentSlugSnapshot.docs[0].data();
+      parentSlug = (parentData.slug || parentSubPageId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+        const parentData = parentDocSnap.data();
+        parentSlug = (parentData.slug || parentSubPageId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get user-provided slug and prepend parent slug
+    const userSlug = content.slug?.trim() || nestedSubPageId;
+    const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
+    // Prepend parent slug if not already present
+    const finalSlug = normalizedUserSlug.startsWith(parentSlug + "-")
+      ? normalizedUserSlug
+      : `${parentSlug}-${normalizedUserSlug}`;
+    const normalizedNewSlug = finalSlug;
+    const normalizedOldSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    // Find nested sub-page by slug (or document ID for backward compatibility)
+    let nestedDocId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedOldSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      nestedDocId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        nestedDocId = nestedDocSnap.id;
+      }
+    }
+
+    if (!nestedDocId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages"
+      );
+      const newDocRef = await addDoc(nestedSubPagesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "nested",
+        parentId: resolvedParentId,
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`;
+      const docRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        newDocRef.id
+      );
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "nested",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: resolvedParentId,
+        nestedPageId: newDocRef.id,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Nested sub-page created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-test-bank",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId
+      nestedDocId
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "nested",
+        parentId: resolvedParentId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "nested",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: resolvedParentId,
+      nestedPageId: nestedDocId,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Nested sub-page ${nestedSubPageId} uploaded successfully!`,
+      message: `Nested sub-page updated successfully!`,
+      data: { id: nestedDocId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading nested sub-page ${nestedSubPageId}:`, error);
@@ -1512,16 +2511,29 @@ export const deleteNursingTestBankNestedSubPage = async (
   nestedSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+    const refPath = `pillarPages/${pillarId}/subPages/${parentSubPageId}/nestedSubPages/${nestedSubPageId}`;
+
+    // Delete the document
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-test-bank",
+      pillarId,
       "subPages",
       parentSubPageId,
       "nestedSubPages",
       nestedSubPageId
     );
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId: parentSubPageId,
+      nestedPageId: nestedSubPageId,
+    });
 
     return {
       success: true,
@@ -1546,15 +2558,99 @@ export const getNursingTestBankTopics = async (
   nestedSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Now query topics using resolved document IDs
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-test-bank",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages",
-        nestedSubPageId,
+        resolvedNestedId,
         "topics"
       )
     );
@@ -1580,6 +2676,7 @@ export const getNursingTestBankTopics = async (
       message: `Failed to retrieve topics: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
+      data: [],
     };
   }
 };
@@ -1591,14 +2688,96 @@ export const getNursingTestBankTopic = async (
   topicId: string
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Now get topic using resolved document IDs
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-test-bank",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "topics",
       topicId
     );
@@ -1627,7 +2806,7 @@ export const getNursingTestBankTopic = async (
   }
 };
 
-// Upload/update topic content (for test bank)
+// Upload/update topic content (for test bank) - uses auto-generated document IDs
 export const uploadNursingTestBankTopic = async (
   parentSubPageId: string,
   nestedSubPageId: string,
@@ -1635,26 +2814,261 @@ export const uploadNursingTestBankTopic = async (
   content: any
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    // let parentSlug: string = "";
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+      // const parentData = parentSlugSnapshot.docs[0].data();
+      // parentSlug = (parentData.slug || parentSubPageId)
+      //   .toLowerCase()
+      //   .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+        // const parentData = parentDocSnap.data();
+        // parentSlug = (parentData.slug || parentSubPageId)
+        //   .toLowerCase()
+        //   .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    let nestedSlug: string = "";
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+      const nestedData = nestedSlugSnapshot.docs[0].data();
+      nestedSlug = (nestedData.slug || nestedSubPageId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+        const nestedData = nestedDocSnap.data();
+        nestedSlug = (nestedData.slug || nestedSubPageId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get user-provided slug and prepend nested slug: [nestedSlug]-[userentered slug]
+    // Note: nestedSlug already contains parent prefix, so we just need to append topic base slug
+    const userSlug = content.slug?.trim() || topicId;
+    const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
+    // Prepend nested slug if not already present
+    const finalSlug = normalizedUserSlug.startsWith(nestedSlug + "-")
+      ? normalizedUserSlug
+      : `${nestedSlug}-${normalizedUserSlug}`;
+    const normalizedNewSlug = finalSlug;
+    const normalizedOldSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find topic by slug (or document ID for backward compatibility)
+    let topicDocId: string | null = null;
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedOldSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    if (!topicSlugSnapshot.empty) {
+      topicDocId = topicSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        topicDocId = topicDocSnap.id;
+      }
+    }
+
+    if (!topicDocId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug already exists in route mappings (must be unique)
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        return {
+          success: false,
+          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+        };
+      }
+
+      const newDocRef = await addDoc(topicsRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "topic",
+        parentId: resolvedParentId,
+        nestedSubPageId: resolvedNestedId,
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${newDocRef.id}`;
+      const docRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        newDocRef.id
+      );
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "topic",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: resolvedParentId,
+        nestedPageId: resolvedNestedId,
+        topicId: newDocRef.id,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Topic created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${topicDocId}`;
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-test-bank",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "topics",
-      topicId
+      topicDocId
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug, // Update slug field
+        type: "topic",
+        parentId: resolvedParentId,
+        nestedSubPageId: resolvedNestedId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "topic",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      topicId: topicDocId,
+      quizId: null,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Topic ${topicId} uploaded successfully!`,
+      message: `Topic updated successfully!`,
+      data: { id: topicDocId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading topic ${topicId}:`, error);
@@ -1674,18 +3088,112 @@ export const deleteNursingTestBankTopic = async (
   topicId: string
 ) => {
   try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    const refPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${topicId}`;
+
+    // Delete the document using resolved IDs
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-test-bank",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "topics",
       topicId
     );
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      topicId,
+    });
 
     return {
       success: true,
@@ -1702,132 +3210,156 @@ export const deleteNursingTestBankTopic = async (
   }
 };
 
-// Get a specific nested sub-page content
-export const getNestedSubPage = async (
-  parentSubPageId: string,
-  nestedSubPageId: string
-) => {
-  try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-entrance-exam",
-      "subPages",
-      parentSubPageId,
-      "nestedSubPages",
-      nestedSubPageId
-    );
-    const docSnap = await getDoc(docRef);
+// ==================== NURSING TEST BANK QUIZZES OPERATIONS ====================
 
-    if (docSnap.exists()) {
-      return {
-        success: true,
-        data: docSnap.data(),
-        message: `Nested sub-page ${nestedSubPageId} retrieved successfully!`,
-      };
-    } else {
-      return {
-        success: false,
-        message: `No nested sub-page content found for ${nestedSubPageId}`,
-      };
-    }
-  } catch (error) {
-    console.error(`Error getting nested sub-page ${nestedSubPageId}:`, error);
-    return {
-      success: false,
-      message: `Failed to retrieve nested sub-page ${nestedSubPageId}: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    };
-  }
-};
-
-// Upload/update nested sub-page content
-export const uploadNestedSubPage = async (
+// Get all quizzes under a specific topic (for test bank)
+export const getNursingTestBankQuizzes = async (
   parentSubPageId: string,
   nestedSubPageId: string,
-  content: any
+  topicId: string
 ) => {
   try {
-    const docRef = doc(
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
       db,
       "pillarPages",
-      "nursing-entrance-exam",
-      "subPages",
-      parentSubPageId,
-      "nestedSubPages",
-      nestedSubPageId
+      pillarId,
+      "subPages"
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
-    });
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
 
-    return {
-      success: true,
-      message: `Nested sub-page ${nestedSubPageId} uploaded successfully!`,
-    };
-  } catch (error) {
-    console.error(`Error uploading nested sub-page ${nestedSubPageId}:`, error);
-    return {
-      success: false,
-      message: `Failed to upload nested sub-page ${nestedSubPageId}: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    };
-  }
-};
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
 
-// Delete nested sub-page
-export const deleteNestedSubPage = async (
-  parentSubPageId: string,
-  nestedSubPageId: string
-) => {
-  try {
-    const docRef = doc(
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
       db,
       "pillarPages",
-      "nursing-entrance-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
-      "nestedSubPages",
-      nestedSubPageId
+      resolvedParentId,
+      "nestedSubPages"
     );
-    await deleteDoc(docRef);
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
 
-    return {
-      success: true,
-      message: `Nested sub-page ${nestedSubPageId} deleted successfully!`,
-    };
-  } catch (error) {
-    console.error(`Error deleting nested sub-page ${nestedSubPageId}:`, error);
-    return {
-      success: false,
-      message: `Failed to delete nested sub-page ${nestedSubPageId}: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    };
-  }
-};
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
 
-// ==================== NURSING ENTRANCE EXAM QUIZZES OPERATIONS ====================
+    // Resolve topicId to actual document ID (it might be a slug)
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
 
-// Get all quizzes under a nested sub-page (for entrance exam)
-export const getNursingEntranceExamQuizzes = async (
-  parentSubPageId: string,
-  nestedSubPageId: string
-) => {
-  try {
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Now query quizzes using the resolved document IDs
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-entrance-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages",
-        nestedSubPageId,
+        resolvedNestedId,
+        "topics",
+        resolvedTopicId,
         "quizzes"
       )
     );
@@ -1853,6 +3385,1279 @@ export const getNursingEntranceExamQuizzes = async (
       message: `Failed to retrieve quizzes: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
+      data: [],
+    };
+  }
+};
+
+// Get a specific quiz content (for test bank)
+export const getNursingTestBankQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve topicId to actual document ID (it might be a slug)
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+        };
+      }
+    }
+
+    // Get all quizzes to search by slug using resolved document IDs
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        resolvedTopicId,
+        "quizzes"
+      )
+    );
+
+    // First, try to find by slug (this is the primary method for frontend access)
+    for (const doc of querySnapshot.docs) {
+      const quizData = doc.data();
+      const quizSlug = quizData.slug || "";
+
+      // Check if the slug matches (case-insensitive)
+      if (quizSlug.toLowerCase() === quizId.toLowerCase()) {
+        return {
+          success: true,
+          data: {
+            id: doc.id,
+            quizId: doc.id,
+            ...quizData,
+          },
+          message: `Quiz ${quizId} retrieved successfully by slug!`,
+        };
+      }
+    }
+
+    // If not found by slug, try by document ID (for admin panel backward compatibility)
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      resolvedTopicId,
+      "quizzes",
+      quizId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const quizData = docSnap.data();
+      const quizSlug = quizData.slug || "";
+
+      // Allow document ID access if:
+      // 1. There's no slug set (old quiz without slug), OR
+      // 2. The document ID matches the slug (backward compatibility), OR
+      // 3. The document ID matches the quizId (allow access by document ID even if slug exists)
+      if (
+        !quizSlug ||
+        quizSlug.toLowerCase() === quizId.toLowerCase() ||
+        docSnap.id.toLowerCase() === quizId.toLowerCase()
+      ) {
+        return {
+          success: true,
+          data: {
+            id: docSnap.id,
+            quizId: docSnap.id,
+            ...quizData,
+          },
+          message: `Quiz ${quizId} retrieved successfully!`,
+        };
+      }
+    }
+
+    // If still not found, return error
+    return {
+      success: false,
+      message: `No quiz content found for ${quizId}`,
+    };
+  } catch (error) {
+    console.error(`Error getting quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update quiz content (for test bank) - uses auto-generated document IDs
+export const uploadNursingTestBankQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string,
+  content: any
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    // let parentSlug: string = "";
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+      // const parentData = parentSlugSnapshot.docs[0].data();
+      // parentSlug = (parentData.slug || parentSubPageId)
+      //   .toLowerCase()
+      //   .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+        // const parentData = parentDocSnap.data();
+        // parentSlug = (parentData.slug || parentSubPageId)
+        //   .toLowerCase()
+        //   .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    // let nestedSlug: string = "";
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+      // const nestedData = nestedSlugSnapshot.docs[0].data();
+      // nestedSlug = (nestedData.slug || nestedSubPageId)
+      //   .toLowerCase()
+      //   .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+        // const nestedData = nestedDocSnap.data();
+        // nestedSlug = (nestedData.slug || nestedSubPageId)
+        //   .toLowerCase()
+        //   .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve topicId to actual document ID (it might be a slug)
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    let topicSlug: string = "";
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+      const topicData = topicSlugSnapshot.docs[0].data();
+      topicSlug = (topicData.slug || topicId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+        const topicData = topicDocSnap.data();
+        topicSlug = (topicData.slug || topicId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+        };
+      }
+    }
+
+    // Get user-provided slug and prepend topic slug
+    const userSlug = content.slug?.trim() || quizId;
+    const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
+    // Prepend topic slug if not already present
+    const finalSlug = normalizedUserSlug.startsWith(topicSlug + "-")
+      ? normalizedUserSlug
+      : `${topicSlug}-${normalizedUserSlug}`;
+    const normalizedNewSlug = finalSlug;
+    const normalizedOldSlug = quizId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find quiz by slug (or document ID for backward compatibility)
+    let quizDocId: string | null = null;
+    const quizzesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      resolvedTopicId,
+      "quizzes"
+    );
+    const quizSlugQuery = query(
+      quizzesRef,
+      where("slug", "==", normalizedOldSlug)
+    );
+    const quizSlugSnapshot = await getDocs(quizSlugQuery);
+
+    if (!quizSlugSnapshot.empty) {
+      quizDocId = quizSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const quizDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        resolvedTopicId,
+        "quizzes",
+        quizId
+      );
+      const quizDocSnap = await getDoc(quizDocRef);
+      if (quizDocSnap.exists()) {
+        quizDocId = quizDocSnap.id;
+      }
+    }
+
+    if (!quizDocId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug already exists in route mappings (must be unique)
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        return {
+          success: false,
+          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+        };
+      }
+
+      const newDocRef = await addDoc(quizzesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "quiz",
+        parentId: resolvedParentId,
+        nestedSubPageId: resolvedNestedId,
+        topicId: resolvedTopicId,
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${resolvedTopicId}/quizzes/${newDocRef.id}`;
+      const docRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        resolvedTopicId,
+        "quizzes",
+        newDocRef.id
+      );
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "quiz",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: resolvedParentId,
+        nestedPageId: resolvedNestedId,
+        topicId: resolvedTopicId,
+        quizId: newDocRef.id,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Quiz created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${resolvedTopicId}/quizzes/${quizDocId}`;
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      resolvedTopicId,
+      "quizzes",
+      quizDocId
+    );
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug, // Update slug field
+        type: "quiz",
+        parentId: resolvedParentId,
+        nestedSubPageId: resolvedNestedId,
+        topicId: resolvedTopicId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "quiz",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      topicId: resolvedTopicId,
+      quizId: quizDocId,
+      refPath: contentPath,
+    });
+
+    return {
+      success: true,
+      message: `Quiz updated successfully!`,
+      data: { id: quizDocId, slug: normalizedNewSlug },
+    };
+  } catch (error) {
+    console.error(`Error uploading quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete quiz (for test bank)
+export const deleteNursingTestBankQuiz = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve topicId to actual document ID (it might be a slug)
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+        };
+      }
+    }
+
+    const refPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${resolvedTopicId}/quizzes/${quizId}`;
+
+    // Delete the document using resolved IDs
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      resolvedTopicId,
+      "quizzes",
+      quizId
+    );
+    await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      topicId: resolvedTopicId,
+      quizId,
+    });
+
+    return {
+      success: true,
+      message: `Quiz ${quizId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting quiz ${quizId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete quiz ${quizId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific nested sub-page content (for entrance exam) - searches by slug field, falls back to document ID
+export const getNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const pillarId = "nursing-entrance-exam";
+    const normalizedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // First, try to find by slug field
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const slugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedSlug)
+    );
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      const doc = slugSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          nestedSubPageId: doc.id,
+          ...doc.data(),
+        },
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully by slug!`,
+      };
+    }
+
+    // Fallback: try by document ID for backward compatibility
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: {
+          id: docSnap.id,
+          nestedSubPageId: docSnap.id,
+          ...docSnap.data(),
+        },
+        message: `Nested sub-page ${nestedSubPageId} retrieved successfully by ID!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No nested sub-page content found for ${nestedSubPageId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update nested sub-page content (for entrance exam) - uses auto-generated document IDs
+export const uploadNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  content: any
+) => {
+  try {
+    const pillarId = "nursing-entrance-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    let parentSlug: string = "";
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+      const parentData = parentSlugSnapshot.docs[0].data();
+      parentSlug = (parentData.slug || parentSubPageId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+        const parentData = parentDocSnap.data();
+        parentSlug = (parentData.slug || parentSubPageId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get user-provided slug and prepend parent slug
+    const userSlug = content.slug?.trim() || nestedSubPageId;
+    const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
+    // Prepend parent slug if not already present
+    const finalSlug = normalizedUserSlug.startsWith(parentSlug + "-")
+      ? normalizedUserSlug
+      : `${parentSlug}-${normalizedUserSlug}`;
+    const normalizedNewSlug = finalSlug;
+    const normalizedOldSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    // Find nested sub-page by slug (or document ID for backward compatibility)
+    let nestedDocId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedOldSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      nestedDocId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        nestedDocId = nestedDocSnap.id;
+      }
+    }
+
+    if (!nestedDocId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug already exists in route mappings (must be unique)
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        return {
+          success: false,
+          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+        };
+      }
+
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages"
+      );
+      const newDocRef = await addDoc(nestedSubPagesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "nested",
+        parentId: resolvedParentId,
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const docRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        newDocRef.id
+      );
+      await setDoc(
+        docRef,
+        {
+          contentPath: `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "nested",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: resolvedParentId,
+        nestedPageId: newDocRef.id,
+        topicId: null,
+        quizId: null,
+        refPath: `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`,
+      });
+
+      return {
+        success: true,
+        message: `Nested sub-page created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    // Check if the new slug is different and already exists (for another page)
+    if (normalizedNewSlug !== normalizedOldSlug) {
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    }
+
+    const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      nestedDocId
+    );
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "nested",
+        parentId: resolvedParentId,
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "nested",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: resolvedParentId,
+      nestedPageId: nestedDocId,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
+    });
+
+    return {
+      success: true,
+      message: `Nested sub-page updated successfully!`,
+      data: { id: nestedDocId, slug: normalizedNewSlug },
+    };
+  } catch (error) {
+    console.error(`Error uploading nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete nested sub-page
+export const deleteNestedSubPage = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const pillarId = "nursing-entrance-exam";
+    const refPath = `pillarPages/${pillarId}/subPages/${parentSubPageId}/nestedSubPages/${nestedSubPageId}`;
+
+    // Delete the document
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      parentSubPageId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId: parentSubPageId,
+      nestedPageId: nestedSubPageId,
+    });
+
+    return {
+      success: true,
+      message: `Nested sub-page ${nestedSubPageId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting nested sub-page ${nestedSubPageId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete nested sub-page ${nestedSubPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING ENTRANCE EXAM QUIZZES OPERATIONS ====================
+
+// Get all quizzes under a nested sub-page (for entrance exam)
+export const getNursingEntranceExamQuizzes = async (
+  parentSubPageId: string,
+  nestedSubPageId: string
+) => {
+  try {
+    const pillarId = "nursing-entrance-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Now query quizzes using the resolved document IDs
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "quizzes"
+      )
+    );
+    const quizzes: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      quizzes.push({
+        id: doc.id,
+        quizId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: quizzes,
+      message: "All quizzes retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting quizzes:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve quizzes: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+      data: [],
     };
   }
 };
@@ -1864,16 +4669,94 @@ export const getNursingEntranceExamQuiz = async (
   quizId: string
 ) => {
   try {
-    // Get all quizzes to search by slug
+    const pillarId = "nursing-entrance-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get all quizzes to search by slug using resolved document IDs
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-entrance-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages",
-        nestedSubPageId,
+        resolvedNestedId,
         "quizzes"
       )
     );
@@ -1902,11 +4785,11 @@ export const getNursingEntranceExamQuiz = async (
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-entrance-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
       quizId
     );
@@ -1954,7 +4837,7 @@ export const getNursingEntranceExamQuiz = async (
   }
 };
 
-// Upload/update quiz content (for entrance exam)
+// Upload/update quiz content (for entrance exam) - uses auto-generated document IDs
 export const uploadNursingEntranceExamQuiz = async (
   parentSubPageId: string,
   nestedSubPageId: string,
@@ -1962,26 +4845,292 @@ export const uploadNursingEntranceExamQuiz = async (
   content: any
 ) => {
   try {
+    const pillarId = "nursing-entrance-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    let parentSlug: string = "";
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+      const parentData = parentSlugSnapshot.docs[0].data();
+      parentSlug = (parentData.slug || parentSubPageId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+        const parentData = parentDocSnap.data();
+        parentSlug = (parentData.slug || parentSubPageId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    let nestedSlug: string = "";
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+      const nestedData = nestedSlugSnapshot.docs[0].data();
+      nestedSlug = (nestedData.slug || nestedSubPageId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+        const nestedData = nestedDocSnap.data();
+        nestedSlug = (nestedData.slug || nestedSubPageId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get user-provided base slug and build full slug: [parent slug]-[nested base slug]-[user base slug]
+    // Extract nested base slug from nestedSlug (which is [parent slug]-[nested base slug])
+    const normalizedNestedSlug = nestedSlug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedParentSlug = parentSlug.toLowerCase().replace(/\s+/g, "-");
+    let nestedBaseSlug = normalizedNestedSlug;
+    if (normalizedNestedSlug.startsWith(normalizedParentSlug + "-")) {
+      nestedBaseSlug = normalizedNestedSlug.substring(
+        normalizedParentSlug.length + 1
+      );
+    }
+
+    const userSlug = content.slug?.trim() || quizId;
+    const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
+
+    // Build full slug: [parent slug]-[nested base slug]-[user base slug]
+    const expectedPrefix = `${normalizedParentSlug}-${nestedBaseSlug}-`;
+    const finalSlug = normalizedUserSlug.startsWith(expectedPrefix)
+      ? normalizedUserSlug
+      : `${normalizedParentSlug}-${nestedBaseSlug}-${normalizedUserSlug}`;
+    const normalizedNewSlug = finalSlug;
+    const normalizedOldSlug = quizId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find quiz by slug (or document ID for backward compatibility)
+    let quizDocId: string | null = null;
+    const quizzesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "quizzes"
+    );
+    const quizSlugQuery = query(
+      quizzesRef,
+      where("slug", "==", normalizedOldSlug)
+    );
+    const quizSlugSnapshot = await getDocs(quizSlugQuery);
+
+    if (!quizSlugSnapshot.empty) {
+      quizDocId = quizSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const quizDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "quizzes",
+        quizId
+      );
+      const quizDocSnap = await getDoc(quizDocRef);
+      if (quizDocSnap.exists()) {
+        quizDocId = quizDocSnap.id;
+      }
+    }
+
+    if (!quizDocId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug already exists in route mappings (must be unique)
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        return {
+          success: false,
+          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+        };
+      }
+
+      // nestedSubPageId should be the document ID of the parent nested sub-page (the page that contains this quiz)
+      const newDocRef = await addDoc(quizzesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "quiz",
+        parentId: resolvedParentId, // Document ID of the parent sub-page
+        nestedSubPageId: resolvedNestedId, // Document ID of the parent nested sub-page (the page that contains this quiz)
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${newDocRef.id}`;
+      const docRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "quizzes",
+        newDocRef.id
+      );
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "quiz",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: resolvedParentId,
+        nestedPageId: resolvedNestedId,
+        topicId: null,
+        quizId: newDocRef.id,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Quiz created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    // Check if the new slug is different and already exists (for another page)
+    if (normalizedNewSlug !== normalizedOldSlug) {
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${quizDocId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    }
+
+    // nestedSubPageId should be the document ID of the parent nested sub-page (the page that contains this quiz)
+    const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${quizDocId}`;
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-entrance-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
-      quizId
+      quizDocId
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug, // Update slug field
+        type: "quiz",
+        parentId: resolvedParentId, // Document ID of the parent sub-page
+        nestedSubPageId: resolvedNestedId, // Document ID of the parent nested sub-page (the page that contains this quiz)
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "quiz",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      topicId: null,
+      quizId: quizDocId,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Quiz ${quizId} uploaded successfully!`,
+      message: `Quiz updated successfully!`,
+      data: { id: quizDocId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading quiz ${quizId}:`, error);
@@ -2001,18 +5150,120 @@ export const deleteNursingEntranceExamQuiz = async (
   quizId: string
 ) => {
   try {
+    const pillarId = "nursing-entrance-exam";
+
+    // First, get the quiz to resolve the actual document ID
+    const quizResult = await getNursingEntranceExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    if (!quizResult.success || !quizResult.data) {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+      };
+    }
+
+    const quizData = quizResult.data as any;
+    const actualQuizId = quizData.id || quizId;
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        resolvedParentId = parentSubPageId;
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        resolvedNestedId = nestedSubPageId;
+      }
+    }
+
+    const refPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}`;
+
+    // Delete the document
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-entrance-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
-      quizId
+      actualQuizId
     );
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      quizId: actualQuizId,
+    });
 
     return {
       success: true,
@@ -2029,6 +5280,1127 @@ export const deleteNursingEntranceExamQuiz = async (
   }
 };
 
+// ==================== NURSING TEST BANK QUIZ QUESTIONS OPERATIONS ====================
+
+// Get all questions under a quiz (for test bank)
+export const getNursingTestBankQuizQuestions = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Resolve topicId to actual document ID (it might be a slug)
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingTestBankQuiz(
+      resolvedParentId,
+      resolvedNestedId,
+      resolvedTopicId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    } else {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+        data: [],
+      };
+    }
+
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        resolvedTopicId,
+        "quizzes",
+        actualQuizId,
+        "questions"
+      )
+    );
+    const questions: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      questions.push({
+        id: doc.id,
+        questionId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: questions,
+      message: "All questions retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting quiz questions:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve questions: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a specific question content (for test bank quiz)
+export const getNursingTestBankQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string,
+  questionId: string
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve IDs (similar to getNursingTestBankQuizQuestions)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+    } else {
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+        };
+      }
+    }
+
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingTestBankQuiz(
+      resolvedParentId,
+      resolvedNestedId,
+      resolvedTopicId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      resolvedTopicId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: docSnap.data(),
+        message: `Question ${questionId} retrieved successfully!`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `No question content found for ${questionId}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Upload/update question content (for test bank quiz)
+export const uploadNursingTestBankQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string,
+  questionId: string,
+  content: any
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve topicId to actual document ID (it might be a slug)
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+    } else {
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+        };
+      }
+    }
+
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingTestBankQuiz(
+      resolvedParentId,
+      resolvedNestedId,
+      resolvedTopicId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    } else {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+      };
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      resolvedTopicId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    await setDoc(docRef, {
+      ...content,
+      lastUpdated: new Date().toISOString(),
+      version: content.version || "1.0",
+    });
+
+    return {
+      success: true,
+      message: `Question ${questionId} uploaded successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error uploading question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete question (for test bank quiz)
+export const deleteNursingTestBankQuizQuestion = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string,
+  questionId: string
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+
+    // Resolve IDs (similar to uploadNursingTestBankQuizQuestion)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    let resolvedTopicId: string | null = null;
+    const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+    const topicsRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics"
+    );
+    const topicSlugQuery = query(
+      topicsRef,
+      where("slug", "==", normalizedTopicSlug)
+    );
+    const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+    if (!topicSlugSnapshot.empty) {
+      resolvedTopicId = topicSlugSnapshot.docs[0].id;
+    } else {
+      const topicDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        topicId
+      );
+      const topicDocSnap = await getDoc(topicDocRef);
+      if (topicDocSnap.exists()) {
+        resolvedTopicId = topicDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Topic ${topicId} not found`,
+        };
+      }
+    }
+
+    // First, resolve the quiz document ID from the slug if needed
+    let actualQuizId = quizId;
+
+    // Try to get the quiz to resolve the document ID
+    const quizResult = await getNursingTestBankQuiz(
+      resolvedParentId,
+      resolvedNestedId,
+      resolvedTopicId,
+      quizId
+    );
+
+    // If quiz was found, use its document ID (which is stored in the data)
+    if (quizResult.success && quizResult.data) {
+      const quizData = quizResult.data as any;
+      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
+      if (quizData.id) {
+        actualQuizId = quizData.id;
+      }
+    } else {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+      };
+    }
+
+    const docRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      resolvedTopicId,
+      "quizzes",
+      actualQuizId,
+      "questions",
+      questionId
+    );
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `Question ${questionId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting question ${questionId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete question ${questionId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Bulk upload questions (for test bank quiz)
+export const bulkUploadNursingTestBankQuizQuestions = async (
+  parentSubPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string,
+  questions: any[]
+) => {
+  console.log("=".repeat(80));
+  console.log("[BULK UPLOAD DEBUG] ===== FUNCTION CALLED =====");
+  console.log("=".repeat(80));
+  try {
+    console.log(`[BULK UPLOAD DEBUG] Starting bulk upload:`, {
+      parentSubPageId,
+      nestedSubPageId,
+      topicId,
+      quizId,
+      questionsCount: questions.length,
+    });
+
+    // Step 1: Find the quiz document first (quizId might be a slug or document ID)
+    let quizDoc: any = null;
+    let actualQuizId: string | null = null;
+    let resolvedParentId: string | null = null;
+    let resolvedNestedId: string | null = null;
+    let resolvedTopicId: string | null = null;
+    let resolvedPillarId: string | null = null;
+
+    const possiblePillars = ["nursing-test-bank"];
+
+    console.log(
+      `[BULK UPLOAD DEBUG] Searching for quiz "${quizId}" in pillar: ${possiblePillars[0]}`
+    );
+
+    for (const pillarId of possiblePillars) {
+      console.log(`[BULK UPLOAD DEBUG] Searching in pillar: ${pillarId}`);
+      const allSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages"
+      );
+      const allSubPagesSnapshot = await getDocs(allSubPagesRef);
+      console.log(
+        `[BULK UPLOAD DEBUG] Found ${allSubPagesSnapshot.docs.length} sub-pages in pillar ${pillarId}`
+      );
+
+      for (const subPageDoc of allSubPagesSnapshot.docs) {
+        const subPageId = subPageDoc.id;
+        console.log(`[BULK UPLOAD DEBUG] Checking sub-page: ${subPageId}`);
+        const nestedSubPagesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageId,
+          "nestedSubPages"
+        );
+        const nestedSubPagesSnapshot = await getDocs(nestedSubPagesRef);
+        console.log(
+          `[BULK UPLOAD DEBUG] Found ${nestedSubPagesSnapshot.docs.length} nested sub-pages under sub-page ${subPageId}`
+        );
+
+        for (const nestedSubPageDoc of nestedSubPagesSnapshot.docs) {
+          const nestedSubPageId = nestedSubPageDoc.id;
+          console.log(
+            `[BULK UPLOAD DEBUG] Checking nested sub-page: ${nestedSubPageId}`
+          );
+          const topicsRef = collection(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            subPageId,
+            "nestedSubPages",
+            nestedSubPageId,
+            "topics"
+          );
+          const topicsSnapshot = await getDocs(topicsRef);
+          console.log(
+            `[BULK UPLOAD DEBUG] Found ${topicsSnapshot.docs.length} topics under nested sub-page ${nestedSubPageId}`
+          );
+
+          for (const topicDoc of topicsSnapshot.docs) {
+            const topicDocId = topicDoc.id;
+            console.log(`[BULK UPLOAD DEBUG] Checking topic: ${topicDocId}`);
+            const quizzesRef = collection(
+              db,
+              "pillarPages",
+              pillarId,
+              "subPages",
+              subPageId,
+              "nestedSubPages",
+              nestedSubPageId,
+              "topics",
+              topicDocId,
+              "quizzes"
+            );
+            const quizzesSnapshot = await getDocs(quizzesRef);
+            console.log(
+              `[BULK UPLOAD DEBUG] Found ${quizzesSnapshot.docs.length} quizzes under topic ${topicDocId}`
+            );
+
+            for (const quizDocSnap of quizzesSnapshot.docs) {
+              const quizData = quizDocSnap.data();
+              const quizDocId = quizDocSnap.id;
+              const quizSlug = (quizData.slug || "").toLowerCase().trim();
+              const searchQuizId = quizId.toLowerCase().trim();
+
+              console.log(`[BULK UPLOAD DEBUG] Checking quiz:`, {
+                quizDocId,
+                quizSlug,
+                searchQuizId,
+                quizDataParentId: quizData.parentId,
+                quizDataNestedSubPageId: quizData.nestedSubPageId,
+                quizDataTopicId: quizData.topicId,
+                quizDataPillarId: quizData.pillarId,
+              });
+
+              const matchesById =
+                quizDocId === quizId || quizDocId === searchQuizId;
+              const matchesBySlug =
+                quizSlug === searchQuizId ||
+                quizSlug === quizId.toLowerCase().replace(/\s+/g, "-");
+
+              if (matchesById || matchesBySlug) {
+                console.log(`[BULK UPLOAD DEBUG] ✓ MATCH FOUND!`, {
+                  matchType: matchesById ? "ID" : "slug",
+                  quizDocId,
+                  quizSlug,
+                });
+                quizDoc = quizData;
+                actualQuizId = quizDocId;
+                resolvedParentId = quizData.parentId || subPageId;
+                resolvedNestedId = quizData.nestedSubPageId || nestedSubPageId;
+                resolvedTopicId = quizData.topicId || topicDocId;
+                resolvedPillarId = quizData.pillarId || pillarId;
+                break;
+              }
+            }
+            if (quizDoc) break;
+          }
+          if (quizDoc) break;
+        }
+        if (quizDoc) break;
+      }
+      if (quizDoc) break;
+    }
+
+    if (
+      !quizDoc ||
+      !actualQuizId ||
+      !resolvedParentId ||
+      !resolvedNestedId ||
+      !resolvedTopicId ||
+      !resolvedPillarId
+    ) {
+      console.error(`[BULK UPLOAD DEBUG] ✗ Quiz not found!`, {
+        quizDoc: !!quizDoc,
+        actualQuizId,
+        resolvedParentId,
+        resolvedNestedId,
+        resolvedTopicId,
+        resolvedPillarId,
+        searchedQuizId: quizId,
+      });
+      return {
+        success: false,
+        message: `Quiz "${quizId}" not found. Could not locate quiz document.`,
+        data: { successful: [], failed: [] },
+      };
+    }
+
+    console.log(`[BULK UPLOAD DEBUG] ✓ Quiz found! Using IDs:`, {
+      quizId: actualQuizId,
+      parentId: resolvedParentId,
+      nestedSubPageId: resolvedNestedId,
+      topicId: resolvedTopicId,
+      pillarId: resolvedPillarId,
+    });
+
+    const results = [];
+    const errors = [];
+
+    console.log(
+      `[BULK UPLOAD DEBUG] Starting to process ${questions.length} questions`
+    );
+
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      console.log(
+        `[BULK UPLOAD DEBUG] Processing question ${i + 1}/${questions.length}:`,
+        {
+          questionId: question.id,
+          hasQuestion: !!question.question,
+        }
+      );
+      try {
+        let optionsArray: string[] = [];
+
+        if (question.options) {
+          try {
+            const optionsString =
+              typeof question.options === "string"
+                ? question.options
+                : JSON.stringify(question.options);
+            const optionsObject = JSON.parse(optionsString);
+            optionsArray = Object.keys(optionsObject)
+              .sort()
+              .map((key) => {
+                const option = optionsObject[key];
+                let optionText = "";
+                if (
+                  typeof option === "object" &&
+                  option !== null &&
+                  option.choice
+                ) {
+                  optionText = option.choice;
+                } else if (typeof option === "string") {
+                  optionText = option;
+                } else if (option !== null && option !== undefined) {
+                  optionText = String(option);
+                }
+                return optionText;
+              });
+          } catch {
+            console.warn(
+              `[BULK UPLOAD DEBUG] Failed to parse options for question ${
+                i + 1
+              }, using empty array`
+            );
+            optionsArray = [];
+          }
+        }
+
+        const questionContent: any = {
+          question: question.question || "",
+          options: optionsArray,
+          correctAnswer: question.correctAnswer || "",
+          explanation: question.solution || question.explanation || "",
+          questionTypeId:
+            question.question_type_id || question.questionTypeId || 1,
+          lastUpdated: new Date().toISOString(),
+          version: "1.0",
+        };
+
+        if (question.units) {
+          questionContent.units = question.units;
+        }
+
+        const cleanQuestionText = (question.question || "")
+          .replace(/<[^>]*>/g, "")
+          .trim();
+        const truncated = cleanQuestionText.substring(0, 180);
+        const slug = truncated
+          .toLowerCase()
+          .replace(/nbsp/g, "")
+          .replace(/&nbsp;/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        questionContent.slug = slug;
+
+        const questionDocId =
+          question.id?.toString().toLowerCase().replace(/\s+/g, "-") ||
+          slug ||
+          `question-${Date.now()}-${i}`;
+
+        const docPath = `pillarPages/${resolvedPillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${resolvedTopicId}/quizzes/${actualQuizId}/questions/${questionDocId}`;
+        console.log(
+          `[BULK UPLOAD DEBUG] Saving question ${i + 1} to path: ${docPath}`
+        );
+
+        const docRef = doc(
+          db,
+          "pillarPages",
+          resolvedPillarId,
+          "subPages",
+          resolvedParentId,
+          "nestedSubPages",
+          resolvedNestedId,
+          "topics",
+          resolvedTopicId,
+          "quizzes",
+          actualQuizId,
+          "questions",
+          questionDocId
+        );
+
+        await setDoc(docRef, questionContent);
+
+        console.log(
+          `[BULK UPLOAD DEBUG] ✓ Question ${
+            i + 1
+          } saved successfully: ${questionDocId}`
+        );
+        results.push({
+          questionId: questionDocId,
+          originalId: question.id,
+          success: true,
+        });
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[BULK UPLOAD DEBUG] ✗ Question ${i + 1} error:`,
+          errorMsg,
+          error
+        );
+        errors.push({
+          questionId: question.id?.toString() || "unknown",
+          error: errorMsg,
+        });
+      }
+    }
+
+    console.log(`[BULK UPLOAD DEBUG] Upload complete:`, {
+      successful: results.length,
+      failed: errors.length,
+      total: questions.length,
+    });
+
+    return {
+      success: errors.length === 0,
+      message: `Uploaded ${results.length} questions successfully${
+        errors.length > 0 ? `, ${errors.length} failed` : ""
+      }`,
+      data: {
+        successful: results,
+        failed: errors,
+      },
+    };
+  } catch (error) {
+    console.error(`[BULK UPLOAD DEBUG] Fatal error:`, error);
+    return {
+      success: false,
+      message: `Failed to upload questions: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+      data: { successful: [], failed: [] },
+    };
+  }
+};
+
 // ==================== NURSING ENTRANCE EXAM QUIZ QUESTIONS OPERATIONS ====================
 
 // Get all questions under a quiz (for entrance exam)
@@ -2038,13 +6410,93 @@ export const getNursingEntranceExamQuizQuestions = async (
   quizId: string
 ) => {
   try {
+    const pillarId = "nursing-entrance-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
     // First, resolve the quiz document ID from the slug if needed
     let actualQuizId = quizId;
 
     // Try to get the quiz to resolve the document ID
     const quizResult = await getNursingEntranceExamQuiz(
-      parentSubPageId,
-      nestedSubPageId,
+      resolvedParentId,
+      resolvedNestedId,
       quizId
     );
 
@@ -2056,17 +6508,23 @@ export const getNursingEntranceExamQuizQuestions = async (
       if (quizData.id) {
         actualQuizId = quizData.id;
       }
+    } else {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+        data: [],
+      };
     }
 
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-entrance-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages",
-        nestedSubPageId,
+        resolvedNestedId,
         "quizzes",
         actualQuizId,
         "questions"
@@ -2172,33 +6630,111 @@ export const uploadNursingEntranceExamQuizQuestion = async (
   content: any
 ) => {
   try {
-    // First, resolve the quiz document ID from the slug if needed
-    let actualQuizId = quizId;
+    // Step 1: Find the quiz document first (quizId might be a slug or document ID)
+    // We need to search across all possible locations since we don't know the exact path yet
+    let quizDoc: any = null;
+    let actualQuizId: string | null = null;
+    let resolvedParentId: string | null = null;
+    let resolvedNestedId: string | null = null;
+    let resolvedPillarId: string | null = null;
 
-    // Try to get the quiz to resolve the document ID
-    const quizResult = await getNursingEntranceExamQuiz(
-      parentSubPageId,
-      nestedSubPageId,
-      quizId
-    );
+    // Try to find the quiz by searching in the nursing-entrance-exam pillar
+    const pillarId = "nursing-entrance-exam";
 
-    // If quiz was found, use its document ID (which is stored in the data)
-    if (quizResult.success && quizResult.data) {
-      const quizData = quizResult.data as any;
-      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
-      if (quizData.id) {
-        actualQuizId = quizData.id;
+    // First, try to find quiz by slug or ID in all possible locations
+    // We'll search by getting all sub-pages, then all nested sub-pages, then all quizzes
+    const allSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const allSubPagesSnapshot = await getDocs(allSubPagesRef);
+
+    for (const subPageDoc of allSubPagesSnapshot.docs) {
+      const subPageId = subPageDoc.id;
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        subPageId,
+        "nestedSubPages"
+      );
+      const nestedSubPagesSnapshot = await getDocs(nestedSubPagesRef);
+
+      for (const nestedSubPageDoc of nestedSubPagesSnapshot.docs) {
+        const nestedSubPageId = nestedSubPageDoc.id;
+        const quizzesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageId,
+          "nestedSubPages",
+          nestedSubPageId,
+          "quizzes"
+        );
+        const quizzesSnapshot = await getDocs(quizzesRef);
+
+        for (const quizDocSnap of quizzesSnapshot.docs) {
+          const quizData = quizDocSnap.data();
+          const quizDocId = quizDocSnap.id;
+          const quizSlug = (quizData.slug || "").toLowerCase().trim();
+          const searchQuizId = quizId.toLowerCase().trim();
+
+          // Check if this is the quiz we're looking for (by ID or slug)
+          if (
+            quizDocId === quizId ||
+            quizDocId === searchQuizId ||
+            quizSlug === searchQuizId ||
+            quizSlug === quizId.toLowerCase().replace(/\s+/g, "-")
+          ) {
+            quizDoc = quizData;
+            actualQuizId = quizDocId;
+            // Extract parentId and nestedSubPageId from the quiz document
+            resolvedParentId = quizData.parentId || subPageId;
+            resolvedNestedId = quizData.nestedSubPageId || nestedSubPageId;
+            resolvedPillarId = quizData.pillarId || pillarId;
+            break;
+          }
+        }
+        if (quizDoc) break;
       }
+      if (quizDoc) break;
+    }
+
+    // If quiz not found, return error
+    if (!quizDoc || !actualQuizId || !resolvedParentId || !resolvedNestedId) {
+      return {
+        success: false,
+        message: `Quiz "${quizId}" not found. Could not locate quiz document.`,
+      };
+    }
+
+    console.log(`[DEBUG] Found quiz:`, {
+      quizId: actualQuizId,
+      parentId: resolvedParentId,
+      nestedSubPageId: resolvedNestedId,
+      pillarId: resolvedPillarId,
+    });
+
+    // Step 2: Use the IDs from the quiz document to construct the path
+    if (
+      !resolvedPillarId ||
+      !resolvedParentId ||
+      !resolvedNestedId ||
+      !actualQuizId
+    ) {
+      return {
+        success: false,
+        message: `Failed to resolve required IDs. Pillar: ${resolvedPillarId}, Parent: ${resolvedParentId}, Nested: ${resolvedNestedId}, Quiz: ${actualQuizId}`,
+      };
     }
 
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-entrance-exam",
+      resolvedPillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
       actualQuizId,
       "questions",
@@ -2232,30 +6768,171 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
   quizId: string,
   questions: any[]
 ) => {
+  console.log("=".repeat(80));
+  console.log("[BULK UPLOAD DEBUG] ===== FUNCTION CALLED =====");
+  console.log("=".repeat(80));
   try {
-    // First, resolve the quiz document ID from the slug if needed
-    let actualQuizId = quizId;
-
-    // Try to get the quiz to resolve the document ID
-    const quizResult = await getNursingEntranceExamQuiz(
+    console.log(`[BULK UPLOAD DEBUG] Starting bulk upload:`, {
       parentSubPageId,
       nestedSubPageId,
-      quizId
+      quizId,
+      questionsCount: questions.length,
+    });
+
+    // Step 1: Find the quiz document first (quizId might be a slug or document ID)
+    // The quiz document contains parentId, nestedSubPageId, and pillarId fields
+    let quizDoc: any = null;
+    let actualQuizId: string | null = null;
+    let resolvedParentId: string | null = null;
+    let resolvedNestedId: string | null = null;
+    let resolvedPillarId: string | null = null;
+
+    // For nursing entrance exam, only search in the nursing-entrance-exam pillar
+    const possiblePillars = ["nursing-entrance-exam"];
+
+    console.log(
+      `[BULK UPLOAD DEBUG] Searching for quiz "${quizId}" in pillar: ${possiblePillars[0]}`
     );
 
-    // If quiz was found, use its document ID (which is stored in the data)
-    if (quizResult.success && quizResult.data) {
-      const quizData = quizResult.data as any;
-      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
-      if (quizData.id) {
-        actualQuizId = quizData.id;
+    for (const pillarId of possiblePillars) {
+      console.log(`[BULK UPLOAD DEBUG] Searching in pillar: ${pillarId}`);
+      const allSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages"
+      );
+      const allSubPagesSnapshot = await getDocs(allSubPagesRef);
+      console.log(
+        `[BULK UPLOAD DEBUG] Found ${allSubPagesSnapshot.docs.length} sub-pages in pillar ${pillarId}`
+      );
+
+      for (const subPageDoc of allSubPagesSnapshot.docs) {
+        const subPageId = subPageDoc.id;
+        console.log(`[BULK UPLOAD DEBUG] Checking sub-page: ${subPageId}`);
+        const nestedSubPagesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageId,
+          "nestedSubPages"
+        );
+        const nestedSubPagesSnapshot = await getDocs(nestedSubPagesRef);
+        console.log(
+          `[BULK UPLOAD DEBUG] Found ${nestedSubPagesSnapshot.docs.length} nested sub-pages under sub-page ${subPageId}`
+        );
+
+        for (const nestedSubPageDoc of nestedSubPagesSnapshot.docs) {
+          const nestedSubPageId = nestedSubPageDoc.id;
+          console.log(
+            `[BULK UPLOAD DEBUG] Checking nested sub-page: ${nestedSubPageId}`
+          );
+          const quizzesRef = collection(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            subPageId,
+            "nestedSubPages",
+            nestedSubPageId,
+            "quizzes"
+          );
+          const quizzesSnapshot = await getDocs(quizzesRef);
+          console.log(
+            `[BULK UPLOAD DEBUG] Found ${quizzesSnapshot.docs.length} quizzes under nested sub-page ${nestedSubPageId}`
+          );
+
+          for (const quizDocSnap of quizzesSnapshot.docs) {
+            const quizData = quizDocSnap.data();
+            const quizDocId = quizDocSnap.id;
+            const quizSlug = (quizData.slug || "").toLowerCase().trim();
+            const searchQuizId = quizId.toLowerCase().trim();
+
+            console.log(`[BULK UPLOAD DEBUG] Checking quiz:`, {
+              quizDocId,
+              quizSlug,
+              searchQuizId,
+              quizDataParentId: quizData.parentId,
+              quizDataNestedSubPageId: quizData.nestedSubPageId,
+              quizDataPillarId: quizData.pillarId,
+            });
+
+            // Check if this is the quiz we're looking for (by ID or slug)
+            const matchesById =
+              quizDocId === quizId || quizDocId === searchQuizId;
+            const matchesBySlug =
+              quizSlug === searchQuizId ||
+              quizSlug === quizId.toLowerCase().replace(/\s+/g, "-");
+
+            if (matchesById || matchesBySlug) {
+              console.log(`[BULK UPLOAD DEBUG] ✓ MATCH FOUND!`, {
+                matchType: matchesById ? "ID" : "slug",
+                quizDocId,
+                quizSlug,
+              });
+              quizDoc = quizData;
+              actualQuizId = quizDocId;
+              // Extract parentId and nestedSubPageId from the quiz document
+              resolvedParentId = quizData.parentId || subPageId;
+              resolvedNestedId = quizData.nestedSubPageId || nestedSubPageId;
+              resolvedPillarId = quizData.pillarId || pillarId;
+              break;
+            }
+          }
+          if (quizDoc) break;
+        }
+        if (quizDoc) break;
       }
+      if (quizDoc) break;
     }
+
+    // If quiz not found, return error
+    if (
+      !quizDoc ||
+      !actualQuizId ||
+      !resolvedParentId ||
+      !resolvedNestedId ||
+      !resolvedPillarId
+    ) {
+      console.error(`[BULK UPLOAD DEBUG] ✗ Quiz not found!`, {
+        quizDoc: !!quizDoc,
+        actualQuizId,
+        resolvedParentId,
+        resolvedNestedId,
+        resolvedPillarId,
+        searchedQuizId: quizId,
+      });
+      return {
+        success: false,
+        message: `Quiz "${quizId}" not found. Could not locate quiz document.`,
+        data: { successful: [], failed: [] },
+      };
+    }
+
+    console.log(`[BULK UPLOAD DEBUG] ✓ Quiz found! Using IDs:`, {
+      quizId: actualQuizId,
+      parentId: resolvedParentId,
+      nestedSubPageId: resolvedNestedId,
+      pillarId: resolvedPillarId,
+    });
 
     const results = [];
     const errors = [];
 
-    for (const question of questions) {
+    console.log(
+      `[BULK UPLOAD DEBUG] Starting to process ${questions.length} questions`
+    );
+
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      console.log(
+        `[BULK UPLOAD DEBUG] Processing question ${i + 1}/${questions.length}:`,
+        {
+          questionId: question.id,
+          hasQuestion: !!question.question,
+        }
+      );
       try {
         // Parse options - always treat as string and parse JSON
         let optionsArray: string[] = [];
@@ -2399,14 +7076,37 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
           question.id?.toString() ||
           `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+        // Use the IDs from the quiz document to construct the path
+        if (
+          !resolvedPillarId ||
+          !resolvedParentId ||
+          !resolvedNestedId ||
+          !actualQuizId
+        ) {
+          const errorMsg = `Failed to resolve required IDs. Pillar: ${resolvedPillarId}, Parent: ${resolvedParentId}, Nested: ${resolvedNestedId}, Quiz: ${actualQuizId}`;
+          console.error(
+            `[BULK UPLOAD DEBUG] ✗ Question ${i + 1} failed: ${errorMsg}`
+          );
+          errors.push({
+            questionId: question.id?.toString() || "unknown",
+            error: errorMsg,
+          });
+          continue;
+        }
+
+        const docPath = `pillarPages/${resolvedPillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}/questions/${questionDocId}`;
+        console.log(
+          `[BULK UPLOAD DEBUG] Saving question ${i + 1} to path: ${docPath}`
+        );
+
         const docRef = doc(
           db,
           "pillarPages",
-          "nursing-entrance-exam",
+          resolvedPillarId,
           "subPages",
-          parentSubPageId,
+          resolvedParentId,
           "nestedSubPages",
-          nestedSubPageId,
+          resolvedNestedId,
           "quizzes",
           actualQuizId,
           "questions",
@@ -2419,18 +7119,36 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
           version: "1.0",
         });
 
+        console.log(
+          `[BULK UPLOAD DEBUG] ✓ Question ${
+            i + 1
+          } saved successfully: ${questionDocId}`
+        );
         results.push({
           questionId: questionDocId,
           originalId: question.id,
           success: true,
         });
       } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[BULK UPLOAD DEBUG] ✗ Question ${i + 1} error:`,
+          errorMsg,
+          error
+        );
         errors.push({
           questionId: question.id?.toString() || "unknown",
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: errorMsg,
         });
       }
     }
+
+    console.log(`[BULK UPLOAD DEBUG] Upload complete:`, {
+      successful: results.length,
+      failed: errors.length,
+      total: questions.length,
+    });
 
     return {
       success: errors.length === 0,
@@ -2443,12 +7161,13 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
       },
     };
   } catch (error) {
-    console.error("Error bulk uploading questions:", error);
+    console.error("[BULK UPLOAD DEBUG] ✗ Fatal error in bulk upload:", error);
     return {
       success: false,
       message: `Failed to bulk upload questions: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
+      data: { successful: [], failed: [] },
     };
   }
 };
@@ -2518,15 +7237,96 @@ export const getNursingExitExamQuizzes = async (
   nestedSubPageId: string
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Now query quizzes using the resolved document IDs
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-exit-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages",
-        nestedSubPageId,
+        resolvedNestedId,
         "quizzes"
       )
     );
@@ -2552,6 +7352,7 @@ export const getNursingExitExamQuizzes = async (
       message: `Failed to retrieve quizzes: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
+      data: [],
     };
   }
 };
@@ -2563,16 +7364,94 @@ export const getNursingExitExamQuiz = async (
   quizId: string
 ) => {
   try {
-    // Get all quizzes to search by slug
+    const pillarId = "nursing-exit-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get all quizzes to search by slug using resolved document IDs
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-exit-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages",
-        nestedSubPageId,
+        resolvedNestedId,
         "quizzes"
       )
     );
@@ -2600,11 +7479,11 @@ export const getNursingExitExamQuiz = async (
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
       quizId
     );
@@ -2652,7 +7531,7 @@ export const getNursingExitExamQuiz = async (
   }
 };
 
-// Upload/update quiz content (for exit exam)
+// Upload/update quiz content (for exit exam) - uses auto-generated document IDs
 export const uploadNursingExitExamQuiz = async (
   parentSubPageId: string,
   nestedSubPageId: string,
@@ -2660,26 +7539,254 @@ export const uploadNursingExitExamQuiz = async (
   content: any
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    // let parentSlug: string = "";
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+      // const parentData = parentSlugSnapshot.docs[0].data();
+      // parentSlug = (parentData.slug || parentSubPageId)
+      //   .toLowerCase()
+      //   .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+        // const parentData = parentDocSnap.data();
+        // parentSlug = (parentData.slug || parentSubPageId)
+        //   .toLowerCase()
+        //   .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    let nestedSlug: string = "";
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+      const nestedData = nestedSlugSnapshot.docs[0].data();
+      nestedSlug = (nestedData.slug || nestedSubPageId)
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+        const nestedData = nestedDocSnap.data();
+        nestedSlug = (nestedData.slug || nestedSubPageId)
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    // Get user-provided slug and prepend nested page slug: [nestedpage]-[userentered slug]
+    // Note: nestedSlug already contains the parent prefix (e.g., "mdcat-reading-guide")
+    const userSlug = content.slug?.trim() || quizId;
+    const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
+    // Build the expected prefix using nested slug (which already has parent prefix)
+    const expectedPrefix = `${nestedSlug}-`;
+    // Prepend nested page slug if not already present
+    const finalSlug = normalizedUserSlug.startsWith(expectedPrefix)
+      ? normalizedUserSlug
+      : `${nestedSlug}-${normalizedUserSlug}`;
+    const normalizedNewSlug = finalSlug;
+    const normalizedOldSlug = quizId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find quiz by slug (or document ID for backward compatibility)
+    let quizDocId: string | null = null;
+    const quizzesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "quizzes"
+    );
+    const quizSlugQuery = query(
+      quizzesRef,
+      where("slug", "==", normalizedOldSlug)
+    );
+    const quizSlugSnapshot = await getDocs(quizSlugQuery);
+
+    if (!quizSlugSnapshot.empty) {
+      quizDocId = quizSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const quizDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "quizzes",
+        quizId
+      );
+      const quizDocSnap = await getDoc(quizDocRef);
+      if (quizDocSnap.exists()) {
+        quizDocId = quizDocSnap.id;
+      }
+    }
+
+    if (!quizDocId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // nestedSubPageId should be the document ID of the parent nested sub-page (the page that contains this quiz)
+      const newDocRef = await addDoc(quizzesRef, {
+        ...content,
+        slug: normalizedNewSlug,
+        type: "quiz",
+        parentId: resolvedParentId, // Document ID of the parent sub-page
+        nestedSubPageId: resolvedNestedId, // Document ID of the parent nested sub-page (the page that contains this quiz)
+        pillarId: pillarId,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      });
+
+      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${newDocRef.id}`;
+      const docRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "quizzes",
+        newDocRef.id
+      );
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "quiz",
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: resolvedParentId,
+        nestedPageId: resolvedNestedId,
+        topicId: null,
+        quizId: newDocRef.id,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `Quiz created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it (document ID stays the same, only slug field updates)
+    // nestedSubPageId should be the document ID of the parent nested sub-page (the page that contains this quiz)
+    const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${quizDocId}`;
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
-      quizId
+      quizDocId
     );
-    await setDoc(docRef, {
-      ...content,
-      lastUpdated: new Date().toISOString(),
-      version: content.version || "1.0",
+    await setDoc(
+      docRef,
+      {
+        ...content,
+        slug: normalizedNewSlug, // Update slug field
+        type: "quiz",
+        parentId: resolvedParentId, // Document ID of the parent sub-page
+        nestedSubPageId: resolvedNestedId, // Document ID of the parent nested sub-page (the page that contains this quiz)
+        pillarId: pillarId,
+        contentPath: contentPath,
+        lastUpdated: new Date().toISOString(),
+        version: content.version || "1.0",
+      },
+      { merge: true }
+    );
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "quiz",
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      topicId: null,
+      quizId: quizDocId,
+      refPath: contentPath,
     });
 
     return {
       success: true,
-      message: `Quiz ${quizId} uploaded successfully!`,
+      message: `Quiz updated successfully!`,
+      data: { id: quizDocId, slug: normalizedNewSlug },
     };
   } catch (error) {
     console.error(`Error uploading quiz ${quizId}:`, error);
@@ -2699,18 +7806,118 @@ export const deleteNursingExitExamQuiz = async (
   quizId: string
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+
+    // First, get the quiz to resolve the actual document ID
+    const quizResult = await getNursingExitExamQuiz(
+      parentSubPageId,
+      nestedSubPageId,
+      quizId
+    );
+
+    if (!quizResult.success || !quizResult.data) {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+      };
+    }
+
+    const quizData = quizResult.data as any;
+    const actualQuizId = quizData.id || quizId;
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        resolvedParentId = parentSubPageId;
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        resolvedNestedId = nestedSubPageId;
+      }
+    }
+
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
-      quizId
+      actualQuizId
     );
     await deleteDoc(docRef);
+
+    // Delete route mapping
+    const refPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}`;
+    await deleteRouteMappingByRefPath(refPath);
+    // Also delete by IDs in case refPath doesn't match
+    await deleteRouteMappingByIds({
+      pillarId,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
+      quizId: actualQuizId,
+    });
 
     return {
       success: true,
@@ -2736,13 +7943,93 @@ export const getNursingExitExamQuizQuestions = async (
   quizId: string
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+          data: [],
+        };
+      }
+    }
+
     // First, resolve the quiz document ID from the slug if needed
     let actualQuizId = quizId;
 
     // Try to get the quiz to resolve the document ID
     const quizResult = await getNursingExitExamQuiz(
-      parentSubPageId,
-      nestedSubPageId,
+      resolvedParentId,
+      resolvedNestedId,
       quizId
     );
 
@@ -2753,17 +8040,23 @@ export const getNursingExitExamQuizQuestions = async (
       if (quizData.id) {
         actualQuizId = quizData.id;
       }
+    } else {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+        data: [],
+      };
     }
 
     const querySnapshot = await getDocs(
       collection(
         db,
         "pillarPages",
-        "nursing-exit-exam",
+        pillarId,
         "subPages",
-        parentSubPageId,
+        resolvedParentId,
         "nestedSubPages",
-        nestedSubPageId,
+        resolvedNestedId,
         "quizzes",
         actualQuizId,
         "questions"
@@ -2869,33 +8162,111 @@ export const uploadNursingExitExamQuizQuestion = async (
   content: any
 ) => {
   try {
-    // First, resolve the quiz document ID from the slug if needed
-    let actualQuizId = quizId;
+    // Step 1: Find the quiz document first (quizId might be a slug or document ID)
+    // We need to search across all possible locations since we don't know the exact path yet
+    let quizDoc: any = null;
+    let actualQuizId: string | null = null;
+    let resolvedParentId: string | null = null;
+    let resolvedNestedId: string | null = null;
+    let resolvedPillarId: string | null = null;
 
-    // Try to get the quiz to resolve the document ID
-    const quizResult = await getNursingExitExamQuiz(
-      parentSubPageId,
-      nestedSubPageId,
-      quizId
-    );
+    // Try to find the quiz by searching in the nursing-exit-exam pillar
+    const pillarId = "nursing-exit-exam";
 
-    // If quiz was found, use its document ID (which is stored in the data)
-    if (quizResult.success && quizResult.data) {
-      const quizData = quizResult.data as any;
-      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
-      if (quizData.id) {
-        actualQuizId = quizData.id;
+    // First, try to find quiz by slug or ID in all possible locations
+    // We'll search by getting all sub-pages, then all nested sub-pages, then all quizzes
+    const allSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const allSubPagesSnapshot = await getDocs(allSubPagesRef);
+
+    for (const subPageDoc of allSubPagesSnapshot.docs) {
+      const subPageId = subPageDoc.id;
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        subPageId,
+        "nestedSubPages"
+      );
+      const nestedSubPagesSnapshot = await getDocs(nestedSubPagesRef);
+
+      for (const nestedSubPageDoc of nestedSubPagesSnapshot.docs) {
+        const nestedSubPageId = nestedSubPageDoc.id;
+        const quizzesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageId,
+          "nestedSubPages",
+          nestedSubPageId,
+          "quizzes"
+        );
+        const quizzesSnapshot = await getDocs(quizzesRef);
+
+        for (const quizDocSnap of quizzesSnapshot.docs) {
+          const quizData = quizDocSnap.data();
+          const quizDocId = quizDocSnap.id;
+          const quizSlug = (quizData.slug || "").toLowerCase().trim();
+          const searchQuizId = quizId.toLowerCase().trim();
+
+          // Check if this is the quiz we're looking for (by ID or slug)
+          if (
+            quizDocId === quizId ||
+            quizDocId === searchQuizId ||
+            quizSlug === searchQuizId ||
+            quizSlug === quizId.toLowerCase().replace(/\s+/g, "-")
+          ) {
+            quizDoc = quizData;
+            actualQuizId = quizDocId;
+            // Extract parentId and nestedSubPageId from the quiz document
+            resolvedParentId = quizData.parentId || subPageId;
+            resolvedNestedId = quizData.nestedSubPageId || nestedSubPageId;
+            resolvedPillarId = quizData.pillarId || pillarId;
+            break;
+          }
+        }
+        if (quizDoc) break;
       }
+      if (quizDoc) break;
+    }
+
+    // If quiz not found, return error
+    if (!quizDoc || !actualQuizId || !resolvedParentId || !resolvedNestedId) {
+      return {
+        success: false,
+        message: `Quiz "${quizId}" not found. Could not locate quiz document.`,
+      };
+    }
+
+    console.log(`[DEBUG] Found quiz:`, {
+      quizId: actualQuizId,
+      parentId: resolvedParentId,
+      nestedSubPageId: resolvedNestedId,
+      pillarId: resolvedPillarId,
+    });
+
+    // Step 2: Use the IDs from the quiz document to construct the path
+    if (
+      !resolvedPillarId ||
+      !resolvedParentId ||
+      !resolvedNestedId ||
+      !actualQuizId
+    ) {
+      return {
+        success: false,
+        message: `Failed to resolve required IDs. Pillar: ${resolvedPillarId}, Parent: ${resolvedParentId}, Nested: ${resolvedNestedId}, Quiz: ${actualQuizId}`,
+      };
     }
 
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      resolvedPillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
       actualQuizId,
       "questions",
@@ -2929,30 +8300,171 @@ export const bulkUploadNursingExitExamQuizQuestions = async (
   quizId: string,
   questions: any[]
 ) => {
+  console.log("=".repeat(80));
+  console.log("[BULK UPLOAD DEBUG] ===== FUNCTION CALLED =====");
+  console.log("=".repeat(80));
   try {
-    // First, resolve the quiz document ID from the slug if needed
-    let actualQuizId = quizId;
-
-    // Try to get the quiz to resolve the document ID
-    const quizResult = await getNursingExitExamQuiz(
+    console.log(`[BULK UPLOAD DEBUG] Starting bulk upload:`, {
       parentSubPageId,
       nestedSubPageId,
-      quizId
+      quizId,
+      questionsCount: questions.length,
+    });
+
+    // Step 1: Find the quiz document first (quizId might be a slug or document ID)
+    // The quiz document contains parentId, nestedSubPageId, and pillarId fields
+    let quizDoc: any = null;
+    let actualQuizId: string | null = null;
+    let resolvedParentId: string | null = null;
+    let resolvedNestedId: string | null = null;
+    let resolvedPillarId: string | null = null;
+
+    // For nursing exit exam, only search in the nursing-exit-exam pillar
+    const possiblePillars = ["nursing-exit-exam"];
+
+    console.log(
+      `[BULK UPLOAD DEBUG] Searching for quiz "${quizId}" in pillar: ${possiblePillars[0]}`
     );
 
-    // If quiz was found, use its document ID (which is stored in the data)
-    if (quizResult.success && quizResult.data) {
-      const quizData = quizResult.data as any;
-      // Always use the document ID from the quiz data (it will be the actual Firestore document ID)
-      if (quizData.id) {
-        actualQuizId = quizData.id;
+    for (const pillarId of possiblePillars) {
+      console.log(`[BULK UPLOAD DEBUG] Searching in pillar: ${pillarId}`);
+      const allSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages"
+      );
+      const allSubPagesSnapshot = await getDocs(allSubPagesRef);
+      console.log(
+        `[BULK UPLOAD DEBUG] Found ${allSubPagesSnapshot.docs.length} sub-pages in pillar ${pillarId}`
+      );
+
+      for (const subPageDoc of allSubPagesSnapshot.docs) {
+        const subPageId = subPageDoc.id;
+        console.log(`[BULK UPLOAD DEBUG] Checking sub-page: ${subPageId}`);
+        const nestedSubPagesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageId,
+          "nestedSubPages"
+        );
+        const nestedSubPagesSnapshot = await getDocs(nestedSubPagesRef);
+        console.log(
+          `[BULK UPLOAD DEBUG] Found ${nestedSubPagesSnapshot.docs.length} nested sub-pages under sub-page ${subPageId}`
+        );
+
+        for (const nestedSubPageDoc of nestedSubPagesSnapshot.docs) {
+          const nestedSubPageId = nestedSubPageDoc.id;
+          console.log(
+            `[BULK UPLOAD DEBUG] Checking nested sub-page: ${nestedSubPageId}`
+          );
+          const quizzesRef = collection(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            subPageId,
+            "nestedSubPages",
+            nestedSubPageId,
+            "quizzes"
+          );
+          const quizzesSnapshot = await getDocs(quizzesRef);
+          console.log(
+            `[BULK UPLOAD DEBUG] Found ${quizzesSnapshot.docs.length} quizzes under nested sub-page ${nestedSubPageId}`
+          );
+
+          for (const quizDocSnap of quizzesSnapshot.docs) {
+            const quizData = quizDocSnap.data();
+            const quizDocId = quizDocSnap.id;
+            const quizSlug = (quizData.slug || "").toLowerCase().trim();
+            const searchQuizId = quizId.toLowerCase().trim();
+
+            console.log(`[BULK UPLOAD DEBUG] Checking quiz:`, {
+              quizDocId,
+              quizSlug,
+              searchQuizId,
+              quizDataParentId: quizData.parentId,
+              quizDataNestedSubPageId: quizData.nestedSubPageId,
+              quizDataPillarId: quizData.pillarId,
+            });
+
+            // Check if this is the quiz we're looking for (by ID or slug)
+            const matchesById =
+              quizDocId === quizId || quizDocId === searchQuizId;
+            const matchesBySlug =
+              quizSlug === searchQuizId ||
+              quizSlug === quizId.toLowerCase().replace(/\s+/g, "-");
+
+            if (matchesById || matchesBySlug) {
+              console.log(`[BULK UPLOAD DEBUG] ✓ MATCH FOUND!`, {
+                matchType: matchesById ? "ID" : "slug",
+                quizDocId,
+                quizSlug,
+              });
+              quizDoc = quizData;
+              actualQuizId = quizDocId;
+              // Extract parentId and nestedSubPageId from the quiz document
+              resolvedParentId = quizData.parentId || subPageId;
+              resolvedNestedId = quizData.nestedSubPageId || nestedSubPageId;
+              resolvedPillarId = quizData.pillarId || pillarId;
+              break;
+            }
+          }
+          if (quizDoc) break;
+        }
+        if (quizDoc) break;
       }
+      if (quizDoc) break;
     }
+
+    // If quiz not found, return error
+    if (
+      !quizDoc ||
+      !actualQuizId ||
+      !resolvedParentId ||
+      !resolvedNestedId ||
+      !resolvedPillarId
+    ) {
+      console.error(`[BULK UPLOAD DEBUG] ✗ Quiz not found!`, {
+        quizDoc: !!quizDoc,
+        actualQuizId,
+        resolvedParentId,
+        resolvedNestedId,
+        resolvedPillarId,
+        searchedQuizId: quizId,
+      });
+      return {
+        success: false,
+        message: `Quiz "${quizId}" not found. Could not locate quiz document.`,
+        data: { successful: [], failed: [] },
+      };
+    }
+
+    console.log(`[BULK UPLOAD DEBUG] ✓ Quiz found! Using IDs:`, {
+      quizId: actualQuizId,
+      parentId: resolvedParentId,
+      nestedSubPageId: resolvedNestedId,
+      pillarId: resolvedPillarId,
+    });
 
     const results = [];
     const errors = [];
 
-    for (const question of questions) {
+    console.log(
+      `[BULK UPLOAD DEBUG] Starting to process ${questions.length} questions`
+    );
+
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      console.log(
+        `[BULK UPLOAD DEBUG] Processing question ${i + 1}/${questions.length}:`,
+        {
+          questionId: question.id,
+          hasQuestion: !!question.question,
+        }
+      );
       try {
         // Parse options - always treat as string and parse JSON
         let optionsArray: string[] = [];
@@ -3095,14 +8607,37 @@ export const bulkUploadNursingExitExamQuizQuestions = async (
           question.id?.toString() ||
           `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+        // Use the IDs from the quiz document to construct the path
+        if (
+          !resolvedPillarId ||
+          !resolvedParentId ||
+          !resolvedNestedId ||
+          !actualQuizId
+        ) {
+          const errorMsg = `Failed to resolve required IDs. Pillar: ${resolvedPillarId}, Parent: ${resolvedParentId}, Nested: ${resolvedNestedId}, Quiz: ${actualQuizId}`;
+          console.error(
+            `[BULK UPLOAD DEBUG] ✗ Question ${i + 1} failed: ${errorMsg}`
+          );
+          errors.push({
+            questionId: question.id?.toString() || "unknown",
+            error: errorMsg,
+          });
+          continue;
+        }
+
+        const docPath = `pillarPages/${resolvedPillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}/questions/${questionDocId}`;
+        console.log(
+          `[BULK UPLOAD DEBUG] Saving question ${i + 1} to path: ${docPath}`
+        );
+
         const docRef = doc(
           db,
           "pillarPages",
-          "nursing-exit-exam",
+          resolvedPillarId,
           "subPages",
-          parentSubPageId,
+          resolvedParentId,
           "nestedSubPages",
-          nestedSubPageId,
+          resolvedNestedId,
           "quizzes",
           actualQuizId,
           "questions",
@@ -3115,18 +8650,36 @@ export const bulkUploadNursingExitExamQuizQuestions = async (
           version: "1.0",
         });
 
+        console.log(
+          `[BULK UPLOAD DEBUG] ✓ Question ${
+            i + 1
+          } saved successfully: ${questionDocId}`
+        );
         results.push({
           questionId: questionDocId,
           originalId: question.id,
           success: true,
         });
       } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[BULK UPLOAD DEBUG] ✗ Question ${i + 1} error:`,
+          errorMsg,
+          error
+        );
         errors.push({
           questionId: question.id?.toString() || "unknown",
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: errorMsg,
         });
       }
     }
+
+    console.log(`[BULK UPLOAD DEBUG] Upload complete:`, {
+      successful: results.length,
+      failed: errors.length,
+      total: questions.length,
+    });
 
     return {
       success: errors.length === 0,
@@ -3139,12 +8692,13 @@ export const bulkUploadNursingExitExamQuizQuestions = async (
       },
     };
   } catch (error) {
-    console.error("Error bulk uploading questions:", error);
+    console.error("[BULK UPLOAD DEBUG] ✗ Fatal error in bulk upload:", error);
     return {
       success: false,
       message: `Failed to bulk upload questions: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
+      data: { successful: [], failed: [] },
     };
   }
 };
@@ -3157,6 +8711,8 @@ export const deleteNursingExitExamQuizQuestion = async (
   questionId: string
 ) => {
   try {
+    const pillarId = "nursing-exit-exam";
+
     // First, resolve the quiz document ID from the slug if needed
     let actualQuizId = quizId;
 
@@ -3174,16 +8730,91 @@ export const deleteNursingExitExamQuizQuestion = async (
       if (quizData.id) {
         actualQuizId = quizData.id;
       }
+    } else {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+      };
+    }
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        resolvedParentId = parentSubPageId;
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        resolvedNestedId = nestedSubPageId;
+      }
     }
 
     const docRef = doc(
       db,
       "pillarPages",
-      "nursing-exit-exam",
+      pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
       actualQuizId,
       "questions",
@@ -3811,6 +9442,824 @@ export const initializeDefaultServices = async () => {
     return {
       success: false,
       message: `Failed to initialize default services: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== UNIVERSAL PAGE LOADER BY SLUG ====================
+
+// Load any page by slug using type, parentId, pillarId, and contentPath fields
+export const getPageBySlug = async (slug: string) => {
+  try {
+    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-");
+    const pillarIds = [
+      "nursing-entrance-exam",
+      "nursing-exit-exam",
+      "nursing-test-bank",
+    ];
+
+    // Search across all pillar pages and their sub-collections
+    for (const pillarId of pillarIds) {
+      // 1. Search in subPages
+      const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const subPagesQuery = query(
+        subPagesRef,
+        where("slug", "==", normalizedSlug)
+      );
+      const subPagesSnapshot = await getDocs(subPagesQuery);
+
+      if (!subPagesSnapshot.empty) {
+        const doc = subPagesSnapshot.docs[0];
+        const data = doc.data();
+        return {
+          success: true,
+          data: {
+            id: doc.id,
+            ...data,
+          },
+          type: data.type || "sub",
+          pillarId: data.pillarId || pillarId,
+          parentId: data.parentId || pillarId,
+          contentPath:
+            data.contentPath || `pillarPages/${pillarId}/subPages/${doc.id}`,
+        };
+      }
+
+      // 2. Search in nestedSubPages (need to iterate through all subPages)
+      const allSubPagesSnapshot = await getDocs(subPagesRef);
+      for (const subPageDoc of allSubPagesSnapshot.docs) {
+        const nestedSubPagesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageDoc.id,
+          "nestedSubPages"
+        );
+        const nestedQuery = query(
+          nestedSubPagesRef,
+          where("slug", "==", normalizedSlug)
+        );
+        const nestedSnapshot = await getDocs(nestedQuery);
+
+        if (!nestedSnapshot.empty) {
+          const doc = nestedSnapshot.docs[0];
+          const data = doc.data();
+          return {
+            success: true,
+            data: {
+              id: doc.id,
+              ...data,
+            },
+            type: data.type || "nested",
+            pillarId: data.pillarId || pillarId,
+            parentId: data.parentId || subPageDoc.id,
+            contentPath:
+              data.contentPath ||
+              `pillarPages/${pillarId}/subPages/${subPageDoc.id}/nestedSubPages/${doc.id}`,
+          };
+        }
+
+        // 3. Search in topics (under nestedSubPages)
+        const allNestedSubPagesSnapshot = await getDocs(nestedSubPagesRef);
+        for (const nestedDoc of allNestedSubPagesSnapshot.docs) {
+          const topicsRef = collection(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            subPageDoc.id,
+            "nestedSubPages",
+            nestedDoc.id,
+            "topics"
+          );
+          const topicsQuery = query(
+            topicsRef,
+            where("slug", "==", normalizedSlug)
+          );
+          const topicsSnapshot = await getDocs(topicsQuery);
+
+          if (!topicsSnapshot.empty) {
+            const doc = topicsSnapshot.docs[0];
+            const data = doc.data();
+            return {
+              success: true,
+              data: {
+                id: doc.id,
+                ...data,
+              },
+              type: data.type || "topic",
+              pillarId: data.pillarId || pillarId,
+              parentId: data.parentId || subPageDoc.id,
+              nestedSubPageId: data.nestedSubPageId || nestedDoc.id,
+              contentPath:
+                data.contentPath ||
+                `pillarPages/${pillarId}/subPages/${subPageDoc.id}/nestedSubPages/${nestedDoc.id}/topics/${doc.id}`,
+            };
+          }
+        }
+
+        // 4. Search in quizzes (under nestedSubPages)
+        for (const nestedDoc of allNestedSubPagesSnapshot.docs) {
+          const quizzesRef = collection(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            subPageDoc.id,
+            "nestedSubPages",
+            nestedDoc.id,
+            "quizzes"
+          );
+          const quizzesQuery = query(
+            quizzesRef,
+            where("slug", "==", normalizedSlug)
+          );
+          const quizzesSnapshot = await getDocs(quizzesQuery);
+
+          if (!quizzesSnapshot.empty) {
+            const doc = quizzesSnapshot.docs[0];
+            const data = doc.data();
+            // For quizzes, nestedSubPageId should always be the document ID of the parent nested sub-page
+            // Use the value from the quiz document data (which is set during creation/update)
+            // This is the authoritative source for the parent relationship
+            const quizNestedSubPageId = data.nestedSubPageId || nestedDoc.id;
+            return {
+              success: true,
+              data: {
+                id: doc.id,
+                ...data,
+              },
+              type: data.type || "quiz",
+              pillarId: data.pillarId || pillarId,
+              parentId: data.parentId || subPageDoc.id,
+              nestedSubPageId: quizNestedSubPageId, // Always use the parent nested sub-page's document ID
+              contentPath:
+                data.contentPath ||
+                `pillarPages/${pillarId}/subPages/${subPageDoc.id}/nestedSubPages/${quizNestedSubPageId}/quizzes/${doc.id}`,
+            };
+          }
+        }
+
+        // 5. Search in quizzes (under topics - for nursing test bank)
+        for (const nestedDoc of allNestedSubPagesSnapshot.docs) {
+          const topicsRef = collection(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            subPageDoc.id,
+            "nestedSubPages",
+            nestedDoc.id,
+            "topics"
+          );
+          const allTopicsSnapshot = await getDocs(topicsRef);
+
+          for (const topicDoc of allTopicsSnapshot.docs) {
+            const quizzesRef = collection(
+              db,
+              "pillarPages",
+              pillarId,
+              "subPages",
+              subPageDoc.id,
+              "nestedSubPages",
+              nestedDoc.id,
+              "topics",
+              topicDoc.id,
+              "quizzes"
+            );
+            const quizzesQuery = query(
+              quizzesRef,
+              where("slug", "==", normalizedSlug)
+            );
+            const quizzesSnapshot = await getDocs(quizzesQuery);
+
+            if (!quizzesSnapshot.empty) {
+              const doc = quizzesSnapshot.docs[0];
+              const data = doc.data();
+              return {
+                success: true,
+                data: {
+                  id: doc.id,
+                  ...data,
+                },
+                type: data.type || "quiz",
+                pillarId: data.pillarId || pillarId,
+                parentId: data.parentId || subPageDoc.id,
+                nestedSubPageId: data.nestedSubPageId || nestedDoc.id,
+                topicId: data.topicId || topicDoc.id,
+                contentPath:
+                  data.contentPath ||
+                  `pillarPages/${pillarId}/subPages/${subPageDoc.id}/nestedSubPages/${nestedDoc.id}/topics/${topicDoc.id}/quizzes/${doc.id}`,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      success: false,
+      message: `No page found with slug: ${slug}`,
+    };
+  } catch (error) {
+    console.error(`Error getting page by slug ${slug}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve page by slug ${slug}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Load page content using contentPath
+export const getPageByContentPath = async (contentPath: string) => {
+  try {
+    const pathParts = contentPath.split("/");
+    if (pathParts.length < 4) {
+      return {
+        success: false,
+        message: `Invalid contentPath format: ${contentPath}`,
+      };
+    }
+
+    // Expected format: pillarPages/{pillarId}/subPages/{subPageId}/...
+    // Build doc reference based on path length
+    let docRef;
+    if (pathParts.length === 4) {
+      // pillarPages/{pillarId}/subPages/{subPageId}
+      docRef = doc(db, pathParts[0], pathParts[1], pathParts[2], pathParts[3]);
+    } else if (pathParts.length === 6) {
+      // pillarPages/{pillarId}/subPages/{subPageId}/nestedSubPages/{nestedSubPageId}
+      docRef = doc(
+        db,
+        pathParts[0],
+        pathParts[1],
+        pathParts[2],
+        pathParts[3],
+        pathParts[4],
+        pathParts[5]
+      );
+    } else if (pathParts.length === 8) {
+      // pillarPages/{pillarId}/subPages/{subPageId}/nestedSubPages/{nestedSubPageId}/quizzes/{quizId}
+      // or pillarPages/{pillarId}/subPages/{subPageId}/nestedSubPages/{nestedSubPageId}/topics/{topicId}
+      docRef = doc(
+        db,
+        pathParts[0],
+        pathParts[1],
+        pathParts[2],
+        pathParts[3],
+        pathParts[4],
+        pathParts[5],
+        pathParts[6],
+        pathParts[7]
+      );
+    } else if (pathParts.length === 10) {
+      // pillarPages/{pillarId}/subPages/{subPageId}/nestedSubPages/{nestedSubPageId}/topics/{topicId}/quizzes/{quizId}
+      docRef = doc(
+        db,
+        pathParts[0],
+        pathParts[1],
+        pathParts[2],
+        pathParts[3],
+        pathParts[4],
+        pathParts[5],
+        pathParts[6],
+        pathParts[7],
+        pathParts[8],
+        pathParts[9]
+      );
+    } else {
+      return {
+        success: false,
+        message: `Unsupported contentPath format: ${contentPath}`,
+      };
+    }
+
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        success: true,
+        data: {
+          id: docSnap.id,
+          ...docSnap.data(),
+        },
+      };
+    } else {
+      return {
+        success: false,
+        message: `No document found at contentPath: ${contentPath}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting page by contentPath ${contentPath}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve page by contentPath ${contentPath}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== ROUTE MAPPINGS OPERATIONS ====================
+
+// Create or update a route mapping
+export const createRouteMapping = async (mappingData: {
+  type: "sub" | "nested" | "topic" | "quiz";
+  pillarId: string;
+  slug: string;
+  subPageId?: string | null;
+  nestedPageId?: string | null;
+  topicId?: string | null;
+  quizId?: string | null;
+  refPath: string;
+}) => {
+  try {
+    const normalizedSlug = mappingData.slug.toLowerCase().replace(/\s+/g, "-");
+    const routeMappingsRef = collection(db, "routeMappings");
+
+    // First, check if a route mapping already exists for this refPath (most reliable)
+    // This ensures that if the slug changes, we update the existing mapping instead of creating a duplicate
+    const refPathQuery = query(
+      routeMappingsRef,
+      where("refPath", "==", mappingData.refPath)
+    );
+    const refPathSnapshot = await getDocs(refPathQuery);
+
+    const mappingDoc = {
+      type: mappingData.type,
+      pillarId: mappingData.pillarId,
+      slug: normalizedSlug,
+      subPageId: mappingData.subPageId || null,
+      nestedPageId: mappingData.nestedPageId || null,
+      topicId: mappingData.topicId || null,
+      quizId: mappingData.quizId || null,
+      refPath: mappingData.refPath,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    if (!refPathSnapshot.empty) {
+      // Update existing mapping by refPath (slug may have changed)
+      const existingDoc = refPathSnapshot.docs[0];
+      await setDoc(doc(db, "routeMappings", existingDoc.id), mappingDoc, {
+        merge: true,
+      });
+
+      // If the slug changed, also delete any old mappings with the old slug (to prevent duplicates)
+      const oldData = existingDoc.data();
+      if (oldData.slug && oldData.slug !== normalizedSlug) {
+        const oldSlugQuery = query(
+          routeMappingsRef,
+          where("pillarId", "==", mappingData.pillarId),
+          where("slug", "==", oldData.slug)
+        );
+        const oldSlugSnapshot = await getDocs(oldSlugQuery);
+        // Delete old mappings with the old slug (except the one we just updated)
+        const deletePromises = oldSlugSnapshot.docs
+          .filter((doc) => doc.id !== existingDoc.id)
+          .map((doc) => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+      }
+
+      return {
+        success: true,
+        message: "Route mapping updated successfully!",
+        data: { id: existingDoc.id, ...mappingDoc },
+      };
+    }
+
+    // If no mapping found by refPath, check by slug and pillarId
+    const slugQuery = query(
+      routeMappingsRef,
+      where("pillarId", "==", mappingData.pillarId),
+      where("slug", "==", normalizedSlug)
+    );
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      // Update existing mapping by slug
+      const existingDoc = slugSnapshot.docs[0];
+      await setDoc(doc(db, "routeMappings", existingDoc.id), mappingDoc, {
+        merge: true,
+      });
+      return {
+        success: true,
+        message: "Route mapping updated successfully!",
+        data: { id: existingDoc.id, ...mappingDoc },
+      };
+    }
+
+    // Create new mapping
+    const newDocRef = await addDoc(routeMappingsRef, mappingDoc);
+    return {
+      success: true,
+      message: "Route mapping created successfully!",
+      data: { id: newDocRef.id, ...mappingDoc },
+    };
+  } catch (error) {
+    console.error("Error creating route mapping:", error);
+    return {
+      success: false,
+      message: `Failed to create route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get route mapping by slug and pillarId
+export const getRouteMappingBySlug = async (pillarId: string, slug: string) => {
+  try {
+    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-");
+    const routeMappingsRef = collection(db, "routeMappings");
+    const mappingQuery = query(
+      routeMappingsRef,
+      where("pillarId", "==", pillarId),
+      where("slug", "==", normalizedSlug)
+    );
+    const mappingSnapshot = await getDocs(mappingQuery);
+
+    if (!mappingSnapshot.empty) {
+      const doc = mappingSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          ...doc.data(),
+        },
+      };
+    }
+
+    return {
+      success: false,
+      message: `No route mapping found for slug: ${slug} in pillar: ${pillarId}`,
+    };
+  } catch (error) {
+    console.error(
+      `Error getting route mapping for ${pillarId}/${slug}:`,
+      error
+    );
+    return {
+      success: false,
+      message: `Failed to retrieve route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get route mapping by slug only (searches across all pillar pages)
+export const getRouteMappingBySlugOnly = async (slug: string) => {
+  try {
+    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-");
+    const routeMappingsRef = collection(db, "routeMappings");
+    const mappingQuery = query(
+      routeMappingsRef,
+      where("slug", "==", normalizedSlug)
+    );
+    const mappingSnapshot = await getDocs(mappingQuery);
+
+    if (!mappingSnapshot.empty) {
+      const doc = mappingSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          ...doc.data(),
+        },
+      };
+    }
+
+    return {
+      success: false,
+      message: `No route mapping found for slug: ${slug}`,
+    };
+  } catch (error) {
+    console.error(`Error getting route mapping for slug ${slug}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get route mapping by ID (for sub pages, nested pages, topics, quizzes)
+export const getRouteMappingById = async (params: {
+  pillarId: string;
+  type: "sub" | "nested" | "topic" | "quiz";
+  id: string; // subPageId, nestedPageId, topicId, or quizId
+  subPageId?: string | null; // For nested/topic/quiz to filter by parent
+  nestedPageId?: string | null; // For topic/quiz to filter by parent
+}) => {
+  try {
+    const routeMappingsRef = collection(db, "routeMappings");
+    const baseQuery = query(
+      routeMappingsRef,
+      where("pillarId", "==", params.pillarId),
+      where("type", "==", params.type)
+    );
+    const snapshot = await getDocs(baseQuery);
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      let matches = false;
+
+      if (params.type === "sub") {
+        // For sub pages, check if refPath contains the ID
+        matches =
+          data.refPath?.endsWith(`/subPages/${params.id}`) ||
+          data.refPath?.includes(`/subPages/${params.id}/`) ||
+          data.subPageId === params.id;
+      } else if (params.type === "nested") {
+        matches = data.nestedPageId === params.id;
+        if (matches && params.subPageId) {
+          matches = data.subPageId === params.subPageId;
+        }
+      } else if (params.type === "topic") {
+        matches = data.topicId === params.id;
+        if (matches && params.nestedPageId) {
+          matches = data.nestedPageId === params.nestedPageId;
+        }
+        if (matches && params.subPageId) {
+          matches = data.subPageId === params.subPageId;
+        }
+      } else if (params.type === "quiz") {
+        matches = data.quizId === params.id;
+        if (matches && params.nestedPageId) {
+          matches = data.nestedPageId === params.nestedPageId;
+        }
+        if (matches && params.subPageId) {
+          matches = data.subPageId === params.subPageId;
+        }
+      }
+
+      if (matches) {
+        return {
+          success: true,
+          data: {
+            id: doc.id,
+            ...data,
+          },
+        };
+      }
+    }
+
+    return {
+      success: false,
+      message: `No route mapping found for ${params.type} with id: ${params.id}`,
+    };
+  } catch (error) {
+    console.error(
+      `Error getting route mapping for ${params.type}/${params.id}:`,
+      error
+    );
+    return {
+      success: false,
+      message: `Failed to retrieve route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete route mapping by mapping ID
+export const deleteRouteMapping = async (mappingId: string) => {
+  try {
+    await deleteDoc(doc(db, "routeMappings", mappingId));
+    return {
+      success: true,
+      message: "Route mapping deleted successfully!",
+    };
+  } catch (error) {
+    console.error(`Error deleting route mapping ${mappingId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Find and delete route mapping by refPath or by IDs
+export const deleteRouteMappingByRefPath = async (refPath: string) => {
+  try {
+    const routeMappingsRef = collection(db, "routeMappings");
+    const mappingQuery = query(
+      routeMappingsRef,
+      where("refPath", "==", refPath)
+    );
+    const mappingSnapshot = await getDocs(mappingQuery);
+
+    if (!mappingSnapshot.empty) {
+      const deletePromises = mappingSnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+      await Promise.all(deletePromises);
+      return {
+        success: true,
+        message: `Route mapping(s) deleted successfully for refPath: ${refPath}`,
+        deletedCount: mappingSnapshot.docs.length,
+      };
+    }
+
+    return {
+      success: true,
+      message: `No route mapping found for refPath: ${refPath}`,
+      deletedCount: 0,
+    };
+  } catch (error) {
+    console.error(`Error deleting route mapping by refPath ${refPath}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Find and delete route mapping by IDs (subPageId, nestedPageId, topicId, quizId)
+export const deleteRouteMappingByIds = async (params: {
+  pillarId: string;
+  subPageId?: string | null;
+  nestedPageId?: string | null;
+  topicId?: string | null;
+  quizId?: string | null;
+}) => {
+  try {
+    const routeMappingsRef = collection(db, "routeMappings");
+    let mappingQuery = query(
+      routeMappingsRef,
+      where("pillarId", "==", params.pillarId)
+    );
+
+    // Build query based on provided IDs
+    if (params.quizId) {
+      mappingQuery = query(
+        routeMappingsRef,
+        where("pillarId", "==", params.pillarId),
+        where("quizId", "==", params.quizId)
+      );
+    } else if (params.topicId) {
+      mappingQuery = query(
+        routeMappingsRef,
+        where("pillarId", "==", params.pillarId),
+        where("topicId", "==", params.topicId)
+      );
+    } else if (params.nestedPageId) {
+      mappingQuery = query(
+        routeMappingsRef,
+        where("pillarId", "==", params.pillarId),
+        where("nestedPageId", "==", params.nestedPageId)
+      );
+    } else if (params.subPageId) {
+      mappingQuery = query(
+        routeMappingsRef,
+        where("pillarId", "==", params.pillarId),
+        where("subPageId", "==", params.subPageId)
+      );
+    }
+
+    const mappingSnapshot = await getDocs(mappingQuery);
+
+    if (!mappingSnapshot.empty) {
+      const deletePromises = mappingSnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+      await Promise.all(deletePromises);
+      return {
+        success: true,
+        message: `Route mapping(s) deleted successfully`,
+        deletedCount: mappingSnapshot.docs.length,
+      };
+    }
+
+    return {
+      success: true,
+      message: `No route mapping found for the provided IDs`,
+      deletedCount: 0,
+    };
+  } catch (error) {
+    console.error(`Error deleting route mapping by IDs:`, error);
+    return {
+      success: false,
+      message: `Failed to delete route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get route mapping slugs by IDs (for nested pages, topics, quizzes)
+export const getRouteMappingSlugsByIds = async (params: {
+  pillarId: string;
+  type: "nested" | "topic" | "quiz";
+  ids: string[];
+  subPageId?: string | null;
+  nestedPageId?: string | null;
+  topicId?: string | null;
+}) => {
+  try {
+    const routeMappingsRef = collection(db, "routeMappings");
+    const slugMap: Record<string, string> = {};
+
+    // Query all route mappings of the specified type for this pillar
+    const baseQuery = query(
+      routeMappingsRef,
+      where("pillarId", "==", params.pillarId),
+      where("type", "==", params.type)
+    );
+    const snapshot = await getDocs(baseQuery);
+
+    // Filter and map by IDs
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      let id: string | null = null;
+
+      if (params.type === "nested") {
+        id = data.nestedPageId;
+        if (id && params.ids.includes(id)) {
+          // For nested pages, also check subPageId if provided
+          if (!params.subPageId || data.subPageId === params.subPageId) {
+            slugMap[id] = data.slug;
+          }
+        }
+      } else if (params.type === "topic") {
+        id = data.topicId;
+        if (id && params.ids.includes(id)) {
+          // For topics, also check nestedPageId if provided
+          if (
+            !params.nestedPageId ||
+            data.nestedPageId === params.nestedPageId
+          ) {
+            slugMap[id] = data.slug;
+          }
+        }
+      } else if (params.type === "quiz") {
+        id = data.quizId;
+        if (id && params.ids.includes(id)) {
+          // For quizzes, check nestedPageId and topicId if provided
+          let matches = true;
+          if (
+            params.nestedPageId &&
+            data.nestedPageId !== params.nestedPageId
+          ) {
+            matches = false;
+          }
+          if (params.topicId && data.topicId !== params.topicId) {
+            matches = false;
+          }
+          if (matches) {
+            slugMap[id] = data.slug;
+          }
+        }
+      }
+    });
+
+    return {
+      success: true,
+      slugMap,
+    };
+  } catch (error) {
+    console.error(`Error getting route mapping slugs by IDs:`, error);
+    return {
+      success: false,
+      message: `Failed to get route mapping slugs: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+      slugMap: {},
+    };
+  }
+};
+
+// Get all route mappings (for static generation)
+export const getAllRouteMappings = async () => {
+  try {
+    const routeMappingsRef = collection(db, "routeMappings");
+    const snapshot = await getDocs(routeMappingsRef);
+
+    const routeMappings = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return {
+      success: true,
+      data: routeMappings,
+    };
+  } catch (error) {
+    console.error("Error getting all route mappings:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve all route mappings: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };

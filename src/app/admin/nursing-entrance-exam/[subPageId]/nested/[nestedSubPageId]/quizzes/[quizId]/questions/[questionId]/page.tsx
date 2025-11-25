@@ -75,7 +75,7 @@ export default function EditQuestion({
   };
 
   // Generate slug from question text (first 180 characters)
-  const generateSlug = (questionText: string): string => {
+  const generateSlug = useCallback((questionText: string): string => {
     if (!questionText) return "";
     
     // Strip HTML tags
@@ -93,7 +93,7 @@ export default function EditQuestion({
       .replace(/^-+|-+$/g, "");
     
     return slug;
-  };
+  }, []);
 
   useEffect(() => {
     const resolveParams = async () => {

@@ -166,13 +166,16 @@ export default function ManageQuizzes({
       setError("");
       setSuccess("");
 
-      // For exit exam, URL format is: /{nestedSubPageId}-{parentSubPageId}-exit-exam/{quizSlug}
-      const parentUrlSlug = parentSlug || resolvedParams.subPageId;
-      const nestedUrlSlug = nestedSlug || resolvedParams.nestedSubPageId;
+      // The backend will automatically create the slug as: [nestedSlug]-[userSlug]
+      // Since nestedSlug already contains the parent prefix, the final slug will be correct
+      // For canonicalUrl, we'll use the nested slug + user slug format
+      const finalSlug = nestedSlug 
+        ? `${nestedSlug}-${normalizedQuizId}`
+        : normalizedQuizId;
 
       const defaultQuizContent = {
         pageName: newQuizName,
-        slug: normalizedQuizId,
+        slug: normalizedQuizId, // Just the user-entered slug, backend will add prefix
         meta: {
           title: `${newQuizName} | TeasGurus`,
           description: `Content for ${newQuizName} under ${
@@ -182,7 +185,7 @@ export default function ManageQuizzes({
           ogTitle: `${newQuizName} | TeasGurus`,
           ogDescription: `Content for ${newQuizName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${nestedUrlSlug}-${parentUrlSlug}-exit-exam/${normalizedQuizId}`,
+          canonicalUrl: `https://teasgurus.com/${finalSlug}`,
         },
         hero: {
           title: newQuizName,
@@ -227,9 +230,8 @@ export default function ManageQuizzes({
     );
   }
 
-  // For exit exam, URL format is: /{nestedSubPageId}-{parentSubPageId}-exit-exam/{quizSlug}
-  const parentUrlSlug = parentSlug || resolvedParams.subPageId;
-  const nestedUrlSlug = nestedSlug || resolvedParams.nestedSubPageId;
+  // Use the nested slug directly for URLs (it already contains the parent prefix)
+  const nestedPageUrl = nestedSlug || resolvedParams.nestedSubPageId;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -267,7 +269,7 @@ export default function ManageQuizzes({
               </Link>
               {resolvedParams && (
                 <Link
-                  href={`/${nestedUrlSlug}-${parentUrlSlug}-exit-exam`}
+                  href={`/${nestedPageUrl}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -451,11 +453,11 @@ export default function ManageQuizzes({
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${nestedUrlSlug}-${parentUrlSlug}-exit-exam`}
+                href={`/${nestedPageUrl}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                /{nestedUrlSlug}-{parentUrlSlug}-exit-exam
+                /{nestedPageUrl}
               </a>
             </p>
           </div>
@@ -605,7 +607,8 @@ export default function ManageQuizzes({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredQuizzes.map((quiz) => {
                 const quizSlug = quiz.slug || quiz.id;
-                const quizUrl = `/${nestedUrlSlug}-${parentUrlSlug}-exit-exam/${quizSlug}`;
+                // Use the quiz slug directly (it already contains the nested page prefix from backend)
+                const quizUrl = `/${quizSlug}`;
                 return (
                   <div
                     key={quiz.id}
@@ -714,7 +717,7 @@ export default function ManageQuizzes({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    https://teasgurus.com/{nestedUrlSlug}-{parentUrlSlug}-exit-exam/
+                    https://teasgurus.com/{nestedPageUrl}-
                   </span>
                   <input
                     type="text"
@@ -725,13 +728,14 @@ export default function ManageQuizzes({
                       )
                     }
                     className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., math-practice-quiz-1"
+                    placeholder="e.g., quiz-1"
                     required
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a quiz at /{nestedUrlSlug}-{parentUrlSlug}-exit-exam/
-                  {newQuizId || "quiz-id"}
+                  This will create a quiz at /{nestedPageUrl}-{newQuizId || "quiz-id"}
+                  <br />
+                  <span className="text-xs">(The backend will automatically add the nested page prefix)</span>
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

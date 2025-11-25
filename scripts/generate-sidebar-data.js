@@ -257,6 +257,7 @@ async function generateSidebarData() {
           const categories = result.data.map((subPage) => ({
             id: subPage.id || subPage.subPageId,
             servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+            slug: subPage.slug || subPage.id || subPage.subPageId, // Include slug if available
             ...subPage,
           }));
           categoriesByPillar[pillarPage.id] = categories;
@@ -270,6 +271,7 @@ async function generateSidebarData() {
           const categories = result.data.map((subPage) => ({
             id: subPage.id || subPage.subPageId,
             servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+            slug: subPage.slug || subPage.id || subPage.subPageId, // Include slug if available
             ...subPage,
           }));
           categoriesByPillar[pillarPage.id] = categories;
@@ -283,6 +285,7 @@ async function generateSidebarData() {
           const categories = result.data.map((subPage) => ({
             id: subPage.id || subPage.subPageId,
             servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
+            slug: subPage.slug || subPage.id || subPage.subPageId, // Include slug if available
             ...subPage,
           }));
           categoriesByPillar[pillarPage.id] = categories;
@@ -296,6 +299,7 @@ async function generateSidebarData() {
           const categories = result.data.map((service) => ({
             id: service.servicePageId || service.id,
             servicePageId: service.servicePageId || service.id,
+            slug: service.slug || service.servicePageId || service.id, // Include slug if available
             ...service,
           }));
           categoriesByPillar[pillarPage.id] = categories;

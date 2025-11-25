@@ -7,6 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface ServiceContent {
   pageName?: string;
@@ -90,6 +91,7 @@ export default function EditSubPage({
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
   } | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const resolveParams = async () => {
@@ -124,7 +126,7 @@ export default function EditSubPage({
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/nursing-exit-exam/${resolvedParams.subPageId}`,
+            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -173,7 +175,7 @@ export default function EditSubPage({
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/nursing-exit-exam/${resolvedParams.subPageId}`,
+            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {
@@ -244,8 +246,17 @@ export default function EditSubPage({
       );
 
       if (result.success) {
-        setSuccess("Content updated successfully!");
-        setTimeout(() => setSuccess(""), 3000);
+        // If slug changed, redirect to new URL
+        const resultData = result.data as { id: string; slug: string } | undefined;
+        if (resultData?.slug && resultData.slug !== resolvedParams.subPageId) {
+          setSuccess("Content updated! Redirecting...");
+          setTimeout(() => {
+            router.push(`/admin/nursing-exit-exam/${resultData.slug}`);
+          }, 1000);
+        } else {
+          setSuccess("Content updated successfully!");
+          setTimeout(() => setSuccess(""), 3000);
+        }
       } else {
         setError(result.message || "Failed to save content");
       }
@@ -429,7 +440,7 @@ export default function EditSubPage({
               </Link>
               {resolvedParams?.subPageId && (
                 <Link
-                  href={`/nursing-exit-exam/${slug || resolvedParams.subPageId}`}
+                  href={`/${slug || resolvedParams.subPageId}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -573,7 +584,7 @@ export default function EditSubPage({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  URL slug (editable). The URL will be: /nursing-exit-exam/[slug]
+                  URL slug (editable). The URL will be: /{slug || resolvedParams?.subPageId || ""}
                 </p>
               </div>
             </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  getNursingExitExamQuizQuestion,
-  uploadNursingExitExamQuizQuestion,
+  uploadNursingTestBankQuizQuestion,
   getAllQuestionTypes,
+  getNursingTestBankQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 import RichTextEditor from "@/components/ui/RichTextEditor";
@@ -18,7 +18,7 @@ interface QuestionType {
 
 interface QuestionData {
   question?: string;
-  options?: string[] | any;
+  options?: string[];
   correctAnswer?: string | string[];
   explanation?: string;
   questionTypeId?: number;
@@ -39,29 +39,51 @@ interface QuestionData {
   [key: string]: any;
 }
 
-export default function EditQuestion({
+const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+export default function CreateQuestion({
   params,
 }: {
   params: Promise<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
-    questionId: string;
   }>;
 }) {
   const router = useRouter();
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
+    topicId: string;
     quizId: string;
-    questionId: string;
   } | null>(null);
-  const [questionData, setQuestionData] = useState<QuestionData | null>(null);
+  const [questionData, setQuestionData] = useState<QuestionData>({
+    question: "",
+    options: ["", "", "", ""],
+    correctAnswer: "",
+    explanation: "",
+    questionTypeId: 1,
+    slug: "",
+    units: "",
+    meta: {
+      title: "",
+      description: "",
+      keywords: "",
+      ogTitle: "",
+      ogDescription: "",
+      ogImage: "",
+      canonicalUrl: "",
+    },
+    schema: "",
+    status: "published",
+  });
   const [questionTypes, setQuestionTypes] = useState<QuestionType[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [quizName, setQuizName] = useState("");
 
   // Helper function to strip HTML tags
   const stripHtmlTags = (html: string): string => {
@@ -75,25 +97,18 @@ export default function EditQuestion({
   };
 
   // Generate slug from question text (first 180 characters)
-  const generateSlug = useCallback((questionText: string): string => {
+  const generateSlug = (questionText: string): string => {
     if (!questionText) return "";
-    
-    // Strip HTML tags
     const cleanText = stripHtmlTags(questionText);
-    
-    // Take first 180 characters
     const truncated = cleanText.substring(0, 180);
-    
-    // Convert to URL-friendly slug
     const slug = truncated
       .toLowerCase()
       .replace(/nbsp/g, "")
       .replace(/&nbsp;/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-    
     return slug;
-  }, []);
+  };
 
   useEffect(() => {
     const resolveParams = async () => {
@@ -103,160 +118,50 @@ export default function EditQuestion({
     resolveParams();
   }, [params]);
 
-  // Load question types
   useEffect(() => {
-    const loadQuestionTypes = async () => {
+    const loadData = async () => {
+      if (!resolvedParams) return;
+
       try {
-        const result = await getAllQuestionTypes();
-        if (result.success && result.data) {
-          setQuestionTypes(result.data);
+        setLoading(true);
+        
+        // Load question types
+        const typesResult = await getAllQuestionTypes();
+        if (typesResult.success && typesResult.data) {
+          // Filter to only show types 1, 2, 3, 7
+          const allowedTypes = typesResult.data.filter(
+            (type: QuestionType) => 
+              type.questionTypeId === "1" || 
+              type.questionTypeId === "2" || 
+              type.questionTypeId === "3" || 
+              type.questionTypeId === "7"
+          );
+          setQuestionTypes(allowedTypes);
+        }
+
+        // Load quiz name
+        const quizResult = await getNursingTestBankQuiz(
+          resolvedParams.subPageId,
+          resolvedParams.nestedSubPageId,
+          resolvedParams.topicId,
+          resolvedParams.quizId
+        );
+        if (quizResult.success && quizResult.data) {
+          const quizData = quizResult.data as any;
+          setQuizName(quizData.pageName || resolvedParams.quizId);
         }
       } catch (err) {
-        console.error("Error loading question types:", err);
+        console.error("Error loading data:", err);
+        setError("Failed to load data");
+      } finally {
+        setLoading(false);
       }
     };
-    loadQuestionTypes();
-  }, []);
 
-  const loadQuestion = useCallback(async () => {
-    if (!resolvedParams) return;
-
-    try {
-      setLoading(true);
-      setError("");
-
-      const result = await getNursingExitExamQuizQuestion(
-        resolvedParams.subPageId,
-        resolvedParams.nestedSubPageId,
-        resolvedParams.quizId,
-        resolvedParams.questionId
-      );
-
-      if (result.success && result.data) {
-        const data = result.data as QuestionData;
-        const questionTypeId = data.questionTypeId || data.question_type_id || 1;
-        
-        // Parse options based on question type
-        let optionsArray: string[] = [];
-        if (data.options) {
-          if (Array.isArray(data.options)) {
-            optionsArray = data.options;
-          } else if (typeof data.options === "string") {
-            try {
-              const parsed = JSON.parse(data.options);
-              if (typeof parsed === "object" && !Array.isArray(parsed)) {
-                // Convert object to array (for types 1, 2, 3)
-                optionsArray = Object.keys(parsed)
-                  .sort()
-                  .map((key) => {
-                    const option = parsed[key];
-                    return option.choice || option || "";
-                  });
-              } else if (Array.isArray(parsed)) {
-                optionsArray = parsed;
-              }
-            } catch {
-              // If parsing fails, treat as single string
-              optionsArray = [data.options];
-            }
-          }
-        }
-        
-        // Handle default options based on question type
-        if (questionTypeId === 3 && optionsArray.length === 0) {
-          // True/False
-          optionsArray = ["True", "False"];
-        } else if (questionTypeId === 7 && optionsArray.length === 0) {
-          // Numeric/Fill-in
-          optionsArray = [""];
-        } else if (optionsArray.length === 0) {
-          // Default for single/multiple choice
-          optionsArray = ["", "", "", ""];
-        }
-        
-        // Parse correct answer based on question type
-        let correctAnswer: string | string[] = "";
-        if (data.correctAnswer) {
-          if (questionTypeId === 7) {
-            // Type 7: Numeric - should be an array
-            if (Array.isArray(data.correctAnswer)) {
-              correctAnswer = data.correctAnswer;
-            } else if (typeof data.correctAnswer === "string") {
-              try {
-                // Try to parse if it's a JSON string
-                const parsed = JSON.parse(data.correctAnswer);
-                correctAnswer = Array.isArray(parsed) ? parsed : [parsed];
-              } catch {
-                // If not JSON, wrap in array
-                correctAnswer = [data.correctAnswer];
-              }
-            } else {
-              correctAnswer = [String(data.correctAnswer)];
-            }
-          } else if (questionTypeId === 2) {
-            // Type 2: Multiple choice - should be JSON array string
-            if (typeof data.correctAnswer === "string") {
-              try {
-                const parsed = JSON.parse(data.correctAnswer);
-                correctAnswer = Array.isArray(parsed) ? parsed : [data.correctAnswer];
-              } catch {
-                correctAnswer = [data.correctAnswer];
-              }
-            } else if (Array.isArray(data.correctAnswer)) {
-              correctAnswer = data.correctAnswer;
-            } else {
-              correctAnswer = [String(data.correctAnswer)];
-            }
-          } else {
-            // Type 1 and 3: Single answer - string
-            if (typeof data.correctAnswer === "string") {
-              correctAnswer = data.correctAnswer;
-            } else if (Array.isArray(data.correctAnswer)) {
-              correctAnswer = data.correctAnswer[0] || "";
-            } else {
-              correctAnswer = String(data.correctAnswer);
-            }
-          }
-        }
-        
-        setQuestionData({
-          question: data.question || "",
-          options: optionsArray,
-          correctAnswer: correctAnswer,
-          explanation: data.explanation || "",
-          questionTypeId: questionTypeId,
-          slug: data.slug || generateSlug(data.question || ""),
-          units: data.units || "",
-          meta: data.meta || {
-            title: "",
-            description: "",
-            keywords: "",
-            ogTitle: "",
-            ogDescription: "",
-            ogImage: "",
-            canonicalUrl: "",
-          },
-          schema: data.schema || "",
-          status: data.status || "published",
-        });
-      } else {
-        setError(result.message || "Failed to load question");
-      }
-    } catch (err) {
-      setError("Failed to load question");
-      console.error("Error loading question:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [resolvedParams, generateSlug]);
-
-  useEffect(() => {
-    loadQuestion();
-  }, [loadQuestion]);
+    loadData();
+  }, [resolvedParams]);
 
   const handleInputChange = (field: string, value: any) => {
-    if (!questionData) return;
-
     if (field.startsWith("meta.")) {
       const metaField = field.split(".")[1];
       setQuestionData({
@@ -278,11 +183,11 @@ export default function EditQuestion({
         newCorrectAnswer = "";
       } else if (newType === 7) {
         // Numeric/Fill-in
-        newOptions = [""];
+        newOptions = [];
         newCorrectAnswer = "";
       } else {
         // Single/Multiple choice
-        newOptions = questionData.options && Array.isArray(questionData.options) && questionData.options.length > 0
+        newOptions = questionData.options && questionData.options.length > 0
           ? questionData.options
           : ["", "", "", ""];
         newCorrectAnswer = "";
@@ -310,7 +215,7 @@ export default function EditQuestion({
   };
 
   const handleOptionChange = (index: number, value: string) => {
-    if (!questionData || !questionData.options) return;
+    if (!questionData.options) return;
 
     const newOptions = [...questionData.options];
     newOptions[index] = value;
@@ -321,7 +226,7 @@ export default function EditQuestion({
   };
 
   const handleAddOption = () => {
-    if (!questionData || !questionData.options) return;
+    if (!questionData.options) return;
 
     setQuestionData({
       ...questionData,
@@ -330,7 +235,7 @@ export default function EditQuestion({
   };
 
   const handleRemoveOption = (index: number) => {
-    if (!questionData || !questionData.options) return;
+    if (!questionData.options) return;
 
     const newOptions = questionData.options.filter((_: any, i: number) => i !== index);
     setQuestionData({
@@ -348,71 +253,52 @@ export default function EditQuestion({
       return;
     }
 
-    const questionTypeId = questionData.questionTypeId || 1;
-    let optionsToSave: string[] = [];
-    let correctAnswerToSave: string | string[] = "";
+    if (!questionData.questionTypeId) {
+      setError("Question type is required");
+      return;
+    }
 
-    // Process options and correct answer based on question type
-    if (questionTypeId === 3) {
-      // True/False - options are fixed
-      optionsToSave = ["True", "False"];
-      if (!questionData.correctAnswer || (questionData.correctAnswer !== "True" && questionData.correctAnswer !== "False")) {
-        setError("Please select True or False as the correct answer");
+    const questionTypeId = questionData.questionTypeId;
+
+    // Validate based on question type
+    if (questionTypeId === 1) {
+      // Single choice
+      const validOptions = questionData.options?.filter((opt: string) => opt.trim()) || [];
+      if (validOptions.length < 2) {
+        setError("At least 2 options are required");
         return;
       }
-      correctAnswerToSave = questionData.correctAnswer as string;
-    } else if (questionTypeId === 7) {
-      // Numeric/Fill-in - options is empty array, correct answer is numeric
-      optionsToSave = [""];
-      if (!questionData.correctAnswer || (Array.isArray(questionData.correctAnswer) && questionData.correctAnswer.length === 0)) {
-        setError("Please enter a numeric answer");
+      if (!questionData.correctAnswer || (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+        setError("Correct answer is required");
         return;
       }
-      // For type 7, correctAnswer should be an array
-      correctAnswerToSave = Array.isArray(questionData.correctAnswer) 
-        ? questionData.correctAnswer 
-        : [questionData.correctAnswer as string];
     } else if (questionTypeId === 2) {
-      // Multiple choice - correct answer is an array
+      // Multiple choice
       const validOptions = questionData.options?.filter((opt: string) => opt.trim()) || [];
       if (validOptions.length < 2) {
         setError("At least 2 options are required");
         return;
       }
-      optionsToSave = validOptions;
-      if (!questionData.correctAnswer) {
-        setError("Please select at least one correct answer");
+      if (!questionData.correctAnswer || 
+          (Array.isArray(questionData.correctAnswer) && questionData.correctAnswer.length === 0) ||
+          (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+        setError("At least one correct answer is required");
         return;
       }
-      // For type 2, correctAnswer should be an array (JSON string)
-      if (Array.isArray(questionData.correctAnswer)) {
-        correctAnswerToSave = JSON.stringify(questionData.correctAnswer);
-      } else {
-        // Try to parse if it's a JSON string
-        try {
-          const parsed = JSON.parse(questionData.correctAnswer as string);
-          if (Array.isArray(parsed)) {
-            correctAnswerToSave = questionData.correctAnswer as string;
-          } else {
-            correctAnswerToSave = JSON.stringify([questionData.correctAnswer]);
-          }
-        } catch {
-          correctAnswerToSave = JSON.stringify([questionData.correctAnswer]);
-        }
-      }
-    } else {
-      // Type 1: Single choice
-      const validOptions = questionData.options?.filter((opt: string) => opt.trim()) || [];
-      if (validOptions.length < 2) {
-        setError("At least 2 options are required");
+    } else if (questionTypeId === 3) {
+      // True/False
+      if (!questionData.correctAnswer || (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+        setError("Correct answer is required");
         return;
       }
-      optionsToSave = validOptions;
-      if (!questionData.correctAnswer) {
-        setError("Please select a correct answer");
+    } else if (questionTypeId === 7) {
+      // Numeric
+      if (!questionData.correctAnswer || 
+          (Array.isArray(questionData.correctAnswer) && (!questionData.correctAnswer[0] || !questionData.correctAnswer[0].trim())) ||
+          (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+        setError("Correct answer is required");
         return;
       }
-      correctAnswerToSave = questionData.correctAnswer as string;
     }
 
     try {
@@ -420,47 +306,78 @@ export default function EditQuestion({
       setError("");
       setSuccess("");
 
-      // Generate slug if not present
-      const slug = questionData.slug || generateSlug(questionData.question || "");
+      // Prepare question content
+      let correctAnswerToSave: any = questionData.correctAnswer;
+      
+      // For type 2 (multiple choice), ensure correctAnswer is an array
+      if (questionTypeId === 2) {
+        if (typeof correctAnswerToSave === "string") {
+          try {
+            const parsed = JSON.parse(correctAnswerToSave);
+            correctAnswerToSave = Array.isArray(parsed) ? parsed : [parsed];
+          } catch {
+            correctAnswerToSave = [correctAnswerToSave];
+          }
+        } else if (!Array.isArray(correctAnswerToSave)) {
+          correctAnswerToSave = [correctAnswerToSave];
+        }
+      }
+      
+      // For type 7 (numeric), ensure correctAnswer is an array
+      if (questionTypeId === 7) {
+        if (typeof correctAnswerToSave === "string") {
+          correctAnswerToSave = [correctAnswerToSave];
+        } else if (!Array.isArray(correctAnswerToSave)) {
+          correctAnswerToSave = [String(correctAnswerToSave)];
+        }
+      }
 
-      const contentToSave: any = {
+      const questionContent = {
         question: questionData.question,
-        options: optionsToSave,
+        options: questionData.options?.filter((opt: string) => opt.trim()) || [],
         correctAnswer: correctAnswerToSave,
         explanation: questionData.explanation || "",
         questionTypeId: questionTypeId,
-        slug: slug,
-        meta: questionData.meta || {},
+        slug: questionData.slug || generateSlug(questionData.question || ""),
+        units: questionData.units || null,
+        meta: questionData.meta || {
+          title: "",
+          description: "",
+          keywords: "",
+          ogTitle: "",
+          ogDescription: "",
+          ogImage: "",
+          canonicalUrl: "",
+        },
         schema: questionData.schema || "",
         status: questionData.status || "published",
       };
 
-      // Add units for type 7
-      if (questionTypeId === 7 && questionData.units) {
-        contentToSave.units = questionData.units;
-      }
+      // Generate question ID from slug
+      const questionId = questionData.slug || generateSlug(questionData.question || "") || `question-${Date.now()}`;
 
-      const result = await uploadNursingExitExamQuizQuestion(
+      const result = await uploadNursingTestBankQuizQuestion(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
+        resolvedParams.topicId,
         resolvedParams.quizId,
-        resolvedParams.questionId,
-        contentToSave
+        questionId,
+        questionContent
       );
 
       if (result.success) {
-        setSuccess("Question saved successfully!");
+        setSuccess("Question created successfully!");
         setTimeout(() => {
           router.push(
-            `/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
+            `/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`
           );
         }, 1500);
       } else {
-        setError(result.message || "Failed to save question");
+        setError(result.message || "Failed to create question");
       }
     } catch (err) {
-      setError("Failed to save question");
-      console.error("Error saving question:", err);
+      setError("Failed to create question");
+      console.error("Error creating question:", err);
     } finally {
       setSaving(false);
     }
@@ -477,24 +394,6 @@ export default function EditQuestion({
     );
   }
 
-  if (!questionData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Question not found</p>
-          <Link
-            href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-            className="text-indigo-600 hover:underline"
-          >
-            Back to Questions
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -503,15 +402,15 @@ export default function EditQuestion({
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Edit Question
+                Create Question
               </h1>
               <p className="text-gray-600 text-sm mt-1">
-                Question ID: {resolvedParams.questionId}
+                Add a new question to: {quizName || resolvedParams.quizId}
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -897,14 +796,7 @@ export default function EditQuestion({
                   const optionLabel = ANSWER_LABELS[index];
                   const selectedAnswers = Array.isArray(questionData.correctAnswer)
                     ? questionData.correctAnswer
-                    : (() => {
-                        try {
-                          const parsed = JSON.parse(questionData.correctAnswer as string || "[]");
-                          return Array.isArray(parsed) ? parsed : [];
-                        } catch {
-                          return [];
-                        }
-                      })();
+                    : [];
                   const isSelected = selectedAnswers.includes(optionLabel);
                   
                   return (
@@ -918,14 +810,7 @@ export default function EditQuestion({
                         onChange={(e) => {
                           const currentAnswers = Array.isArray(questionData.correctAnswer)
                             ? questionData.correctAnswer
-                            : (() => {
-                                try {
-                                  const parsed = JSON.parse(questionData.correctAnswer as string || "[]");
-                                  return Array.isArray(parsed) ? parsed : [];
-                                } catch {
-                                  return [];
-                                }
-                              })();
+                            : [];
                           
                           let newAnswers: string[];
                           if (e.target.checked) {
@@ -1000,4 +885,5 @@ export default function EditQuestion({
     </div>
   );
 }
+
 

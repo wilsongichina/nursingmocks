@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  uploadNursingExitExamQuizQuestion,
+  uploadNursingEntranceExamQuizQuestion,
   getAllQuestionTypes,
-  getNursingExitExamQuiz,
+  getNursingEntranceExamQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 import RichTextEditor from "@/components/ui/RichTextEditor";
@@ -138,7 +138,7 @@ export default function CreateQuestion({
         }
 
         // Load quiz name
-        const quizResult = await getNursingExitExamQuiz(
+        const quizResult = await getNursingEntranceExamQuiz(
           resolvedParams.subPageId,
           resolvedParams.nestedSubPageId,
           resolvedParams.quizId
@@ -353,7 +353,7 @@ export default function CreateQuestion({
       // Generate question ID from slug
       const questionId = questionData.slug || generateSlug(questionData.question || "") || `question-${Date.now()}`;
 
-      const result = await uploadNursingExitExamQuizQuestion(
+      const result = await uploadNursingEntranceExamQuizQuestion(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
         resolvedParams.quizId,
@@ -365,7 +365,7 @@ export default function CreateQuestion({
         setSuccess("Question created successfully!");
         setTimeout(() => {
           router.push(
-            `/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
+            `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
           );
         }, 1500);
       } else {
@@ -406,7 +406,7 @@ export default function CreateQuestion({
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg

@@ -59,7 +59,7 @@ export default function ManageQuizQuestions({
   const [saving, setSaving] = useState(false);
   const [quizName, setQuizName] = useState("");
   const [parentSlug, setParentSlug] = useState("");
-  const [nestedSlug, setNestedSlug] = useState("");
+  // const [nestedSlug, setNestedSlug] = useState("");
   const [quizSlug, setQuizSlug] = useState("");
   const [pillarPageContent, setPillarPageContent] = useState<any>(null);
   const [parentSubPageContent, setParentSubPageContent] = useState<any>(null);
@@ -175,7 +175,7 @@ export default function ManageQuizQuestions({
         setNestedSubPageName(
           nestedData.pageName || resolvedParams.nestedSubPageId
         );
-        setNestedSlug(nestedData.slug || resolvedParams.nestedSubPageId);
+        // setNestedSlug(nestedData.slug || resolvedParams.nestedSubPageId);
       }
     } catch (err) {
       console.error("Error loading questions:", err);
@@ -313,8 +313,7 @@ export default function ManageQuizQuestions({
   }
 
   // For exit exam, URL format is: /{nestedSubPageId}-{parentSubPageId}-exit-exam/{quizSlug}
-  const parentUrlSlug = parentSlug || resolvedParams.subPageId;
-  const nestedUrlSlug = nestedSlug || resolvedParams.nestedSubPageId;
+  const nestedUrlSlug = resolvedParams.nestedSubPageId;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -508,11 +507,11 @@ export default function ManageQuizQuestions({
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${nestedUrlSlug}-${parentUrlSlug}-exit-exam`}
+                href={`/${nestedUrlSlug}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                /{nestedUrlSlug}-{parentUrlSlug}-exit-exam
+                /{nestedUrlSlug}
               </a>
             </p>
           </div>
@@ -551,11 +550,11 @@ export default function ManageQuizQuestions({
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${nestedUrlSlug}-${parentUrlSlug}-exit-exam/${quizSlug || resolvedParams.quizId}`}
+                href={`/${quizSlug || resolvedParams.quizId}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                /{nestedUrlSlug}-{parentUrlSlug}-exit-exam/{quizSlug || resolvedParams.quizId}
+                /{quizSlug || resolvedParams.quizId}
               </a>
             </p>
           </div>

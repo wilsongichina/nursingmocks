@@ -406,14 +406,13 @@ export default async function NursingEntranceExamPage() {
                 
                 const config = cardConfigs[index] || cardConfigs[0];
                 
-                // Get the slug for URL generation, append -exam if not already present
+                // Get the slug for URL generation - use slug directly (no suffix for subpages)
                 const pageSlug = subPage.slug || pageId;
-                const pageUrlSlug = pageSlug.endsWith("-exam") ? pageSlug : `${pageSlug}-exam`;
                 
                 return (
                   <Link
                     key={pageId}
-                    href={`/${pageUrlSlug}`}
+                    href={`/${pageSlug}`}
                     className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm"
                   >
                     <div className="flex items-center gap-4">

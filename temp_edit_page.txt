@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  getNursingExitExamQuizQuestion,
-  uploadNursingExitExamQuizQuestion,
+  getNursingEntranceExamQuizQuestion,
+  uploadNursingEntranceExamQuizQuestion,
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
@@ -75,7 +75,7 @@ export default function EditQuestion({
   };
 
   // Generate slug from question text (first 180 characters)
-  const generateSlug = useCallback((questionText: string): string => {
+  const generateSlug = (questionText: string): string => {
     if (!questionText) return "";
     
     // Strip HTML tags
@@ -93,7 +93,7 @@ export default function EditQuestion({
       .replace(/^-+|-+$/g, "");
     
     return slug;
-  }, []);
+  };
 
   useEffect(() => {
     const resolveParams = async () => {
@@ -125,7 +125,7 @@ export default function EditQuestion({
       setLoading(true);
       setError("");
 
-      const result = await getNursingExitExamQuizQuestion(
+      const result = await getNursingEntranceExamQuizQuestion(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
         resolvedParams.quizId,
@@ -440,7 +440,7 @@ export default function EditQuestion({
         contentToSave.units = questionData.units;
       }
 
-      const result = await uploadNursingExitExamQuizQuestion(
+      const result = await uploadNursingEntranceExamQuizQuestion(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
         resolvedParams.quizId,
@@ -452,7 +452,7 @@ export default function EditQuestion({
         setSuccess("Question saved successfully!");
         setTimeout(() => {
           router.push(
-            `/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
+            `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
           );
         }, 1500);
       } else {
@@ -483,7 +483,7 @@ export default function EditQuestion({
         <div className="text-center">
           <p className="text-red-600 mb-4">Question not found</p>
           <Link
-            href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+            href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
             className="text-indigo-600 hover:underline"
           >
             Back to Questions
@@ -511,7 +511,7 @@ export default function EditQuestion({
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg
@@ -789,12 +789,12 @@ export default function EditQuestion({
                 {questionData.options?.map((option: string, index: number) => (
                   <div key={index} className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-gray-600 min-w-[30px]">
-                      {ANSWER_LABELS[index] || String(index + 1)}:
+                      {ANSWER_LABELS[index]}:
                     </span>
                     <RichTextEditor
                       value={option}
                       onChange={(val) => handleOptionChange(index, val)}
-                      placeholder={`Option ${ANSWER_LABELS[index] || String(index + 1)}`}
+                      placeholder={`Option ${ANSWER_LABELS[index]}`}
                     />
                     {questionData.questionTypeId !== 3 && questionData.questionTypeId !== 7 && (
                       <button

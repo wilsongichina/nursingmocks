@@ -131,7 +131,7 @@ export default function NursingExitExamAdminPage() {
           ogTitle: `${newSubPageName} | Nursing Exit Exam`,
           ogDescription: `Content for ${newSubPageName} under Nursing Exit Exam.`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/nursing-exit-exam/${normalizedSubPageId}`,
+          canonicalUrl: `https://teasgurus.com/${normalizedSubPageId}`,
         },
         hero: {
           badge: "Nursing Exit Exam",
@@ -451,7 +451,7 @@ export default function NursingExitExamAdminPage() {
                   </div>
                   <div className="mt-4">
                     <Link
-                      href={`/nursing-exit-exam/${subPage.id}`}
+                      href={`/${subPage.slug || subPage.id}`}
                       target="_blank"
                       className="text-teal-600 hover:text-teal-800 text-sm font-medium"
                     >
@@ -594,7 +594,7 @@ export default function NursingExitExamAdminPage() {
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /nursing-exit-exam/{newSubPageId || "sub-page-id"}
+                  This will create a page at /{newSubPageId || "sub-page-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

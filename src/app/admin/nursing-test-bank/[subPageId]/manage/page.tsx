@@ -145,7 +145,7 @@ export default function ManageSubPage({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.subPageId}-test-bank`,
+              `https://teasgurus.com/${pageData.slug || resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -196,7 +196,7 @@ export default function ManageSubPage({
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}-test-bank`,
+            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {
@@ -335,7 +335,7 @@ export default function ManageSubPage({
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${normalizedNestedSubPageId}-${resolvedParams.subPageId}-test-bank`,
+          canonicalUrl: `https://teasgurus.com/${slug || resolvedParams.subPageId}-${normalizedNestedSubPageId}`,
         },
         hero: {
           badge: content?.pageName || resolvedParams.subPageId,
@@ -456,7 +456,7 @@ export default function ManageSubPage({
                 <span>Back</span>
               </Link>
               <Link
-                href={`/${slug || resolvedParams.subPageId}-test-bank`}
+                href={`/${slug || resolvedParams.subPageId}`}
                 target="_blank"
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
               >
@@ -565,11 +565,11 @@ export default function ManageSubPage({
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${slug || resolvedParams.subPageId}-test-bank`}
+                href={`/${slug || resolvedParams.subPageId}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                /{slug || resolvedParams.subPageId}-test-bank
+                /{slug || resolvedParams.subPageId}
               </a>
             </p>
           </div>
@@ -643,10 +643,16 @@ export default function ManageSubPage({
                   </div>
                   <div className="flex items-center space-x-2">
                     <Link
-                      href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${nestedSubPage.id}/manage`}
+                      href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${nestedSubPage.slug || nestedSubPage.id}/manage`}
                       className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
                       Manage
+                    </Link>
+                    <Link
+                      href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${nestedSubPage.slug || nestedSubPage.id}`}
+                      className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                    >
+                      Edit
                     </Link>
                     <button
                       onClick={() =>
@@ -659,9 +665,7 @@ export default function ManageSubPage({
                   </div>
                   <div className="mt-4">
                     <Link
-                      href={`/${nestedSubPage.slug || nestedSubPage.id}-${
-                        slug || resolvedParams.subPageId
-                      }-test-bank`}
+                      href={`/${nestedSubPage.slug || nestedSubPage.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
@@ -669,8 +673,7 @@ export default function ManageSubPage({
                       View Page →
                     </Link>
                     <p className="text-xs text-gray-500 mt-1">
-                      URL: /{nestedSubPage.slug || nestedSubPage.id}-
-                      {slug || resolvedParams.subPageId}-test-bank
+                      URL: /{nestedSubPage.slug || nestedSubPage.id}
                     </p>
                   </div>
                 </div>
@@ -714,7 +717,7 @@ export default function ManageSubPage({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    https://teasgurus.com/
+                    https://teasgurus.com/{slug || resolvedParams.subPageId}-
                   </span>
                   <input
                     type="text"
@@ -725,17 +728,12 @@ export default function ManageSubPage({
                       )
                     }
                     className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., math-practice"
+                    placeholder="e.g., reading-guide"
                     required
                   />
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
-                    -{resolvedParams.subPageId}-test-bank
-                  </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /
-                  {newNestedSubPageId || "nested-sub-page-id"}-
-                  {resolvedParams.subPageId}-test-bank
+                  This will create a page at /{slug || resolvedParams.subPageId || "sub-page-id"}-{newNestedSubPageId || "nested-sub-page-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

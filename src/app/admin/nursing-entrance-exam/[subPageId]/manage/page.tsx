@@ -335,7 +335,7 @@ export default function ManageSubPage({
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}-${normalizedNestedSubPageId}-questions`,
+          canonicalUrl: `https://teasgurus.com/${slug || resolvedParams.subPageId}-${normalizedNestedSubPageId}`,
         },
         hero: {
           badge: content?.pageName || resolvedParams.subPageId,
@@ -456,11 +456,7 @@ export default function ManageSubPage({
                 <span>Back</span>
               </Link>
               <Link
-                href={`/${
-                  (slug || resolvedParams.subPageId).endsWith("-exam")
-                    ? slug || resolvedParams.subPageId
-                    : `${slug || resolvedParams.subPageId}-exam`
-                }`}
+                href={`/${slug || resolvedParams.subPageId}`}
                 target="_blank"
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
               >
@@ -569,11 +565,11 @@ export default function ManageSubPage({
             <p className="text-gray-600">
               <strong>URL:</strong>{" "}
               <a
-                href={`/${resolvedParams.subPageId}`}
+                href={`/${slug || resolvedParams.subPageId}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
-                {resolvedParams.subPageId}
+                {slug || resolvedParams.subPageId}
               </a>
             </p>
           </div>
@@ -647,7 +643,7 @@ export default function ManageSubPage({
                   </div>
                   <div className="flex items-center space-x-2 flex-wrap gap-2">
                     <Link
-                      href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${nestedSubPage.id}/manage`}
+                      href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${nestedSubPage.slug || nestedSubPage.id}/manage`}
                       className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center space-x-1"
                     >
                       <svg
@@ -666,7 +662,7 @@ export default function ManageSubPage({
                       <span>Manage</span>
                     </Link>
                     <Link
-                      href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${nestedSubPage.id}`}
+                      href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${nestedSubPage.slug || nestedSubPage.id}`}
                       className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
                     >
                       Edit
@@ -682,11 +678,7 @@ export default function ManageSubPage({
                   </div>
                   <div className="mt-4">
                     <Link
-                      href={`/${
-                        (slug || resolvedParams.subPageId).endsWith("-exam")
-                          ? (slug || resolvedParams.subPageId).slice(0, -5)
-                          : slug || resolvedParams.subPageId
-                      }-${nestedSubPage.slug || nestedSubPage.id}-questions`}
+                      href={`/${nestedSubPage.slug || nestedSubPage.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
@@ -694,12 +686,7 @@ export default function ManageSubPage({
                       View Page →
                     </Link>
                     <p className="text-xs text-gray-500 mt-1">
-                      URL: /
-                      {(slug || resolvedParams.subPageId).endsWith("-exam")
-                        ? (slug || resolvedParams.subPageId).slice(0, -5)
-                        : slug || resolvedParams.subPageId}
-                      -{nestedSubPage.slug || nestedSubPage.id}
-                      -questions
+                      URL: /{nestedSubPage.slug || nestedSubPage.id}
                     </p>
                   </div>
                 </div>
@@ -743,7 +730,7 @@ export default function ManageSubPage({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    https://teasgurus.com/{resolvedParams.subPageId}-
+                    https://teasgurus.com/{slug || resolvedParams.subPageId}-
                   </span>
                   <input
                     type="text"
@@ -754,16 +741,14 @@ export default function ManageSubPage({
                       )
                     }
                     className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., math-practice"
+                    placeholder="e.g., reading-guide"
                     required
                   />
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
-                    -questions
-                  </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /{resolvedParams.subPageId}-
-                  {newNestedSubPageId || "nested-sub-page-id"}-questions
+                  This will create a page at /{slug || resolvedParams.subPageId}-{newNestedSubPageId || "nested-sub-page-id"}
+                  <br />
+                  <span className="text-xs">(The backend will automatically add the parent page prefix)</span>
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">
