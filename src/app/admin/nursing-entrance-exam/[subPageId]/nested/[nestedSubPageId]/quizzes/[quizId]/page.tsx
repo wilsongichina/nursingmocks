@@ -40,8 +40,6 @@ export default function EditQuiz({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [parentSlug, setParentSlug] = useState("");
-  const [nestedSlug, setNestedSlug] = useState("");
   const [quizSlug, setQuizSlug] = useState("");
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
@@ -72,9 +70,6 @@ export default function EditQuiz({
       if (parentResult.success && parentResult.data) {
         const parentData = parentResult.data as any;
         currentParentSlug = parentData.slug || resolvedParams.subPageId;
-        setParentSlug(currentParentSlug);
-      } else {
-        setParentSlug(resolvedParams.subPageId);
       }
 
       // Load nested sub-page to get its slug
@@ -86,7 +81,6 @@ export default function EditQuiz({
         nestedResult.success && nestedResult.data
           ? (nestedResult.data as any).slug || resolvedParams.nestedSubPageId
           : resolvedParams.nestedSubPageId;
-      setNestedSlug(currentNestedSlug);
 
       const result = await getNursingEntranceExamQuiz(
         resolvedParams.subPageId,
@@ -97,27 +91,9 @@ export default function EditQuiz({
       if (result.success && result.data) {
         const pageData = result.data as any;
 
-        // Load quiz slug and extract base slug (remove parent and nested prefixes)
+        // Use slug directly (no prefix)
         const fullSlug = pageData.slug || resolvedParams.quizId;
-        const normalizedParentSlug = currentParentSlug.toLowerCase().replace(/\s+/g, "-");
-        const normalizedNestedSlug = currentNestedSlug.toLowerCase().replace(/\s+/g, "-");
-        const normalizedFullSlug = fullSlug.toLowerCase().replace(/\s+/g, "-");
-        
-        // Expected prefix: [parent]-[nested]-
-        const expectedPrefix = `${normalizedParentSlug}-${normalizedNestedSlug}-`;
-        
-        // Extract base slug (remove prefixes if present)
-        let baseSlug = normalizedFullSlug;
-        if (normalizedFullSlug.startsWith(expectedPrefix)) {
-          baseSlug = normalizedFullSlug.substring(expectedPrefix.length);
-        } else if (normalizedFullSlug.startsWith(normalizedNestedSlug + "-")) {
-          // Fallback: if only nested prefix is present
-          baseSlug = normalizedFullSlug.substring(normalizedNestedSlug.length + 1);
-        } else {
-          // If no prefix, use the full slug as base
-          baseSlug = fullSlug;
-        }
-        setQuizSlug(baseSlug);
+        setQuizSlug(fullSlug);
 
         // Remove -exam suffix from parent slug if present for URL construction
         const parentUrlSlug = currentParentSlug.endsWith("-exam")
@@ -153,10 +129,6 @@ export default function EditQuiz({
         setContent(initializedContent);
       } else {
         // Initialize with default content structure
-        const parentUrlSlug = currentParentSlug.endsWith("-exam")
-          ? currentParentSlug.slice(0, -5)
-          : currentParentSlug;
-
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.quizId,
           meta: {
@@ -166,9 +138,7 @@ export default function EditQuiz({
             ogTitle: `${resolvedParams.quizId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.quizId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${parentUrlSlug}-${currentNestedSlug}-questions/${
-              resolvedParams.quizId
-            }`,
+            canonicalUrl: `https://teasgurus.com/${resolvedParams.quizId}`,
           },
           schema: "",
           hero: {
@@ -514,7 +484,7 @@ export default function EditQuiz({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter only the base slug (editable). The full URL slug will be: <span className="font-mono font-semibold">{parentSlug || resolvedParams?.subPageId || ""}-{nestedSlug || resolvedParams?.nestedSubPageId || ""}-{quizSlug || resolvedParams?.quizId || ""}</span>
+                  Slug (editable). The full URL slug will be: <span className="font-mono font-semibold">/{quizSlug || resolvedParams?.quizId || ""}</span>
                 </p>
                 <div className="mt-2 p-3 bg-gray-50 rounded-lg">
                   <label className="block text-xs font-semibold text-gray-600 mb-1">
@@ -522,7 +492,7 @@ export default function EditQuiz({
                   </label>
                   <input
                     type="text"
-                    value={`${parentSlug || resolvedParams?.subPageId || ""}-${nestedSlug || resolvedParams?.nestedSubPageId || ""}-${quizSlug || resolvedParams?.quizId || ""}`}
+                    value={quizSlug || resolvedParams?.quizId || ""}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white cursor-not-allowed text-gray-700 font-mono text-sm"
                   />

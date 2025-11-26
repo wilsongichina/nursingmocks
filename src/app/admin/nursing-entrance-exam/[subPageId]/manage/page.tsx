@@ -730,7 +730,7 @@ export default function ManageSubPage({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    https://teasgurus.com/{slug || resolvedParams.subPageId}-
+                    https://teasgurus.com/
                   </span>
                   <input
                     type="text"
@@ -746,9 +746,7 @@ export default function ManageSubPage({
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /{slug || resolvedParams.subPageId}-{newNestedSubPageId || "nested-sub-page-id"}
-                  <br />
-                  <span className="text-xs">(The backend will automatically add the parent page prefix)</span>
+                  This will create a page at /{newNestedSubPageId || "nested-sub-page-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getNestedSubPage,
   uploadNestedSubPage,
-  getNursingEntranceExamSubPage,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
@@ -87,7 +86,6 @@ export default function EditNestedSubPage({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [parentSlug, setParentSlug] = useState("");
   const [nestedSlug, setNestedSlug] = useState("");
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
@@ -109,17 +107,6 @@ export default function EditNestedSubPage({
       setLoading(true);
       setError("");
 
-      // Load parent sub-page to get its slug
-      const parentResult = await getNursingEntranceExamSubPage(resolvedParams.subPageId);
-      let currentParentSlug = resolvedParams.subPageId;
-      if (parentResult.success && parentResult.data) {
-        const parentData = parentResult.data as any;
-        currentParentSlug = parentData.slug || resolvedParams.subPageId;
-        setParentSlug(currentParentSlug);
-      } else {
-        setParentSlug(resolvedParams.subPageId);
-      }
-
       const result = await getNestedSubPage(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId
@@ -128,20 +115,9 @@ export default function EditNestedSubPage({
       if (result.success && result.data) {
         const pageData = result.data as any;
         
-        // Load nested sub-page slug and extract base slug (remove parent prefix)
+        // Use slug directly (no prefix)
         const fullSlug = pageData.slug || resolvedParams.nestedSubPageId;
-        const normalizedParentSlug = currentParentSlug.toLowerCase().replace(/\s+/g, "-");
-        const normalizedFullSlug = fullSlug.toLowerCase().replace(/\s+/g, "-");
-        
-        // Extract base slug (remove parent prefix if present)
-        let baseSlug = normalizedFullSlug;
-        if (normalizedFullSlug.startsWith(normalizedParentSlug + "-")) {
-          baseSlug = normalizedFullSlug.substring(normalizedParentSlug.length + 1);
-        } else {
-          // If no prefix, use the full slug as base
-          baseSlug = fullSlug;
-        }
-        setNestedSlug(baseSlug);
+        setNestedSlug(fullSlug);
         
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
@@ -153,7 +129,7 @@ export default function EditNestedSubPage({
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${resolvedParams.subPageId}-${resolvedParams.nestedSubPageId}-questions`,
+            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${fullSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -193,6 +169,7 @@ export default function EditNestedSubPage({
         setContent(initializedContent);
       } else {
         // Initialize with default content structure
+        const defaultSlug = resolvedParams.nestedSubPageId;
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.nestedSubPageId,
           meta: {
@@ -202,7 +179,7 @@ export default function EditNestedSubPage({
             ogTitle: `${resolvedParams.nestedSubPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.nestedSubPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}-${resolvedParams.nestedSubPageId}-questions`,
+            canonicalUrl: `https://teasgurus.com/${defaultSlug}`,
           },
           schema: "",
           hero: {
@@ -624,7 +601,7 @@ export default function EditNestedSubPage({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter only the base slug (editable). The full URL slug will be: <span className="font-mono font-semibold">{parentSlug || resolvedParams?.subPageId || ""}-{nestedSlug || resolvedParams?.nestedSubPageId || ""}</span>
+                  Slug (editable). The full URL slug will be: <span className="font-mono font-semibold">/{nestedSlug || resolvedParams?.nestedSubPageId || ""}</span>
                 </p>
                 <div className="mt-2 p-3 bg-gray-50 rounded-lg">
                   <label className="block text-xs font-semibold text-gray-600 mb-1">
@@ -632,7 +609,7 @@ export default function EditNestedSubPage({
                   </label>
                   <input
                     type="text"
-                    value={`${parentSlug || resolvedParams?.subPageId || ""}-${nestedSlug || resolvedParams?.nestedSubPageId || ""}`}
+                    value={nestedSlug || resolvedParams?.nestedSubPageId || ""}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white cursor-not-allowed text-gray-700 font-mono text-sm"
                   />

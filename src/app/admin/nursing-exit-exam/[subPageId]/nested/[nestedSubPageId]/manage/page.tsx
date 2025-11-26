@@ -166,16 +166,12 @@ export default function ManageQuizzes({
       setError("");
       setSuccess("");
 
-      // The backend will automatically create the slug as: [nestedSlug]-[userSlug]
-      // Since nestedSlug already contains the parent prefix, the final slug will be correct
-      // For canonicalUrl, we'll use the nested slug + user slug format
-      const finalSlug = nestedSlug 
-        ? `${nestedSlug}-${normalizedQuizId}`
-        : normalizedQuizId;
+      // The backend will use the slug as provided (no prefix)
+      const finalSlug = normalizedQuizId;
 
       const defaultQuizContent = {
         pageName: newQuizName,
-        slug: normalizedQuizId, // Just the user-entered slug, backend will add prefix
+        slug: normalizedQuizId, // User-entered slug (no prefix)
         meta: {
           title: `${newQuizName} | TeasGurus`,
           description: `Content for ${newQuizName} under ${
@@ -717,7 +713,7 @@ export default function ManageQuizzes({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    https://teasgurus.com/{nestedPageUrl}-
+                    https://teasgurus.com/
                   </span>
                   <input
                     type="text"
@@ -733,9 +729,7 @@ export default function ManageQuizzes({
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a quiz at /{nestedPageUrl}-{newQuizId || "quiz-id"}
-                  <br />
-                  <span className="text-xs">(The backend will automatically add the nested page prefix)</span>
+                  This will create a quiz at /{newQuizId || "quiz-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">

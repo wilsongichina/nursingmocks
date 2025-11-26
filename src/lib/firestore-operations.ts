@@ -930,14 +930,12 @@ export const uploadNursingEntranceExamSubPage = async (
 
     if (!docId) {
       // Document doesn't exist, create new one with auto-generated ID
-      // Check if slug already exists in route mappings (must be unique)
-      const routeMappingCheck = await getRouteMappingBySlugOnly(
-        normalizedNewSlug
-      );
-      if (routeMappingCheck.success && routeMappingCheck.data) {
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
         return {
           success: false,
-          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -985,6 +983,16 @@ export const uploadNursingEntranceExamSubPage = async (
     // Document exists, update it (document ID stays the same, only slug field updates)
     // Check if the new slug is different and already exists (for another page)
     if (normalizedNewSlug !== normalizedOldSlug) {
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
       const routeMappingCheck = await getRouteMappingBySlugOnly(
         normalizedNewSlug
       );
@@ -1203,14 +1211,12 @@ export const uploadNursingExitExamSubPage = async (
 
     if (!docId) {
       // Document doesn't exist, create new one with auto-generated ID
-      // Check if slug already exists in route mappings (must be unique)
-      const routeMappingCheck = await getRouteMappingBySlugOnly(
-        normalizedNewSlug
-      );
-      if (routeMappingCheck.success && routeMappingCheck.data) {
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
         return {
           success: false,
-          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -1629,13 +1635,8 @@ export const uploadNursingExitExamNestedSubPage = async (
     );
     const parentSlugSnapshot = await getDocs(parentSlugQuery);
 
-    let parentSlug: string = "";
     if (!parentSlugSnapshot.empty) {
       resolvedParentId = parentSlugSnapshot.docs[0].id;
-      const parentData = parentSlugSnapshot.docs[0].data();
-      parentSlug = (parentData.slug || parentSubPageId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const parentDocRef = doc(
@@ -1648,10 +1649,6 @@ export const uploadNursingExitExamNestedSubPage = async (
       const parentDocSnap = await getDoc(parentDocRef);
       if (parentDocSnap.exists()) {
         resolvedParentId = parentDocSnap.id;
-        const parentData = parentDocSnap.data();
-        parentSlug = (parentData.slug || parentSubPageId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -1660,14 +1657,10 @@ export const uploadNursingExitExamNestedSubPage = async (
       }
     }
 
-    // Get user-provided slug and prepend parent slug
+    // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
-    // Prepend parent slug if not already present
-    const finalSlug = normalizedUserSlug.startsWith(parentSlug + "-")
-      ? normalizedUserSlug
-      : `${parentSlug}-${normalizedUserSlug}`;
-    const normalizedNewSlug = finalSlug;
+    const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = nestedSubPageId
       .toLowerCase()
       .replace(/\s+/g, "-");
@@ -1709,6 +1702,15 @@ export const uploadNursingExitExamNestedSubPage = async (
 
     if (!nestedDocId) {
       // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
       const nestedSubPagesRef = collection(
         db,
         "pillarPages",
@@ -1968,14 +1970,12 @@ export const uploadNursingTestBankSubPage = async (
 
     if (!docId) {
       // Document doesn't exist, create new one with auto-generated ID
-      // Check if slug already exists in route mappings (must be unique)
-      const routeMappingCheck = await getRouteMappingBySlugOnly(
-        normalizedNewSlug
-      );
-      if (routeMappingCheck.success && routeMappingCheck.data) {
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
         return {
           success: false,
-          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -2315,13 +2315,8 @@ export const uploadNursingTestBankNestedSubPage = async (
     );
     const parentSlugSnapshot = await getDocs(parentSlugQuery);
 
-    let parentSlug: string = "";
     if (!parentSlugSnapshot.empty) {
       resolvedParentId = parentSlugSnapshot.docs[0].id;
-      const parentData = parentSlugSnapshot.docs[0].data();
-      parentSlug = (parentData.slug || parentSubPageId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const parentDocRef = doc(
@@ -2334,10 +2329,6 @@ export const uploadNursingTestBankNestedSubPage = async (
       const parentDocSnap = await getDoc(parentDocRef);
       if (parentDocSnap.exists()) {
         resolvedParentId = parentDocSnap.id;
-        const parentData = parentDocSnap.data();
-        parentSlug = (parentData.slug || parentSubPageId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -2346,14 +2337,10 @@ export const uploadNursingTestBankNestedSubPage = async (
       }
     }
 
-    // Get user-provided slug and prepend parent slug
+    // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
-    // Prepend parent slug if not already present
-    const finalSlug = normalizedUserSlug.startsWith(parentSlug + "-")
-      ? normalizedUserSlug
-      : `${parentSlug}-${normalizedUserSlug}`;
-    const normalizedNewSlug = finalSlug;
+    const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = nestedSubPageId
       .toLowerCase()
       .replace(/\s+/g, "-");
@@ -2395,6 +2382,15 @@ export const uploadNursingTestBankNestedSubPage = async (
 
     if (!nestedDocId) {
       // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
       const nestedSubPagesRef = collection(
         db,
         "pillarPages",
@@ -2877,13 +2873,8 @@ export const uploadNursingTestBankTopic = async (
     );
     const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
 
-    let nestedSlug: string = "";
     if (!nestedSlugSnapshot.empty) {
       resolvedNestedId = nestedSlugSnapshot.docs[0].id;
-      const nestedData = nestedSlugSnapshot.docs[0].data();
-      nestedSlug = (nestedData.slug || nestedSubPageId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const nestedDocRef = doc(
@@ -2898,10 +2889,6 @@ export const uploadNursingTestBankTopic = async (
       const nestedDocSnap = await getDoc(nestedDocRef);
       if (nestedDocSnap.exists()) {
         resolvedNestedId = nestedDocSnap.id;
-        const nestedData = nestedDocSnap.data();
-        nestedSlug = (nestedData.slug || nestedSubPageId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -2910,15 +2897,10 @@ export const uploadNursingTestBankTopic = async (
       }
     }
 
-    // Get user-provided slug and prepend nested slug: [nestedSlug]-[userentered slug]
-    // Note: nestedSlug already contains parent prefix, so we just need to append topic base slug
+    // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || topicId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
-    // Prepend nested slug if not already present
-    const finalSlug = normalizedUserSlug.startsWith(nestedSlug + "-")
-      ? normalizedUserSlug
-      : `${nestedSlug}-${normalizedUserSlug}`;
-    const normalizedNewSlug = finalSlug;
+    const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = topicId.toLowerCase().replace(/\s+/g, "-");
 
     // Find topic by slug (or document ID for backward compatibility)
@@ -2962,14 +2944,12 @@ export const uploadNursingTestBankTopic = async (
 
     if (!topicDocId) {
       // Document doesn't exist, create new one with auto-generated ID
-      // Check if slug already exists in route mappings (must be unique)
-      const routeMappingCheck = await getRouteMappingBySlugOnly(
-        normalizedNewSlug
-      );
-      if (routeMappingCheck.success && routeMappingCheck.data) {
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
         return {
           success: false,
-          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -3743,13 +3723,8 @@ export const uploadNursingTestBankQuiz = async (
     );
     const topicSlugSnapshot = await getDocs(topicSlugQuery);
 
-    let topicSlug: string = "";
     if (!topicSlugSnapshot.empty) {
       resolvedTopicId = topicSlugSnapshot.docs[0].id;
-      const topicData = topicSlugSnapshot.docs[0].data();
-      topicSlug = (topicData.slug || topicId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const topicDocRef = doc(
@@ -3766,10 +3741,6 @@ export const uploadNursingTestBankQuiz = async (
       const topicDocSnap = await getDoc(topicDocRef);
       if (topicDocSnap.exists()) {
         resolvedTopicId = topicDocSnap.id;
-        const topicData = topicDocSnap.data();
-        topicSlug = (topicData.slug || topicId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -3778,14 +3749,10 @@ export const uploadNursingTestBankQuiz = async (
       }
     }
 
-    // Get user-provided slug and prepend topic slug
+    // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || quizId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
-    // Prepend topic slug if not already present
-    const finalSlug = normalizedUserSlug.startsWith(topicSlug + "-")
-      ? normalizedUserSlug
-      : `${topicSlug}-${normalizedUserSlug}`;
-    const normalizedNewSlug = finalSlug;
+    const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = quizId.toLowerCase().replace(/\s+/g, "-");
 
     // Find quiz by slug (or document ID for backward compatibility)
@@ -3833,14 +3800,12 @@ export const uploadNursingTestBankQuiz = async (
 
     if (!quizDocId) {
       // Document doesn't exist, create new one with auto-generated ID
-      // Check if slug already exists in route mappings (must be unique)
-      const routeMappingCheck = await getRouteMappingBySlugOnly(
-        normalizedNewSlug
-      );
-      if (routeMappingCheck.success && routeMappingCheck.data) {
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
         return {
           success: false,
-          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -4271,13 +4236,8 @@ export const uploadNestedSubPage = async (
     );
     const parentSlugSnapshot = await getDocs(parentSlugQuery);
 
-    let parentSlug: string = "";
     if (!parentSlugSnapshot.empty) {
       resolvedParentId = parentSlugSnapshot.docs[0].id;
-      const parentData = parentSlugSnapshot.docs[0].data();
-      parentSlug = (parentData.slug || parentSubPageId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const parentDocRef = doc(
@@ -4290,10 +4250,6 @@ export const uploadNestedSubPage = async (
       const parentDocSnap = await getDoc(parentDocRef);
       if (parentDocSnap.exists()) {
         resolvedParentId = parentDocSnap.id;
-        const parentData = parentDocSnap.data();
-        parentSlug = (parentData.slug || parentSubPageId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -4302,14 +4258,10 @@ export const uploadNestedSubPage = async (
       }
     }
 
-    // Get user-provided slug and prepend parent slug
+    // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
-    // Prepend parent slug if not already present
-    const finalSlug = normalizedUserSlug.startsWith(parentSlug + "-")
-      ? normalizedUserSlug
-      : `${parentSlug}-${normalizedUserSlug}`;
-    const normalizedNewSlug = finalSlug;
+    const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = nestedSubPageId
       .toLowerCase()
       .replace(/\s+/g, "-");
@@ -4351,14 +4303,12 @@ export const uploadNestedSubPage = async (
 
     if (!nestedDocId) {
       // Document doesn't exist, create new one with auto-generated ID
-      // Check if slug already exists in route mappings (must be unique)
-      const routeMappingCheck = await getRouteMappingBySlugOnly(
-        normalizedNewSlug
-      );
-      if (routeMappingCheck.success && routeMappingCheck.data) {
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
         return {
           success: false,
-          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -4420,6 +4370,16 @@ export const uploadNestedSubPage = async (
     // Document exists, update it (document ID stays the same, only slug field updates)
     // Check if the new slug is different and already exists (for another page)
     if (normalizedNewSlug !== normalizedOldSlug) {
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
       const routeMappingCheck = await getRouteMappingBySlugOnly(
         normalizedNewSlug
       );
@@ -4861,13 +4821,8 @@ export const uploadNursingEntranceExamQuiz = async (
     );
     const parentSlugSnapshot = await getDocs(parentSlugQuery);
 
-    let parentSlug: string = "";
     if (!parentSlugSnapshot.empty) {
       resolvedParentId = parentSlugSnapshot.docs[0].id;
-      const parentData = parentSlugSnapshot.docs[0].data();
-      parentSlug = (parentData.slug || parentSubPageId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const parentDocRef = doc(
@@ -4880,10 +4835,6 @@ export const uploadNursingEntranceExamQuiz = async (
       const parentDocSnap = await getDoc(parentDocRef);
       if (parentDocSnap.exists()) {
         resolvedParentId = parentDocSnap.id;
-        const parentData = parentDocSnap.data();
-        parentSlug = (parentData.slug || parentSubPageId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -4908,13 +4859,8 @@ export const uploadNursingEntranceExamQuiz = async (
     );
     const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
 
-    let nestedSlug: string = "";
     if (!nestedSlugSnapshot.empty) {
       resolvedNestedId = nestedSlugSnapshot.docs[0].id;
-      const nestedData = nestedSlugSnapshot.docs[0].data();
-      nestedSlug = (nestedData.slug || nestedSubPageId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const nestedDocRef = doc(
@@ -4929,10 +4875,6 @@ export const uploadNursingEntranceExamQuiz = async (
       const nestedDocSnap = await getDoc(nestedDocRef);
       if (nestedDocSnap.exists()) {
         resolvedNestedId = nestedDocSnap.id;
-        const nestedData = nestedDocSnap.data();
-        nestedSlug = (nestedData.slug || nestedSubPageId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -4941,26 +4883,10 @@ export const uploadNursingEntranceExamQuiz = async (
       }
     }
 
-    // Get user-provided base slug and build full slug: [parent slug]-[nested base slug]-[user base slug]
-    // Extract nested base slug from nestedSlug (which is [parent slug]-[nested base slug])
-    const normalizedNestedSlug = nestedSlug.toLowerCase().replace(/\s+/g, "-");
-    const normalizedParentSlug = parentSlug.toLowerCase().replace(/\s+/g, "-");
-    let nestedBaseSlug = normalizedNestedSlug;
-    if (normalizedNestedSlug.startsWith(normalizedParentSlug + "-")) {
-      nestedBaseSlug = normalizedNestedSlug.substring(
-        normalizedParentSlug.length + 1
-      );
-    }
-
+    // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || quizId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
-
-    // Build full slug: [parent slug]-[nested base slug]-[user base slug]
-    const expectedPrefix = `${normalizedParentSlug}-${nestedBaseSlug}-`;
-    const finalSlug = normalizedUserSlug.startsWith(expectedPrefix)
-      ? normalizedUserSlug
-      : `${normalizedParentSlug}-${nestedBaseSlug}-${normalizedUserSlug}`;
-    const normalizedNewSlug = finalSlug;
+    const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = quizId.toLowerCase().replace(/\s+/g, "-");
 
     // Find quiz by slug (or document ID for backward compatibility)
@@ -5004,14 +4930,12 @@ export const uploadNursingEntranceExamQuiz = async (
 
     if (!quizDocId) {
       // Document doesn't exist, create new one with auto-generated ID
-      // Check if slug already exists in route mappings (must be unique)
-      const routeMappingCheck = await getRouteMappingBySlugOnly(
-        normalizedNewSlug
-      );
-      if (routeMappingCheck.success && routeMappingCheck.data) {
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
         return {
           success: false,
-          message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -5070,6 +4994,16 @@ export const uploadNursingEntranceExamQuiz = async (
     // Document exists, update it (document ID stays the same, only slug field updates)
     // Check if the new slug is different and already exists (for another page)
     if (normalizedNewSlug !== normalizedOldSlug) {
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
       const routeMappingCheck = await getRouteMappingBySlugOnly(
         normalizedNewSlug
       );
@@ -7602,13 +7536,8 @@ export const uploadNursingExitExamQuiz = async (
     );
     const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
 
-    let nestedSlug: string = "";
     if (!nestedSlugSnapshot.empty) {
       resolvedNestedId = nestedSlugSnapshot.docs[0].id;
-      const nestedData = nestedSlugSnapshot.docs[0].data();
-      nestedSlug = (nestedData.slug || nestedSubPageId)
-        .toLowerCase()
-        .replace(/\s+/g, "-");
     } else {
       // Fallback: try by document ID
       const nestedDocRef = doc(
@@ -7623,10 +7552,6 @@ export const uploadNursingExitExamQuiz = async (
       const nestedDocSnap = await getDoc(nestedDocRef);
       if (nestedDocSnap.exists()) {
         resolvedNestedId = nestedDocSnap.id;
-        const nestedData = nestedDocSnap.data();
-        nestedSlug = (nestedData.slug || nestedSubPageId)
-          .toLowerCase()
-          .replace(/\s+/g, "-");
       } else {
         return {
           success: false,
@@ -7635,17 +7560,10 @@ export const uploadNursingExitExamQuiz = async (
       }
     }
 
-    // Get user-provided slug and prepend nested page slug: [nestedpage]-[userentered slug]
-    // Note: nestedSlug already contains the parent prefix (e.g., "mdcat-reading-guide")
+    // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || quizId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
-    // Build the expected prefix using nested slug (which already has parent prefix)
-    const expectedPrefix = `${nestedSlug}-`;
-    // Prepend nested page slug if not already present
-    const finalSlug = normalizedUserSlug.startsWith(expectedPrefix)
-      ? normalizedUserSlug
-      : `${nestedSlug}-${normalizedUserSlug}`;
-    const normalizedNewSlug = finalSlug;
+    const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = quizId.toLowerCase().replace(/\s+/g, "-");
 
     // Find quiz by slug (or document ID for backward compatibility)
@@ -7689,6 +7607,15 @@ export const uploadNursingExitExamQuiz = async (
 
     if (!quizDocId) {
       // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
       // nestedSubPageId should be the document ID of the parent nested sub-page (the page that contains this quiz)
       const newDocRef = await addDoc(quizzesRef, {
         ...content,
@@ -9944,6 +9871,91 @@ export const getRouteMappingBySlugOnly = async (slug: string) => {
     return {
       success: false,
       message: `Failed to retrieve route mapping: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Check if a slug is available (not in route mappings or static routes)
+export const isSlugAvailable = async (slug: string): Promise<{
+  available: boolean;
+  message?: string;
+}> => {
+  try {
+    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-").trim();
+    
+    if (!normalizedSlug) {
+      return {
+        available: false,
+        message: "Slug cannot be empty.",
+      };
+    }
+
+    // List of static routes that cannot be used as slugs
+    const staticRoutes = [
+      "",
+      "login",
+      "register",
+      "forgot-password",
+      "admin",
+      "blog",
+      "dashboard",
+      "profile",
+      "referrals",
+      "payments",
+      "payment",
+      "contact",
+      "prices",
+      "about",
+      "how-it-works",
+      "faqs",
+      "faq",
+      "teas",
+      "hesi-a2",
+      "nursing",
+      "nursing-test-bank",
+      "nursing-exit-exam",
+      "nursing-entrance-exam",
+      "guarantees",
+      "money-back-guarantee",
+      "privacy-policy",
+      "terms-and-conditions",
+      "thank-you",
+      "progress-reports",
+      "support",
+      "reading",
+      "api",
+      "robots",
+      "sitemap",
+      "favicon",
+    ];
+
+    // Check if slug matches any static route
+    if (staticRoutes.includes(normalizedSlug)) {
+      return {
+        available: false,
+        message: `The slug "${normalizedSlug}" is reserved and cannot be used. Please choose a different slug.`,
+      };
+    }
+
+    // Check if slug exists in route mappings
+    const routeMappingCheck = await getRouteMappingBySlugOnly(normalizedSlug);
+    if (routeMappingCheck.success && routeMappingCheck.data) {
+      return {
+        available: false,
+        message: `A page with the slug "${normalizedSlug}" already exists. Please choose a different slug.`,
+      };
+    }
+
+    return {
+      available: true,
+    };
+  } catch (error) {
+    console.error(`Error checking slug availability for ${slug}:`, error);
+    return {
+      available: false,
+      message: `Failed to check slug availability: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };

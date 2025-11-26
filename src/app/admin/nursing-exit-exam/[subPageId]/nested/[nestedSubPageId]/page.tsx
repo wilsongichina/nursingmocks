@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getNursingExitExamNestedSubPage,
   uploadNursingExitExamNestedSubPage,
-  getNursingExitExamSubPage,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
@@ -87,7 +86,6 @@ export default function EditNestedSubPage({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [parentSlug, setParentSlug] = useState("");
   const [nestedSlug, setNestedSlug] = useState("");
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
@@ -109,17 +107,6 @@ export default function EditNestedSubPage({
       setLoading(true);
       setError("");
 
-      // Load parent sub-page to get its slug
-      const parentResult = await getNursingExitExamSubPage(resolvedParams.subPageId);
-      let currentParentSlug = resolvedParams.subPageId;
-      if (parentResult.success && parentResult.data) {
-        const parentData = parentResult.data as any;
-        currentParentSlug = parentData.slug || resolvedParams.subPageId;
-        setParentSlug(currentParentSlug);
-      } else {
-        setParentSlug(resolvedParams.subPageId);
-      }
-
       const result = await getNursingExitExamNestedSubPage(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId
@@ -128,16 +115,9 @@ export default function EditNestedSubPage({
       if (result.success && result.data) {
         const pageData = result.data as any;
         
-        // Extract base slug from full slug (full slug format: [parentSlug]-[nestedBaseSlug])
+        // Use slug directly (no prefix)
         const fullSlug = pageData.slug || resolvedParams.nestedSubPageId;
-        let baseSlug = fullSlug;
-        
-        // If full slug starts with parent slug, extract the base part
-        if (fullSlug.startsWith(currentParentSlug + "-")) {
-          baseSlug = fullSlug.substring(currentParentSlug.length + 1);
-        }
-        
-        setNestedSlug(baseSlug);
+        setNestedSlug(fullSlug);
         
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
@@ -149,7 +129,7 @@ export default function EditNestedSubPage({
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${currentParentSlug}-${baseSlug}`,
+            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${fullSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -189,6 +169,7 @@ export default function EditNestedSubPage({
         setContent(initializedContent);
       } else {
         // Initialize with default content structure
+        const defaultSlug = resolvedParams.nestedSubPageId;
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.nestedSubPageId,
           meta: {
@@ -198,7 +179,7 @@ export default function EditNestedSubPage({
             ogTitle: `${resolvedParams.nestedSubPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.nestedSubPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${currentParentSlug}-${resolvedParams.nestedSubPageId}`,
+            canonicalUrl: `https://teasgurus.com/${defaultSlug}`,
           },
           schema: "",
           hero: {
@@ -256,15 +237,13 @@ export default function EditNestedSubPage({
       setError("");
       setSuccess("");
 
-      // Construct full slug: [parentSlug]-[nestedBaseSlug]
-      const currentParentSlug = parentSlug || resolvedParams.subPageId;
+      // Use slug directly (no prefix)
       const baseSlug = nestedSlug.trim() || resolvedParams.nestedSubPageId;
-      const fullSlug = `${currentParentSlug}-${baseSlug}`;
       
       // Include slug in the content to be saved
       const contentWithSlug = {
         ...content,
-        slug: fullSlug,
+        slug: baseSlug,
       };
 
       const result = await uploadNursingExitExamNestedSubPage(
@@ -460,7 +439,7 @@ export default function EditNestedSubPage({
               </Link>
               {resolvedParams && (
                 <Link
-                  href={`/${parentSlug || resolvedParams.subPageId}-${nestedSlug || resolvedParams.nestedSubPageId}`}
+                  href={`/${nestedSlug || resolvedParams.nestedSubPageId}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -604,7 +583,7 @@ export default function EditNestedSubPage({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Base slug (editable). Full URL: /{parentSlug || resolvedParams?.subPageId || ""}-{nestedSlug || resolvedParams?.nestedSubPageId || ""}
+                  Slug (editable). Full URL: /{nestedSlug || resolvedParams?.nestedSubPageId || ""}
                 </p>
                 <p className="text-xs text-gray-400 mt-1 italic">
                   Only the base slug is editable. The full slug includes the parent slug prefix.

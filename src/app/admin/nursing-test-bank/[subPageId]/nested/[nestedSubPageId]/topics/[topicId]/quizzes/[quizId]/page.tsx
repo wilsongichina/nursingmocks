@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getNursingTestBankQuiz,
   uploadNursingTestBankQuiz,
-  getNursingTestBankTopic,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -42,7 +41,6 @@ export default function EditQuiz({
   const [success, setSuccess] = useState("");
   // const [parentSlug, setParentSlug] = useState("");
   // const [nestedSlug, setNestedSlug] = useState("");
-  const [topicSlug, setTopicSlug] = useState("");
   const [quizSlug, setQuizSlug] = useState("");
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
@@ -88,18 +86,6 @@ export default function EditQuiz({
       //     : resolvedParams.nestedSubPageId;
       // setNestedSlug(currentNestedSlug);
 
-      // Load topic to get its slug
-      const topicResult = await getNursingTestBankTopic(
-        resolvedParams.subPageId,
-        resolvedParams.nestedSubPageId,
-        resolvedParams.topicId
-      );
-      const currentTopicSlug =
-        topicResult.success && topicResult.data
-          ? (topicResult.data as any).slug || resolvedParams.topicId
-          : resolvedParams.topicId;
-      setTopicSlug(currentTopicSlug);
-
       const result = await getNursingTestBankQuiz(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
@@ -110,17 +96,9 @@ export default function EditQuiz({
       if (result.success && result.data) {
         const pageData = result.data as any;
 
-        // Extract base slug from full slug (full slug format: [topicSlug]-[quizBaseSlug])
-        // Note: topicSlug already contains parent and nested prefixes
+        // Use slug directly (no prefix)
         const fullSlug = pageData.slug || resolvedParams.quizId;
-        let baseSlug = fullSlug;
-        
-        // If full slug starts with topic slug, extract the base part
-        if (fullSlug.startsWith(currentTopicSlug + "-")) {
-          baseSlug = fullSlug.substring(currentTopicSlug.length + 1);
-        }
-        
-        setQuizSlug(baseSlug);
+        setQuizSlug(fullSlug);
 
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
@@ -135,7 +113,7 @@ export default function EditQuiz({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${currentTopicSlug}-${baseSlug}`,
+              `https://teasgurus.com/${fullSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -149,6 +127,7 @@ export default function EditQuiz({
         setContent(initializedContent);
       } else {
         // Initialize with default content structure
+        const defaultSlug = resolvedParams.quizId;
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.quizId,
           meta: {
@@ -158,7 +137,7 @@ export default function EditQuiz({
             ogTitle: `${resolvedParams.quizId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.quizId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${currentTopicSlug}-${resolvedParams.quizId}`,
+            canonicalUrl: `https://teasgurus.com/${defaultSlug}`,
           },
           schema: "",
           hero: {
@@ -187,12 +166,9 @@ export default function EditQuiz({
       setError("");
       setSuccess("");
 
-      // Construct full slug: [topicSlug]-[quizBaseSlug]
-      // Note: topicSlug already contains parent and nested prefixes
-      const currentTopicSlugFinal = topicSlug || resolvedParams.topicId;
+      // Use slug directly (no prefix)
       const baseSlug = quizSlug.trim() || resolvedParams.quizId;
-      const fullSlug = `${currentTopicSlugFinal}-${baseSlug}`;
-      
+
       // Only save the necessary fields to Firebase
       const contentToSave: ServiceContent & { slug: string } = {
         pageName: content.pageName,
@@ -209,7 +185,7 @@ export default function EditQuiz({
         hero: {
           title: content.hero.title,
         },
-        slug: fullSlug,
+        slug: baseSlug,
       };
 
       const result = await uploadNursingTestBankQuiz(
@@ -346,7 +322,7 @@ export default function EditQuiz({
               )}
               {resolvedParams && (
                 <Link
-                  href={`/${topicSlug || resolvedParams.topicId}-${quizSlug || resolvedParams.quizId}`}
+                  href={`/${quizSlug || resolvedParams.quizId}`}
                   target="_blank"
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
                 >
@@ -504,7 +480,8 @@ export default function EditQuiz({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Base slug (editable). Full URL will be: /{topicSlug || resolvedParams?.topicId || ""}-{quizSlug || resolvedParams?.quizId || ""}
+                  Slug (editable). Full URL will be: /
+                  {quizSlug || resolvedParams?.quizId || ""}
                 </p>
               </div>
             </div>
@@ -545,7 +522,9 @@ export default function EditQuiz({
                 <input
                   type="text"
                   value={content.meta.keywords}
-                  onChange={(e) => updateContent("meta.keywords", e.target.value)}
+                  onChange={(e) =>
+                    updateContent("meta.keywords", e.target.value)
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                   placeholder="keyword1, keyword2, keyword3"
                 />
@@ -557,7 +536,9 @@ export default function EditQuiz({
                 <input
                   type="text"
                   value={content.meta.ogTitle}
-                  onChange={(e) => updateContent("meta.ogTitle", e.target.value)}
+                  onChange={(e) =>
+                    updateContent("meta.ogTitle", e.target.value)
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                 />
               </div>
@@ -581,7 +562,9 @@ export default function EditQuiz({
                 <input
                   type="text"
                   value={content.meta.ogImage}
-                  onChange={(e) => updateContent("meta.ogImage", e.target.value)}
+                  onChange={(e) =>
+                    updateContent("meta.ogImage", e.target.value)
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                   placeholder="/teas-gurus-logo.png"
                 />
@@ -628,4 +611,3 @@ export default function EditQuiz({
     </div>
   );
 }
-

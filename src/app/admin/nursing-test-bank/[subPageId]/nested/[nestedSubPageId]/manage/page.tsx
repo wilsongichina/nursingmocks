@@ -155,16 +155,12 @@ export default function ManageTopics({
       setError("");
       setSuccess("");
 
-      // The backend will automatically create the slug as: [nestedSlug]-[userSlug]
-      // Since nestedSlug already contains the parent prefix, the final slug will be correct
-      // For canonicalUrl, we'll use the nested slug + user slug format
-      const finalSlug = nestedSlug
-        ? `${nestedSlug}-${normalizedTopicId}`
-        : normalizedTopicId;
+      // The backend will use the slug as provided (no prefix)
+      const finalSlug = normalizedTopicId;
 
       const defaultTopicContent = {
         pageName: newTopicName,
-        slug: normalizedTopicId, // Just the user-entered base slug, backend will prepend nestedSlug
+        slug: normalizedTopicId, // User-entered slug (no prefix)
         meta: {
           title: `${newTopicName} | TeasGurus`,
           description: `Content for ${newTopicName} under ${
@@ -543,7 +539,6 @@ export default function ManageTopics({
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
                     https://teasgurus.com/
-                    {nestedSlug || resolvedParams.nestedSubPageId}-
                   </span>
                   <input
                     type="text"
@@ -559,7 +554,7 @@ export default function ManageTopics({
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /{nestedSlug || resolvedParams.nestedSubPageId || "nested-page-id"}-{newTopicId || "topic-id"}
+                  This will create a page at /{newTopicId || "topic-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">
