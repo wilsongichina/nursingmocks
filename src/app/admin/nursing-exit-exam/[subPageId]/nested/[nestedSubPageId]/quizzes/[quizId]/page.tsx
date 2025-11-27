@@ -6,6 +6,7 @@ import {
   uploadNursingExitExamQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 
 interface ServiceContent {
   pageName?: string;
@@ -21,6 +22,8 @@ interface ServiceContent {
   schema: string;
   hero: {
     title: string;
+    textAboveButton?: string;
+    textBelowButton?: string;
   };
 }
 
@@ -73,7 +76,7 @@ export default function EditQuiz({
         const fullSlug = pageData.slug || resolvedParams.quizId;
         setQuizSlug(fullSlug);
 
-        const canonicalUrl = `https://teasgurus.com/${fullSlug}`;
+        const canonicalUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${fullSlug}`;
 
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
@@ -94,13 +97,15 @@ export default function EditQuiz({
               pageData.hero?.title ||
               pageData.pageName ||
               resolvedParams.quizId,
+            textAboveButton: pageData.hero?.textAboveButton || "",
+            textBelowButton: pageData.hero?.textBelowButton || "",
           },
         };
 
         setContent(initializedContent);
       } else {
         // Initialize with default content structure
-        const canonicalUrl = `https://teasgurus.com/${resolvedParams.quizId}`;
+        const canonicalUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${resolvedParams.quizId}`;
 
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.quizId,
@@ -155,6 +160,8 @@ export default function EditQuiz({
         schema: content.schema,
         hero: {
           title: content.hero.title,
+          textAboveButton: content.hero.textAboveButton || "",
+          textBelowButton: content.hero.textBelowButton || "",
         },
         // Use slug directly (no prefix)
         slug: quizSlug.trim() || resolvedParams.quizId,
@@ -440,6 +447,28 @@ export default function EditQuiz({
                   onChange={(e) => updateContent("hero.title", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                   placeholder="Enter quiz title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Text Above Button
+                </label>
+                <input
+                  type="text"
+                  value={content.hero.textAboveButton || ""}
+                  onChange={(e) => updateContent("hero.textAboveButton", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
+                  placeholder="Enter text to display above the Start Test button"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Text Below Button
+                </label>
+                <RichTextEditor
+                  value={content.hero.textBelowButton || ""}
+                  onChange={(value) => updateContent("hero.textBelowButton", value)}
+                  placeholder="Enter text to display below the Start Test button"
                 />
               </div>
               <div>

@@ -2,7 +2,11 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
-import { getPillarPageContent, getNursingExitExamSubPages } from "@/lib/firestore-operations";
+import { getPillarPageContent, getNursingExitExamSubPages, countSubPageQuestions, countPillarPageQuestions } from "@/lib/firestore-operations";
+
+// Force dynamic rendering to avoid build-time timeouts with Firestore queries
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
@@ -230,7 +234,7 @@ export async function generateMetadata(): Promise<Metadata> {
         openGraph: {
           title: data.meta.ogTitle || data.meta.title || "Nursing Exit Exam | TeasGurus",
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || "https://teasgurus.com/nursing-exit-exam",
+          url: data.meta.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
           images: [
             {
               url: data.meta.ogImage || "/teas-gurus-logo.png",
@@ -261,6 +265,21 @@ export default async function NursingExitExamPage() {
   const pageData = result.success && result.data ? result.data as any : null;
   const subPages = subPagesResult.success && subPagesResult.data ? subPagesResult.data as any[] : [];
   
+  // Fetch question counts for sub-pages
+  const subPagesWithCounts = await Promise.all(
+    subPages.slice(0, 2).map(async (subPage: any) => {
+      const pageSlug = subPage.slug || subPage.id || subPage.subPageId;
+      const questionCount = await countSubPageQuestions("nursing-exit-exam", pageSlug);
+      return {
+        ...subPage,
+        questionCount,
+      };
+    })
+  );
+  
+  // Fetch total question count for the pillar page
+  const pillarPageQuestionCount = await countPillarPageQuestions("nursing-exit-exam");
+  
   const content: ServiceContent = pageData ? {
     meta: pageData.meta || {
       title: "Nursing Exit Exam | TeasGurus",
@@ -269,7 +288,7 @@ export default async function NursingExitExamPage() {
       ogTitle: "Nursing Exit Exam | TeasGurus",
       ogDescription: "Comprehensive guide to nursing exit exams",
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: "https://teasgurus.com/nursing-exit-exam",
+      canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
     },
     schema: pageData.schema || "",
     hero: pageData.hero || {
@@ -312,7 +331,7 @@ export default async function NursingExitExamPage() {
       ogTitle: "Nursing Exit Exam | TeasGurus",
       ogDescription: "Comprehensive guide to nursing exit exams",
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: "https://teasgurus.com/nursing-exit-exam",
+      canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
     },
     schema: "",
     hero: {
@@ -381,9 +400,12 @@ export default async function NursingExitExamPage() {
             <div className="mt-6">
               <div className="flex flex-wrap justify-center gap-4">
                 {/* First 2 cards - Dynamic sub-pages */}
-                {subPages.slice(0, 2).map((subPage: any, index: number) => {
+                {subPagesWithCounts.map((subPage: any, index: number) => {
                   const pageName = subPage.pageName || subPage.hero?.title || subPage.title || subPage.id;
                   const pageId = subPage.id || subPage.subPageId;
+                  
+                  // Get dynamic question count
+                  const formattedCount = (subPage.questionCount || 0).toLocaleString();
                   
                   // Card configuration based on index
                   const cardConfigs = [
@@ -392,7 +414,7 @@ export default async function NursingExitExamPage() {
                       iconColor: "text-white",
                       numberColor: "text-teal-600",
                       icon: <LaptopIcon className="w-6 h-6 text-white" />,
-                      number: "1,250",
+                      number: formattedCount,
                       caption: "Total Questions",
                     },
                     {
@@ -400,7 +422,7 @@ export default async function NursingExitExamPage() {
                       iconColor: "text-white",
                       numberColor: "text-blue-600",
                       icon: <LightbulbIcon className="w-6 h-6 text-white" />,
-                      number: "980",
+                      number: formattedCount,
                       caption: "Total Questions",
                     },
                   ];
@@ -414,6 +436,7 @@ export default async function NursingExitExamPage() {
                     <Link
                       key={pageId}
                       href={`/${pageSlug}`}
+                      {...({ name: pageName } as any)}
                       className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm"
                     >
                       <div className="flex items-center gap-4">
@@ -459,10 +482,10 @@ export default async function NursingExitExamPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-600 mb-1">
-                        {content.hero.title || "Nursing Exit Exam"}
+                        {content.hero?.title || "Nursing Exit Exam"}
                       </p>
                       <p className="text-3xl font-bold text-orange-600">
-                        2,230
+                        {pillarPageQuestionCount.toLocaleString()}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Questions Available
@@ -480,11 +503,11 @@ export default async function NursingExitExamPage() {
       {content.trustIndicators && content.trustIndicators.length > 0 && (
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="flex flex-wrap justify-center gap-8">
               {content.trustIndicators.map((indicator, index) => (
                 <div
                   key={index}
-                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-xs"
                 >
                   <div className="mb-4 flex justify-center items-center">{getIconComponent(indicator.icon)}</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -625,7 +648,15 @@ export default async function NursingExitExamPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className={`grid grid-cols-1 gap-8 ${
+              content.studyGuide.sections.length === 1 
+                ? 'md:grid-cols-1' 
+                : content.studyGuide.sections.length === 2 
+                ? 'md:grid-cols-2' 
+                : content.studyGuide.sections.length === 3 
+                ? 'md:grid-cols-3' 
+                : 'md:grid-cols-2 lg:grid-cols-4'
+            }`}>
               {content.studyGuide.sections.map((section, index) => (
                 <div
                   key={index}

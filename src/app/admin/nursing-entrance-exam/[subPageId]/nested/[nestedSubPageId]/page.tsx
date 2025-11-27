@@ -129,7 +129,7 @@ export default function EditNestedSubPage({
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `https://teasgurus.com/${fullSlug}`,
+            canonicalUrl: pageData.meta?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${fullSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -179,7 +179,7 @@ export default function EditNestedSubPage({
             ogTitle: `${resolvedParams.nestedSubPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.nestedSubPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${defaultSlug}`,
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${defaultSlug}`,
           },
           schema: "",
           hero: {

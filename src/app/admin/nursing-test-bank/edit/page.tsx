@@ -101,7 +101,7 @@ export default function EditNursingTestBankPage() {
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || "https://teasgurus.com/nursing-test-bank",
+            canonicalUrl: pageData.meta?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-test-bank`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -149,7 +149,7 @@ export default function EditNursingTestBankPage() {
             ogTitle: "Nursing Test Bank | TeasGurus",
             ogDescription: "Comprehensive guide to Nursing Test Banks",
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: "https://teasgurus.com/nursing-test-bank",
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-test-bank`,
           },
           schema: "",
           hero: {

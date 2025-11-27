@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import AuthProviderWrapper from "@/components/providers/AuthProviderWrapper";
+import { getSiteUrl } from "@/lib/config";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://teasgurus.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"),
   alternates: {
     canonical: "/",
   },
@@ -48,7 +49,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://teasgurus.com",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com",
     siteName: "TEAS Gurus",
     title: "TEAS Gurus - Master the TEAS Exam with Expert Guidance",
     description:
@@ -90,6 +91,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteUrl = getSiteUrl();
   return (
     <html lang="en">
       <head>
@@ -102,8 +104,8 @@ export default function RootLayout({
               name: "TEAS Gurus",
               description:
                 "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
-              url: "https://teasgurus.com",
-              logo: "https://teasgurus.com/teas-gurus-logo.png",
+              url: siteUrl,
+              logo: `${siteUrl}/teas-gurus-logo.png`,
               contactPoint: {
                 "@type": "ContactPoint",
                 telephone: "1-579-501-1983",

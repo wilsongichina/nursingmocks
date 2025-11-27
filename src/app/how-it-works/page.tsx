@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: "How It Works | Pay a Pro to Take Your TEAS Exam",
     description:
       "Learn exactly how we match you with a verified expert to take your TEAS exam online. Our process is simple, secure, and designed for results",
-    url: "https://teasgurus.com/how-it-works",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/how-it-works`,
   },
   alternates: {
     canonical: "/how-it-works",

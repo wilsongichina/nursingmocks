@@ -8,6 +8,8 @@ import {
   getNursingExitExamNestedSubPage,
   getNursingExitExamNestedSubPages,
   getNursingExitExamQuizzes,
+  countNestedPageQuestions,
+  countSubPageQuestions,
 } from "@/lib/firestore-operations";
 
 // Enable static generation at build time
@@ -461,7 +463,7 @@ export async function generateMetadata({
           title:
             data.meta.ogTitle || data.meta.title || `${subPageId} | TeasGurus`,
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || `https://teasgurus.com/nursing-exit-exam/${subPageId}`,
+          url: data.meta.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${subPageId}`,
           images: [
             {
               url: data.meta.ogImage || "/teas-gurus-logo.png",
@@ -630,10 +632,29 @@ export default async function SubPage({
 
   // Fetch nested sub-pages if this is a regular sub-page (not a nested sub-page itself)
   let nestedSubPages: any[] = [];
+  let subPageQuestionCount = 0;
   if (!isNestedSubPage) {
+    // Fetch question count for the sub-page
+    subPageQuestionCount = await countSubPageQuestions("nursing-exit-exam", lookupId);
+    
     const nestedSubPagesResult = await getNursingExitExamNestedSubPages(lookupId);
     if (nestedSubPagesResult.success && nestedSubPagesResult.data) {
       nestedSubPages = nestedSubPagesResult.data;
+      // Fetch question counts for nested pages
+      nestedSubPages = await Promise.all(
+        nestedSubPages.map(async (nestedSubPage: any) => {
+          const nestedPageSlug = nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
+          const questionCount = await countNestedPageQuestions(
+            "nursing-exit-exam",
+            lookupId,
+            nestedPageSlug
+          );
+          return {
+            ...nestedSubPage,
+            questionCount,
+          };
+        })
+      );
     }
   }
 
@@ -676,7 +697,7 @@ export default async function SubPage({
       ogTitle: `${subPageId} | TeasGurus`,
       ogDescription: `Content for ${subPageId}`,
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: `https://teasgurus.com/nursing-exit-exam/${subPageId}`,
+      canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${subPageId}`,
     },
     schema: pageData.schema || "",
     hero: pageData.hero || {
@@ -834,6 +855,7 @@ export default async function SubPage({
                     <Link
                       key={quizPageId}
                       href={quizUrl}
+                      {...({ name: quizName } as any)}
                       className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
                     >
                       <div className="flex items-center gap-4">
@@ -943,8 +965,8 @@ export default async function SubPage({
                   };
 
                   const config = getCardIcon(pageName, index);
-                  // Default question count - can be made dynamic later
-                  const questionCount = nestedSubPage.questionCount || "0";
+                  // Get dynamic question count
+                  const questionCount = (nestedSubPage.questionCount || 0).toLocaleString();
 
                   // Get the slug for URL generation
                   let baseSlug = lookupId;
@@ -958,6 +980,7 @@ export default async function SubPage({
                     <Link
                       key={nestedPageId}
                       href={nestedSubPageUrl}
+                      {...({ name: pageName } as any)}
                       className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
                     >
                       <div className="flex items-center gap-4">
@@ -1010,7 +1033,7 @@ export default async function SubPage({
                         {content.pageName || content.hero.title || subPageId}
                       </p>
                       <p className="text-3xl font-bold text-orange-600">
-                        2,230
+                        {subPageQuestionCount.toLocaleString()}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Questions Available
@@ -1028,11 +1051,11 @@ export default async function SubPage({
       {content.trustIndicators && content.trustIndicators.length > 0 && (
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="flex flex-wrap justify-center gap-8">
               {content.trustIndicators.map((indicator, index) => (
                 <div
                   key={index}
-                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-xs"
                 >
                   <div className="mb-4 flex justify-center items-center">
                     {getIconComponent(indicator.icon)}
@@ -1177,7 +1200,15 @@ export default async function SubPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className={`grid grid-cols-1 gap-8 ${
+              content.studyGuide.sections.length === 1 
+                ? 'md:grid-cols-1' 
+                : content.studyGuide.sections.length === 2 
+                ? 'md:grid-cols-2' 
+                : content.studyGuide.sections.length === 3 
+                ? 'md:grid-cols-3' 
+                : 'md:grid-cols-2 lg:grid-cols-4'
+            }`}>
               {content.studyGuide.sections.map((section, index) => (
                 <div
                   key={index}

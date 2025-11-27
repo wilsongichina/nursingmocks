@@ -147,7 +147,7 @@ export default function ManageSubPage({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/nursing-exit-exam/${resolvedParams.subPageId}`,
+              `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -198,7 +198,7 @@ export default function ManageSubPage({
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {
@@ -335,7 +335,7 @@ export default function ManageSubPage({
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${slug || resolvedParams.subPageId}-${normalizedNestedSubPageId}`,
+          canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${slug || resolvedParams.subPageId}-${normalizedNestedSubPageId}`,
         },
         hero: {
           badge: content?.pageName || resolvedParams.subPageId,

@@ -28,11 +28,7 @@ export default function Footer() {
             </h3>
             <div className="bg-gray-50 rounded-xl p-8 border border-gray-100">
               <p className="text-gray-700 leading-relaxed text-base max-w-3xl mx-auto">
-                <span className="font-medium text-gray-900">Teas Gurus:</span>{" "}
-                We provide assistance for online/remote TEAS exams through
-                tailored proctored exam services for nursing students at all
-                academic levels. Our services are designed to support your
-                educational journey at an affordable price.
+                Nursing Mocks is an independent support platform created for nursing students who need guidance with TEAS or HESI preparation. We are not connected to ATI, HESI, or any official testing company in any way. Everything we offer is designed to help students feel more prepared and more confident through practice support and study assistance that fits their needs. Our services focus on learning and preparation, not replacing or altering official exams.
               </p>
             </div>
             <div className="mt-6 flex items-center justify-center text-sm text-gray-500">
@@ -69,9 +65,7 @@ export default function Footer() {
                 />
               </div>
               <p className="text-gray-400 mb-4">
-                Your trusted partner for TEAS exam success. We Offer Online Teas
-                Exam Services in The United States and Other Countries Around
-                the World
+                Your trusted partner for TEAS exam success. We offer realistic practice test questions for students in the United States and around the world, giving you the chance to study with confidence and prepare in a way that feels close to the real exam.
               </p>
               {/* Social Media Icons */}
               <div className="flex space-x-4">
@@ -221,9 +215,7 @@ export default function Footer() {
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>
-              Disclaimer: Copyright © 2025 Teas Gurus. All rights reserved. We
-              offer assistance on remote/online teas exams. Feel free to contact
-              us.
+              Disclaimer: Copyright © 2025 Teas Gurus. All rights reserved. Teas Gurus is an independent preparation platform and is not connected to ATI or any official testing organization. We offer realistic TEAS practice test questions and study support for students preparing for the exam. If you have questions or need guidance, feel free to contact us.
             </p>
           </div>
         </div>

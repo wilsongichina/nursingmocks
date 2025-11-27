@@ -2,24 +2,63 @@ import { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
-import { getPillarPageContent, getNursingEntranceExamSubPages } from "@/lib/firestore-operations";
+import {
+  getPillarPageContent,
+  getNursingEntranceExamSubPages,
+  countSubPageQuestions,
+  countPillarPageQuestions,
+} from "@/lib/firestore-operations";
+
+// Force dynamic rendering to avoid build-time timeouts with Firestore queries
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+    />
   </svg>
 );
 
 const LightbulbIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+    />
   </svg>
 );
 
 const MedalIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+    />
   </svg>
 );
 
@@ -219,7 +258,7 @@ const getIconComponent = (iconName: string) => {
 
 export async function generateMetadata(): Promise<Metadata> {
   const result = await getPillarPageContent("nursing-entrance-exam");
-  
+
   if (result.success && result.data) {
     const data = result.data as any;
     if (data.meta) {
@@ -228,9 +267,16 @@ export async function generateMetadata(): Promise<Metadata> {
         description: data.meta.description || "",
         keywords: data.meta.keywords || "",
         openGraph: {
-          title: data.meta.ogTitle || data.meta.title || "Nursing Entrance Exam | TeasGurus",
+          title:
+            data.meta.ogTitle ||
+            data.meta.title ||
+            "Nursing Entrance Exam | TeasGurus",
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || "https://teasgurus.com/nursing-entrance-exam",
+          url:
+            data.meta.canonicalUrl ||
+            `${
+              process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+            }/nursing-entrance-exam`,
           images: [
             {
               url: data.meta.ogImage || "/teas-gurus-logo.png",
@@ -258,96 +304,127 @@ export default async function NursingEntranceExamPage() {
   const subPagesResult = await getNursingEntranceExamSubPages();
 
   // Provide default content structure if not found in Firebase
-  const pageData = result.success && result.data ? result.data as any : null;
-  const subPages = subPagesResult.success && subPagesResult.data ? subPagesResult.data as any[] : [];
-  
-  const content: ServiceContent = pageData ? {
-    meta: pageData.meta || {
-      title: "Nursing Entrance Exam | TeasGurus",
-      description: "Comprehensive guide to nursing entrance exams",
-      keywords: "nursing entrance exam, nursing school, exam preparation",
-      ogTitle: "Nursing Entrance Exam | TeasGurus",
-      ogDescription: "Comprehensive guide to nursing entrance exams",
-      ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: "https://teasgurus.com/nursing-entrance-exam",
-    },
-    schema: pageData.schema || "",
-    hero: pageData.hero || {
-      badge: "We are Teas Gurus",
-      title: "Nursing Entrance Exam",
-      subtitle: "Comprehensive guide to help you succeed in your nursing entrance exam.",
-      description: "",
-    },
-    trustIndicators: pageData.trustIndicators || [],
-    whatToExpect: pageData.whatToExpect || {
-      badge: "",
-      title: "",
-      subtitle: "",
-      cards: [],
-      footer: "",
-    },
-    mostCommonQuestions: pageData.mostCommonQuestions || {
-      badge: "",
-      title: "",
-      subtitle: "",
-      cards: [],
-    },
-    studyGuide: pageData.studyGuide || {
-      badge: "",
-      title: "",
-      subtitle: "",
-      sections: [],
-    },
-    privacyPricing: pageData.privacyPricing || [],
-    faq: pageData.faq || {
-      title: "",
-      subtitle: "",
-      questions: [],
-    },
-  } : {
-    meta: {
-      title: "Nursing Entrance Exam | TeasGurus",
-      description: "Comprehensive guide to nursing entrance exams",
-      keywords: "nursing entrance exam, nursing school, exam preparation",
-      ogTitle: "Nursing Entrance Exam | TeasGurus",
-      ogDescription: "Comprehensive guide to nursing entrance exams",
-      ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: "https://teasgurus.com/nursing-entrance-exam",
-    },
-    schema: "",
-    hero: {
-      badge: "We are Teas Gurus",
-      title: "Nursing Entrance Exam",
-      subtitle: "Comprehensive guide to help you succeed in your nursing entrance exam.",
-      description: "",
-    },
-    trustIndicators: [],
-    whatToExpect: {
-      badge: "",
-      title: "",
-      subtitle: "",
-      cards: [],
-      footer: "",
-    },
-    mostCommonQuestions: {
-      badge: "",
-      title: "",
-      subtitle: "",
-      cards: [],
-    },
-    studyGuide: {
-      badge: "",
-      title: "",
-      subtitle: "",
-      sections: [],
-    },
-    privacyPricing: [],
-    faq: {
-      title: "",
-      subtitle: "",
-      questions: [],
-    },
-  };
+  const pageData = result.success && result.data ? (result.data as any) : null;
+  const subPages =
+    subPagesResult.success && subPagesResult.data
+      ? (subPagesResult.data as any[])
+      : [];
+
+  // Fetch question counts for sub-pages
+  const subPagesWithCounts = await Promise.all(
+    subPages.slice(0, 2).map(async (subPage: any) => {
+      const pageSlug = subPage.slug || subPage.id || subPage.subPageId;
+      const questionCount = await countSubPageQuestions(
+        "nursing-entrance-exam",
+        pageSlug
+      );
+      return {
+        ...subPage,
+        questionCount,
+      };
+    })
+  );
+
+  // Fetch total question count for the pillar page
+  const pillarPageQuestionCount = await countPillarPageQuestions(
+    "nursing-entrance-exam"
+  );
+
+  const content: ServiceContent = pageData
+    ? {
+        meta: pageData.meta || {
+          title: "Nursing Entrance Exam | TeasGurus",
+          description: "Comprehensive guide to nursing entrance exams",
+          keywords: "nursing entrance exam, nursing school, exam preparation",
+          ogTitle: "Nursing Entrance Exam | TeasGurus",
+          ogDescription: "Comprehensive guide to nursing entrance exams",
+          ogImage: "/teas-gurus-logo.png",
+          canonicalUrl: `${
+            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+          }/nursing-entrance-exam`,
+        },
+        schema: pageData.schema || "",
+        hero: pageData.hero || {
+          badge: "We are Teas Gurus",
+          title: "Nursing Entrance Exam",
+          subtitle:
+            "Comprehensive guide to help you succeed in your nursing entrance exam.",
+          description: "",
+        },
+        trustIndicators: pageData.trustIndicators || [],
+        whatToExpect: pageData.whatToExpect || {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+          footer: "",
+        },
+        mostCommonQuestions: pageData.mostCommonQuestions || {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+        },
+        studyGuide: pageData.studyGuide || {
+          badge: "",
+          title: "",
+          subtitle: "",
+          sections: [],
+        },
+        privacyPricing: pageData.privacyPricing || [],
+        faq: pageData.faq || {
+          title: "",
+          subtitle: "",
+          questions: [],
+        },
+      }
+    : {
+        meta: {
+          title: "Nursing Entrance Exam | TeasGurus",
+          description: "Comprehensive guide to nursing entrance exams",
+          keywords: "nursing entrance exam, nursing school, exam preparation",
+          ogTitle: "Nursing Entrance Exam | TeasGurus",
+          ogDescription: "Comprehensive guide to nursing entrance exams",
+          ogImage: "/teas-gurus-logo.png",
+          canonicalUrl: `${
+            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+          }/nursing-entrance-exam`,
+        },
+        schema: "",
+        hero: {
+          badge: "We are Teas Gurus",
+          title: "Nursing Entrance Exam",
+          subtitle:
+            "Comprehensive guide to help you succeed in your nursing entrance exam.",
+          description: "",
+        },
+        trustIndicators: [],
+        whatToExpect: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+          footer: "",
+        },
+        mostCommonQuestions: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          cards: [],
+        },
+        studyGuide: {
+          badge: "",
+          title: "",
+          subtitle: "",
+          sections: [],
+        },
+        privacyPricing: [],
+        faq: {
+          title: "",
+          subtitle: "",
+          questions: [],
+        },
+      };
 
   return (
     <Layout>
@@ -364,15 +441,12 @@ export default async function NursingEntranceExamPage() {
       {/* Hero Section */}
       <section className="bg-white py-[1.25rem]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
           <div className="mb-6">
             <h1 className="text-4xl font-bold text-gray-900 mb-3">
               {content.hero.title || "Nursing Entrance Exam - TEAS Gurus"}
             </h1>
             <div className="text-gray-600 text-base leading-relaxed">
-              <ContentRenderer
-                content={content.hero.description || ""}
-              />
+              <ContentRenderer content={content.hero.description || ""} />
             </div>
           </div>
 
@@ -380,10 +454,19 @@ export default async function NursingEntranceExamPage() {
           <div className="mt-6">
             <div className="flex flex-wrap justify-center gap-4">
               {/* First 2 cards - Dynamic sub-pages */}
-              {subPages.slice(0, 2).map((subPage: any, index: number) => {
-                const pageName = subPage.pageName || subPage.hero?.title || subPage.title || subPage.id;
+              {subPagesWithCounts.map((subPage: any, index: number) => {
+                const pageName =
+                  subPage.pageName ||
+                  subPage.hero?.title ||
+                  subPage.title ||
+                  subPage.id;
                 const pageId = subPage.id || subPage.subPageId;
-                
+
+                // Get dynamic question count
+                const formattedCount = (
+                  subPage.questionCount || 0
+                ).toLocaleString();
+
                 // Card configuration based on index
                 const cardConfigs = [
                   {
@@ -391,7 +474,7 @@ export default async function NursingEntranceExamPage() {
                     iconColor: "text-white",
                     numberColor: "text-purple-600",
                     icon: <LaptopIcon className="w-6 h-6 text-white" />,
-                    number: "1,250",
+                    number: formattedCount,
                     caption: "Total Questions",
                   },
                   {
@@ -399,31 +482,36 @@ export default async function NursingEntranceExamPage() {
                     iconColor: "text-white",
                     numberColor: "text-blue-600",
                     icon: <LightbulbIcon className="w-6 h-6 text-white" />,
-                    number: "980",
+                    number: formattedCount,
                     caption: "Total Questions",
                   },
                 ];
-                
+
                 const config = cardConfigs[index] || cardConfigs[0];
-                
+
                 // Get the slug for URL generation - use slug directly (no suffix for subpages)
                 const pageSlug = subPage.slug || pageId;
-                
+
                 return (
                   <Link
                     key={pageId}
                     href={`/${pageSlug}`}
+                    {...({ name: pageName } as any)}
                     className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                      <div
+                        className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
+                      >
                         {config.icon}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-600 mb-1">
                           {pageName}
                         </p>
-                        <p className={`text-3xl font-bold ${config.numberColor}`}>
+                        <p
+                          className={`text-3xl font-bold ${config.numberColor}`}
+                        >
                           {config.number}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
@@ -449,7 +537,7 @@ export default async function NursingEntranceExamPage() {
                   </Link>
                 );
               })}
-              
+
               {/* Third card - Always show pillar page name */}
               <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
                 <div className="flex items-center gap-4">
@@ -458,10 +546,10 @@ export default async function NursingEntranceExamPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-600 mb-1">
-                      {content.hero.title || "Nursing Entrance Exam"}
+                      {content.hero?.title || "Nursing Entrance Exam"}
                     </p>
                     <p className="text-3xl font-bold text-orange-600">
-                      2,230
+                      {pillarPageQuestionCount.toLocaleString()}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       Questions Available
@@ -478,13 +566,15 @@ export default async function NursingEntranceExamPage() {
       {content.trustIndicators && content.trustIndicators.length > 0 && (
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="flex flex-wrap justify-center gap-8">
               {content.trustIndicators.map((indicator, index) => (
                 <div
                   key={index}
-                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-xs"
                 >
-                  <div className="mb-4 flex justify-center items-center">{getIconComponent(indicator.icon)}</div>
+                  <div className="mb-4 flex justify-center items-center">
+                    {getIconComponent(indicator.icon)}
+                  </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     {indicator.title}
                   </h3>
@@ -526,7 +616,9 @@ export default async function NursingEntranceExamPage() {
                   key={index}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
                 >
-                  <div className="mb-6 flex justify-center items-center">{getIconComponent(card.icon)}</div>
+                  <div className="mb-6 flex justify-center items-center">
+                    {getIconComponent(card.icon)}
+                  </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {card.title}
                   </h3>
@@ -623,13 +715,25 @@ export default async function NursingEntranceExamPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div
+              className={`grid grid-cols-1 gap-8 ${
+                content.studyGuide.sections.length === 1
+                  ? "md:grid-cols-1"
+                  : content.studyGuide.sections.length === 2
+                  ? "md:grid-cols-2"
+                  : content.studyGuide.sections.length === 3
+                  ? "md:grid-cols-3"
+                  : "md:grid-cols-2 lg:grid-cols-4"
+              }`}
+            >
               {content.studyGuide.sections.map((section, index) => (
                 <div
                   key={index}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
                 >
-                  <div className="mb-6 flex justify-center items-center">{getIconComponent(section.icon)}</div>
+                  <div className="mb-6 flex justify-center items-center">
+                    {getIconComponent(section.icon)}
+                  </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {section.title}
                   </h3>
@@ -659,7 +763,9 @@ export default async function NursingEntranceExamPage() {
                   key={index}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
                 >
-                  <div className="mb-6 flex justify-center items-center">{getIconComponent(item.icon)}</div>
+                  <div className="mb-6 flex justify-center items-center">
+                    {getIconComponent(item.icon)}
+                  </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                     {item.title}
                   </h3>
@@ -728,8 +834,8 @@ export default async function NursingEntranceExamPage() {
             Ready to Ace Your Nursing Entrance Exam?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Get expert help with your nursing entrance exam preparation and achieve your
-            nursing school dreams.
+            Get expert help with your nursing entrance exam preparation and
+            achieve your nursing school dreams.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

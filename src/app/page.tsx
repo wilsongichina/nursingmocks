@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://www.teasgurus.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"),
   alternates: {
     canonical: "/",
   },
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     title: "Take My TEAS Exam for Me | Secure TEAS Help Online – Teas Gurus",
     description:
       "Need help with your ATI TEAS exam? Hire a trusted expert to take your TEAS test online or proctored. Guaranteed scores, 100% confidentiality, and secure support.",
-    url: "https://www.teasgurus.com",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com",
     siteName: "Teas Gurus",
     images: [
       {

@@ -101,7 +101,7 @@ export default function EditNursingExitExamPage() {
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || "https://teasgurus.com/nursing-exit-exam",
+            canonicalUrl: pageData.meta?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -149,7 +149,7 @@ export default function EditNursingExitExamPage() {
             ogTitle: "Nursing Exit Exam | TeasGurus",
             ogDescription: "Comprehensive guide to nursing exit exams",
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: "https://teasgurus.com/nursing-exit-exam",
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
           },
           schema: "",
           hero: {

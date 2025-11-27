@@ -19,6 +19,11 @@ import {
   getNursingExitExamQuizzes,
   getAllQuestionTypes,
   getRouteMappingSlugsByIds,
+  countNestedPageQuestions,
+  countTopicQuestions,
+  countSubPageQuestions,
+  countQuizQuestions,
+  countExitEntranceQuizQuestions,
 } from "@/lib/firestore-operations";
 
 // Icon components for dashboard-style cards
@@ -457,7 +462,7 @@ export async function generateMetadata({
         openGraph: {
           title: data.meta.ogTitle || data.meta.title || `${slug} | TeasGurus`,
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || `https://teasgurus.com/${slug}`,
+          url: data.meta.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${slug}`,
           images: [
             {
               url: data.meta.ogImage || "/teas-gurus-logo.png",
@@ -584,26 +589,40 @@ export default async function DynamicPage({
         {/* Hero Section */}
         <section className="bg-white py-[1.25rem]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mb-6">
+            {/* Centered Title */}
+            <div className="mb-6 text-center">
               <h1 className="text-4xl font-bold text-gray-900 mb-3">
                 {pageData.hero?.title || pageData.pageName || slug}
               </h1>
-              {pageData.hero?.description && (
-                <div className="text-gray-600 text-base leading-relaxed">
-                  <ContentRenderer content={pageData.hero.description || ""} />
-                </div>
-              )}
             </div>
+
+            {/* Text Above Button */}
+            {pageData.hero?.textAboveButton && (
+              <div className="mb-6 text-center">
+                <p className="text-gray-600 text-base leading-relaxed">
+                  {pageData.hero.textAboveButton}
+                </p>
+              </div>
+            )}
 
             {/* Start Test button */}
             {questions.length > 0 && (
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
                 <a
                   href="#quiz-questions"
-                  className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors text-center"
+                  className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-base font-bold hover:bg-yellow-400 transition-colors text-center"
                 >
                   Start Test
                 </a>
+              </div>
+            )}
+
+            {/* Text Below Button */}
+            {pageData.hero?.textBelowButton && (
+              <div className="text-center">
+                <div className="text-gray-600 text-base leading-relaxed">
+                  <ContentRenderer content={pageData.hero.textBelowButton || ""} />
+                </div>
               </div>
             )}
           </div>
@@ -708,8 +727,20 @@ export default async function DynamicPage({
   let nestedPageSlugMap: Record<string, string> = {};
   let topicSlugMap: Record<string, string> = {};
   let quizSlugMap: Record<string, string> = {};
+  let subPageQuestionCount = 0;
+  let topicQuestionCount = 0;
+  let nestedPageQuestionCount = 0;
 
   if (pageType === "nested") {
+    // Fetch question count for the nested page
+    if (pillarId === "nursing-entrance-exam" || pillarId === "nursing-exit-exam") {
+      nestedPageQuestionCount = await countNestedPageQuestions(
+        pillarId as "nursing-exit-exam" | "nursing-entrance-exam",
+        mapping.subPageId!,
+        mapping.nestedPageId!
+      );
+    }
+    
     // Load quizzes for nested pages (entrance and exit exams)
     if (pillarId === "nursing-entrance-exam") {
       const quizzesResult = await getNursingEntranceExamQuizzes(
@@ -730,6 +761,22 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           quizSlugMap = slugMapResult.slugMap;
         }
+        // Fetch question counts for quizzes
+        quizzes = await Promise.all(
+          quizzes.map(async (quiz: any) => {
+            const quizSlug = quiz.slug || quiz.id;
+            const questionCount = await countExitEntranceQuizQuestions(
+              pillarId as "nursing-entrance-exam",
+              mapping.subPageId!,
+              mapping.nestedPageId!,
+              quizSlug
+            );
+            return {
+              ...quiz,
+              questionCount,
+            };
+          })
+        );
       }
     } else if (pillarId === "nursing-exit-exam") {
       const quizzesResult = await getNursingExitExamQuizzes(
@@ -750,13 +797,44 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           quizSlugMap = slugMapResult.slugMap;
         }
+        // Fetch question counts for quizzes
+        quizzes = await Promise.all(
+          quizzes.map(async (quiz: any) => {
+            const quizSlug = quiz.slug || quiz.id;
+            const questionCount = await countExitEntranceQuizQuestions(
+              pillarId as "nursing-exit-exam",
+              mapping.subPageId!,
+              mapping.nestedPageId!,
+              quizSlug
+            );
+            return {
+              ...quiz,
+              questionCount,
+            };
+          })
+        );
       }
     } else if (pillarId === "nursing-test-bank") {
-      // Load topics for test bank nested pages
+      // Fetch question count for the nested page (sum of all topics)
+      let totalNestedCount = 0;
       const topicsResult = await getNursingTestBankTopics(
         mapping.subPageId!,
         mapping.nestedPageId!
       );
+      if (topicsResult.success && topicsResult.data) {
+        for (const topic of topicsResult.data) {
+          const topicSlug = topic.slug || topic.id;
+          const count = await countTopicQuestions(
+            mapping.subPageId!,
+            mapping.nestedPageId!,
+            topicSlug
+          );
+          totalNestedCount += count;
+        }
+        nestedPageQuestionCount = totalNestedCount;
+      }
+      
+      // Load topics for test bank nested pages
       if (topicsResult.success && topicsResult.data) {
         topics = topicsResult.data;
         // Get route mapping slugs for topics
@@ -771,9 +849,31 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           topicSlugMap = slugMapResult.slugMap;
         }
+        // Fetch question counts for topics
+        topics = await Promise.all(
+          topics.map(async (topic: any) => {
+            const topicSlug = topic.slug || topic.id;
+            const questionCount = await countTopicQuestions(
+              mapping.subPageId!,
+              mapping.nestedPageId!,
+              topicSlug
+            );
+            return {
+              ...topic,
+              questionCount,
+            };
+          })
+        );
       }
     }
   } else if (pageType === "topic" && pillarId === "nursing-test-bank") {
+    // Fetch question count for the topic
+    topicQuestionCount = await countTopicQuestions(
+      mapping.subPageId!,
+      mapping.nestedPageId!,
+      mapping.topicId!
+    );
+    
     // Load quizzes for test bank topic pages
     const quizzesResult = await getNursingTestBankQuizzes(
       mapping.subPageId!,
@@ -795,8 +895,30 @@ export default async function DynamicPage({
       if (slugMapResult.success) {
         quizSlugMap = slugMapResult.slugMap;
       }
+      // Fetch question counts for quizzes
+      quizzes = await Promise.all(
+        quizzes.map(async (quiz: any) => {
+          const quizSlug = quiz.slug || quiz.id;
+          const questionCount = await countQuizQuestions(
+            mapping.subPageId!,
+            mapping.nestedPageId!,
+            mapping.topicId!,
+            quizSlug
+          );
+          return {
+            ...quiz,
+            questionCount,
+          };
+        })
+      );
     }
   } else if (pageType === "sub") {
+    // Fetch question count for the sub-page
+    subPageQuestionCount = await countSubPageQuestions(
+      pillarId,
+      mapping.subPageId!
+    );
+    
     // Load nested sub-pages
     if (pillarId === "nursing-entrance-exam") {
       const nestedResult = await getNestedSubPages(mapping.subPageId!);
@@ -813,6 +935,21 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           nestedPageSlugMap = slugMapResult.slugMap;
         }
+        // Fetch question counts for nested pages
+        nestedPages = await Promise.all(
+          nestedPages.map(async (nestedPage: any) => {
+            const nestedPageSlug = nestedPage.slug || nestedPage.id;
+            const questionCount = await countNestedPageQuestions(
+              pillarId as "nursing-entrance-exam",
+              mapping.subPageId!,
+              nestedPageSlug
+            );
+            return {
+              ...nestedPage,
+              questionCount,
+            };
+          })
+        );
       }
     } else if (pillarId === "nursing-exit-exam") {
       const nestedResult = await getNursingExitExamNestedSubPages(
@@ -831,6 +968,21 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           nestedPageSlugMap = slugMapResult.slugMap;
         }
+        // Fetch question counts for nested pages
+        nestedPages = await Promise.all(
+          nestedPages.map(async (nestedPage: any) => {
+            const nestedPageSlug = nestedPage.slug || nestedPage.id;
+            const questionCount = await countNestedPageQuestions(
+              pillarId as "nursing-exit-exam",
+              mapping.subPageId!,
+              nestedPageSlug
+            );
+            return {
+              ...nestedPage,
+              questionCount,
+            };
+          })
+        );
       }
     } else if (pillarId === "nursing-test-bank") {
       const nestedResult = await getNursingTestBankNestedSubPages(
@@ -849,6 +1001,34 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           nestedPageSlugMap = slugMapResult.slugMap;
         }
+        // Fetch question counts for nested pages (test bank nested pages have topics, so count through topics)
+        nestedPages = await Promise.all(
+          nestedPages.map(async (nestedPage: any) => {
+            const nestedPageSlug = nestedPage.slug || nestedPage.id;
+            // For test bank, we need to count questions through topics
+            // Get all topics for this nested page
+            const topicsResult = await getNursingTestBankTopics(
+              mapping.subPageId!,
+              nestedPageSlug
+            );
+            let totalCount = 0;
+            if (topicsResult.success && topicsResult.data) {
+              for (const topic of topicsResult.data) {
+                const topicSlug = topic.slug || topic.id;
+                const count = await countTopicQuestions(
+                  mapping.subPageId!,
+                  nestedPageSlug,
+                  topicSlug
+                );
+                totalCount += count;
+              }
+            }
+            return {
+              ...nestedPage,
+              questionCount: totalCount,
+            };
+          })
+        );
       }
     }
   }
@@ -863,7 +1043,7 @@ export default async function DynamicPage({
       ogTitle: `${slug} | TeasGurus`,
       ogDescription: `Content for ${slug}`,
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: `https://teasgurus.com/${slug}`,
+      canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${slug}`,
     },
     schema: pageData.schema || "",
     hero: pageData.hero || {
@@ -976,8 +1156,7 @@ export default async function DynamicPage({
 
           {/* Quiz Cards (for topic pages - show first) */}
           {pageType === "topic" &&
-            pillarId === "nursing-test-bank" &&
-            quizzes.length > 0 && (
+            pillarId === "nursing-test-bank" && (
               <div id="quiz-cards" className="mt-6 mb-8">
                 <div className="flex flex-wrap justify-center gap-4">
                   {quizzes.map((quiz: any, index: number) => {
@@ -991,12 +1170,13 @@ export default async function DynamicPage({
                       quiz.quizName ||
                       quiz.id;
                     const config = getCardIcon(quizName, index);
-                    const questionCount = quiz.questionCount || "0";
+                    const questionCount = (quiz.questionCount || 0).toLocaleString();
 
                     return (
                       <Link
                         key={quiz.id}
                         href={`/${quizSlug}`}
+                        {...({ name: quizName } as any)}
                         className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
                       >
                         <div className="flex items-center gap-4">
@@ -1037,6 +1217,28 @@ export default async function DynamicPage({
                       </Link>
                     );
                   })}
+                  
+                  {/* Page question count card (for topic pages) */}
+                  {pageType === "topic" && (
+                    <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <MedalIcon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-600 mb-1">
+                            {content.pageName || content.hero.title || slug}
+                          </p>
+                          <p className="text-3xl font-bold text-orange-600">
+                            {topicQuestionCount.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Questions Available
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1074,12 +1276,13 @@ export default async function DynamicPage({
                     nestedPage.hero?.title ||
                     nestedPage.id;
                   const config = getCardIcon(pageName, index);
-                  const questionCount = nestedPage.questionCount || "0";
+                  const questionCount = (nestedPage.questionCount || 0).toLocaleString();
 
                   return (
                     <Link
                       key={nestedPage.id}
                       href={`/${nestedSlug}`}
+                      {...({ name: pageName } as any)}
                       className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
                     >
                       <div className="flex items-center gap-4">
@@ -1133,7 +1336,7 @@ export default async function DynamicPage({
                           {content.pageName || content.hero.title || slug}
                         </p>
                         <p className="text-3xl font-bold text-orange-600">
-                          2,230
+                          {subPageQuestionCount.toLocaleString()}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           Questions Available
@@ -1157,12 +1360,13 @@ export default async function DynamicPage({
                   const topicName =
                     topic.pageName || topic.hero?.title || topic.id;
                   const config = getCardIcon(topicName, index);
-                  const questionCount = topic.questionCount || "0";
+                  const questionCount = (topic.questionCount || 0).toLocaleString();
 
                   return (
                     <Link
                       key={topic.id}
                       href={`/${topicSlug}`}
+                      {...({ name: topicName } as any)}
                       className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
                     >
                       <div className="flex items-center gap-4">
@@ -1203,6 +1407,28 @@ export default async function DynamicPage({
                     </Link>
                   );
                 })}
+                
+                {/* Page question count card (for nested pages) */}
+                {pageType === "nested" && (
+                  <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MedalIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-600 mb-1">
+                          {content.pageName || content.hero.title || slug}
+                        </p>
+                        <p className="text-3xl font-bold text-orange-600">
+                          {nestedPageQuestionCount.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Questions Available
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1223,12 +1449,13 @@ export default async function DynamicPage({
                       quiz.quizName ||
                       quiz.id;
                     const config = getCardIcon(quizName, index);
-                    const questionCount = quiz.questionCount || "0";
+                    const questionCount = (quiz.questionCount || 0).toLocaleString();
 
                     return (
                       <Link
                         key={quiz.id}
                         href={`/${quizSlug}`}
+                        {...({ name: quizName } as any)}
                         className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
                       >
                         <div className="flex items-center gap-4">
@@ -1269,6 +1496,28 @@ export default async function DynamicPage({
                       </Link>
                     );
                   })}
+                  
+                  {/* Page question count card (for nested pages) */}
+                  {pageType === "nested" && (
+                    <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <MedalIcon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-600 mb-1">
+                            {content.pageName || content.hero.title || slug}
+                          </p>
+                          <p className="text-3xl font-bold text-orange-600">
+                            {nestedPageQuestionCount.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Questions Available
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1279,11 +1528,11 @@ export default async function DynamicPage({
       {content.trustIndicators && content.trustIndicators.length > 0 && (
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="flex flex-wrap justify-center gap-8">
               {content.trustIndicators.map((indicator, index) => (
                 <div
                   key={index}
-                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-xs"
                 >
                   <div className="mb-4 flex justify-center items-center">
                     {getIconComponent(indicator.icon)}
@@ -1428,7 +1677,15 @@ export default async function DynamicPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className={`grid grid-cols-1 gap-8 ${
+              content.studyGuide.sections.length === 1 
+                ? 'md:grid-cols-1' 
+                : content.studyGuide.sections.length === 2 
+                ? 'md:grid-cols-2' 
+                : content.studyGuide.sections.length === 3 
+                ? 'md:grid-cols-3' 
+                : 'md:grid-cols-2 lg:grid-cols-4'
+            }`}>
               {content.studyGuide.sections.map((section, index) => (
                 <div
                   key={index}

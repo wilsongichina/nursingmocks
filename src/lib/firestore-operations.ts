@@ -489,7 +489,7 @@ export const initializeNursingExitExamContent = async () => {
         ogDescription:
           "Comprehensive guide to nursing exit exams. Prepare for your nursing exit exam with expert resources, practice questions, and study guides.",
         ogImage: "/teas-gurus-logo.png",
-        canonicalUrl: "https://teasgurus.com/nursing-exit-exam",
+        canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
       },
       schema: "",
       hero: {
@@ -6428,9 +6428,10 @@ export const getNursingEntranceExamQuizQuestions = async (
     let actualQuizId = quizId;
 
     // Try to get the quiz to resolve the document ID
+    // Pass original IDs/slugs, not resolved IDs, since getNursingEntranceExamQuiz does its own resolution
     const quizResult = await getNursingEntranceExamQuiz(
-      resolvedParentId,
-      resolvedNestedId,
+      parentSubPageId,
+      nestedSubPageId,
       quizId
     );
 
@@ -6498,6 +6499,82 @@ export const getNursingEntranceExamQuizQuestion = async (
   questionId: string
 ) => {
   try {
+    const pillarId = "nursing-entrance-exam";
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", nestedSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
     // First, resolve the quiz document ID from the slug if needed
     let actualQuizId = quizId;
 
@@ -6515,6 +6592,11 @@ export const getNursingEntranceExamQuizQuestion = async (
       if (quizData.id) {
         actualQuizId = quizData.id;
       }
+    } else {
+      return {
+        success: false,
+        message: `Quiz ${quizId} not found`,
+      };
     }
 
     const docRef = doc(
@@ -6522,9 +6604,9 @@ export const getNursingEntranceExamQuizQuestion = async (
       "pillarPages",
       "nursing-entrance-exam",
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
       actualQuizId,
       "questions",
@@ -10275,5 +10357,667 @@ export const getAllRouteMappings = async () => {
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };
+  }
+};
+
+// ==================== QUESTION COUNT OPERATIONS ====================
+
+// Helper function to count questions in a quiz collection
+// Only counts questions with supported types: 1, 2, 3, 7
+const countQuestionsInQuiz = async (
+  pathSegments: string[]
+): Promise<number> => {
+  try {
+    const questionsRef = collection(db, ...(pathSegments as [string, ...string[]]), "questions");
+    const snapshot = await getDocs(questionsRef);
+    
+    // Supported question types: 1, 2, 3, 7
+    const supportedTypes = [1, 2, 3, 7];
+    let count = 0;
+    
+    snapshot.forEach((doc) => {
+      const questionData = doc.data();
+      const questionTypeId = questionData.question_type_id || questionData.questionTypeId || 1;
+      // Convert to number if it's a string
+      const typeId = typeof questionTypeId === 'string' ? parseInt(questionTypeId, 10) : questionTypeId;
+      
+      if (supportedTypes.includes(typeId)) {
+        count++;
+      }
+    });
+    
+    return count;
+  } catch (error) {
+    console.error("Error counting questions in quiz:", error);
+    return 0;
+  }
+};
+
+// Count questions in a single quiz (for test bank)
+export const countQuizQuestions = async (
+  subPageId: string,
+  nestedSubPageId: string,
+  topicId: string,
+  quizId: string
+): Promise<number> => {
+  try {
+    const pillarId = "nursing-test-bank";
+    
+    // Resolve IDs
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      }
+    }
+
+    let resolvedNestedId: string | null = null;
+    if (resolvedParentId) {
+      const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages"
+      );
+      const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+      const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+      if (!nestedSlugSnapshot.empty) {
+        resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+      } else {
+        const nestedDocRef = doc(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId,
+          "nestedSubPages",
+          nestedSubPageId
+        );
+        const nestedDocSnap = await getDoc(nestedDocRef);
+        if (nestedDocSnap.exists()) {
+          resolvedNestedId = nestedDocSnap.id;
+        }
+      }
+    }
+
+    let resolvedTopicId: string | null = null;
+    if (resolvedNestedId) {
+      const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+      const topicsRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId!,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics"
+      );
+      const topicSlugQuery = query(topicsRef, where("slug", "==", normalizedTopicSlug));
+      const topicSlugSnapshot = await getDocs(topicSlugQuery);
+      if (!topicSlugSnapshot.empty) {
+        resolvedTopicId = topicSlugSnapshot.docs[0].id;
+      } else {
+        const topicDocRef = doc(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId!,
+          "nestedSubPages",
+          resolvedNestedId,
+          "topics",
+          topicId
+        );
+        const topicDocSnap = await getDoc(topicDocRef);
+        if (topicDocSnap.exists()) {
+          resolvedTopicId = topicDocSnap.id;
+        }
+      }
+    }
+
+    if (resolvedParentId && resolvedNestedId && resolvedTopicId) {
+      // Resolve quiz ID
+      const quizzesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        resolvedTopicId,
+        "quizzes"
+      );
+      const quizSlugQuery = query(quizzesRef, where("slug", "==", quizId.toLowerCase().replace(/\s+/g, "-")));
+      const quizSlugSnapshot = await getDocs(quizSlugQuery);
+      let resolvedQuizId = quizId;
+      
+      if (!quizSlugSnapshot.empty) {
+        resolvedQuizId = quizSlugSnapshot.docs[0].id;
+      } else {
+        const quizDocRef = doc(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId,
+          "nestedSubPages",
+          resolvedNestedId,
+          "topics",
+          resolvedTopicId,
+          "quizzes",
+          quizId
+        );
+        const quizDocSnap = await getDoc(quizDocRef);
+        if (quizDocSnap.exists()) {
+          resolvedQuizId = quizDocSnap.id;
+        }
+      }
+
+      const count = await countQuestionsInQuiz([
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "topics",
+        resolvedTopicId,
+        "quizzes",
+        resolvedQuizId,
+      ]);
+      return count;
+    }
+
+    return 0;
+  } catch (error) {
+    console.error("Error counting quiz questions:", error);
+    return 0;
+  }
+};
+
+// Count questions in a single quiz (for exit/entrance exams)
+export const countExitEntranceQuizQuestions = async (
+  pillarId: "nursing-exit-exam" | "nursing-entrance-exam",
+  subPageId: string,
+  nestedSubPageId: string,
+  quizId: string
+): Promise<number> => {
+  try {
+    // Resolve IDs
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      }
+    }
+
+    let resolvedNestedId: string | null = null;
+    if (resolvedParentId) {
+      const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages"
+      );
+      const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+      const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+      if (!nestedSlugSnapshot.empty) {
+        resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+      } else {
+        const nestedDocRef = doc(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId,
+          "nestedSubPages",
+          nestedSubPageId
+        );
+        const nestedDocSnap = await getDoc(nestedDocRef);
+        if (nestedDocSnap.exists()) {
+          resolvedNestedId = nestedDocSnap.id;
+        }
+      }
+    }
+
+    if (resolvedParentId && resolvedNestedId) {
+      // Resolve quiz ID
+      const quizzesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "quizzes"
+      );
+      const quizSlugQuery = query(quizzesRef, where("slug", "==", quizId.toLowerCase().replace(/\s+/g, "-")));
+      const quizSlugSnapshot = await getDocs(quizSlugQuery);
+      let resolvedQuizId = quizId;
+      
+      if (!quizSlugSnapshot.empty) {
+        resolvedQuizId = quizSlugSnapshot.docs[0].id;
+      } else {
+        const quizDocRef = doc(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId,
+          "nestedSubPages",
+          resolvedNestedId,
+          "quizzes",
+          quizId
+        );
+        const quizDocSnap = await getDoc(quizDocRef);
+        if (quizDocSnap.exists()) {
+          resolvedQuizId = quizDocSnap.id;
+        }
+      }
+
+      const count = await countQuestionsInQuiz([
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId,
+        "quizzes",
+        resolvedQuizId,
+      ]);
+      return count;
+    }
+
+    return 0;
+  } catch (error) {
+    console.error("Error counting quiz questions:", error);
+    return 0;
+  }
+};
+
+// Count questions for a topic (nursing-test-bank)
+export const countTopicQuestions = async (
+  subPageId: string,
+  nestedSubPageId: string,
+  topicId: string
+): Promise<number> => {
+  try {
+    const pillarId = "nursing-test-bank";
+    let totalCount = 0;
+
+    // Get all quizzes for this topic
+    const quizzesResult = await getNursingTestBankQuizzes(
+      subPageId,
+      nestedSubPageId,
+      topicId
+    );
+
+    if (quizzesResult.success && quizzesResult.data) {
+      // Resolve IDs (similar to how getNursingTestBankQuizzes does it)
+      let resolvedParentId: string | null = null;
+      const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const parentSlugQuery = query(
+        parentSubPagesRef,
+        where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
+      );
+      const parentSlugSnapshot = await getDocs(parentSlugQuery);
+      if (!parentSlugSnapshot.empty) {
+        resolvedParentId = parentSlugSnapshot.docs[0].id;
+      } else {
+        const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+        const parentDocSnap = await getDoc(parentDocRef);
+        if (parentDocSnap.exists()) {
+          resolvedParentId = parentDocSnap.id;
+        }
+      }
+
+      let resolvedNestedId: string | null = null;
+      if (resolvedParentId) {
+        const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+        const nestedSubPagesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId,
+          "nestedSubPages"
+        );
+        const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+        const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+        if (!nestedSlugSnapshot.empty) {
+          resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+        } else {
+          const nestedDocRef = doc(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            resolvedParentId,
+            "nestedSubPages",
+            nestedSubPageId
+          );
+          const nestedDocSnap = await getDoc(nestedDocRef);
+          if (nestedDocSnap.exists()) {
+            resolvedNestedId = nestedDocSnap.id;
+          }
+        }
+      }
+
+      let resolvedTopicId: string | null = null;
+      if (resolvedNestedId) {
+        const normalizedTopicSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+        const topicsRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId!,
+          "nestedSubPages",
+          resolvedNestedId,
+          "topics"
+        );
+        const topicSlugQuery = query(topicsRef, where("slug", "==", normalizedTopicSlug));
+        const topicSlugSnapshot = await getDocs(topicSlugQuery);
+        if (!topicSlugSnapshot.empty) {
+          resolvedTopicId = topicSlugSnapshot.docs[0].id;
+        } else {
+          const topicDocRef = doc(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            resolvedParentId!,
+            "nestedSubPages",
+            resolvedNestedId,
+            "topics",
+            topicId
+          );
+          const topicDocSnap = await getDoc(topicDocRef);
+          if (topicDocSnap.exists()) {
+            resolvedTopicId = topicDocSnap.id;
+          }
+        }
+      }
+
+      if (resolvedParentId && resolvedNestedId && resolvedTopicId) {
+        // Count questions in each quiz
+        for (const quiz of quizzesResult.data) {
+          const quizId = quiz.id || quiz.quizId;
+          const count = await countQuestionsInQuiz([
+            "pillarPages",
+            pillarId,
+            "subPages",
+            resolvedParentId,
+            "nestedSubPages",
+            resolvedNestedId,
+            "topics",
+            resolvedTopicId,
+            "quizzes",
+            quizId,
+          ]);
+          totalCount += count;
+        }
+      }
+    }
+
+    return totalCount;
+  } catch (error) {
+    console.error("Error counting topic questions:", error);
+    return 0;
+  }
+};
+
+// Count questions for a nested page (nursing-exit-exam, nursing-entrance-exam)
+export const countNestedPageQuestions = async (
+  pillarId: "nursing-exit-exam" | "nursing-entrance-exam",
+  subPageId: string,
+  nestedSubPageId: string
+): Promise<number> => {
+  try {
+    let totalCount = 0;
+
+    // Get all quizzes for this nested page
+    let quizzesResult;
+    if (pillarId === "nursing-exit-exam") {
+      quizzesResult = await getNursingExitExamQuizzes(subPageId, nestedSubPageId);
+    } else {
+      quizzesResult = await getNursingEntranceExamQuizzes(subPageId, nestedSubPageId);
+    }
+
+    if (quizzesResult.success && quizzesResult.data) {
+      // Resolve IDs
+      let resolvedParentId: string | null = null;
+      const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const parentSlugQuery = query(
+        parentSubPagesRef,
+        where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
+      );
+      const parentSlugSnapshot = await getDocs(parentSlugQuery);
+      if (!parentSlugSnapshot.empty) {
+        resolvedParentId = parentSlugSnapshot.docs[0].id;
+      } else {
+        const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+        const parentDocSnap = await getDoc(parentDocRef);
+        if (parentDocSnap.exists()) {
+          resolvedParentId = parentDocSnap.id;
+        }
+      }
+
+      let resolvedNestedId: string | null = null;
+      if (resolvedParentId) {
+        const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+        const nestedSubPagesRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedParentId,
+          "nestedSubPages"
+        );
+        const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+        const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+        if (!nestedSlugSnapshot.empty) {
+          resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+        } else {
+          const nestedDocRef = doc(
+            db,
+            "pillarPages",
+            pillarId,
+            "subPages",
+            resolvedParentId,
+            "nestedSubPages",
+            nestedSubPageId
+          );
+          const nestedDocSnap = await getDoc(nestedDocRef);
+          if (nestedDocSnap.exists()) {
+            resolvedNestedId = nestedDocSnap.id;
+          }
+        }
+      }
+
+      if (resolvedParentId && resolvedNestedId) {
+        // Count questions in each quiz
+        for (const quiz of quizzesResult.data) {
+          const quizId = quiz.id || quiz.quizId;
+          const count = await countQuestionsInQuiz([
+            "pillarPages",
+            pillarId,
+            "subPages",
+            resolvedParentId,
+            "nestedSubPages",
+            resolvedNestedId,
+            "quizzes",
+            quizId,
+          ]);
+          totalCount += count;
+        }
+      }
+    }
+
+    return totalCount;
+  } catch (error) {
+    console.error("Error counting nested page questions:", error);
+    return 0;
+  }
+};
+
+// Count questions for a sub-page
+export const countSubPageQuestions = async (
+  pillarId: string,
+  subPageId: string
+): Promise<number> => {
+  try {
+    let totalCount = 0;
+
+    // Resolve sub-page ID
+    let resolvedSubPageId: string | null = null;
+    const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+    if (!parentSlugSnapshot.empty) {
+      resolvedSubPageId = parentSlugSnapshot.docs[0].id;
+    } else {
+      const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedSubPageId = parentDocSnap.id;
+      }
+    }
+
+    if (!resolvedSubPageId) {
+      return 0;
+    }
+
+    if (pillarId === "nursing-test-bank") {
+      // For test bank: count questions in all topics under all nested pages
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedSubPageId,
+        "nestedSubPages"
+      );
+      const nestedSnapshot = await getDocs(nestedSubPagesRef);
+
+      for (const nestedDoc of nestedSnapshot.docs) {
+        const nestedId = nestedDoc.id;
+        const topicsRef = collection(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          resolvedSubPageId,
+          "nestedSubPages",
+          nestedId,
+          "topics"
+        );
+        const topicsSnapshot = await getDocs(topicsRef);
+
+        for (const topicDoc of topicsSnapshot.docs) {
+          const topicId = topicDoc.id;
+          const count = await countTopicQuestions(
+            resolvedSubPageId,
+            nestedId,
+            topicId
+          );
+          totalCount += count;
+        }
+      }
+    } else {
+      // For exit exam and entrance exam: count questions in all nested pages
+      const nestedSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedSubPageId,
+        "nestedSubPages"
+      );
+      const nestedSnapshot = await getDocs(nestedSubPagesRef);
+
+      for (const nestedDoc of nestedSnapshot.docs) {
+        const nestedId = nestedDoc.id;
+        const nestedData = nestedDoc.data();
+        const nestedSlug = nestedData.slug || nestedId;
+        const count = await countNestedPageQuestions(
+          pillarId as "nursing-exit-exam" | "nursing-entrance-exam",
+          resolvedSubPageId,
+          nestedSlug
+        );
+        totalCount += count;
+      }
+    }
+
+    return totalCount;
+  } catch (error) {
+    console.error("Error counting sub-page questions:", error);
+    return 0;
+  }
+};
+
+// Count questions for a pillar page
+export const countPillarPageQuestions = async (pillarId: string): Promise<number> => {
+  try {
+    let totalCount = 0;
+
+    // Get all sub-pages
+    let subPagesResult;
+    if (pillarId === "nursing-test-bank") {
+      subPagesResult = await getNursingTestBankSubPages();
+    } else if (pillarId === "nursing-exit-exam") {
+      subPagesResult = await getNursingExitExamSubPages();
+    } else if (pillarId === "nursing-entrance-exam") {
+      subPagesResult = await getNursingEntranceExamSubPages();
+    } else {
+      return 0;
+    }
+
+    if (subPagesResult.success && subPagesResult.data) {
+      for (const subPage of subPagesResult.data) {
+        const subPageId = subPage.id || subPage.subPageId;
+        const subPageSlug = subPage.slug || subPageId;
+        const count = await countSubPageQuestions(pillarId, subPageSlug);
+        totalCount += count;
+      }
+    }
+
+    return totalCount;
+  } catch (error) {
+    console.error("Error counting pillar page questions:", error);
+    return 0;
   }
 };

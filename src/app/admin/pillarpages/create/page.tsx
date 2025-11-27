@@ -270,7 +270,7 @@ export default function CreatePillarPage() {
           ...content.meta,
           canonicalUrl:
             content.meta.canonicalUrl ||
-            `https://teasgurus.com/${pillarPageId}`,
+            `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${pillarPageId}`,
         },
       };
 
@@ -536,7 +536,7 @@ export default function CreatePillarPage() {
                     value={content.meta.canonicalUrl}
                     onChange={(e) => handleMetaChange("canonicalUrl", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                    placeholder={`https://teasgurus.com/${pillarPageId || "pillar-page-id"}`}
+                    placeholder={`${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${pillarPageId || "pillar-page-id"}`}
                   />
                 </div>
               </div>

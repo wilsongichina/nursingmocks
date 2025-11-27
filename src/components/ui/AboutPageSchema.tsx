@@ -1,4 +1,7 @@
+import { getSiteUrl } from "@/lib/config";
+
 export default function AboutPageSchema() {
+  const siteUrl = getSiteUrl();
   return (
     <script
       type="application/ld+json"
@@ -8,10 +11,10 @@ export default function AboutPageSchema() {
           "@graph": [
             {
               "@type": "Organization",
-              "@id": "https://teasgurus.com/#organization",
+              "@id": `${siteUrl}/#organization`,
               name: "Teas Gurus",
-              url: "https://teasgurus.com/",
-              logo: "https://teasgurus.com/teas-gurus-logo.png",
+              url: `${siteUrl}/`,
+              logo: `${siteUrl}/teas-gurus-logo.png`,
               sameAs: [
                 "https://instagram.com/teasgurus",
                 "https://www.linkedin.com/company/teasgurus",
@@ -21,47 +24,47 @@ export default function AboutPageSchema() {
             },
             {
               "@type": "WebSite",
-              "@id": "https://teasgurus.com/#website",
-              url: "https://teasgurus.com/",
+              "@id": `${siteUrl}/#website`,
+              url: `${siteUrl}/`,
               name: "Teas Gurus",
               publisher: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               inLanguage: "en",
             },
             {
               "@type": "WebPage",
-              "@id": "https://teasgurus.com/about#webpage",
-              url: "https://teasgurus.com/about",
+              "@id": `${siteUrl}/about#webpage`,
+              url: `${siteUrl}/about`,
               name: "About TeasGurus | Trusted TEAS Exam Help & Expert Support | TEAS Gurus",
               description:
                 "Learn about TeasGurus—your trusted partner for TEAS exam success. We provide expert real ATI TEAS questions, and professional test-taking services tailored for nursing students.",
               isPartOf: {
-                "@id": "https://teasgurus.com/#website",
+                "@id": `${siteUrl}/#website`,
               },
               about: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               breadcrumb: {
-                "@id": "https://teasgurus.com/about#breadcrumb",
+                "@id": `${siteUrl}/about#breadcrumb`,
               },
               inLanguage: "en",
             },
             {
               "@type": "BreadcrumbList",
-              "@id": "https://teasgurus.com/about#breadcrumb",
+              "@id": `${siteUrl}/about#breadcrumb`,
               itemListElement: [
                 {
                   "@type": "ListItem",
                   position: 1,
                   name: "Home",
-                  item: "https://teasgurus.com/",
+                  item: `${siteUrl}/`,
                 },
                 {
                   "@type": "ListItem",
                   position: 2,
                   name: "About Us",
-                  item: "https://teasgurus.com/about",
+                  item: `${siteUrl}/about`,
                 },
               ],
             },

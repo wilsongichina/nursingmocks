@@ -1,16 +1,32 @@
 import React from "react";
+import { getSiteUrl } from "@/lib/config";
 
 interface SchemaScriptsProps {
   schema?: any;
 }
 
 export default function SchemaScripts({ schema }: SchemaScriptsProps) {
+  const siteUrl = getSiteUrl();
+  
   if (schema) {
+    // If schema is a string, try to replace hardcoded URLs
+    if (typeof schema === "string") {
+      const processedSchema = schema.replace(/https:\/\/teasgurus\.com/g, siteUrl);
+      return (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: processedSchema,
+          }}
+        />
+      );
+    }
+    // If schema is an object, stringify it (URLs should already be processed)
     return (
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: typeof schema === "string" ? schema : JSON.stringify(schema),
+          __html: JSON.stringify(schema),
         }}
       />
     );
@@ -25,10 +41,10 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
           "@graph": [
             {
               "@type": "Organization",
-              "@id": "https://teasgurus.com/#organization",
+              "@id": `${siteUrl}/#organization`,
               name: "Teas Gurus",
-              url: "https://teasgurus.com/",
-              logo: "https://teasgurus.com/teas-gurus-logo.png",
+              url: `${siteUrl}/`,
+              logo: `${siteUrl}/teas-gurus-logo.png`,
               sameAs: [
                 "https://instagram.com/teasgurus",
                 "https://www.linkedin.com/company/teasgurus",
@@ -38,83 +54,83 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
             },
             {
               "@type": "WebSite",
-              "@id": "https://teasgurus.com/#website",
-              url: "https://teasgurus.com/",
+              "@id": `${siteUrl}/#website`,
+              url: `${siteUrl}/`,
               name: "Teas Gurus",
               publisher: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               inLanguage: "en",
             },
             {
               "@type": "WebPage",
-              "@id": "https://teasgurus.com/#webpage",
-              url: "https://teasgurus.com/",
+              "@id": `${siteUrl}/#webpage`,
+              url: `${siteUrl}/`,
               name: "Take My TEAS Exam for Me | Guaranteed High Scores Online",
               description:
                 "Need to pay someone to take my TEAS exam? Teas Gurus can take my TEAS test for me with U.S.-based professionals, top results, and guaranteed confidentiality.",
               isPartOf: {
-                "@id": "https://teasgurus.com/#website",
+                "@id": `${siteUrl}/#website`,
               },
               about: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               breadcrumb: {
-                "@id": "https://teasgurus.com/#breadcrumb",
+                "@id": `${siteUrl}/#breadcrumb`,
               },
               inLanguage: "en",
             },
             {
               "@type": "BreadcrumbList",
-              "@id": "https://teasgurus.com/#breadcrumb",
+              "@id": `${siteUrl}/#breadcrumb`,
               itemListElement: [
                 {
                   "@type": "ListItem",
                   position: 1,
                   name: "Home",
-                  item: "https://teasgurus.com/",
+                  item: `${siteUrl}/`,
                 },
               ],
             },
             {
               "@type": "Service",
-              "@id": "https://teasgurus.com/#pay-someone",
+              "@id": `${siteUrl}/#pay-someone`,
               serviceType: "Pay Someone to Take My TEAS Exam",
-              provider: { "@id": "https://teasgurus.com/#organization" },
+              provider: { "@id": `${siteUrl}/#organization` },
               areaServed: { "@type": "Country", name: "United States" },
               description:
                 "Looking to pay someone to take your TEAS exam online? Teas Gurus connects you with qualified ATI TEAS exam takers who ensure top scores in Reading, Math, Science, and English. We guarantee confidentiality and success when you pay someone to take your TEAS test through us.",
               availableChannel: {
                 "@type": "ServiceChannel",
-                serviceUrl: "https://teasgurus.com/",
+                serviceUrl: `${siteUrl}/`,
                 availableLanguage: "English",
               },
             },
             {
               "@type": "Service",
-              "@id": "https://teasgurus.com/#take-my-exam",
+              "@id": `${siteUrl}/#take-my-exam`,
               serviceType: "Take My TEAS Exam",
-              provider: { "@id": "https://teasgurus.com/#organization" },
+              provider: { "@id": `${siteUrl}/#organization` },
               areaServed: { "@type": "Country", name: "United States" },
               description:
                 "Need someone to take your TEAS exam? Teas Gurus offers expert ATI TEAS exam takers who will handle your online or proctored TEAS test professionally. If you're searching for 'take my TEAS exam' services, we provide a reliable and secure solution.",
               availableChannel: {
                 "@type": "ServiceChannel",
-                serviceUrl: "https://teasgurus.com/",
+                serviceUrl: `${siteUrl}/`,
                 availableLanguage: "English",
               },
             },
             {
               "@type": "Service",
-              "@id": "https://teasgurus.com/#take-my-exam-for-me",
+              "@id": `${siteUrl}/#take-my-exam-for-me`,
               serviceType: "Take My TEAS Exam for Me",
-              provider: { "@id": "https://teasgurus.com/#organization" },
+              provider: { "@id": `${siteUrl}/#organization` },
               areaServed: { "@type": "Country", name: "United States" },
               description:
                 "Want a professional to take your TEAS exam for you? Teas Gurus provides reliable, confidential, and high-score guaranteed ATI TEAS test-taking services. Whether it's a proctored exam or remote, our experts will take your TEAS exam for you safely and discreetly.",
               availableChannel: {
                 "@type": "ServiceChannel",
-                serviceUrl: "https://teasgurus.com/",
+                serviceUrl: `${siteUrl}/`,
                 availableLanguage: "English",
               },
             },

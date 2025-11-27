@@ -165,8 +165,9 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
   // Default: azmeerhamasaliltd@gmail.com (verified sender profile)
   const fromEmail =
     process.env.SENDGRID_FROM_EMAIL || "azmeerhamasaliltd@gmail.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com";
   const loginUrl =
-    process.env.NEXT_PUBLIC_LOGIN_URL || "https://www.teasgurus.com/login";
+    process.env.NEXT_PUBLIC_LOGIN_URL || `${siteUrl}/login`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -215,7 +216,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
             
             <p>Welcome again, and we're excited to be part of your nursing journey! 💙</p>
             
-            <p>Best regards,<br>TEAS Gurus Team<br><a href="https://www.teasgurus.com">https://www.teasgurus.com</a></p>
+            <p>Best regards,<br>TEAS Gurus Team<br><a href="${siteUrl}">${siteUrl}</a></p>
             
             <div class="footer">
               <p>This email was sent to ${escapeHtml(data.email)}</p>
@@ -250,7 +251,7 @@ If you ever need help, reply to this email — our support team is always happy 
 Welcome again, and we're excited to be part of your nursing journey! 💙
 
 TEAS Gurus Team
-https://www.teasgurus.com
+${siteUrl}
   `.trim();
 
   const msg = {

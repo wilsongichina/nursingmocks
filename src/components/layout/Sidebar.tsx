@@ -16,6 +16,9 @@ import {
   getNursingExitExamNestedSubPages,
   getNursingTestBankSubPages,
   getNursingTestBankNestedSubPages,
+  countNestedPageQuestions,
+  countTopicQuestions,
+  getNursingTestBankTopics,
 } from "@/lib/firestore-operations";
 import { useRouter } from "next/navigation";
 
@@ -660,7 +663,22 @@ export default function Sidebar({
     try {
       const result = await getNestedSubPages(categoryId);
       if (result.success && result.data) {
-        setNestedSubPages(result.data);
+        // Fetch question counts for nested pages
+        const nestedPagesWithCounts = await Promise.all(
+          result.data.map(async (nestedPage: any) => {
+            const nestedPageSlug = nestedPage.slug || nestedPage.id;
+            const questionCount = await countNestedPageQuestions(
+              parentPillarId as "nursing-entrance-exam",
+              categoryId,
+              nestedPageSlug
+            );
+            return {
+              ...nestedPage,
+              questionCount,
+            };
+          })
+        );
+        setNestedSubPages(nestedPagesWithCounts);
       } else {
         setNestedSubPages([]);
       }
@@ -764,7 +782,22 @@ export default function Sidebar({
     try {
       const result = await getNursingExitExamNestedSubPages(categoryId);
       if (result.success && result.data) {
-        setNestedSubPages(result.data);
+        // Fetch question counts for nested pages
+        const nestedPagesWithCounts = await Promise.all(
+          result.data.map(async (nestedPage: any) => {
+            const nestedPageSlug = nestedPage.slug || nestedPage.id;
+            const questionCount = await countNestedPageQuestions(
+              "nursing-exit-exam",
+              categoryId,
+              nestedPageSlug
+            );
+            return {
+              ...nestedPage,
+              questionCount,
+            };
+          })
+        );
+        setNestedSubPages(nestedPagesWithCounts);
       } else {
         setNestedSubPages([]);
       }
@@ -795,7 +828,34 @@ export default function Sidebar({
     try {
       const result = await getNursingTestBankNestedSubPages(categoryId);
       if (result.success && result.data) {
-        setNestedSubPages(result.data);
+        // Fetch question counts for nested pages (test bank nested pages have topics, so count through topics)
+        const nestedPagesWithCounts = await Promise.all(
+          result.data.map(async (nestedPage: any) => {
+            const nestedPageSlug = nestedPage.slug || nestedPage.id;
+            // For test bank, we need to count questions through topics
+            const topicsResult = await getNursingTestBankTopics(
+              categoryId,
+              nestedPageSlug
+            );
+            let totalCount = 0;
+            if (topicsResult.success && topicsResult.data) {
+              for (const topic of topicsResult.data) {
+                const topicSlug = topic.slug || topic.id;
+                const count = await countTopicQuestions(
+                  categoryId,
+                  nestedPageSlug,
+                  topicSlug
+                );
+                totalCount += count;
+              }
+            }
+            return {
+              ...nestedPage,
+              questionCount: totalCount,
+            };
+          })
+        );
+        setNestedSubPages(nestedPagesWithCounts);
       } else {
         setNestedSubPages([]);
       }
@@ -1083,27 +1143,8 @@ export default function Sidebar({
               return validPillarPages.map((pillarPage, index) => {
                 const categories = pillarCategories[pillarPage.id] || [];
 
-                // Determine active state based on pillar page type
-                let pillarActive: boolean;
-                if (pillarPage.id === "nursing-entrance-exam") {
-                  pillarActive =
-                    pathname.startsWith(`/${pillarPage.id}`) ||
-                    (!!pathname.match(/^\/.+-exam$/) &&
-                      !pathname.endsWith("-exit-exam")) ||
-                    !!pathname.match(/^\/.+-.+-questions$/);
-                } else if (pillarPage.id === "nursing-exit-exam") {
-                  pillarActive =
-                    pathname === "/nursing-exit-exam" ||
-                    pathname.startsWith("/nursing-exit-exam/") ||
-                    !!pathname.match(/^\/.+-.+-exit-exam$/);
-                } else if (pillarPage.id === "nursing-test-bank") {
-                  pillarActive =
-                    pathname === "/nursing-test-bank" ||
-                    pathname.startsWith("/nursing-test-bank/") ||
-                    !!pathname.match(/^\/.+-.+-test-bank$/);
-                } else {
-                  pillarActive = pathname.startsWith(`/${pillarPage.id}`);
-                }
+                // Active state removed - no longer highlighting selected pages
+                const pillarActive = false;
 
                 const isExpanded = expandedItems.has(pillarPage.id);
 
@@ -1221,63 +1262,8 @@ export default function Sidebar({
                                 const categorySlug =
                                   category.slug || categoryId;
 
-                                // Determine URL based on pillar page type
-                                let subPageUrl: string;
-                                let categoryActive: boolean;
-
-                                if (pillarPage.id === "nursing-entrance-exam") {
-                                  // For nursing-entrance-exam: /{slug}-exam or /{slug}
-                                  subPageUrl = `/${
-                                    categorySlug.endsWith("-exam")
-                                      ? categorySlug
-                                      : `${categorySlug}-exam`
-                                  }`;
-                                  categoryActive =
-                                    pathname === subPageUrl ||
-                                    pathname === `/${categorySlug}` ||
-                                    pathname === `/${categorySlug}-exam` ||
-                                    !!pathname.match(
-                                      new RegExp(
-                                        `^/${categorySlug}-.+-questions$`
-                                      )
-                                    );
-                                } else if (
-                                  pillarPage.id === "nursing-exit-exam"
-                                ) {
-                                  // For nursing-exit-exam: /nursing-exit-exam/{slug} or /{nested}-{parent}-exit-exam
-                                  subPageUrl = `/nursing-exit-exam/${categorySlug}`;
-                                  categoryActive =
-                                    pathname === subPageUrl ||
-                                    pathname.startsWith(subPageUrl + "/") ||
-                                    !!pathname.match(
-                                      new RegExp(
-                                        `^/.+-${categorySlug}-exit-exam$`
-                                      )
-                                    );
-                                } else if (
-                                  pillarPage.id === "nursing-test-bank"
-                                ) {
-                                  // For nursing-test-bank: /{slug}-test-bank or /{nested}-{parent}-test-bank
-                                  subPageUrl = `/${categorySlug}-test-bank`;
-                                  categoryActive =
-                                    pathname === subPageUrl ||
-                                    !!pathname.match(
-                                      new RegExp(
-                                        `^/.+-${categorySlug}-test-bank$`
-                                      )
-                                    ) ||
-                                    !!pathname.match(
-                                      new RegExp(
-                                        `^/${categorySlug}-.+-test-bank$`
-                                      )
-                                    );
-                                } else {
-                                  // For other pillar pages: /{pillarPage.id}/{categoryId}
-                                  subPageUrl = `/${pillarPage.id}/${categoryId}`;
-                                  categoryActive =
-                                    pathname === subPageUrl ||
-                                    pathname.startsWith(subPageUrl + "/");
-                                }
+                                // Active state removed - no longer highlighting selected pages
+                                const categoryActive = false;
 
                                 const categoryName =
                                   category.pageName ||
@@ -1674,7 +1660,7 @@ export default function Sidebar({
                     };
 
                     const config = getModalIcon(nestedPageName, index);
-                    const questionCount = nestedSubPage.questionCount || "0";
+                    const questionCount = (nestedSubPage.questionCount || 0).toLocaleString();
 
                     return (
                       <div

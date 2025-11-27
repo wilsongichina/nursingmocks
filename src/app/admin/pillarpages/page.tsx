@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   getAllPillarPages,
   deletePillarPageContent,
+  countPillarPageQuestions,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 
@@ -16,6 +17,7 @@ interface PillarPage {
   hero?: {
     title: string;
   };
+  questionCount?: number;
 }
 
 export default function AdminPillarPagesPage() {
@@ -36,7 +38,17 @@ export default function AdminPillarPagesPage() {
       const result = await getAllPillarPages();
 
       if (result.success && result.data) {
-        setPillarPages(result.data);
+        // Fetch question counts for each pillar page
+        const pillarPagesWithCounts = await Promise.all(
+          result.data.map(async (pillarPage: PillarPage) => {
+            const questionCount = await countPillarPageQuestions(pillarPage.id);
+            return {
+              ...pillarPage,
+              questionCount,
+            };
+          })
+        );
+        setPillarPages(pillarPagesWithCounts);
       } else {
         setError("Failed to load pillar pages");
       }
@@ -224,7 +236,22 @@ export default function AdminPillarPagesPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mt-4">
+                <div className="flex items-center space-x-4">
+                  {pillarPage.questionCount !== undefined && (
+                    <div className="text-sm">
+                      <span className="text-gray-600">Questions: </span>
+                      <span className="font-bold text-orange-600">
+                        {pillarPage.questionCount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {pillarPage.version && (
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      v{pillarPage.version}
+                    </span>
+                  )}
+                </div>
                 <Link
                   href={`/${pillarPage.id}`}
                   target="_blank"
@@ -232,11 +259,6 @@ export default function AdminPillarPagesPage() {
                 >
                   View Page →
                 </Link>
-                {pillarPage.version && (
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    v{pillarPage.version}
-                  </span>
-                )}
               </div>
             </div>
           ))}

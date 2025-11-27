@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: "FAQs | Pay Someone to Take My TEAS Exam",
     description:
       "Got questions about hiring someone to take your TEAS exam? Find answers on proctored exams, security, payment, refund policy, and what to expect from our team.",
-    url: "https://teasgurus.com/faqs",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/faqs`,
   },
   alternates: {
     canonical: "/faqs",

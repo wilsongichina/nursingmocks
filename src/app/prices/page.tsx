@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "TEAS Exam Help Pricing | Affordable & Transparent",
     description:
       "Explore our pricing plans for TEAS exam services. No hidden fees. Choose the package that fits your exam, urgency, and goals. Pay securely and confidently.",
-    url: "https://teasgurus.com/prices",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/prices`,
   },
   alternates: {
     canonical: "/prices",

@@ -148,7 +148,7 @@ export default function EditTopic({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${fullSlug}`,
+              `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${fullSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -201,7 +201,7 @@ export default function EditTopic({
             ogTitle: `${resolvedParams.topicId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.topicId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${defaultSlug}`,
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${defaultSlug}`,
           },
           schema: "",
           hero: {

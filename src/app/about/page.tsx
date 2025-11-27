@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "About Teas Gurus | Trusted Professionals for TEAS Exam Help",
     description:
       "Get to know Teas Gurus — the platform where students find reliable, experienced experts to take their ATI TEAS exams. Learn who we are and why students choose us.",
-    url: "https://teasgurus.com/about",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/about`,
   },
   alternates: {
     canonical: "/about",

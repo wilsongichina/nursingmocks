@@ -1,4 +1,7 @@
+import { getSiteUrl } from "@/lib/config";
+
 export default function FAQPageSchema() {
+  const siteUrl = getSiteUrl();
   return (
     <script
       type="application/ld+json"
@@ -8,10 +11,10 @@ export default function FAQPageSchema() {
           "@graph": [
             {
               "@type": "Organization",
-              "@id": "https://teasgurus.com/#organization",
+              "@id": `${siteUrl}/#organization`,
               name: "Teas Gurus",
-              url: "https://teasgurus.com/",
-              logo: "https://teasgurus.com/teas-gurus-logo.png",
+              url: `${siteUrl}/`,
+              logo: `${siteUrl}/teas-gurus-logo.png`,
               sameAs: [
                 "https://instagram.com/teasgurus",
                 "https://www.linkedin.com/company/teasgurus",
@@ -23,59 +26,59 @@ export default function FAQPageSchema() {
                 contactType: "Customer Support",
                 telephone: "+1-579-501-1983",
                 email: "teasgurus@gmail.com",
-                url: "https://teasgurus.com/contact",
+                url: `${siteUrl}/contact`,
                 availableLanguage: "English",
               },
             },
             {
               "@type": "WebSite",
-              "@id": "https://teasgurus.com/#website",
-              url: "https://teasgurus.com/",
+              "@id": `${siteUrl}/#website`,
+              url: `${siteUrl}/`,
               name: "Teas Gurus",
               publisher: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               inLanguage: "en",
             },
             {
               "@type": "WebPage",
-              "@id": "https://teasgurus.com/faqs#webpage",
-              url: "https://teasgurus.com/faqs",
+              "@id": `${siteUrl}/faqs#webpage`,
+              url: `${siteUrl}/faqs`,
               name: "Frequently Asked Questions | TEAS Exam Help & Services – TeasGurus",
               description:
                 "Got questions about our TEAS exam services? TeasGurus explains everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
               isPartOf: {
-                "@id": "https://teasgurus.com/#website",
+                "@id": `${siteUrl}/#website`,
               },
               about: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               breadcrumb: {
-                "@id": "https://teasgurus.com/faqs#breadcrumb",
+                "@id": `${siteUrl}/faqs#breadcrumb`,
               },
               inLanguage: "en",
             },
             {
               "@type": "BreadcrumbList",
-              "@id": "https://teasgurus.com/faqs#breadcrumb",
+              "@id": `${siteUrl}/faqs#breadcrumb`,
               itemListElement: [
                 {
                   "@type": "ListItem",
                   position: 1,
                   name: "Home",
-                  item: "https://teasgurus.com/",
+                  item: `${siteUrl}/`,
                 },
                 {
                   "@type": "ListItem",
                   position: 2,
                   name: "FAQs",
-                  item: "https://teasgurus.com/faqs",
+                  item: `${siteUrl}/faqs`,
                 },
               ],
             },
             {
               "@type": "FAQPage",
-              "@id": "https://teasgurus.com/faqs#faq",
+              "@id": `${siteUrl}/faqs#faq`,
               mainEntity: [
                 {
                   "@type": "Question",

@@ -83,7 +83,7 @@ export default function EditPillarPage({
             ogTitle: `${resolvedParams.pillarPageId} Services - TeasGurus`,
             ogDescription: `Get guaranteed ${resolvedParams.pillarPageId} exam support with real questions and expert help.`,
             ogImage: `/teas-gurus-logo.png`,
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.pillarPageId}`,
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${resolvedParams.pillarPageId}`,
           },
           hero: pageData.hero || {
             badge: "We are Teas Gurus",
@@ -608,7 +608,7 @@ export default function EditPillarPage({
                     handleMetaChange("canonicalUrl", e.target.value)
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                  placeholder={`https://teasgurus.com/${
+                  placeholder={`${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${
                     resolvedParams?.pillarPageId || "pillar-page-id"
                   }`}
                 />

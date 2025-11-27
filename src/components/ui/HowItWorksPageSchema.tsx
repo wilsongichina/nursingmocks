@@ -1,4 +1,7 @@
+import { getSiteUrl } from "@/lib/config";
+
 export default function HowItWorksPageSchema() {
+  const siteUrl = getSiteUrl();
   return (
     <script
       type="application/ld+json"
@@ -8,10 +11,10 @@ export default function HowItWorksPageSchema() {
           "@graph": [
             {
               "@type": "Organization",
-              "@id": "https://teasgurus.com/#organization",
+              "@id": `${siteUrl}/#organization`,
               name: "Teas Gurus",
-              url: "https://teasgurus.com/",
-              logo: "https://teasgurus.com/teas-gurus-logo.png",
+              url: `${siteUrl}/`,
+              logo: `${siteUrl}/teas-gurus-logo.png`,
               sameAs: [
                 "https://instagram.com/teasgurus",
                 "https://www.linkedin.com/company/teasgurus",
@@ -21,57 +24,57 @@ export default function HowItWorksPageSchema() {
             },
             {
               "@type": "WebSite",
-              "@id": "https://teasgurus.com/#website",
-              url: "https://teasgurus.com/",
+              "@id": `${siteUrl}/#website`,
+              url: `${siteUrl}/`,
               name: "Teas Gurus",
               publisher: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               inLanguage: "en",
             },
             {
               "@type": "WebPage",
-              "@id": "https://teasgurus.com/how-it-works#webpage",
-              url: "https://teasgurus.com/how-it-works",
+              "@id": `${siteUrl}/how-it-works#webpage`,
+              url: `${siteUrl}/how-it-works`,
               name: "How It Works - TEAS Exam Process | TEAS Gurus",
               description:
                 "Learn how our 6-step TEAS exam process works. From registration to payment, discover how TEAS Gurus helps you pass your nursing entrance exam with guaranteed results.",
               isPartOf: {
-                "@id": "https://teasgurus.com/#website",
+                "@id": `${siteUrl}/#website`,
               },
               about: {
-                "@id": "https://teasgurus.com/#organization",
+                "@id": `${siteUrl}/#organization`,
               },
               breadcrumb: {
-                "@id": "https://teasgurus.com/how-it-works#breadcrumb",
+                "@id": `${siteUrl}/how-it-works#breadcrumb`,
               },
               inLanguage: "en",
             },
             {
               "@type": "BreadcrumbList",
-              "@id": "https://teasgurus.com/how-it-works#breadcrumb",
+              "@id": `${siteUrl}/how-it-works#breadcrumb`,
               itemListElement: [
                 {
                   "@type": "ListItem",
                   position: 1,
                   name: "Home",
-                  item: "https://teasgurus.com/",
+                  item: `${siteUrl}/`,
                 },
                 {
                   "@type": "ListItem",
                   position: 2,
                   name: "How It Works",
-                  item: "https://teasgurus.com/how-it-works",
+                  item: `${siteUrl}/how-it-works`,
                 },
               ],
             },
             {
               "@type": "HowTo",
-              "@id": "https://teasgurus.com/how-it-works#howto",
+              "@id": `${siteUrl}/how-it-works#howto`,
               name: "How It Works: Pay Someone to Take Your Online TEAS Exam",
               description:
                 "Learn how Teas Gurus handles your ATI TEAS exam in 6 simple steps, from registering to making your final payment after results.",
-              image: "https://teasgurus.com/logo.png",
+              image: `${siteUrl}/logo.png`,
               totalTime: "PT15M",
               supply: [],
               tool: [],

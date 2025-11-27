@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "TEAS 7 Exam Questions & Preparation | TeasGurus",
     description:
       "Get exact TEAS 7 exam questions with answers. Access the most current TEAS test materials with lifetime updates. Pass your nursing entrance exam with confidence.",
-    url: "https://teasgurus.com/teas",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas`,
   },
   alternates: {
     canonical: "/teas",
@@ -48,7 +48,7 @@ export default function TEASPage() {
                 Get a Free Quote
               </Link>
               <Link
-                href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=https://teasgurus.com/teas/thank-you&cancel_url=https://teasgurus.com/teas"
+                href={`https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas/thank-you&cancel_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas`}
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -346,7 +346,7 @@ export default function TEASPage() {
                   Get a Free Quote
                 </Link>
                 <Link
-                  href="https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=https://teasgurus.com/teas/thank-you&cancel_url=https://teasgurus.com/teas"
+                  href={`https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas/thank-you&cancel_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas`}
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   target="_blank"
                   rel="noopener noreferrer"

@@ -8,6 +8,7 @@ import {
   getNursingEntranceExamSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 
 interface ServiceContent {
   pageName?: string;
@@ -23,6 +24,8 @@ interface ServiceContent {
   schema: string;
   hero: {
     title: string;
+    textAboveButton?: string;
+    textBelowButton?: string;
   };
 }
 
@@ -113,7 +116,7 @@ export default function EditQuiz({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${parentUrlSlug}-${currentNestedSlug}-questions/${
+              `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${parentUrlSlug}-${currentNestedSlug}-questions/${
                 pageData.slug || resolvedParams.quizId
               }`,
           },
@@ -123,6 +126,8 @@ export default function EditQuiz({
               pageData.hero?.title ||
               pageData.pageName ||
               resolvedParams.quizId,
+            textAboveButton: pageData.hero?.textAboveButton || "",
+            textBelowButton: pageData.hero?.textBelowButton || "",
           },
         };
 
@@ -138,11 +143,13 @@ export default function EditQuiz({
             ogTitle: `${resolvedParams.quizId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.quizId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.quizId}`,
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${resolvedParams.quizId}`,
           },
           schema: "",
           hero: {
             title: resolvedParams.quizId,
+            textAboveButton: "",
+            textBelowButton: "",
           },
         };
         setContent(defaultContent);
@@ -182,6 +189,8 @@ export default function EditQuiz({
         schema: content.schema,
         hero: {
           title: content.hero.title,
+          textAboveButton: content.hero.textAboveButton || "",
+          textBelowButton: content.hero.textBelowButton || "",
         },
         slug: quizSlug.trim() || resolvedParams.quizId,
       };
@@ -470,6 +479,28 @@ export default function EditQuiz({
                   onChange={(e) => updateContent("hero.title", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
                   placeholder="Enter quiz title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Text Above Button
+                </label>
+                <input
+                  type="text"
+                  value={content.hero.textAboveButton || ""}
+                  onChange={(e) => updateContent("hero.textAboveButton", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
+                  placeholder="Enter text to display above the Start Test button"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Text Below Button
+                </label>
+                <RichTextEditor
+                  value={content.hero.textBelowButton || ""}
+                  onChange={(value) => updateContent("hero.textBelowButton", value)}
+                  placeholder="Enter text to display below the Start Test button"
                 />
               </div>
               <div>

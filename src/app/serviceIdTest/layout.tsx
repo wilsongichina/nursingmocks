@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `Take My ${title} Exam for Me - Professional TEAS Exam Help`,
       description: `Get professional help with your ${title} exam. Our expert tutors ensure high scores and guaranteed results.`,
       type: "website",
-      url: `https://teasgurus.com/${serviceId}`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${serviceId}`,
     },
     twitter: {
       card: "summary_large_image",

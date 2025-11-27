@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "Contact Teas Gurus | Reach Out for TEAS Exam Help",
     description:
       "Need assistance or ready to get started? Contact Teas Gurus today. Our support team is available 24/7 to guide you through the process or answer any questions.",
-    url: "https://teasgurus.com/contact",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/contact`,
   },
   alternates: {
     canonical: "/contact",
