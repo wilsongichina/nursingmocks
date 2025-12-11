@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
+import GetStartedButton from "@/components/ui/GetStartedButton";
 import {
   getNursingExitExamSubPage,
   getNursingExitExamNestedSubPage,
@@ -750,7 +751,7 @@ export default async function SubPage({
       <section className="bg-white py-[1.25rem]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3">
+            <h1 className="text-[1.5rem] md:text-4xl font-bold text-gray-900 mb-3">
               {content.hero.title || content.pageName || subPageId}
             </h1>
             <div className="text-gray-600 text-base leading-relaxed">
@@ -874,7 +875,7 @@ export default async function SubPage({
                             {questionCount}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
+                            Total Questions Available
                           </p>
                         </div>
                         <div className="flex-shrink-0">
@@ -999,7 +1000,7 @@ export default async function SubPage({
                             {questionCount}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
+                            Total Questions Available
                           </p>
                         </div>
                         <div className="flex-shrink-0">
@@ -1036,7 +1037,7 @@ export default async function SubPage({
                         {subPageQuestionCount.toLocaleString()}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Questions Available
+                        Total Questions Available
                       </p>
                     </div>
                   </div>
@@ -1321,12 +1322,9 @@ export default async function SubPage({
             achieve your nursing career goals.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/contact"
-              className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
-            >
+            <GetStartedButton className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors">
               Get Started Today
-            </Link>
+            </GetStartedButton>
             <Link
               href="/prices"
               className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"

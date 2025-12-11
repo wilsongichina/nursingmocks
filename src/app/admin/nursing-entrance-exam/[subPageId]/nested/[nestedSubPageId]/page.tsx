@@ -6,10 +6,23 @@ import {
   uploadNestedSubPage,
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import TiptapEditor from "@/components/editor/TiptapEditor";
 import Link from "next/link";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import {
+  SidebarProvider,
+  useSidebar,
+} from "@/components/layout/SidebarContext";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface ServiceContent {
+interface NestedPageContent {
   pageName?: string;
+  slug?: string;
+  status?: "Draft" | "Published" | "Archived";
+  heading?: string;
+  description?: string;
+  seoLabel?: string;
+  seoSlug?: string;
   meta: {
     title: string;
     description: string;
@@ -21,72 +34,28 @@ interface ServiceContent {
   };
   schema: string;
   hero: {
-    badge: string;
     title: string;
-    subtitle: string;
     description: string;
   };
-  trustIndicators: Array<{
-    title: string;
-    icon: string;
-  }>;
-  whatToExpect: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    cards: Array<{
-      title: string;
-      icon: string;
-      content: string[];
-    }>;
-    footer: string;
-  };
-  mostCommonQuestions: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    cards: Array<{
-      title: string;
-      content: string[];
-    }>;
-  };
-  studyGuide: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    sections: Array<{
-      title: string;
-      icon: string;
-      content: string;
-    }>;
-  };
-  privacyPricing: Array<{
-    title: string;
-    icon: string;
-    content: string;
-  }>;
-  faq: {
-    title: string;
-    subtitle: string;
-    questions: Array<{
-      question: string;
-      paragraphs: string[];
-      additionalParagraphs?: string[];
-    }>;
-  };
+  bodyContent: string; // Tiptap editor content
 }
 
-export default function EditNestedSubPage({
+function EditNestedSubPageContent({
   params,
 }: {
   params: Promise<{ subPageId: string; nestedSubPageId: string }>;
 }) {
-  const [content, setContent] = useState<ServiceContent | null>(null);
+  const [content, setContent] = useState<NestedPageContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [nestedSlug, setNestedSlug] = useState("");
+  const [slug, setSlug] = useState("");
+  const [status, setStatus] = useState<"Draft" | "Published" | "Archived">(
+    "Draft"
+  );
+  const { isCollapsed } = useSidebar();
+  const { currentUser } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
@@ -114,64 +83,70 @@ export default function EditNestedSubPage({
 
       if (result.success && result.data) {
         const pageData = result.data as any;
-        
+
         // Use slug directly (no prefix)
         const fullSlug = pageData.slug || resolvedParams.nestedSubPageId;
-        setNestedSlug(fullSlug);
-        
+        const loadedStatus = pageData.status || "Draft";
+        setSlug(fullSlug);
+        setStatus(loadedStatus);
+
         // Ensure all required fields exist with defaults
-        const initializedContent: ServiceContent = {
+        const initializedContent: NestedPageContent = {
           pageName: pageData.pageName || resolvedParams.nestedSubPageId,
+          slug: pageData.slug || resolvedParams.nestedSubPageId,
+          status: pageData.status || "Draft",
+          heading:
+            pageData.heading ||
+            pageData.hero?.title ||
+            pageData.pageName ||
+            resolvedParams.nestedSubPageId,
+          description: pageData.description || pageData.hero?.description || "",
+          seoLabel:
+            pageData.seoLabel ||
+            pageData.pageName ||
+            resolvedParams.nestedSubPageId,
+          seoSlug:
+            pageData.seoSlug || pageData.slug || resolvedParams.nestedSubPageId,
           meta: {
-            title: pageData.meta?.title || `${resolvedParams.nestedSubPageId} | TeasGurus`,
+            title:
+              pageData.meta?.title ||
+              `${resolvedParams.nestedSubPageId} | TeasGurus`,
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${fullSlug}`,
+            canonicalUrl:
+              pageData.meta?.canonicalUrl ||
+              `${
+                process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+              }/${fullSlug}`,
           },
           schema: pageData.schema || "",
           hero: {
-            badge: pageData.hero?.badge || "",
-            title: pageData.hero?.title || pageData.pageName || resolvedParams.nestedSubPageId,
-            subtitle: pageData.hero?.subtitle || "",
-            description: pageData.hero?.description || "",
+            title:
+              pageData.hero?.title ||
+              pageData.heading ||
+              pageData.pageName ||
+              resolvedParams.nestedSubPageId,
+            description:
+              pageData.hero?.description || pageData.description || "",
           },
-          trustIndicators: pageData.trustIndicators || [],
-          whatToExpect: {
-            badge: pageData.whatToExpect?.badge || "",
-            title: pageData.whatToExpect?.title || "",
-            subtitle: pageData.whatToExpect?.subtitle || "",
-            cards: pageData.whatToExpect?.cards || [],
-            footer: pageData.whatToExpect?.footer || "",
-          },
-          mostCommonQuestions: {
-            badge: pageData.mostCommonQuestions?.badge || "",
-            title: pageData.mostCommonQuestions?.title || "",
-            subtitle: pageData.mostCommonQuestions?.subtitle || "",
-            cards: pageData.mostCommonQuestions?.cards || [],
-          },
-          studyGuide: {
-            badge: pageData.studyGuide?.badge || "",
-            title: pageData.studyGuide?.title || "",
-            subtitle: pageData.studyGuide?.subtitle || "",
-            sections: pageData.studyGuide?.sections || [],
-          },
-          privacyPricing: pageData.privacyPricing || [],
-          faq: {
-            title: pageData.faq?.title || "",
-            subtitle: pageData.faq?.subtitle || "",
-            questions: pageData.faq?.questions || [],
-          },
+          bodyContent: pageData.bodyContent || "",
         };
-        
+
         setContent(initializedContent);
       } else {
         // Initialize with default content structure
         const defaultSlug = resolvedParams.nestedSubPageId;
-        const defaultContent: ServiceContent = {
+        const defaultContent: NestedPageContent = {
           pageName: resolvedParams.nestedSubPageId,
+          slug: resolvedParams.nestedSubPageId,
+          status: "Draft",
+          heading: "",
+          description: "",
+          seoLabel: resolvedParams.nestedSubPageId,
+          seoSlug: resolvedParams.nestedSubPageId,
           meta: {
             title: `${resolvedParams.nestedSubPageId} | TeasGurus`,
             description: `Content for ${resolvedParams.nestedSubPageId}`,
@@ -179,43 +154,19 @@ export default function EditNestedSubPage({
             ogTitle: `${resolvedParams.nestedSubPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.nestedSubPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${defaultSlug}`,
+            canonicalUrl: `${
+              process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+            }/${defaultSlug}`,
           },
           schema: "",
           hero: {
-            badge: "",
             title: resolvedParams.nestedSubPageId,
-            subtitle: "",
             description: "",
           },
-          trustIndicators: [],
-          whatToExpect: {
-            badge: "",
-            title: "",
-            subtitle: "",
-            cards: [],
-            footer: "",
-          },
-          mostCommonQuestions: {
-            badge: "",
-            title: "",
-            subtitle: "",
-            cards: [],
-          },
-          studyGuide: {
-            badge: "",
-            title: "",
-            subtitle: "",
-            sections: [],
-          },
-          privacyPricing: [],
-          faq: {
-            title: "",
-            subtitle: "",
-            questions: [],
-          },
+          bodyContent: "",
         };
         setContent(defaultContent);
+        setSlug(defaultSlug);
       }
     } catch (err) {
       setError("Failed to load content");
@@ -237,16 +188,26 @@ export default function EditNestedSubPage({
       setError("");
       setSuccess("");
 
-      // Include slug in the content to be saved
-      const contentWithSlug = {
-        ...content,
-        slug: nestedSlug.trim() || resolvedParams.nestedSubPageId,
+      // Prepare content to be saved with all fields
+      const contentToSave: NestedPageContent = {
+        pageName: content.pageName,
+        slug: slug.trim() || resolvedParams.nestedSubPageId,
+        status,
+        heading: content.heading || "",
+        description: content.description || "",
+        seoLabel: content.seoLabel || content.pageName || "",
+        seoSlug:
+          content.seoSlug || slug.trim() || resolvedParams.nestedSubPageId,
+        meta: content.meta,
+        schema: content.schema,
+        hero: content.hero,
+        bodyContent: content.bodyContent || "",
       };
 
       const result = await uploadNestedSubPage(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
-        contentWithSlug
+        contentToSave
       );
 
       if (result.success) {
@@ -286,94 +247,12 @@ export default function EditNestedSubPage({
     });
   };
 
-  const updateArrayContent = (path: string, index: number, value: any) => {
-    if (!content) return;
-
-    setContent((prev) => {
-      if (!prev) return prev;
-
-      const keys = path.split(".");
-      const newContent = JSON.parse(JSON.stringify(prev));
-      let current: any = newContent;
-
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!current || typeof current !== "object") {
-          return prev;
-        }
-        current = current[keys[i]];
-      }
-
-      const lastKey = keys[keys.length - 1];
-      if (!current || !Array.isArray(current[lastKey])) {
-        return prev;
-      }
-
-      current[lastKey][index] = value;
-      return newContent;
-    });
-  };
-
-  const addArrayItem = (path: string, newItem: any) => {
-    if (!content) return;
-
-    setContent((prev) => {
-      if (!prev) return prev;
-
-      const keys = path.split(".");
-      const newContent = JSON.parse(JSON.stringify(prev));
-      let current: any = newContent;
-
-      for (let i = 0; i < keys.length; i++) {
-        if (!current || typeof current !== "object") {
-          return prev;
-        }
-        if (i === keys.length - 1) {
-          if (!Array.isArray(current[keys[i]])) {
-            current[keys[i]] = [];
-          }
-          current[keys[i]].push(newItem);
-        } else {
-          current = current[keys[i]];
-        }
-      }
-
-      return newContent;
-    });
-  };
-
-  const removeArrayItem = (path: string, index: number) => {
-    if (!content) return;
-
-    setContent((prev) => {
-      if (!prev) return prev;
-
-      const keys = path.split(".");
-      const newContent = JSON.parse(JSON.stringify(prev));
-      let current: any = newContent;
-
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!current || typeof current !== "object") {
-          return prev;
-        }
-        current = current[keys[i]];
-      }
-
-      const lastKey = keys[keys.length - 1];
-      if (!current || !Array.isArray(current[lastKey])) {
-        return prev;
-      }
-
-      current[lastKey] = current[lastKey].filter((_: any, i: number) => i !== index);
-      return newContent;
-    });
-  };
-
-  if (loading || !resolvedParams) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6a5cff] mx-auto mb-4"></div>
+          <p className="text-[#7a819c]">Loading content...</p>
         </div>
       </div>
     );
@@ -383,1153 +262,582 @@ export default function EditNestedSubPage({
     return null;
   }
 
+  const userInitial = currentUser?.email?.[0]?.toUpperCase() || "A";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-indigo-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Edit Nested Sub-Page: {content.pageName || resolvedParams.nestedSubPageId}
-                </h1>
-              </div>
-              <p className="text-gray-600 text-lg">
-                Update the content for this nested sub-page
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb]">
+      <AdminSidebar />
+      <div
+        className={`transition-all duration-300 ${
+          isCollapsed ? "md:ml-20" : "md:ml-64"
+        }`}
+      >
+        {/* Main Header */}
+        <header className="sticky top-0 z-10 h-[60px] flex items-center justify-center bg-white/92 backdrop-blur-sm border-b border-[#e2e4f0]/95">
+          <div className="w-full max-w-[1220px] flex items-center justify-between gap-3 px-4">
+            <div className="flex items-center gap-1.5 text-xs text-[#a0a5bf]">
+              <span>Home</span>
+              <span>/</span>
+              <span>Content</span>
+              <span>/</span>
+              <span>Nursing Entrance Exam</span>
+              <span>/</span>
+              <span className="text-[#202437] font-medium">
+                {content.pageName ||
+                  resolvedParams?.nestedSubPageId ||
+                  "Edit Nested Page"}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/manage`}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                  />
-                </svg>
-                <span>Back</span>
-              </Link>
-              {resolvedParams && (
-                <Link
-                  href={`/${nestedSlug || resolvedParams.nestedSubPageId}`}
-                  target="_blank"
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    />
-                  </svg>
-                  <span>View Page</span>
-                </Link>
-              )}
-              {resolvedParams && (
-                <Link
-                  href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 font-medium"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <span>Manage Quizzes</span>
-                </Link>
-              )}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none flex items-center space-x-2"
-              >
-                {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <span>Save Changes</span>
-                  </>
-                )}
-              </button>
+            <div className="flex items-center gap-2 text-sm text-[#202437]">
+              <span>{currentUser?.email || "Admin"}</span>
+              <div className="w-8 h-8 rounded-full bg-[#6a5cff] text-white flex items-center justify-center font-semibold text-sm shadow-lg shadow-[#4c3dff]/40">
+                {userInitial}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
+        {/* Main Body */}
+        <div className="py-5 px-4 flex justify-center">
+          <div className="w-full max-w-[1220px]">
+            {/* Page Header */}
+            <header className="flex justify-between items-start mb-4.5 gap-3 flex-wrap">
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight mb-1 text-[#202437]">
+                  Edit Nested Page – Nursing Entrance Exam
+                </h1>
+                <p className="text-sm text-[#7a819c] max-w-[640px] leading-relaxed">
+                  Edit a nested page under a sub-page. Define the nested page
+                  details, SEO, and full content.
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 ml-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Draft nested page
+                  </span>
+                </p>
               </div>
-              <div className="ml-3">
+              <div className="flex gap-2 flex-wrap">
+                <Link
+                  href={`/admin/nursing-entrance-exam/${resolvedParams?.subPageId}/manage`}
+                  className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
+                >
+                  ← Back to Admin
+                </Link>
+                {resolvedParams?.nestedSubPageId && (
+                  <Link
+                    href={`/${slug || resolvedParams.nestedSubPageId}`}
+                    target="_blank"
+                    className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
+                  >
+                    View Page
+                  </Link>
+                )}
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="rounded-full bg-gradient-to-r from-[#6a5cff] to-[#8b5dff] text-white px-3.5 py-2 text-sm font-medium shadow-lg shadow-[#4c3dff]/40 hover:shadow-xl hover:shadow-[#4c3dff]/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {saving ? "Saving..." : "Save Nested Page"}
+                </button>
+              </div>
+            </header>
+
+            {/* Alerts */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
+            {success && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                 <p className="text-sm text-green-800">{success}</p>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Form Sections */}
-        <div className="space-y-8">
-          {/* Page Settings */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Page Settings</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Page Name
-                </label>
-                <input
-                  type="text"
-                  value={content.pageName || ""}
-                  onChange={(e) =>
-                    setContent({ ...content, pageName: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Page Slug (Base)
-                </label>
-                <input
-                  type="text"
-                  value={nestedSlug}
-                  onChange={(e) => setNestedSlug(e.target.value)}
-                  placeholder={resolvedParams?.nestedSubPageId || ""}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Slug (editable). The full URL slug will be: <span className="font-mono font-semibold">/{nestedSlug || resolvedParams?.nestedSubPageId || ""}</span>
-                </p>
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    Full Slug (Read-only):
-                  </label>
-                  <input
-                    type="text"
-                    value={nestedSlug || resolvedParams?.nestedSubPageId || ""}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white cursor-not-allowed text-gray-700 font-mono text-sm"
+            {/* Top Grid: Sub-Page Settings + SEO */}
+            <section className="grid grid-cols-1 lg:grid-cols-[3fr_2.2fr] gap-4.5 mb-1 items-start">
+              {/* Left: Nested Page Settings */}
+              <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
+                <div className="flex justify-between items-center mb-3 gap-2">
+                  <div>
+                    <div className="text-[15px] font-semibold text-[#202437]">
+                      Nested Page Settings
+                    </div>
+                    <div className="text-xs text-[#a0a5bf]">
+                      See where this nested page sits in the structure and how
+                      it appears on NursingMocks.
+                    </div>
+                  </div>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
+                    Core
+                  </span>
+                </div>
+
+                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                  Parent Structure
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-1">
+                  <div className="rounded-xl border border-dashed border-[#e2e4f0] p-3 bg-gradient-to-br from-[#f9fafb] via-[#f5f5ff] to-[#eef2ff]">
+                    <div className="text-[11px] uppercase tracking-wider text-[#a0a5bf] mb-1">
+                      Pillar page
+                    </div>
+                    <div className="text-sm font-semibold mb-1 text-[#202437]">
+                      Nursing Entrance Exam
+                    </div>
+                    <div className="text-xs text-[#7a819c]">
+                      Fixed root for all TEAS & HESI entrance content.
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-dashed border-[#e2e4f0] p-3 bg-gradient-to-br from-[#f9fafb] via-[#f5f5ff] to-[#eef2ff]">
+                    <div className="text-[11px] uppercase tracking-wider text-[#a0a5bf] mb-1">
+                      Parent sub page
+                    </div>
+                    <div className="text-sm font-semibold mb-1 text-[#202437]">
+                      {resolvedParams?.subPageId || "Sub-Page"}
+                    </div>
+                    <div className="text-xs text-[#7a819c]">
+                      Parent sub-page for this nested page.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                  Nested Page Details
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-4">
+                  <div>
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="cat-name"
+                        >
+                          Nested page name
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Internal admin label
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="cat-name"
+                        value={content.pageName || ""}
+                        onChange={(e) =>
+                          setContent({ ...content, pageName: e.target.value })
+                        }
+                        placeholder="TEAS Reading"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="display-title"
+                        >
+                          Display title (H1)
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Shown on the live page
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="display-title"
+                        value={content.heading || ""}
+                        onChange={(e) =>
+                          updateContent("heading", e.target.value)
+                        }
+                        placeholder="ATI TEAS Reading Practice Questions & Study Guide"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="slug"
+                        >
+                          Slug
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Builds the URL
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="slug"
+                        value={slug}
+                        onChange={(e) => {
+                          setSlug(e.target.value);
+                          if (content) {
+                            setContent({ ...content, slug: e.target.value });
+                          }
+                        }}
+                        placeholder="ati-teas-reading-questions"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                      <div className="text-[11px] text-[#a0a5bf] mt-1">
+                        Example URL:{" "}
+                        <strong className="text-[#7a819c]">
+                          /
+                          {slug ||
+                            resolvedParams?.nestedSubPageId ||
+                            "ati-teas-reading-questions"}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="status"
+                        >
+                          Status
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Control visibility
+                        </span>
+                      </div>
+                      <select
+                        id="status"
+                        value={status}
+                        onChange={(e) => {
+                          const newStatus = e.target.value as
+                            | "Draft"
+                            | "Published"
+                            | "Archived";
+                          setStatus(newStatus);
+                          if (content) {
+                            setContent({ ...content, status: newStatus });
+                          }
+                        }}
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white appearance-none bg-[length:14px] bg-[right_10px_center] bg-no-repeat pr-8"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%237a819c' stroke-width='1.5' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                        }}
+                      >
+                        <option>Draft</option>
+                        <option>Published</option>
+                        <option>Archived</option>
+                      </select>
+                      <div className="text-[11px] text-[#a0a5bf] mt-1">
+                        Only{" "}
+                        <strong className="text-[#7a819c]">Published</strong>{" "}
+                        nested pages appear to students.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-3.5 mt-4">
+                  <div className="flex justify-between items-baseline gap-3 mb-1">
+                    <label
+                      className="text-xs font-medium text-[#3b3f57]"
+                      htmlFor="description"
+                    >
+                      Description
+                    </label>
+                    <span className="text-[11px] text-[#a0a5bf]">
+                      Rich text description
+                    </span>
+                  </div>
+                  <RichTextEditor
+                    value={content.description || ""}
+                    onChange={(value) => updateContent("description", value)}
+                    placeholder="Enter a description for this nested page..."
                   />
                 </div>
-              </div>
-            </div>
-          </div>
+              </section>
 
-          {/* Meta Data */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Meta Data</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Meta Title
-                </label>
-                <input
-                  type="text"
-                  value={content.meta.title}
-                  onChange={(e) => updateContent("meta.title", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Meta Description
-                </label>
-                <textarea
-                  value={content.meta.description}
-                  onChange={(e) => updateContent("meta.description", e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Keywords
-                </label>
-                <input
-                  type="text"
-                  value={content.meta.keywords}
-                  onChange={(e) => updateContent("meta.keywords", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                  placeholder="keyword1, keyword2, keyword3"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  OG Title
-                </label>
-                <input
-                  type="text"
-                  value={content.meta.ogTitle}
-                  onChange={(e) => updateContent("meta.ogTitle", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  OG Description
-                </label>
-                <textarea
-                  value={content.meta.ogDescription}
-                  onChange={(e) => updateContent("meta.ogDescription", e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  OG Image URL
-                </label>
-                <input
-                  type="text"
-                  value={content.meta.ogImage}
-                  onChange={(e) => updateContent("meta.ogImage", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                  placeholder="/teas-gurus-logo.png"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Canonical URL
-                </label>
-                <input
-                  type="text"
-                  value={content.meta.canonicalUrl}
-                  onChange={(e) => updateContent("meta.canonicalUrl", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Schema Markup */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Schema Markup</h2>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                JSON-LD Schema
-              </label>
-              <textarea
-                value={content.schema}
-                onChange={(e) => updateContent("schema", e.target.value)}
-                rows={10}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 font-mono text-sm"
-                placeholder='{"@context": "https://schema.org", ...}'
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter valid JSON-LD schema markup for SEO
-              </p>
-            </div>
-          </div>
-
-          {/* Hero Section */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Hero Section</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={content.hero.title}
-                  onChange={(e) => updateContent("hero.title", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </label>
-                <RichTextEditor
-                  value={content.hero.description}
-                  onChange={(value) => updateContent("hero.description", value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Trust Indicators</h2>
-              <button
-                onClick={() => addArrayItem("trustIndicators", { title: "", icon: "" })}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-              >
-                + Add Indicator
-              </button>
-            </div>
-            <div className="space-y-4">
-              {content.trustIndicators.map((indicator, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-xl p-4 bg-gray-50"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Indicator {index + 1}
-                    </h3>
-                    <button
-                      onClick={() => removeArrayItem("trustIndicators", index)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Title
-                      </label>
-                      <input
-                        type="text"
-                        value={indicator.title}
-                        onChange={(e) =>
-                          updateArrayContent("trustIndicators", index, {
-                            ...indicator,
-                            title: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                      />
+              {/* Right: SEO, Meta & Schema */}
+              <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
+                <div className="flex justify-between items-center mb-3 gap-2">
+                  <div>
+                    <div className="text-[15px] font-semibold text-[#202437]">
+                      SEO, Meta & Schema
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Icon Name
-                      </label>
-                      <input
-                        type="text"
-                        value={indicator.icon}
-                        onChange={(e) =>
-                          updateArrayContent("trustIndicators", index, {
-                            ...indicator,
-                            icon: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                        placeholder="check, shield, clock, star, users, book, lightbulb, trophy"
-                      />
+                    <div className="text-xs text-[#a0a5bf]">
+                      Control how this nested page appears in search and on
+                      social platforms.
                     </div>
                   </div>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
+                    SEO
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* What to Expect */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">What to Expect</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Badge
-                </label>
-                <input
-                  type="text"
-                  value={content.whatToExpect.badge}
-                  onChange={(e) => updateContent("whatToExpect.badge", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={content.whatToExpect.title}
-                  onChange={(e) => updateContent("whatToExpect.title", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subtitle
-                </label>
-                <RichTextEditor
-                  value={content.whatToExpect.subtitle}
-                  onChange={(value) => updateContent("whatToExpect.subtitle", value)}
-                />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Cards
-                  </label>
-                  <button
-                    onClick={() =>
-                      addArrayItem("whatToExpect.cards", {
-                        title: "",
-                        icon: "",
-                        content: [],
-                      })
-                    }
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                  >
-                    + Add Card
-                  </button>
+                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                  SEO Fields
                 </div>
-                <div className="space-y-4">
-                  {content.whatToExpect.cards.map((card, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-xl p-4 bg-gray-50"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Card {index + 1}
-                        </h3>
-                        <button
-                          onClick={() => removeArrayItem("whatToExpect.cards", index)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="seo-label"
                         >
-                          Remove
-                        </button>
+                          SEO Label
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Used on user-facing pages
+                        </span>
                       </div>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Title
-                          </label>
-                          <input
-                            type="text"
-                            value={card.title}
-                            onChange={(e) =>
-                              updateArrayContent("whatToExpect.cards", index, {
-                                ...card,
-                                title: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Icon Name
-                          </label>
-                          <input
-                            type="text"
-                            value={card.icon}
-                            onChange={(e) =>
-                              updateArrayContent("whatToExpect.cards", index, {
-                                ...card,
-                                icon: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                            placeholder="check, shield, clock, star, users, book, lightbulb, trophy"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Content Items
-                          </label>
-                          <div className="space-y-2">
-                            {card.content.map((item, itemIndex) => (
-                              <div key={itemIndex} className="flex gap-2">
-                                <RichTextEditor
-                                  value={item}
-                                  onChange={(value) => {
-                                    const newContent = [...card.content];
-                                    newContent[itemIndex] = value;
-                                    updateArrayContent("whatToExpect.cards", index, {
-                                      ...card,
-                                      content: newContent,
-                                    });
-                                  }}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newContent = card.content.filter(
-                                      (_: string, i: number) => i !== itemIndex
-                                    );
-                                    updateArrayContent("whatToExpect.cards", index, {
-                                      ...card,
-                                      content: newContent,
-                                    });
-                                  }}
-                                  className="text-red-600 hover:text-red-800 px-3"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => {
-                                const newContent = [...card.content, ""];
-                                updateArrayContent("whatToExpect.cards", index, {
-                                  ...card,
-                                  content: newContent,
-                                });
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              + Add Content Item
-                            </button>
-                          </div>
-                        </div>
+                      <input
+                        type="text"
+                        id="seo-label"
+                        value={content.seoLabel || ""}
+                        onChange={(e) =>
+                          setContent({ ...content, seoLabel: e.target.value })
+                        }
+                        placeholder="ATI TEAS Reading Practice"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="seo-slug"
+                        >
+                          SEO Slug
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          SEO-friendly URL slug
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="seo-slug"
+                        value={content.seoSlug || ""}
+                        onChange={(e) =>
+                          setContent({ ...content, seoSlug: e.target.value })
+                        }
+                        placeholder="ati-teas-reading-practice"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                  SEO Meta
+                </div>
+                <div className="mb-3.5">
+                  <div className="flex justify-between items-baseline gap-3 mb-1">
+                    <label
+                      className="text-xs font-medium text-[#3b3f57]"
+                      htmlFor="meta-title"
+                    >
+                      Meta title
+                    </label>
+                    <span className="text-[11px] text-[#a0a5bf]">
+                      ~60 characters
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    id="meta-title"
+                    value={content.meta.title}
+                    onChange={(e) =>
+                      updateContent("meta.title", e.target.value)
+                    }
+                    placeholder="ATI TEAS Reading Practice Questions (Updated 2026)"
+                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                  />
+                </div>
+
+                <div className="mb-3.5">
+                  <div className="flex justify-between items-baseline gap-3 mb-1">
+                    <label
+                      className="text-xs font-medium text-[#3b3f57]"
+                      htmlFor="meta-desc"
+                    >
+                      Meta description
+                    </label>
+                    <span className="text-[11px] text-[#a0a5bf]">
+                      ~155 characters
+                    </span>
+                  </div>
+                  <textarea
+                    id="meta-desc"
+                    value={content.meta.description}
+                    onChange={(e) =>
+                      updateContent("meta.description", e.target.value)
+                    }
+                    placeholder="Short summary that will appear in search results for this nested page."
+                    rows={3}
+                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[90px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-4">
+                  <div>
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="keywords"
+                        >
+                          Keywords (optional)
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Internal only
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="keywords"
+                        value={content.meta.keywords}
+                        onChange={(e) =>
+                          updateContent("meta.keywords", e.target.value)
+                        }
+                        placeholder="teas reading practice, teas passages, nursing entrance exam"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="canonical"
+                        >
+                          Canonical URL
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Optional
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="canonical"
+                        value={content.meta.canonicalUrl}
+                        onChange={(e) =>
+                          updateContent("meta.canonicalUrl", e.target.value)
+                        }
+                        placeholder="https://www.nursingmocks.com/.../ati-teas-reading-questions"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="og-title"
+                        >
+                          OG title
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Social preview
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="og-title"
+                        value={content.meta.ogTitle}
+                        onChange={(e) =>
+                          updateContent("meta.ogTitle", e.target.value)
+                        }
+                        placeholder="ATI TEAS Reading Practice Questions & Study Guide"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="og-image"
+                        >
+                          OG image
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Relative path or URL
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        id="og-image"
+                        value={content.meta.ogImage}
+                        onChange={(e) =>
+                          updateContent("meta.ogImage", e.target.value)
+                        }
+                        placeholder="/images/og/ati-teas-reading.png"
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                      />
+                      <div className="text-[11px] text-[#a0a5bf] mt-1">
+                        This image will be used for social sharing cards.
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Footer
-                </label>
-                <RichTextEditor
-                  value={content.whatToExpect.footer}
-                  onChange={(value) => updateContent("whatToExpect.footer", value)}
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Most Common Questions */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Most Common Questions</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Badge
-                </label>
-                <input
-                  type="text"
-                  value={content.mostCommonQuestions.badge}
-                  onChange={(e) =>
-                    updateContent("mostCommonQuestions.badge", e.target.value)
+                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                  Schema markup (JSON-LD)
+                </div>
+                <div className="mb-3.5">
+                  <textarea
+                    id="schema"
+                    value={content.schema}
+                    onChange={(e) => updateContent("schema", e.target.value)}
+                    placeholder='{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "ATI TEAS Reading Practice Questions & Study Guide",
+  "description": "Short summary describing this nested page..."
+}'
+                    rows={8}
+                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-xs font-mono text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[130px]"
+                  />
+                  <div className="text-[11px] text-[#a0a5bf] mt-1">
+                    Paste valid JSON-LD. Your frontend will inject this into the
+                    page head.
+                  </div>
+                </div>
+              </section>
+            </section>
+
+            {/* Content Editor */}
+            <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
+              <div className="flex justify-between items-center mb-3 gap-2">
+                <div>
+                  <div className="text-[15px] font-semibold text-[#202437]">
+                    Content Editor
+                  </div>
+                  <div className="text-xs text-[#a0a5bf]">
+                    Single Tiptap editor for the full body content, with
+                    drag-and-drop custom modules.
+                  </div>
+                </div>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
+                  Content
+                </span>
+              </div>
+
+              <div className="mt-2">
+                <TiptapEditor
+                  content={content.bodyContent || ""}
+                  onChange={(value) =>
+                    setContent({ ...content, bodyContent: value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
+                  placeholder="Start typing your content..."
+                  editable={true}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={content.mostCommonQuestions.title}
-                  onChange={(e) =>
-                    updateContent("mostCommonQuestions.title", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subtitle
-                </label>
-                <input
-                  type="text"
-                  value={content.mostCommonQuestions.subtitle}
-                  onChange={(e) =>
-                    updateContent("mostCommonQuestions.subtitle", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Cards
-                  </label>
-                  <button
-                    onClick={() =>
-                      addArrayItem("mostCommonQuestions.cards", {
-                        title: "",
-                        content: [],
-                      })
-                    }
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                  >
-                    + Add Card
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {content.mostCommonQuestions.cards.map((card, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-xl p-4 bg-gray-50"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Card {index + 1}
-                        </h3>
-                        <button
-                          onClick={() =>
-                            removeArrayItem("mostCommonQuestions.cards", index)
-                          }
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Title
-                          </label>
-                          <input
-                            type="text"
-                            value={card.title}
-                            onChange={(e) =>
-                              updateArrayContent("mostCommonQuestions.cards", index, {
-                                ...card,
-                                title: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Content Items
-                          </label>
-                          <div className="space-y-2">
-                            {card.content.map((item, itemIndex) => (
-                              <div key={itemIndex} className="flex gap-2">
-                                <RichTextEditor
-                                  value={item}
-                                  onChange={(value) => {
-                                    const newContent = [...card.content];
-                                    newContent[itemIndex] = value;
-                                    updateArrayContent("mostCommonQuestions.cards", index, {
-                                      ...card,
-                                      content: newContent,
-                                    });
-                                  }}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newContent = card.content.filter(
-                                      (_: string, i: number) => i !== itemIndex
-                                    );
-                                    updateArrayContent("mostCommonQuestions.cards", index, {
-                                      ...card,
-                                      content: newContent,
-                                    });
-                                  }}
-                                  className="text-red-600 hover:text-red-800 px-3"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => {
-                                const newContent = [...card.content, ""];
-                                updateArrayContent("mostCommonQuestions.cards", index, {
-                                  ...card,
-                                  content: newContent,
-                                });
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              + Add Content Item
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Study Guide */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Study Guide</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Badge
-                </label>
-                <input
-                  type="text"
-                  value={content.studyGuide.badge}
-                  onChange={(e) => updateContent("studyGuide.badge", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={content.studyGuide.title}
-                  onChange={(e) => updateContent("studyGuide.title", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subtitle
-                </label>
-                <RichTextEditor
-                  value={content.studyGuide.subtitle}
-                  onChange={(value) => updateContent("studyGuide.subtitle", value)}
-                />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Sections
-                  </label>
-                  <button
-                    onClick={() =>
-                      addArrayItem("studyGuide.sections", {
-                        title: "",
-                        icon: "",
-                        content: "",
-                      })
-                    }
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                  >
-                    + Add Section
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {content.studyGuide.sections.map((section, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-xl p-4 bg-gray-50"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Section {index + 1}
-                        </h3>
-                        <button
-                          onClick={() => removeArrayItem("studyGuide.sections", index)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Title
-                          </label>
-                          <input
-                            type="text"
-                            value={section.title}
-                            onChange={(e) =>
-                              updateArrayContent("studyGuide.sections", index, {
-                                ...section,
-                                title: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Icon Name
-                          </label>
-                          <input
-                            type="text"
-                            value={section.icon}
-                            onChange={(e) =>
-                              updateArrayContent("studyGuide.sections", index, {
-                                ...section,
-                                icon: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                            placeholder="check, shield, clock, star, users, book, lightbulb, trophy"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Content
-                          </label>
-                          <RichTextEditor
-                            value={section.content}
-                            onChange={(value) =>
-                              updateArrayContent("studyGuide.sections", index, {
-                                ...section,
-                                content: value,
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Privacy & Pricing */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Privacy & Pricing</h2>
-              <button
-                onClick={() =>
-                  addArrayItem("privacyPricing", { title: "", icon: "", content: "" })
-                }
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-              >
-                + Add Item
-              </button>
-            </div>
-            <div className="space-y-4">
-              {content.privacyPricing.map((item, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-xl p-4 bg-gray-50"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Item {index + 1}
-                    </h3>
-                    <button
-                      onClick={() => removeArrayItem("privacyPricing", index)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Title
-                      </label>
-                      <input
-                        type="text"
-                        value={item.title}
-                        onChange={(e) =>
-                          updateArrayContent("privacyPricing", index, {
-                            ...item,
-                            title: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Icon Name
-                      </label>
-                      <input
-                        type="text"
-                        value={item.icon}
-                        onChange={(e) =>
-                          updateArrayContent("privacyPricing", index, {
-                            ...item,
-                            icon: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                        placeholder="check, shield, clock, star, users, book, lightbulb, trophy"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Content
-                      </label>
-                      <RichTextEditor
-                        value={item.content}
-                        onChange={(value) =>
-                          updateArrayContent("privacyPricing", index, {
-                            ...item,
-                            content: value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* FAQ */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">FAQ</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={content.faq.title}
-                  onChange={(e) => updateContent("faq.title", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subtitle
-                </label>
-                <RichTextEditor
-                  value={content.faq.subtitle}
-                  onChange={(value) => updateContent("faq.subtitle", value)}
-                />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Questions
-                  </label>
-                  <button
-                    onClick={() =>
-                      addArrayItem("faq.questions", {
-                        question: "",
-                        paragraphs: [],
-                      })
-                    }
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                  >
-                    + Add Question
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {content.faq.questions.map((faq, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-xl p-4 bg-gray-50"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Question {index + 1}
-                        </h3>
-                        <button
-                          onClick={() => removeArrayItem("faq.questions", index)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Question
-                          </label>
-                          <input
-                            type="text"
-                            value={faq.question}
-                            onChange={(e) =>
-                              updateArrayContent("faq.questions", index, {
-                                ...faq,
-                                question: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Paragraphs
-                          </label>
-                          <div className="space-y-2">
-                            {faq.paragraphs.map((paragraph, pIndex) => (
-                              <div key={pIndex} className="flex gap-2">
-                                <RichTextEditor
-                                  value={paragraph}
-                                  onChange={(value) => {
-                                    const newParagraphs = [...faq.paragraphs];
-                                    newParagraphs[pIndex] = value;
-                                    updateArrayContent("faq.questions", index, {
-                                      ...faq,
-                                      paragraphs: newParagraphs,
-                                    });
-                                  }}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newParagraphs = faq.paragraphs.filter(
-                                      (_: string, i: number) => i !== pIndex
-                                    );
-                                    updateArrayContent("faq.questions", index, {
-                                      ...faq,
-                                      paragraphs: newParagraphs,
-                                    });
-                                  }}
-                                  className="text-red-600 hover:text-red-800 px-3"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => {
-                                const newParagraphs = [...faq.paragraphs, ""];
-                                updateArrayContent("faq.questions", index, {
-                                  ...faq,
-                                  paragraphs: newParagraphs,
-                                });
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              + Add Paragraph
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Additional Paragraphs (Optional)
-                          </label>
-                          <div className="space-y-2">
-                            {faq.additionalParagraphs?.map((paragraph, pIndex) => (
-                              <div key={pIndex} className="flex gap-2">
-                                <RichTextEditor
-                                  value={paragraph}
-                                  onChange={(value) => {
-                                    const newParagraphs = [...(faq.additionalParagraphs || [])];
-                                    newParagraphs[pIndex] = value;
-                                    updateArrayContent("faq.questions", index, {
-                                      ...faq,
-                                      additionalParagraphs: newParagraphs,
-                                    });
-                                  }}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newParagraphs = (faq.additionalParagraphs || []).filter(
-                                      (_: string, i: number) => i !== pIndex
-                                    );
-                                    updateArrayContent("faq.questions", index, {
-                                      ...faq,
-                                      additionalParagraphs: newParagraphs,
-                                    });
-                                  }}
-                                  className="text-red-600 hover:text-red-800 px-3"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            )) || []}
-                            <button
-                              onClick={() => {
-                                const newParagraphs = [
-                                  ...(faq.additionalParagraphs || []),
-                                  "",
-                                ];
-                                updateArrayContent("faq.questions", index, {
-                                  ...faq,
-                                  additionalParagraphs: newParagraphs,
-                                });
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              + Add Additional Paragraph
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            </section>
           </div>
         </div>
       </div>
@@ -1537,3 +845,14 @@ export default function EditNestedSubPage({
   );
 }
 
+export default function EditNestedSubPage({
+  params,
+}: {
+  params: Promise<{ subPageId: string; nestedSubPageId: string }>;
+}) {
+  return (
+    <SidebarProvider>
+      <EditNestedSubPageContent params={params} />
+    </SidebarProvider>
+  );
+}

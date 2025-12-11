@@ -5,13 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Header from "./Header";
-import Footer from "./Footer";
+import NewFooter from "./NewFooter";
 import Sidebar from "./Sidebar";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
 import UserProfileBadge from "./UserProfileBadge";
 import FloatingWhatsAppButton from "../ui/FloatingWhatsAppButton";
 import TawkToChat from "../ui/TawkToChat";
+import MobileBreadcrumb from "../ui/MobileBreadcrumb";
 
 interface LayoutProps {
   children: ReactNode;
@@ -506,37 +507,47 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
               {/* Hamburger Menu Button - Rightmost */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               >
                 {isMobileMenuOpen ? (
-                  <svg
-                    className="w-6 h-6 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <>
+                    <span className="text-sm font-medium text-gray-700">
+                      Close
+                    </span>
+                    <svg
+                      className="w-6 h-6 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </>
                 ) : (
-                  <svg
-                    className="w-6 h-6 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
+                  <>
+                    <span className="text-sm font-medium text-gray-700">
+                      Menu
+                    </span>
+                    <svg
+                      className="w-6 h-6 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h16"
+                      />
+                    </svg>
+                  </>
                 )}
               </button>
             </div>
@@ -846,9 +857,108 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
           );
         })()}
 
+        {/* Mobile Breadcrumb */}
+        {(() => {
+          // Generate breadcrumb items for mobile
+          const getMobileBreadcrumbItems = (): Array<{
+            name: string;
+            url?: string;
+          }> => {
+            const items: Array<{ name: string; url?: string }> = [];
+
+            // Excluded routes that don't need breadcrumbs
+            const excludedRoutes = [
+              "/",
+              "/login",
+              "/register",
+              "/forgot-password",
+              "/admin",
+              "/blog",
+              "/dashboard",
+              "/profile",
+              "/referrals",
+              "/payments",
+            ];
+
+            if (
+              excludedRoutes.includes(pathname) ||
+              pathname.startsWith("/admin")
+            ) {
+              return [];
+            }
+
+            // Always start with Home
+            items.push({ name: "Home", url: "/" });
+
+            // For dynamic pages with breadcrumbData
+            if (breadcrumbData && !breadcrumbData.loading) {
+              // Add pillar page
+              items.push({
+                name: breadcrumbData.pillarName,
+                url: `/${breadcrumbData.pillarId}`,
+              });
+
+              // Add breadcrumb items
+              breadcrumbData.items.forEach((item) => {
+                items.push({
+                  name: item.name,
+                  url: item.url,
+                });
+              });
+            } else {
+              // For static pages, generate from pathname
+              const pathSegments = pathname.split("/").filter((s) => s);
+              if (pathSegments.length > 0) {
+                // Map common static pages
+                const pageNameMap: Record<string, string> = {
+                  contact: "Contact",
+                  prices: "Prices",
+                  about: "About",
+                  "how-it-works": "How It Works",
+                  faqs: "FAQs",
+                  teas: "TEAS",
+                  "hesi-a2": "HESI A2",
+                  nursing: "Nursing",
+                  "terms-and-conditions": "Terms and Conditions",
+                  "privacy-policy": "Privacy Policy",
+                  "money-back-guarantee": "Money Back Guarantee",
+                  guarantees: "Guarantees",
+                };
+
+                pathSegments.forEach((segment, index) => {
+                  const isLast = index === pathSegments.length - 1;
+                  const pageName =
+                    pageNameMap[segment] || formatBreadcrumbLabel(segment);
+                  const url = isLast ? undefined : `/${segment}`;
+
+                  items.push({
+                    name: pageName,
+                    url: url,
+                  });
+                });
+              }
+            }
+
+            return items;
+          };
+
+          const mobileBreadcrumbItems = getMobileBreadcrumbItems();
+
+          if (mobileBreadcrumbItems.length === 0) {
+            return null;
+          }
+
+          return (
+            <MobileBreadcrumb
+              items={mobileBreadcrumbItems}
+              className="sticky top-16 z-40"
+            />
+          );
+        })()}
+
         {/* Main content with padding for mobile header */}
         <main className="md:pt-0 pt-16">{children}</main>
-        <Footer />
+        <NewFooter />
       </div>
       <FloatingWhatsAppButton />
       <TawkToChat />
@@ -857,11 +967,85 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
 }
 
 function LayoutWithoutSidebar({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
+  // Generate breadcrumb items for static pages
+  const getMobileBreadcrumbItems = (): Array<{
+    name: string;
+    url?: string;
+  }> => {
+    const items: Array<{ name: string; url?: string }> = [];
+
+    // Excluded routes that don't need breadcrumbs
+    const excludedRoutes = [
+      "/",
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/admin",
+      "/blog",
+      "/dashboard",
+      "/profile",
+      "/referrals",
+      "/payments",
+      "/contact",
+    ];
+
+    if (excludedRoutes.includes(pathname) || pathname.startsWith("/admin")) {
+      return [];
+    }
+
+    // Always start with Home
+    items.push({ name: "Home", url: "/" });
+
+    // For static pages, generate from pathname
+    const pathSegments = pathname.split("/").filter((s) => s);
+    if (pathSegments.length > 0) {
+      // Map common static pages
+      const pageNameMap: Record<string, string> = {
+        contact: "Contact",
+        prices: "Prices",
+        about: "About",
+        "how-it-works": "How It Works",
+        faqs: "FAQs",
+        teas: "TEAS",
+        "hesi-a2": "HESI A2",
+        nursing: "Nursing",
+        "terms-and-conditions": "Terms and Conditions",
+        "privacy-policy": "Privacy Policy",
+        "money-back-guarantee": "Money Back Guarantee",
+        guarantees: "Guarantees",
+      };
+
+      pathSegments.forEach((segment, index) => {
+        const isLast = index === pathSegments.length - 1;
+        const pageName = pageNameMap[segment] || formatBreadcrumbLabel(segment);
+        const url = isLast ? undefined : `/${segment}`;
+
+        items.push({
+          name: pageName,
+          url: url,
+        });
+      });
+    }
+
+    return items;
+  };
+
+  const mobileBreadcrumbItems = getMobileBreadcrumbItems();
+
   return (
     <div className="min-h-screen bg-white">
       <Header showLogo={true} />
+      {/* Mobile Breadcrumb */}
+      {mobileBreadcrumbItems.length > 0 && (
+        <MobileBreadcrumb
+          items={mobileBreadcrumbItems}
+          className="sticky top-16 z-40"
+        />
+      )}
       <main>{children}</main>
-      <Footer />
+      <NewFooter />
       <FloatingWhatsAppButton />
       <TawkToChat />
     </div>
@@ -886,6 +1070,7 @@ export default function Layout({ children, showSidebar }: LayoutProps) {
       "/login",
       "/register",
       "/forgot-password",
+      "/contact",
     ];
 
     // Check if pathname starts with excluded routes

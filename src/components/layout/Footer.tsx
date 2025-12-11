@@ -1,54 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getSiteName } from "@/lib/config";
 
 export default function Footer() {
+  const siteName = getSiteName();
   return (
     <>
-      {/* Unique Disclaimer Section */}
-      <section className="bg-white py-12 border-t border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-6">
-              <svg
-                className="w-8 h-8 text-yellow-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Service Disclaimer
-            </h3>
-            <div className="bg-gray-50 rounded-xl p-8 border border-gray-100">
-              <p className="text-gray-700 leading-relaxed text-base max-w-3xl mx-auto">
-                Nursing Mocks is an independent support platform created for nursing students who need guidance with TEAS or HESI preparation. We are not connected to ATI, HESI, or any official testing company in any way. Everything we offer is designed to help students feel more prepared and more confident through practice support and study assistance that fits their needs. Our services focus on learning and preparation, not replacing or altering official exams.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center justify-center text-sm text-gray-500">
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Educational support services only</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -64,9 +21,6 @@ export default function Footer() {
                   priority
                 />
               </div>
-              <p className="text-gray-400 mb-4">
-                Your trusted partner for TEAS exam success. We offer realistic practice test questions for students in the United States and around the world, giving you the chance to study with confidence and prepare in a way that feels close to the real exam.
-              </p>
               {/* Social Media Icons */}
               <div className="flex space-x-4">
                 <Link
@@ -195,6 +149,14 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link
+                    href="/cookie-policy"
+                    className="hover:text-white transition-colors text-left"
+                  >
+                    Cookie Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     href="/terms-and-conditions"
                     className="hover:text-white transition-colors text-left"
                   >
@@ -215,7 +177,7 @@ export default function Footer() {
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>
-              Disclaimer: Copyright © 2025 Teas Gurus. All rights reserved. Teas Gurus is an independent preparation platform and is not connected to ATI or any official testing organization. We offer realistic TEAS practice test questions and study support for students preparing for the exam. If you have questions or need guidance, feel free to contact us.
+              Disclaimer: Copyright © 2026 {siteName}. All rights reserved. {siteName} is an independent preparation platform and is not connected to ATI or any official testing organization. We offer realistic TEAS practice test questions and study support for students preparing for the exam. If you have questions or need guidance, feel free to contact us.
             </p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { getSiteUrl } from "@/lib/config";
+import { getSiteUrl, getSiteName } from "@/lib/config";
 
 interface SchemaScriptsProps {
   schema?: any;
@@ -7,11 +7,16 @@ interface SchemaScriptsProps {
 
 export default function SchemaScripts({ schema }: SchemaScriptsProps) {
   const siteUrl = getSiteUrl();
+  const siteName = getSiteName();
   
   if (schema) {
-    // If schema is a string, try to replace hardcoded URLs
+    // If schema is a string, try to replace hardcoded URLs and site names
     if (typeof schema === "string") {
-      const processedSchema = schema.replace(/https:\/\/teasgurus\.com/g, siteUrl);
+      let processedSchema = schema.replace(/https:\/\/teasgurus\.com/g, siteUrl);
+      // Replace common site name variations
+      processedSchema = processedSchema.replace(/"Teas Gurus"/g, `"${siteName}"`);
+      processedSchema = processedSchema.replace(/"TEAS Gurus"/g, `"${siteName}"`);
+      processedSchema = processedSchema.replace(/"TeasGurus"/g, `"${siteName}"`);
       return (
         <script
           type="application/ld+json"
@@ -42,7 +47,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
             {
               "@type": "Organization",
               "@id": `${siteUrl}/#organization`,
-              name: "Teas Gurus",
+              name: siteName,
               url: `${siteUrl}/`,
               logo: `${siteUrl}/teas-gurus-logo.png`,
               sameAs: [
@@ -56,7 +61,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               "@type": "WebSite",
               "@id": `${siteUrl}/#website`,
               url: `${siteUrl}/`,
-              name: "Teas Gurus",
+              name: siteName,
               publisher: {
                 "@id": `${siteUrl}/#organization`,
               },

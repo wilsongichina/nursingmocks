@@ -489,7 +489,9 @@ export const initializeNursingExitExamContent = async () => {
         ogDescription:
           "Comprehensive guide to nursing exit exams. Prepare for your nursing exit exam with expert resources, practice questions, and study guides.",
         ogImage: "/teas-gurus-logo.png",
-        canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
+        canonicalUrl: `${
+          process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+        }/nursing-exit-exam`,
       },
       schema: "",
       hero: {
@@ -906,25 +908,38 @@ export const uploadNursingEntranceExamSubPage = async (
     const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedOldSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
 
-    // Find document by slug (or document ID for backward compatibility)
+    // Find document by document ID first (since URL param is typically the document ID)
+    // Then try by slug field as fallback
     let docId: string | null = null;
+    let currentSlug: string | null = null;
 
-    // First, try to find by slug field
-    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
-    const slugQuery = query(
-      subPagesRef,
-      where("slug", "==", normalizedOldSlug)
+    // First, try to find by document ID (most common case)
+    const lookupDocRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      subPageId
     );
-    const slugSnapshot = await getDocs(slugQuery);
-
-    if (!slugSnapshot.empty) {
-      docId = slugSnapshot.docs[0].id;
+    const docSnap = await getDoc(lookupDocRef);
+    if (docSnap.exists()) {
+      docId = docSnap.id;
+      const docData = docSnap.data();
+      currentSlug = docData.slug
+        ? docData.slug.toLowerCase().replace(/\s+/g, "-")
+        : null;
     } else {
-      // Fallback: try by document ID for backward compatibility
-      const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        docId = docSnap.id;
+      // Fallback: try to find by slug field
+      const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const slugQuery = query(
+        subPagesRef,
+        where("slug", "==", normalizedOldSlug)
+      );
+      const slugSnapshot = await getDocs(slugQuery);
+
+      if (!slugSnapshot.empty) {
+        docId = slugSnapshot.docs[0].id;
+        currentSlug = normalizedOldSlug;
       }
     }
 
@@ -935,19 +950,25 @@ export const uploadNursingEntranceExamSubPage = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
+      // Remove unnecessary keys: content, hero, image
+      const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
       const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
       const newDocRef = await addDoc(subPagesRef, {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
+        status: cleanContent.status || "Published", // Default to Published for new pages
         type: "sub",
         parentId: pillarId, // Parent is the pillar page
         pillarId: pillarId,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       });
 
       // Update contentPath with the actual document ID
@@ -982,13 +1003,16 @@ export const uploadNursingEntranceExamSubPage = async (
 
     // Document exists, update it (document ID stays the same, only slug field updates)
     // Check if the new slug is different and already exists (for another page)
-    if (normalizedNewSlug !== normalizedOldSlug) {
+    const oldSlugForComparison = currentSlug || normalizedOldSlug;
+    if (normalizedNewSlug !== oldSlugForComparison) {
       // First check if slug is in static routes
       const slugCheck = await isSlugAvailable(normalizedNewSlug);
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -1009,19 +1033,22 @@ export const uploadNursingEntranceExamSubPage = async (
       }
     }
 
+    // Remove unnecessary keys: content, hero, image
+    const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
     await setDoc(
       docRef,
       {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
         type: "sub",
         parentId: pillarId,
         pillarId: pillarId,
         contentPath: contentPath,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       },
       { merge: true }
     );
@@ -1187,25 +1214,38 @@ export const uploadNursingExitExamSubPage = async (
     const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedOldSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
 
-    // Find document by slug (or document ID for backward compatibility)
+    // Find document by document ID first (since URL param is typically the document ID)
+    // Then try by slug field as fallback
     let docId: string | null = null;
+    let _currentSlug: string | null = null;
 
-    // First, try to find by slug field
-    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
-    const slugQuery = query(
-      subPagesRef,
-      where("slug", "==", normalizedOldSlug)
+    // First, try to find by document ID (most common case)
+    const lookupDocRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      subPageId
     );
-    const slugSnapshot = await getDocs(slugQuery);
-
-    if (!slugSnapshot.empty) {
-      docId = slugSnapshot.docs[0].id;
+    const docSnap = await getDoc(lookupDocRef);
+    if (docSnap.exists()) {
+      docId = docSnap.id;
+      const docData = docSnap.data();
+      _currentSlug = docData.slug
+        ? docData.slug.toLowerCase().replace(/\s+/g, "-")
+        : null;
     } else {
-      // Fallback: try by document ID for backward compatibility
-      const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        docId = docSnap.id;
+      // Fallback: try to find by slug field
+      const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const slugQuery = query(
+        subPagesRef,
+        where("slug", "==", normalizedOldSlug)
+      );
+      const slugSnapshot = await getDocs(slugQuery);
+
+      if (!slugSnapshot.empty) {
+        docId = slugSnapshot.docs[0].id;
+        _currentSlug = normalizedOldSlug;
       }
     }
 
@@ -1216,19 +1256,25 @@ export const uploadNursingExitExamSubPage = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
+      // Remove unnecessary keys: content, hero, image
+      const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
       const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
       const newDocRef = await addDoc(subPagesRef, {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
+        status: cleanContent.status || "Published", // Default to Published for new pages
         type: "sub",
         parentId: pillarId, // Parent is the pillar page
         pillarId: pillarId,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       });
 
       // Update contentPath with the actual document ID
@@ -1262,19 +1308,22 @@ export const uploadNursingExitExamSubPage = async (
     }
 
     // Document exists, update it (document ID stays the same, only slug field updates)
+    // Remove unnecessary keys: content, hero, image
+    const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
     await setDoc(
       docRef,
       {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
         type: "sub",
         parentId: pillarId,
         pillarId: pillarId,
         contentPath: contentPath,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       },
       { merge: true }
     );
@@ -1661,12 +1710,10 @@ export const uploadNursingExitExamNestedSubPage = async (
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedNewSlug = normalizedUserSlug;
-    const normalizedOldSlug = nestedSubPageId
-      .toLowerCase()
-      .replace(/\s+/g, "-");
 
-    // Find nested sub-page by slug (or document ID for backward compatibility)
+    // Find nested sub-page by document ID first (when editing, nestedSubPageId is the document ID)
     let nestedDocId: string | null = null;
+    let currentSlug: string | null = null;
     const nestedSubPagesRef = collection(
       db,
       "pillarPages",
@@ -1675,28 +1722,35 @@ export const uploadNursingExitExamNestedSubPage = async (
       resolvedParentId,
       "nestedSubPages"
     );
-    const nestedSlugQuery = query(
-      nestedSubPagesRef,
-      where("slug", "==", normalizedOldSlug)
-    );
-    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
 
-    if (!nestedSlugSnapshot.empty) {
-      nestedDocId = nestedSlugSnapshot.docs[0].id;
+    // Try by document ID first (most common case when editing)
+    const nestedDocRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    const nestedDocSnap = await getDoc(nestedDocRef);
+    if (nestedDocSnap.exists()) {
+      nestedDocId = nestedDocSnap.id;
+      currentSlug = nestedDocSnap.data()?.slug || null;
     } else {
-      // Fallback: try by document ID
-      const nestedDocRef = doc(
-        db,
-        "pillarPages",
-        pillarId,
-        "subPages",
-        resolvedParentId,
-        "nestedSubPages",
-        nestedSubPageId
+      // Fallback: try by slug (for backward compatibility)
+      const normalizedOldSlug = nestedSubPageId
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+      const nestedSlugQuery = query(
+        nestedSubPagesRef,
+        where("slug", "==", normalizedOldSlug)
       );
-      const nestedDocSnap = await getDoc(nestedDocRef);
-      if (nestedDocSnap.exists()) {
-        nestedDocId = nestedDocSnap.id;
+      const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+      if (!nestedSlugSnapshot.empty) {
+        nestedDocId = nestedSlugSnapshot.docs[0].id;
+        currentSlug = nestedSlugSnapshot.docs[0].data()?.slug || null;
       }
     }
 
@@ -1707,26 +1761,31 @@ export const uploadNursingExitExamNestedSubPage = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
-      const nestedSubPagesRef = collection(
-        db,
-        "pillarPages",
-        pillarId,
-        "subPages",
-        resolvedParentId,
-        "nestedSubPages"
-      );
+      // Remove unnecessary fields: trustIndicators, whatToExpect, mostCommonQuestions, studyGuide, privacyPricing, faq
+      const {
+        trustIndicators: _trustIndicators,
+        whatToExpect: _whatToExpect,
+        mostCommonQuestions: _mostCommonQuestions,
+        studyGuide: _studyGuide,
+        privacyPricing: _privacyPricing,
+        faq: _faq,
+        ...cleanContent
+      } = content;
+
       const newDocRef = await addDoc(nestedSubPagesRef, {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       });
 
       // Update contentPath with the actual document ID
@@ -1768,6 +1827,71 @@ export const uploadNursingExitExamNestedSubPage = async (
     }
 
     // Document exists, update it (document ID stays the same, only slug field updates)
+    // Get current slug from document if not already retrieved
+    if (currentSlug === null) {
+      const existingDocSnap = await getDoc(nestedDocRef);
+      if (existingDocSnap.exists()) {
+        currentSlug = existingDocSnap.data()?.slug || null;
+      }
+    }
+    const normalizedCurrentSlug = currentSlug
+      ? currentSlug.toLowerCase().replace(/\s+/g, "-")
+      : null;
+
+    // Check if the new slug is different from the current slug
+    if (normalizedCurrentSlug && normalizedNewSlug !== normalizedCurrentSlug) {
+      // Slug is being changed, check if new slug is available
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    } else if (!normalizedCurrentSlug) {
+      // Document exists but has no slug, check if new slug is available
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+    }
+    // If slug hasn't changed, no need to check availability
+
+    // Remove unnecessary fields: trustIndicators, whatToExpect, mostCommonQuestions, studyGuide, privacyPricing, faq
+    const {
+      trustIndicators: _trustIndicators,
+      whatToExpect: _whatToExpect,
+      mostCommonQuestions: _mostCommonQuestions,
+      studyGuide: _studyGuide,
+      privacyPricing: _privacyPricing,
+      faq: _faq,
+      ...cleanContent
+    } = content;
+
     const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
     const docRef = doc(
       db,
@@ -1781,14 +1905,14 @@ export const uploadNursingExitExamNestedSubPage = async (
     await setDoc(
       docRef,
       {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
         contentPath: contentPath,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       },
       { merge: true }
     );
@@ -1903,20 +2027,40 @@ export const getNursingTestBankSubPages = async () => {
 // Get a specific sub-page content
 export const getNursingTestBankSubPage = async (subPageId: string) => {
   try {
-    const docRef = doc(
-      db,
-      "pillarPages",
-      "nursing-test-bank",
-      "subPages",
-      subPageId
-    );
+    const pillarId = "nursing-test-bank";
+    const normalizedSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
+
+    // First, try to find by slug field
+    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const slugQuery = query(subPagesRef, where("slug", "==", normalizedSlug));
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      const docData = slugSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: docData.id,
+          subPageId: docData.id,
+          ...docData.data(),
+        },
+        message: `Sub-page ${subPageId} retrieved successfully by slug!`,
+      };
+    }
+
+    // Fallback: try by document ID for backward compatibility
+    const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       return {
         success: true,
-        data: docSnap.data(),
-        message: `Sub-page ${subPageId} retrieved successfully!`,
+        data: {
+          id: docSnap.id,
+          subPageId: docSnap.id,
+          ...docSnap.data(),
+        },
+        message: `Sub-page ${subPageId} retrieved successfully by ID!`,
       };
     } else {
       return {
@@ -1946,25 +2090,38 @@ export const uploadNursingTestBankSubPage = async (
     const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedOldSlug = subPageId.toLowerCase().replace(/\s+/g, "-");
 
-    // Find document by slug (or document ID for backward compatibility)
+    // Find document by document ID first (since URL param is typically the document ID)
+    // Then try by slug field as fallback
     let docId: string | null = null;
+    let currentSlug: string | null = null;
 
-    // First, try to find by slug field
-    const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
-    const slugQuery = query(
-      subPagesRef,
-      where("slug", "==", normalizedOldSlug)
+    // First, try to find by document ID (most common case)
+    const lookupDocRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      subPageId
     );
-    const slugSnapshot = await getDocs(slugQuery);
-
-    if (!slugSnapshot.empty) {
-      docId = slugSnapshot.docs[0].id;
+    const docSnap = await getDoc(lookupDocRef);
+    if (docSnap.exists()) {
+      docId = docSnap.id;
+      const docData = docSnap.data();
+      currentSlug = docData.slug
+        ? docData.slug.toLowerCase().replace(/\s+/g, "-")
+        : null;
     } else {
-      // Fallback: try by document ID for backward compatibility
-      const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        docId = docSnap.id;
+      // Fallback: try to find by slug field
+      const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const slugQuery = query(
+        subPagesRef,
+        where("slug", "==", normalizedOldSlug)
+      );
+      const slugSnapshot = await getDocs(slugQuery);
+
+      if (!slugSnapshot.empty) {
+        docId = slugSnapshot.docs[0].id;
+        currentSlug = normalizedOldSlug;
       }
     }
 
@@ -1975,19 +2132,25 @@ export const uploadNursingTestBankSubPage = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
+      // Remove unnecessary keys: content, hero, image
+      const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
       const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
       const newDocRef = await addDoc(subPagesRef, {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
+        status: cleanContent.status || "Published", // Default to Published for new pages
         type: "sub",
         parentId: pillarId, // Parent is the pillar page
         pillarId: pillarId,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       });
 
       // Update contentPath with the actual document ID
@@ -2021,19 +2184,53 @@ export const uploadNursingTestBankSubPage = async (
     }
 
     // Document exists, update it (document ID stays the same, only slug field updates)
+    // Check if the new slug is different and already exists (for another page)
+    const oldSlugForComparison = currentSlug || normalizedOldSlug;
+    if (normalizedNewSlug !== oldSlugForComparison) {
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `pillarPages/${pillarId}/subPages/${docId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    }
+
+    // Remove unnecessary keys: content, hero, image
+    const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
     await setDoc(
       docRef,
       {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
         type: "sub",
         parentId: pillarId,
         pillarId: pillarId,
         contentPath: contentPath,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       },
       { merge: true }
     );
@@ -2341,12 +2538,10 @@ export const uploadNursingTestBankNestedSubPage = async (
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedNewSlug = normalizedUserSlug;
-    const normalizedOldSlug = nestedSubPageId
-      .toLowerCase()
-      .replace(/\s+/g, "-");
 
-    // Find nested sub-page by slug (or document ID for backward compatibility)
+    // Find nested sub-page by document ID first (when editing, nestedSubPageId is the document ID)
     let nestedDocId: string | null = null;
+    let currentSlug: string | null = null;
     const nestedSubPagesRef = collection(
       db,
       "pillarPages",
@@ -2355,28 +2550,35 @@ export const uploadNursingTestBankNestedSubPage = async (
       resolvedParentId,
       "nestedSubPages"
     );
-    const nestedSlugQuery = query(
-      nestedSubPagesRef,
-      where("slug", "==", normalizedOldSlug)
-    );
-    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
 
-    if (!nestedSlugSnapshot.empty) {
-      nestedDocId = nestedSlugSnapshot.docs[0].id;
+    // Try by document ID first (most common case when editing)
+    const nestedDocRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    const nestedDocSnap = await getDoc(nestedDocRef);
+    if (nestedDocSnap.exists()) {
+      nestedDocId = nestedDocSnap.id;
+      currentSlug = nestedDocSnap.data()?.slug || null;
     } else {
-      // Fallback: try by document ID
-      const nestedDocRef = doc(
-        db,
-        "pillarPages",
-        pillarId,
-        "subPages",
-        resolvedParentId,
-        "nestedSubPages",
-        nestedSubPageId
+      // Fallback: try by slug (for backward compatibility)
+      const normalizedOldSlug = nestedSubPageId
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+      const nestedSlugQuery = query(
+        nestedSubPagesRef,
+        where("slug", "==", normalizedOldSlug)
       );
-      const nestedDocSnap = await getDoc(nestedDocRef);
-      if (nestedDocSnap.exists()) {
-        nestedDocId = nestedDocSnap.id;
+      const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+      if (!nestedSlugSnapshot.empty) {
+        nestedDocId = nestedSlugSnapshot.docs[0].id;
+        currentSlug = nestedSlugSnapshot.docs[0].data()?.slug || null;
       }
     }
 
@@ -2387,26 +2589,31 @@ export const uploadNursingTestBankNestedSubPage = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
-      const nestedSubPagesRef = collection(
-        db,
-        "pillarPages",
-        pillarId,
-        "subPages",
-        resolvedParentId,
-        "nestedSubPages"
-      );
+      // Remove unnecessary fields: trustIndicators, whatToExpect, mostCommonQuestions, studyGuide, privacyPricing, faq
+      const {
+        trustIndicators: _trustIndicators,
+        whatToExpect: _whatToExpect,
+        mostCommonQuestions: _mostCommonQuestions,
+        studyGuide: _studyGuide,
+        privacyPricing: _privacyPricing,
+        faq: _faq,
+        ...cleanContent
+      } = content;
+
       const newDocRef = await addDoc(nestedSubPagesRef, {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       });
 
       // Update contentPath with the actual document ID
@@ -2448,6 +2655,71 @@ export const uploadNursingTestBankNestedSubPage = async (
     }
 
     // Document exists, update it (document ID stays the same, only slug field updates)
+    // Get current slug from document if not already retrieved
+    if (currentSlug === null) {
+      const existingDocSnap = await getDoc(nestedDocRef);
+      if (existingDocSnap.exists()) {
+        currentSlug = existingDocSnap.data()?.slug || null;
+      }
+    }
+    const normalizedCurrentSlug = currentSlug
+      ? currentSlug.toLowerCase().replace(/\s+/g, "-")
+      : null;
+
+    // Check if the new slug is different from the current slug
+    if (normalizedCurrentSlug && normalizedNewSlug !== normalizedCurrentSlug) {
+      // Slug is being changed, check if new slug is available
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    } else if (!normalizedCurrentSlug) {
+      // Document exists but has no slug, check if new slug is available
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+    }
+    // If slug hasn't changed, no need to check availability
+
+    // Remove unnecessary fields: trustIndicators, whatToExpect, mostCommonQuestions, studyGuide, privacyPricing, faq
+    const {
+      trustIndicators: _trustIndicators,
+      whatToExpect: _whatToExpect,
+      mostCommonQuestions: _mostCommonQuestions,
+      studyGuide: _studyGuide,
+      privacyPricing: _privacyPricing,
+      faq: _faq,
+      ...cleanContent
+    } = content;
+
     const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
     const docRef = doc(
       db,
@@ -2461,14 +2733,14 @@ export const uploadNursingTestBankNestedSubPage = async (
     await setDoc(
       docRef,
       {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
         contentPath: contentPath,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       },
       { merge: true }
     );
@@ -2901,10 +3173,10 @@ export const uploadNursingTestBankTopic = async (
     const userSlug = content.slug?.trim() || topicId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedNewSlug = normalizedUserSlug;
-    const normalizedOldSlug = topicId.toLowerCase().replace(/\s+/g, "-");
 
-    // Find topic by slug (or document ID for backward compatibility)
+    // Find topic by document ID first (when editing, topicId is the document ID)
     let topicDocId: string | null = null;
+    let currentSlug: string | null = null;
     const topicsRef = collection(
       db,
       "pillarPages",
@@ -2915,30 +3187,35 @@ export const uploadNursingTestBankTopic = async (
       resolvedNestedId,
       "topics"
     );
-    const topicSlugQuery = query(
-      topicsRef,
-      where("slug", "==", normalizedOldSlug)
-    );
-    const topicSlugSnapshot = await getDocs(topicSlugQuery);
 
-    if (!topicSlugSnapshot.empty) {
-      topicDocId = topicSlugSnapshot.docs[0].id;
+    // Try by document ID first (most common case when editing)
+    const topicDocRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      resolvedNestedId,
+      "topics",
+      topicId
+    );
+    const topicDocSnap = await getDoc(topicDocRef);
+    if (topicDocSnap.exists()) {
+      topicDocId = topicDocSnap.id;
+      currentSlug = topicDocSnap.data()?.slug || null;
     } else {
-      // Fallback: try by document ID
-      const topicDocRef = doc(
-        db,
-        "pillarPages",
-        pillarId,
-        "subPages",
-        resolvedParentId,
-        "nestedSubPages",
-        resolvedNestedId,
-        "topics",
-        topicId
+      // Fallback: try by slug (for backward compatibility)
+      const normalizedOldSlug = topicId.toLowerCase().replace(/\s+/g, "-");
+      const topicSlugQuery = query(
+        topicsRef,
+        where("slug", "==", normalizedOldSlug)
       );
-      const topicDocSnap = await getDoc(topicDocRef);
-      if (topicDocSnap.exists()) {
-        topicDocId = topicDocSnap.id;
+      const topicSlugSnapshot = await getDocs(topicSlugQuery);
+
+      if (!topicSlugSnapshot.empty) {
+        topicDocId = topicSlugSnapshot.docs[0].id;
+        currentSlug = topicSlugSnapshot.docs[0].data()?.slug || null;
       }
     }
 
@@ -2949,19 +3226,32 @@ export const uploadNursingTestBankTopic = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
+      // Remove unnecessary fields: trustIndicators, whatToExpect, mostCommonQuestions, studyGuide, privacyPricing, faq
+      const {
+        trustIndicators: _trustIndicators,
+        whatToExpect: _whatToExpect,
+        mostCommonQuestions: _mostCommonQuestions,
+        studyGuide: _studyGuide,
+        privacyPricing: _privacyPricing,
+        faq: _faq,
+        ...cleanContent
+      } = content;
+
       const newDocRef = await addDoc(topicsRef, {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
         type: "topic",
         parentId: resolvedParentId,
         nestedSubPageId: resolvedNestedId,
         pillarId: pillarId,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       });
 
       // Update contentPath with the actual document ID
@@ -3005,6 +3295,71 @@ export const uploadNursingTestBankTopic = async (
     }
 
     // Document exists, update it (document ID stays the same, only slug field updates)
+    // Get current slug from document if not already retrieved
+    if (currentSlug === null) {
+      const existingDocSnap = await getDoc(topicDocRef);
+      if (existingDocSnap.exists()) {
+        currentSlug = existingDocSnap.data()?.slug || null;
+      }
+    }
+    const normalizedCurrentSlug = currentSlug
+      ? currentSlug.toLowerCase().replace(/\s+/g, "-")
+      : null;
+
+    // Check if the new slug is different from the current slug
+    if (normalizedCurrentSlug && normalizedNewSlug !== normalizedCurrentSlug) {
+      // Slug is being changed, check if new slug is available
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${topicDocId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    } else if (!normalizedCurrentSlug) {
+      // Document exists but has no slug, check if new slug is available
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+    }
+    // If slug hasn't changed, no need to check availability
+
+    // Remove unnecessary fields: trustIndicators, whatToExpect, mostCommonQuestions, studyGuide, privacyPricing, faq
+    const {
+      trustIndicators: _trustIndicators,
+      whatToExpect: _whatToExpect,
+      mostCommonQuestions: _mostCommonQuestions,
+      studyGuide: _studyGuide,
+      privacyPricing: _privacyPricing,
+      faq: _faq,
+      ...cleanContent
+    } = content;
+
     const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/topics/${topicDocId}`;
     const docRef = doc(
       db,
@@ -3020,15 +3375,15 @@ export const uploadNursingTestBankTopic = async (
     await setDoc(
       docRef,
       {
-        ...content,
-        slug: normalizedNewSlug, // Update slug field
+        ...cleanContent,
+        slug: normalizedNewSlug,
         type: "topic",
         parentId: resolvedParentId,
         nestedSubPageId: resolvedNestedId,
         pillarId: pillarId,
         contentPath: contentPath,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       },
       { merge: true }
     );
@@ -3805,7 +4160,9 @@ export const uploadNursingTestBankQuiz = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -4262,12 +4619,10 @@ export const uploadNestedSubPage = async (
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedNewSlug = normalizedUserSlug;
-    const normalizedOldSlug = nestedSubPageId
-      .toLowerCase()
-      .replace(/\s+/g, "-");
 
-    // Find nested sub-page by slug (or document ID for backward compatibility)
+    // Find nested sub-page by document ID first (when editing, nestedSubPageId is the document ID)
     let nestedDocId: string | null = null;
+    let currentSlug: string | null = null;
     const nestedSubPagesRef = collection(
       db,
       "pillarPages",
@@ -4276,28 +4631,35 @@ export const uploadNestedSubPage = async (
       resolvedParentId,
       "nestedSubPages"
     );
-    const nestedSlugQuery = query(
-      nestedSubPagesRef,
-      where("slug", "==", normalizedOldSlug)
-    );
-    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
 
-    if (!nestedSlugSnapshot.empty) {
-      nestedDocId = nestedSlugSnapshot.docs[0].id;
+    // Try by document ID first (most common case when editing)
+    const nestedDocRef = doc(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages",
+      nestedSubPageId
+    );
+    const nestedDocSnap = await getDoc(nestedDocRef);
+    if (nestedDocSnap.exists()) {
+      nestedDocId = nestedDocSnap.id;
+      currentSlug = nestedDocSnap.data()?.slug || null;
     } else {
-      // Fallback: try by document ID
-      const nestedDocRef = doc(
-        db,
-        "pillarPages",
-        pillarId,
-        "subPages",
-        resolvedParentId,
-        "nestedSubPages",
-        nestedSubPageId
+      // Fallback: try by slug (for backward compatibility)
+      const normalizedOldSlug = nestedSubPageId
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+      const nestedSlugQuery = query(
+        nestedSubPagesRef,
+        where("slug", "==", normalizedOldSlug)
       );
-      const nestedDocSnap = await getDoc(nestedDocRef);
-      if (nestedDocSnap.exists()) {
-        nestedDocId = nestedDocSnap.id;
+      const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+      if (!nestedSlugSnapshot.empty) {
+        nestedDocId = nestedSlugSnapshot.docs[0].id;
+        currentSlug = nestedSlugSnapshot.docs[0].data()?.slug || null;
       }
     }
 
@@ -4308,18 +4670,12 @@ export const uploadNestedSubPage = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
-      const nestedSubPagesRef = collection(
-        db,
-        "pillarPages",
-        pillarId,
-        "subPages",
-        resolvedParentId,
-        "nestedSubPages"
-      );
       const newDocRef = await addDoc(nestedSubPagesRef, {
         ...content,
         slug: normalizedNewSlug,
@@ -4331,7 +4687,7 @@ export const uploadNestedSubPage = async (
       });
 
       // Update contentPath with the actual document ID
-      const docRef = doc(
+      const newDocRef2 = doc(
         db,
         "pillarPages",
         pillarId,
@@ -4341,7 +4697,7 @@ export const uploadNestedSubPage = async (
         newDocRef.id
       );
       await setDoc(
-        docRef,
+        newDocRef2,
         {
           contentPath: `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`,
         },
@@ -4368,14 +4724,28 @@ export const uploadNestedSubPage = async (
     }
 
     // Document exists, update it (document ID stays the same, only slug field updates)
-    // Check if the new slug is different and already exists (for another page)
-    if (normalizedNewSlug !== normalizedOldSlug) {
+    // Get current slug from document if not already retrieved
+    if (currentSlug === null) {
+      const existingDocSnap = await getDoc(nestedDocRef);
+      if (existingDocSnap.exists()) {
+        currentSlug = existingDocSnap.data()?.slug || null;
+      }
+    }
+    const normalizedCurrentSlug = currentSlug
+      ? currentSlug.toLowerCase().replace(/\s+/g, "-")
+      : null;
+
+    // Check if the new slug is different from the current slug
+    if (normalizedCurrentSlug && normalizedNewSlug !== normalizedCurrentSlug) {
+      // Slug is being changed, check if new slug is available
       // First check if slug is in static routes
       const slugCheck = await isSlugAvailable(normalizedNewSlug);
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -4394,7 +4764,19 @@ export const uploadNestedSubPage = async (
           };
         }
       }
+    } else if (!normalizedCurrentSlug) {
+      // Document exists but has no slug, check if new slug is available
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
     }
+    // If slug hasn't changed, no need to check availability
 
     const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
     const docRef = doc(
@@ -4406,17 +4788,28 @@ export const uploadNestedSubPage = async (
       "nestedSubPages",
       nestedDocId
     );
+    // Remove unnecessary fields: trustIndicators, whatToExpect, mostCommonQuestions, studyGuide, privacyPricing, faq
+    const {
+      trustIndicators: _trustIndicators,
+      whatToExpect: _whatToExpect,
+      mostCommonQuestions: _mostCommonQuestions,
+      studyGuide: _studyGuide,
+      privacyPricing: _privacyPricing,
+      faq: _faq,
+      ...cleanContent
+    } = content;
+
     await setDoc(
       docRef,
       {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
         contentPath: contentPath,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       },
       { merge: true }
     );
@@ -4456,7 +4849,87 @@ export const deleteNestedSubPage = async (
 ) => {
   try {
     const pillarId = "nursing-entrance-exam";
-    const refPath = `pillarPages/${pillarId}/subPages/${parentSubPageId}/nestedSubPages/${nestedSubPageId}`;
+
+    // Resolve parentSubPageId to actual document ID (it might be a slug)
+    let resolvedParentId: string | null = null;
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
+    const parentSlugQuery = query(
+      parentSubPagesRef,
+      where("slug", "==", parentSubPageId.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const parentSlugSnapshot = await getDocs(parentSlugQuery);
+
+    if (!parentSlugSnapshot.empty) {
+      resolvedParentId = parentSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageId
+      );
+      const parentDocSnap = await getDoc(parentDocRef);
+      if (parentDocSnap.exists()) {
+        resolvedParentId = parentDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Parent sub-page ${parentSubPageId} not found`,
+        };
+      }
+    }
+
+    // Resolve nestedSubPageId to actual document ID (it might be a slug)
+    let resolvedNestedId: string | null = null;
+    const normalizedNestedSlug = nestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const nestedSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages",
+      resolvedParentId,
+      "nestedSubPages"
+    );
+    const nestedSlugQuery = query(
+      nestedSubPagesRef,
+      where("slug", "==", normalizedNestedSlug)
+    );
+    const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
+
+    if (!nestedSlugSnapshot.empty) {
+      resolvedNestedId = nestedSlugSnapshot.docs[0].id;
+    } else {
+      // Fallback: try by document ID
+      const nestedDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        nestedSubPageId
+      );
+      const nestedDocSnap = await getDoc(nestedDocRef);
+      if (nestedDocSnap.exists()) {
+        resolvedNestedId = nestedDocSnap.id;
+      } else {
+        return {
+          success: false,
+          message: `Nested sub-page ${nestedSubPageId} not found`,
+        };
+      }
+    }
+
+    const refPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}`;
 
     // Delete the document
     const docRef = doc(
@@ -4464,9 +4937,9 @@ export const deleteNestedSubPage = async (
       "pillarPages",
       pillarId,
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId
+      resolvedNestedId
     );
     await deleteDoc(docRef);
 
@@ -4475,8 +4948,8 @@ export const deleteNestedSubPage = async (
     // Also delete by IDs in case refPath doesn't match
     await deleteRouteMappingByIds({
       pillarId,
-      subPageId: parentSubPageId,
-      nestedPageId: nestedSubPageId,
+      subPageId: resolvedParentId,
+      nestedPageId: resolvedNestedId,
     });
 
     return {
@@ -4935,7 +5408,9 @@ export const uploadNursingEntranceExamQuiz = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -4999,7 +5474,9 @@ export const uploadNursingEntranceExamQuiz = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -7694,7 +8171,9 @@ export const uploadNursingExitExamQuiz = async (
       if (!slugCheck.available) {
         return {
           success: false,
-          message: slugCheck.message || `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
         };
       }
 
@@ -9960,13 +10439,15 @@ export const getRouteMappingBySlugOnly = async (slug: string) => {
 };
 
 // Check if a slug is available (not in route mappings or static routes)
-export const isSlugAvailable = async (slug: string): Promise<{
+export const isSlugAvailable = async (
+  slug: string
+): Promise<{
   available: boolean;
   message?: string;
 }> => {
   try {
     const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-").trim();
-    
+
     if (!normalizedSlug) {
       return {
         available: false,
@@ -10368,24 +10849,32 @@ const countQuestionsInQuiz = async (
   pathSegments: string[]
 ): Promise<number> => {
   try {
-    const questionsRef = collection(db, ...(pathSegments as [string, ...string[]]), "questions");
+    const questionsRef = collection(
+      db,
+      ...(pathSegments as [string, ...string[]]),
+      "questions"
+    );
     const snapshot = await getDocs(questionsRef);
-    
+
     // Supported question types: 1, 2, 3, 7
     const supportedTypes = [1, 2, 3, 7];
     let count = 0;
-    
+
     snapshot.forEach((doc) => {
       const questionData = doc.data();
-      const questionTypeId = questionData.question_type_id || questionData.questionTypeId || 1;
+      const questionTypeId =
+        questionData.question_type_id || questionData.questionTypeId || 1;
       // Convert to number if it's a string
-      const typeId = typeof questionTypeId === 'string' ? parseInt(questionTypeId, 10) : questionTypeId;
-      
+      const typeId =
+        typeof questionTypeId === "string"
+          ? parseInt(questionTypeId, 10)
+          : questionTypeId;
+
       if (supportedTypes.includes(typeId)) {
         count++;
       }
     });
-    
+
     return count;
   } catch (error) {
     console.error("Error counting questions in quiz:", error);
@@ -10402,10 +10891,15 @@ export const countQuizQuestions = async (
 ): Promise<number> => {
   try {
     const pillarId = "nursing-test-bank";
-    
+
     // Resolve IDs
     let resolvedParentId: string | null = null;
-    const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
     const parentSlugQuery = query(
       parentSubPagesRef,
       where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
@@ -10414,7 +10908,13 @@ export const countQuizQuestions = async (
     if (!parentSlugSnapshot.empty) {
       resolvedParentId = parentSlugSnapshot.docs[0].id;
     } else {
-      const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        subPageId
+      );
       const parentDocSnap = await getDoc(parentDocRef);
       if (parentDocSnap.exists()) {
         resolvedParentId = parentDocSnap.id;
@@ -10423,7 +10923,9 @@ export const countQuizQuestions = async (
 
     let resolvedNestedId: string | null = null;
     if (resolvedParentId) {
-      const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+      const normalizedNestedSlug = nestedSubPageId
+        .toLowerCase()
+        .replace(/\s+/g, "-");
       const nestedSubPagesRef = collection(
         db,
         "pillarPages",
@@ -10432,7 +10934,10 @@ export const countQuizQuestions = async (
         resolvedParentId,
         "nestedSubPages"
       );
-      const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+      const nestedSlugQuery = query(
+        nestedSubPagesRef,
+        where("slug", "==", normalizedNestedSlug)
+      );
       const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
       if (!nestedSlugSnapshot.empty) {
         resolvedNestedId = nestedSlugSnapshot.docs[0].id;
@@ -10466,7 +10971,10 @@ export const countQuizQuestions = async (
         resolvedNestedId,
         "topics"
       );
-      const topicSlugQuery = query(topicsRef, where("slug", "==", normalizedTopicSlug));
+      const topicSlugQuery = query(
+        topicsRef,
+        where("slug", "==", normalizedTopicSlug)
+      );
       const topicSlugSnapshot = await getDocs(topicSlugQuery);
       if (!topicSlugSnapshot.empty) {
         resolvedTopicId = topicSlugSnapshot.docs[0].id;
@@ -10503,10 +11011,13 @@ export const countQuizQuestions = async (
         resolvedTopicId,
         "quizzes"
       );
-      const quizSlugQuery = query(quizzesRef, where("slug", "==", quizId.toLowerCase().replace(/\s+/g, "-")));
+      const quizSlugQuery = query(
+        quizzesRef,
+        where("slug", "==", quizId.toLowerCase().replace(/\s+/g, "-"))
+      );
       const quizSlugSnapshot = await getDocs(quizSlugQuery);
       let resolvedQuizId = quizId;
-      
+
       if (!quizSlugSnapshot.empty) {
         resolvedQuizId = quizSlugSnapshot.docs[0].id;
       } else {
@@ -10561,7 +11072,12 @@ export const countExitEntranceQuizQuestions = async (
   try {
     // Resolve IDs
     let resolvedParentId: string | null = null;
-    const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
     const parentSlugQuery = query(
       parentSubPagesRef,
       where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
@@ -10570,7 +11086,13 @@ export const countExitEntranceQuizQuestions = async (
     if (!parentSlugSnapshot.empty) {
       resolvedParentId = parentSlugSnapshot.docs[0].id;
     } else {
-      const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        subPageId
+      );
       const parentDocSnap = await getDoc(parentDocRef);
       if (parentDocSnap.exists()) {
         resolvedParentId = parentDocSnap.id;
@@ -10579,7 +11101,9 @@ export const countExitEntranceQuizQuestions = async (
 
     let resolvedNestedId: string | null = null;
     if (resolvedParentId) {
-      const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+      const normalizedNestedSlug = nestedSubPageId
+        .toLowerCase()
+        .replace(/\s+/g, "-");
       const nestedSubPagesRef = collection(
         db,
         "pillarPages",
@@ -10588,7 +11112,10 @@ export const countExitEntranceQuizQuestions = async (
         resolvedParentId,
         "nestedSubPages"
       );
-      const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+      const nestedSlugQuery = query(
+        nestedSubPagesRef,
+        where("slug", "==", normalizedNestedSlug)
+      );
       const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
       if (!nestedSlugSnapshot.empty) {
         resolvedNestedId = nestedSlugSnapshot.docs[0].id;
@@ -10621,10 +11148,13 @@ export const countExitEntranceQuizQuestions = async (
         resolvedNestedId,
         "quizzes"
       );
-      const quizSlugQuery = query(quizzesRef, where("slug", "==", quizId.toLowerCase().replace(/\s+/g, "-")));
+      const quizSlugQuery = query(
+        quizzesRef,
+        where("slug", "==", quizId.toLowerCase().replace(/\s+/g, "-"))
+      );
       const quizSlugSnapshot = await getDocs(quizSlugQuery);
       let resolvedQuizId = quizId;
-      
+
       if (!quizSlugSnapshot.empty) {
         resolvedQuizId = quizSlugSnapshot.docs[0].id;
       } else {
@@ -10685,7 +11215,12 @@ export const countTopicQuestions = async (
     if (quizzesResult.success && quizzesResult.data) {
       // Resolve IDs (similar to how getNursingTestBankQuizzes does it)
       let resolvedParentId: string | null = null;
-      const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const parentSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages"
+      );
       const parentSlugQuery = query(
         parentSubPagesRef,
         where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
@@ -10694,7 +11229,13 @@ export const countTopicQuestions = async (
       if (!parentSlugSnapshot.empty) {
         resolvedParentId = parentSlugSnapshot.docs[0].id;
       } else {
-        const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+        const parentDocRef = doc(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageId
+        );
         const parentDocSnap = await getDoc(parentDocRef);
         if (parentDocSnap.exists()) {
           resolvedParentId = parentDocSnap.id;
@@ -10703,7 +11244,9 @@ export const countTopicQuestions = async (
 
       let resolvedNestedId: string | null = null;
       if (resolvedParentId) {
-        const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+        const normalizedNestedSlug = nestedSubPageId
+          .toLowerCase()
+          .replace(/\s+/g, "-");
         const nestedSubPagesRef = collection(
           db,
           "pillarPages",
@@ -10712,7 +11255,10 @@ export const countTopicQuestions = async (
           resolvedParentId,
           "nestedSubPages"
         );
-        const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+        const nestedSlugQuery = query(
+          nestedSubPagesRef,
+          where("slug", "==", normalizedNestedSlug)
+        );
         const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
         if (!nestedSlugSnapshot.empty) {
           resolvedNestedId = nestedSlugSnapshot.docs[0].id;
@@ -10746,7 +11292,10 @@ export const countTopicQuestions = async (
           resolvedNestedId,
           "topics"
         );
-        const topicSlugQuery = query(topicsRef, where("slug", "==", normalizedTopicSlug));
+        const topicSlugQuery = query(
+          topicsRef,
+          where("slug", "==", normalizedTopicSlug)
+        );
         const topicSlugSnapshot = await getDocs(topicSlugQuery);
         if (!topicSlugSnapshot.empty) {
           resolvedTopicId = topicSlugSnapshot.docs[0].id;
@@ -10809,15 +11358,26 @@ export const countNestedPageQuestions = async (
     // Get all quizzes for this nested page
     let quizzesResult;
     if (pillarId === "nursing-exit-exam") {
-      quizzesResult = await getNursingExitExamQuizzes(subPageId, nestedSubPageId);
+      quizzesResult = await getNursingExitExamQuizzes(
+        subPageId,
+        nestedSubPageId
+      );
     } else {
-      quizzesResult = await getNursingEntranceExamQuizzes(subPageId, nestedSubPageId);
+      quizzesResult = await getNursingEntranceExamQuizzes(
+        subPageId,
+        nestedSubPageId
+      );
     }
 
     if (quizzesResult.success && quizzesResult.data) {
       // Resolve IDs
       let resolvedParentId: string | null = null;
-      const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+      const parentSubPagesRef = collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages"
+      );
       const parentSlugQuery = query(
         parentSubPagesRef,
         where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
@@ -10826,7 +11386,13 @@ export const countNestedPageQuestions = async (
       if (!parentSlugSnapshot.empty) {
         resolvedParentId = parentSlugSnapshot.docs[0].id;
       } else {
-        const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+        const parentDocRef = doc(
+          db,
+          "pillarPages",
+          pillarId,
+          "subPages",
+          subPageId
+        );
         const parentDocSnap = await getDoc(parentDocRef);
         if (parentDocSnap.exists()) {
           resolvedParentId = parentDocSnap.id;
@@ -10835,7 +11401,9 @@ export const countNestedPageQuestions = async (
 
       let resolvedNestedId: string | null = null;
       if (resolvedParentId) {
-        const normalizedNestedSlug = nestedSubPageId.toLowerCase().replace(/\s+/g, "-");
+        const normalizedNestedSlug = nestedSubPageId
+          .toLowerCase()
+          .replace(/\s+/g, "-");
         const nestedSubPagesRef = collection(
           db,
           "pillarPages",
@@ -10844,7 +11412,10 @@ export const countNestedPageQuestions = async (
           resolvedParentId,
           "nestedSubPages"
         );
-        const nestedSlugQuery = query(nestedSubPagesRef, where("slug", "==", normalizedNestedSlug));
+        const nestedSlugQuery = query(
+          nestedSubPagesRef,
+          where("slug", "==", normalizedNestedSlug)
+        );
         const nestedSlugSnapshot = await getDocs(nestedSlugQuery);
         if (!nestedSlugSnapshot.empty) {
           resolvedNestedId = nestedSlugSnapshot.docs[0].id;
@@ -10901,7 +11472,12 @@ export const countSubPageQuestions = async (
 
     // Resolve sub-page ID
     let resolvedSubPageId: string | null = null;
-    const parentSubPagesRef = collection(db, "pillarPages", pillarId, "subPages");
+    const parentSubPagesRef = collection(
+      db,
+      "pillarPages",
+      pillarId,
+      "subPages"
+    );
     const parentSlugQuery = query(
       parentSubPagesRef,
       where("slug", "==", subPageId.toLowerCase().replace(/\s+/g, "-"))
@@ -10910,7 +11486,13 @@ export const countSubPageQuestions = async (
     if (!parentSlugSnapshot.empty) {
       resolvedSubPageId = parentSlugSnapshot.docs[0].id;
     } else {
-      const parentDocRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
+      const parentDocRef = doc(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        subPageId
+      );
       const parentDocSnap = await getDoc(parentDocRef);
       if (parentDocSnap.exists()) {
         resolvedSubPageId = parentDocSnap.id;
@@ -10990,7 +11572,9 @@ export const countSubPageQuestions = async (
 };
 
 // Count questions for a pillar page
-export const countPillarPageQuestions = async (pillarId: string): Promise<number> => {
+export const countPillarPageQuestions = async (
+  pillarId: string
+): Promise<number> => {
   try {
     let totalCount = 0;
 

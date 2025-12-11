@@ -169,7 +169,7 @@ export default function GuaranteesPage() {
 
             <div className="bg-blue-50 rounded-lg p-6 mt-8">
               <p className="text-blue-800 font-semibold mb-2">Last Updated:</p>
-              <p className="text-blue-700">January 1, 2025</p>
+              <p className="text-blue-700">January 1, 2026</p>
             </div>
           </div>
         </div>

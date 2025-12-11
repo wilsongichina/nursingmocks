@@ -23,7 +23,7 @@ import {
 import { useRouter } from "next/navigation";
 
 // Icon components for dashboard-style cards
-const LaptopIcon = ({ className }: { className?: string }) => (
+const _LaptopIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -40,7 +40,7 @@ const LaptopIcon = ({ className }: { className?: string }) => (
 );
 
 // Icon components for popup modal
-const BookIcon = ({ className }: { className?: string }) => (
+const _BookIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -56,7 +56,7 @@ const BookIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const CalculatorIcon = ({ className }: { className?: string }) => (
+const _CalculatorIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -72,7 +72,7 @@ const CalculatorIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const FlaskIcon = ({ className }: { className?: string }) => (
+const _FlaskIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -88,7 +88,7 @@ const FlaskIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const ABCIcon = ({ className }: { className?: string }) => (
+const _ABCIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -690,7 +690,7 @@ export default function Sidebar({
     }
   };
 
-  const handleNestedSubPageClick = async (
+  const _handleNestedSubPageClick = async (
     nestedSubPage: any,
     parentSubPageId: string
   ) => {
@@ -996,7 +996,7 @@ export default function Sidebar({
                     isActive("/referrals") ||
                     isActive("/payments")
                       ? "bg-blue-50"
-                      : "text-gray-700 hover:bg-gray-100"
+                      : "text-gray-900 hover:bg-gray-100"
                   }`}
                   title="Dashboard"
                 >
@@ -1015,7 +1015,7 @@ export default function Sidebar({
                       isActive("/referrals") ||
                       isActive("/payments")
                         ? "bg-blue-50"
-                        : "text-gray-700 hover:bg-gray-100"
+                        : "text-gray-900 hover:bg-gray-100"
                     }`}
                   >
                     <Link
@@ -1034,7 +1034,7 @@ export default function Sidebar({
                           isActive("/referrals") ||
                           isActive("/payments")
                             ? "text-blue-600"
-                            : "text-gray-700"
+                            : "text-gray-900"
                         }`}
                       >
                         Dashboard
@@ -1077,19 +1077,19 @@ export default function Sidebar({
                               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                 itemActive
                                   ? "bg-blue-50"
-                                  : "text-gray-600 hover:bg-gray-50"
+                                  : "text-gray-900 hover:bg-gray-50"
                               }`}
                             >
                               <span
                                 className={
-                                  itemActive ? "text-blue-600" : "text-gray-400"
+                                  itemActive ? "text-blue-600" : "text-gray-900"
                                 }
                               >
                                 •
                               </span>
                               <span
                                 className={`font-medium ${
-                                  itemActive ? "text-blue-600" : "text-gray-600"
+                                  itemActive ? "text-blue-600" : "text-gray-900"
                                 }`}
                               >
                                 {item.label}
@@ -1183,7 +1183,7 @@ export default function Sidebar({
                         <Link
                           href={`/${pillarPage.id}`}
                           className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                            pillarActive ? activeBgColor : "text-gray-700"
+                            pillarActive ? activeBgColor : "text-gray-900"
                           }`}
                           title={getPillarPageName(pillarPage)}
                         >
@@ -1197,7 +1197,7 @@ export default function Sidebar({
                         <div>
                           <div
                             className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                              pillarActive ? activeBgColor : "text-gray-700"
+                              pillarActive ? activeBgColor : "text-gray-900"
                             }`}
                           >
                             <Link
@@ -1217,7 +1217,7 @@ export default function Sidebar({
                                 className={`text-sm font-medium cursor-pointer ${
                                   pillarActive
                                     ? activeTextColor
-                                    : "text-gray-700"
+                                    : "text-gray-900"
                                 }`}
                               >
                                 {getPillarPageName(pillarPage)}
@@ -1306,14 +1306,14 @@ export default function Sidebar({
                                       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left cursor-pointer ${
                                         categoryActive
                                           ? activeBgColor
-                                          : "text-gray-600 hover:bg-gray-50"
+                                          : "text-gray-900 hover:bg-gray-50"
                                       }`}
                                     >
                                       <span
                                         className={`cursor-pointer ${
                                           categoryActive
                                             ? activeTextColor
-                                            : "text-gray-400"
+                                            : "text-gray-900"
                                         }`}
                                       >
                                         •
@@ -1322,7 +1322,7 @@ export default function Sidebar({
                                         className={`font-medium cursor-pointer ${
                                           categoryActive
                                             ? activeTextColor
-                                            : "text-gray-600"
+                                            : "text-gray-900"
                                         }`}
                                       >
                                         {categoryName}
@@ -1544,177 +1544,233 @@ export default function Sidebar({
       {/* Modal for Nested Sub-Pages */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-2"
+          style={{
+            background:
+              "radial-gradient(circle at top, rgba(15, 23, 42, 0.26), rgba(15, 23, 42, 0.6))",
+          }}
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-[20px] shadow-[0_20px_45px_rgba(15,23,42,0.22)] border border-[rgba(148,163,184,0.25)] w-full max-w-[840px] p-[14px] relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
-                {selectedSubPage?.name || "Select a Page"}
-              </h2>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col gap-[3px]">
+                <div className="inline-flex items-center px-2 py-[2px] rounded-full bg-[rgba(106,92,255,0.06)] text-[#6a5cff] text-[10px] uppercase tracking-[0.09em] font-semibold">
+                  {selectedSubPage?.parentPillarId === "nursing-entrance-exam"
+                    ? "ATI"
+                    : selectedSubPage?.parentPillarId === "nursing-exit-exam"
+                    ? "Exit Exam"
+                    : "Test Bank"}{" "}
+                  · Question Pools
+                </div>
+                <div className="text-base font-bold text-[#202437] tracking-[0.01em]">
+                  {selectedSubPage?.name || "Select a Page"}
+                </div>
+                <div className="text-xs text-[#7a819c]">
+                  Quickly select a subject, then choose Review Mode, Exam Mode,
+                  or view all sets.
+                </div>
+              </div>
               <button
                 onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="w-[26px] h-[26px] rounded-full border border-[#d1d5db] inline-flex items-center justify-center bg-white cursor-pointer text-[#a0a5bf] text-base transition-all duration-[180ms] flex-shrink-0 hover:bg-[#f5f6fb] hover:text-[#202437] hover:-translate-y-[1px]"
                 aria-label="Close modal"
+                type="button"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                ×
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            {/* Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
               {loadingNested ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="col-span-1 md:col-span-2 flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6a5cff]"></div>
                 </div>
               ) : nestedSubPages.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4">
-                  {nestedSubPages.map((nestedSubPage: any, index: number) => {
-                    const nestedPageId =
-                      nestedSubPage.id || nestedSubPage.nestedSubPageId;
-                    const nestedPageName =
-                      nestedSubPage.pageName ||
-                      nestedSubPage.hero?.title ||
-                      nestedSubPage.title ||
-                      nestedPageId;
-                    const parentSubPageId = selectedSubPage?.id || "";
+                nestedSubPages.map((nestedSubPage: any, _index: number) => {
+                  const nestedPageId =
+                    nestedSubPage.id || nestedSubPage.nestedSubPageId;
+                  const nestedPageName =
+                    nestedSubPage.pageName ||
+                    nestedSubPage.hero?.title ||
+                    nestedSubPage.title ||
+                    nestedPageId;
+                  const _parentSubPageId = selectedSubPage?.id || "";
+                  const nameLower = nestedPageName.toLowerCase();
 
-                    // Color variants for icons and text (rotating based on index)
-                    const iconColorVariants = [
-                      {
-                        iconBg: "bg-purple-500",
-                        numberColor: "text-purple-600",
-                      },
-                      { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
-                      {
-                        iconBg: "bg-orange-500",
-                        numberColor: "text-orange-600",
-                      },
-                      { iconBg: "bg-green-500", numberColor: "text-green-600" },
-                      { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
-                      {
-                        iconBg: "bg-indigo-500",
-                        numberColor: "text-indigo-600",
-                      },
-                      { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
-                      { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
-                    ];
-
-                    // Get icon based on page name (for popup modal only)
-                    const getModalIcon = (
-                      pageName: string,
-                      cardIndex: number
-                    ) => {
-                      const nameLower = pageName.toLowerCase();
-                      if (nameLower.includes("reading")) {
-                        return {
-                          icon: <BookIcon className="w-6 h-6 text-white" />,
-                          iconBg: "bg-purple-500",
-                          numberColor: "text-purple-600",
-                        };
-                      } else if (nameLower.includes("math")) {
-                        return {
-                          icon: (
-                            <CalculatorIcon className="w-6 h-6 text-white" />
-                          ),
-                          iconBg: "bg-blue-500",
-                          numberColor: "text-blue-600",
-                        };
-                      } else if (nameLower.includes("science")) {
-                        return {
-                          icon: <FlaskIcon className="w-6 h-6 text-white" />,
-                          iconBg: "bg-orange-500",
-                          numberColor: "text-orange-600",
-                        };
-                      } else if (nameLower.includes("english")) {
-                        return {
-                          icon: <ABCIcon className="w-6 h-6 text-white" />,
-                          iconBg: "bg-green-500",
-                          numberColor: "text-green-600",
-                        };
-                      }
-                      // Default fallback - use index-based color
-                      const iconColor =
-                        iconColorVariants[cardIndex % iconColorVariants.length];
+                  // Get subject info
+                  const getSubjectInfo = () => {
+                    if (nameLower.includes("math")) {
                       return {
-                        icon: <LaptopIcon className="w-6 h-6 text-white" />,
-                        iconBg: iconColor.iconBg,
-                        numberColor: iconColor.numberColor,
+                        tag: "M1",
+                        title: `${selectedSubPage?.name || ""} Math Questions`,
+                        subtitle: "Numbers, ratios, percentages",
+                        color: "text-[#2563eb]",
+                        colorClass: "count-math",
                       };
+                    } else if (nameLower.includes("reading")) {
+                      return {
+                        tag: "R1",
+                        title: `${
+                          selectedSubPage?.name || ""
+                        } Reading Questions`,
+                        subtitle: "Passages, inference, main idea",
+                        color: "text-[#a855f7]",
+                        colorClass: "count-read",
+                      };
+                    } else if (nameLower.includes("science")) {
+                      return {
+                        tag: "S1",
+                        title: `${
+                          selectedSubPage?.name || ""
+                        } Science Questions`,
+                        subtitle: "A&P, biology, chemistry",
+                        color: "text-[#f97316]",
+                        colorClass: "count-sci",
+                      };
+                    } else if (nameLower.includes("english")) {
+                      return {
+                        tag: "E1",
+                        title: `${
+                          selectedSubPage?.name || ""
+                        } English Questions`,
+                        subtitle: "Grammar, spelling, punctuation",
+                        color: "text-[#16a34a]",
+                        colorClass: "count-eng",
+                      };
+                    } else if (nameLower.includes("all")) {
+                      return {
+                        tag: "A1",
+                        title: `${selectedSubPage?.name || ""} All Subjects`,
+                        subtitle: "Mixed-section practice",
+                        color: "text-[#6a5cff]",
+                        colorClass: "count-math",
+                      };
+                    }
+                    // Default
+                    return {
+                      tag: undefined,
+                      title: nestedPageName,
+                      subtitle: "",
+                      color: "text-[#6a5cff]",
+                      colorClass: "count-math",
                     };
+                  };
 
-                    const config = getModalIcon(nestedPageName, index);
-                    const questionCount = (nestedSubPage.questionCount || 0).toLocaleString();
+                  const subjectInfo = getSubjectInfo();
+                  const questionCount = nestedSubPage.questionCount || 0;
 
-                    return (
-                      <div
-                        key={nestedPageId}
-                        onClick={() =>
-                          handleNestedSubPageClick(
-                            nestedSubPage,
-                            parentSubPageId
-                          )
-                        }
-                        className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(50%-0.5rem)] max-w-sm cursor-pointer"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                          >
-                            {config.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-600 mb-1">
-                              {nestedPageName}
-                            </p>
-                            <p
-                              className={`text-3xl font-bold ${config.numberColor}`}
-                            >
-                              {questionCount}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Questions Available
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <svg
-                              className="w-5 h-5 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          </div>
+                  // Get nested page URL (using same logic as handleNestedSubPageClick)
+                  // For Link href, we'll use the constructed URL (route mapping lookup is async)
+                  const pillarId =
+                    selectedSubPage?.parentPillarId || "nursing-entrance-exam";
+                  const isExitExam = pillarId === "nursing-exit-exam";
+                  const isTestBank = pillarId === "nursing-test-bank";
+                  const parentSlug =
+                    selectedSubPage?.slug || selectedSubPage?.id || "";
+                  const nestedPageSlug =
+                    nestedSubPage.slug || nestedSubPage.id || nestedPageId;
+
+                  let nestedPageUrl = "#";
+                  if (isTestBank) {
+                    nestedPageUrl = `/${nestedPageSlug}-${parentSlug}-test-bank`;
+                  } else if (isExitExam) {
+                    nestedPageUrl = `/${nestedPageSlug}`;
+                  } else {
+                    // Entrance exam
+                    let nestedBaseSlug = nestedPageSlug;
+                    if (nestedPageSlug.startsWith(parentSlug + "-")) {
+                      nestedBaseSlug = nestedPageSlug.substring(
+                        parentSlug.length + 1
+                      );
+                    }
+                    const parentUrlSlug = parentSlug.endsWith("-exam")
+                      ? parentSlug.slice(0, -5)
+                      : parentSlug;
+                    nestedPageUrl = `/${parentUrlSlug}-${nestedBaseSlug}-questions`;
+                  }
+
+                  // Ensure we have a valid URL
+                  if (!nestedPageUrl || nestedPageUrl === "/") {
+                    nestedPageUrl = "#";
+                  }
+
+                  return (
+                    <div
+                      key={nestedPageId}
+                      className="w-full bg-white rounded-[14px] border border-[#e4e6ef] shadow-[0_10px_24px_rgba(15,23,42,0.06)] p-[10px] flex items-center gap-[10px] relative"
+                    >
+                      {/* Tag */}
+                      {subjectInfo.tag && (
+                        <div className="absolute top-[6px] right-[9px] px-[7px] py-[1px] rounded-full text-[10px] font-semibold bg-[rgba(106,92,255,0.06)] text-[#6a5cff]">
+                          {subjectInfo.tag}
+                        </div>
+                      )}
+
+                      {/* Left: Count Circle */}
+                      <div className="flex flex-col items-center min-w-[80px]">
+                        <div
+                          className={`w-[50px] h-[50px] rounded-full bg-[radial-gradient(circle_at_30%_0,rgba(106,92,255,0.16),rgba(106,92,255,0.04))] border border-dashed border-[rgba(148,163,184,0.45)] flex items-center justify-center text-lg font-bold ${subjectInfo.color}`}
+                        >
+                          {questionCount.toLocaleString()}
+                        </div>
+                        <div className="mt-[3px] text-[9px] text-[#a0a5bf] uppercase tracking-[0.08em] text-center">
+                          Questions Available
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      {/* Dashed Line */}
+                      <div className="w-[1px] h-[56px] border-r border-dashed border-[#e4e6ef] flex-shrink-0"></div>
+
+                      {/* Right: Content */}
+                      <div className="flex-1 flex flex-col gap-1 pr-[26px] min-w-0">
+                        <div className="text-sm font-bold text-[#202437] whitespace-nowrap overflow-hidden text-ellipsis">
+                          {subjectInfo.title}
+                        </div>
+                        {subjectInfo.subtitle && (
+                          <div className="text-[11px] text-[#7a819c] whitespace-nowrap overflow-hidden text-ellipsis">
+                            {subjectInfo.subtitle}
+                          </div>
+                        )}
+
+                        {/* Mode Buttons */}
+                        <div className="flex flex-col items-center gap-1 mt-[2px]">
+                          <Link
+                            href={`${nestedPageUrl}?mode=review`}
+                            onClick={closeModal}
+                            className="w-[78%] px-[10px] py-[6px] rounded-full inline-flex justify-center items-center text-[11.5px] font-medium bg-[#f3f4ff] text-[#202437] cursor-pointer leading-[1.1] hover:bg-[#e7e5ff] transition-colors no-underline"
+                          >
+                            <span className="w-[7px] h-[7px] rounded-full bg-[#16a34a] mr-[6px] flex-shrink-0"></span>
+                            Review Mode
+                          </Link>
+                          <Link
+                            href={`${nestedPageUrl}?mode=exam`}
+                            onClick={closeModal}
+                            className="w-[78%] px-[10px] py-[6px] rounded-full inline-flex justify-center items-center text-[11.5px] font-medium bg-[#f3f4ff] text-[#202437] cursor-pointer leading-[1.1] hover:bg-[#e7e5ff] transition-colors no-underline"
+                          >
+                            <span className="w-[7px] h-[7px] rounded-full bg-[#2563eb] mr-[6px] flex-shrink-0"></span>
+                            Exam Mode
+                          </Link>
+                          <Link
+                            href={nestedPageUrl}
+                            onClick={closeModal}
+                            className="w-[78%] px-[10px] py-[6px] rounded-full inline-flex justify-center items-center text-[11.5px] font-medium bg-[rgba(106,92,255,0.10)] text-[#6a5cff] cursor-pointer leading-[1.1] hover:bg-[rgba(106,92,255,0.15)] transition-colors no-underline"
+                          >
+                            <span className="w-[7px] h-[7px] rounded-full bg-[#6a5cff] mr-[6px] flex-shrink-0"></span>
+                            View All Sets
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">
+                <div className="col-span-1 md:col-span-2 text-center py-12">
+                  <p className="text-[#7a819c]">
                     No nested sub-pages available.
                   </p>
                 </div>

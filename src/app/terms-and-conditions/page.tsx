@@ -1,571 +1,529 @@
-import { Metadata } from "next";
-import Layout from "@/components/layout/Layout";
-import ContactForm from "@/components/ui/ContactForm";
-import Breadcrumb from "@/components/ui/Breadcrumb";
+"use client";
+
 import Link from "next/link";
+import NewHeader from "@/components/layout/NewHeader";
+import NewFooter from "@/components/layout/NewFooter";
+import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
+import TawkToChat from "@/components/ui/TawkToChat";
 
-export const metadata: Metadata = {
-  title: "Terms and Conditions - TEAS Gurus",
-  description:
-    "Read our terms and conditions to understand the complete agreement for using our TEAS exam services and support.",
-  keywords:
-    "terms and conditions, TEAS exam terms, service agreement, terms of service, TEAS service terms",
-  openGraph: {
-    title: "Terms and Conditions - TEAS Gurus",
-    description:
-      "Read our terms and conditions to understand the complete agreement for using our TEAS exam services.",
-    url: "https://teasgurus.com/terms-of-service",
-  },
-  alternates: {
-    canonical: "/terms-of-service",
-  },
-};
-
-export default function TermsOfServicePage() {
+export default function TermsAndConditionsPage() {
   return (
-    <Layout>
-      {/* Hero Section */}
-      <section className="gradient-bg text-white py-[1.25rem]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Breadcrumb */}
-          <div className="mb-8">
-            <Breadcrumb
-              items={[
-                { label: "Home", href: "/" },
-                { label: "Terms and Conditions" },
-              ]}
-              className="text-white"
-            />
-          </div>
+    <div className="min-h-screen bg-[#f9fafb] font-[system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif] text-[#111827] flex flex-col">
+      <NewHeader />
 
-          <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
-              <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-              We are Teas Gurus
+      {/* Terms Hero */}
+      <div className="bg-gradient-to-br from-[#eef2ff] to-[#fdf2ff] border-b border-[#e5e7eb]">
+        <section className="max-w-[1320px] mx-auto w-[94%] py-[42px] pb-[30px]">
+          <div className="max-w-[980px] mx-auto">
+            <div className="text-[12px] uppercase tracking-[0.18em] text-[#4f46e5] flex gap-[10px] items-center flex-wrap mb-2">
+              <span className="px-[10px] py-1 rounded-full border border-[#c4b5fd] bg-[rgba(255,255,255,0.7)] text-[#4c1d95]">
+                Terms &amp; Conditions
+              </span>
+              <span>The ground rules for using NursingMocks</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-4">
-              TERMS AND CONDITIONS
+            <h1 className="text-[clamp(30px,3.4vw,38px)] m-0 mb-[10px] leading-[1.08] font-bold">
+              Terms &amp; Conditions
             </h1>
-            <p className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
-              Your use of this Website constitutes your agreement with the terms
-              and conditions as stated below.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/contact"
-                className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
-              >
-                Contact Us
-              </Link>
-              <Link
-                href="/privacy-policy"
-                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-              >
-                Privacy Policy
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Terms and Conditions Content */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="prose prose-lg max-w-none">
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Your use of this Website constitutes your agreement with the terms
-              and conditions as stated below. If you disagree with any of these
-              terms and conditions, do not use this Website.
+            <p className="text-[15px] max-w-[780px] text-[#4b5563] leading-[1.7] m-0 mb-[14px]">
+              These terms explain what you can expect from NursingMocks, what we
+              expect from you, and how we handle subscriptions, content, and
+              exam prep on the platform. Please take a moment to read them
+              before you dive back into practice questions.
             </p>
 
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              If you are an under 13 years old, you are not allowed to access or
-              use this Website. You further acknowledge and agree that you must
-              be of legal age to purchase any of our products or services
-              available on this website.
-            </p>
-
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              By submitting the order form and/or payment, you confirm that you
-              have fully read, understand and agree to be legally bound by these
-              terms and conditions, which form the entire agreement between Teas
-              Gurus and You.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              INTERPRETATION
-            </h2>
-            <p className="text-gray-600 mb-4 leading-relaxed">
-              In this document:
-            </p>
-            <ul className="list-disc pl-6 mb-6 text-gray-600 space-y-2">
-              <li>"Website" means Teas Gurus</li>
-              <li>
-                "Customer", "You" or "Yours" mean and refer to you and/or any
-                other person submitting the Order to the Website on your behalf.
-              </li>
-              <li>
-                "Product" refers to an original essay, paper, and/or other
-                written Product that is drafted and delivered to the Customer in
-                accordance with his/her Order.
-              </li>
-              <li>
-                "Order" means a written order of a standard electronic form that
-                is filled in and submitted online by the Customer to Our
-                Website. Order specifies the scope of work and other
-                requirements of the Customer regarding the Product.
-              </li>
-            </ul>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              OUR SERVICES
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              By submitting an Order and/or payment, You are purchasing the
-              Product for Your personal, noncommercial use only. All Products
-              are drafted by freelance writers who transferred all rights and
-              ownership regarding the Products to the Company.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              It is Your obligation to read this Terms and Conditions page
-              before submitting any Order and/or payment to this Website.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">REFUNDS</h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              The Products are refundable only in the cases, stated in the
-              "Money Back Guarantee" document. Please view it for additional
-              information on this issue. Mind that if you live on the territory
-              of the European Union and paid VAT in the process of payment
-              transaction, you do not receive it back with a refund. You get
-              back only the money or a percent of the price stated in the Prices
-              section of the website. VAT is non-refundable.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              COPYRIGHT & PERSONAL USE
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              The Products delivered to You are completely original. The full
-              copyright to the Products and other materials delivered to You is
-              retained by the Company and/or its affiliates and partners.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Your use of the delivered Products and other materials available
-              from this Website is for Your personal, noncommercial use only.
-              You shall not distribute, publish, transmit, modify, display or
-              create derivative works from or exploit the Products and/or
-              contents of this Website without the prior written consent of the
-              Company. You shall indemnify, defend and hold harmless the Company
-              for any and all unauthorized uses You may make of any material
-              available from this Website. Any unauthorized use of the delivered
-              Products and/or content of this Website may subject You to civil
-              or criminal penalties.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              NO PLAGIARISM
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              You acknowledge that the Company reserves the right to cancel any
-              agreement, contract or arrangement with any person who condones or
-              attempts to pass plagiarized Product as original when asking for
-              editing or proofreading. You also agree that any Product delivered
-              by the Company may not be passed to third parties or distributed
-              in any way for payment or for any other purpose. You also
-              acknowledge that if the Company suspects that the delivered
-              Product has been distributed or has been used by You in any form
-              of plagiarism, the Company reserves the right to refuse to carry
-              out any further work and services for You and subject You to
-              criminal or civil penalties.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              You may not put Your name on the delivered Product. All Products
-              and/or other written materials delivered to You are for research
-              and/or reference only. We do not condone, encourage, or knowingly
-              take part in plagiarism or any other acts of academic fraud or
-              dishonesty. We strongly adhere to and abide by all copyright laws,
-              and will not knowingly allow any Customer to commit plagiarism or
-              violate copyright laws. You agree that any Product and/or other
-              written material delivered to You is provided only as a model,
-              example document for research use, and any text and/or ideas from
-              Our document that You borrow, reference, refer to, or otherwise
-              use in any way in Your own original paper must be properly cited
-              and attributed to this Website.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Neither the Company nor any of its affiliates and/or partners
-              shall be liable for any unethical, inappropriate, illegal, or
-              otherwise wrongful use of the Products and/or other written
-              material received from Our Website. This includes plagiarism,
-              lawsuits, poor grading, expulsion, academic probation, loss of
-              scholarships/awards/grants/prizes/titles/positions, failure,
-              suspension, or any other disciplinary or legal actions. The buyer
-              of material from Our Website is solely responsible for any and all
-              disciplinary actions arising from the improper, unethical, and/or
-              illegal use of the material.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Plagiarism level that is regarded as acceptable by us is below
-              10%. In case plagiarism level is higher, You have the right to ask
-              for revision or refund. For additional information considering
-              these issues, You are free to view Our Money Back Guarantee and
-              Revision Policy. Please mind that bibliographical references
-              (in-text referencing and bibliography page at the end of the
-              papers) and clichéd phrases (idioms, standard phrases, connectors
-              and other frequently used phrases) shall not be regarded as
-              plagiarism and shall not be included in the plagiarism level
-              calculation.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              OUR GUARANTEES
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We guarantee that the paper's plagiarism level is lower than 10%
-              (not including bibliographical references and clichéd phrases);
-              that We follow all Your instructions; that We follow the
-              formatting requirements that You state; that We conduct the
-              necessary research; that We comply with the formal standard
-              English style.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We don't guarantee any particular grade and You cannot ask for
-              refund in case You received an unsatisfactory mark.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              ORDER PLACEMENT
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              When You decide to place an Order or inquiry on the Website, You
-              agree to fill in an online form. There, You will be asked to
-              provide certain personal information necessary to perform the
-              Order. The Company shall on no condition disclose the information
-              to third parties. For further reference please view Our "Privacy
-              Policy"
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Mind that Your email address will be used to send You
-              notifications considering the most important stages of Order
-              fulfillment, such as clarification of any issues, unread messages
-              and Order completion.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Note that Your email address will be used to send You
-              notifications about the most important stages of Order fulfillment
-              such as clarification of any issues, unread messages, and Order
-              completion. Your email and telephone number may also be used for
-              promotional and marketing purposes, to notify You of special
-              offers and discounts, etc.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              As soon as You complete the form, the price for Your Order will be
-              calculated on the basis of deadline, type of work and academic
-              level. The deadline timer will start counting down only after You
-              perform the payment.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              FEES & PAYMENT
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Company's charges for the services provided are shown on the
-              Company's Website. You should bear in mind that VAT is not
-              included in the prices listed. It is charged only to customers
-              from the European Union. It will be added to the cost of the order
-              in the process of payment transaction. VAT is non-refundable.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              If a Customer requires a type of work that cannot be classified as
-              a regular type of services provided on the Company's Website or if
-              a Customer requires the completed Product to be amended in a way
-              that is inconsistent with the initial Order instructions, a
-              Company may set own rate for delivery of the Service.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              A Customer is invited to pay for the Order in advance, given the
-              Company is reasonably confident that it is able to allocate a
-              freelance writer to deliver the Product. If payment in advance has
-              been provided, but the Company was not able to allocate a
-              freelance writer to deliver the work, a full refund of the payment
-              made in advance will be provided. Other cases of refunds are
-              described in the "Money Back Guarantee" document.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              PAYMENT VERIFICATION
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              The Company can request for verification of a Customer's account
-              to prevent any fraudulent activity on the Website. You will be
-              requested to send a scan or a picture of an identity document
-              (passport, driver's licence, student's card, etc.) and of a credit
-              card that was used for the payment.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We only need to check 4 last digits of the credit card, name on
-              the card and the expiration date. All other information can be
-              covered. Only your name should be visible on your ID, all other
-              information can be covered.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Once the documents are received, they are checked by the Risk
-              Department and are erased from the system immediately.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              DELIVERY OF COMPLETED PRODUCT
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Upon completion, a Product is available for preview by the
-              Customer in his personal account panel on the Website. If the work
-              meets the Customer's expectations, he can press the "Approve"
-              button and download the completed work. Please note that you may
-              not download or use the final Word document until the order is
-              Approved.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              After the Customer presses the "Approve" button, he is allowed to
-              ask for a free revision only within 7 days. For additional
-              information please consult Our "Revision Policy" document. After
-              the Customer presses the "Approve" button, he is not able to ask
-              for any refund.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              If a Customer does not receive a completed Product by the
-              deadline, a certain amount of refund will be made. For further
-              information on this question, view Our "Money Back Guarantee"
-              document.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              The Company will not be liable for any delays or technical
-              problems in the delivery of the Product resulting from any
-              malfunction of the customer's mail-server or the customer's
-              Internet Service Provider.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Please note that You have 7 days to approve Your Order. The paper
-              (or its part) will be approved automatically after the end of the
-              approval period, which is calculated from the moment the last
-              version was uploaded to your personal account and according to the
-              deadline
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              FREE REVISION GUARANTEE
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Free revisions are possible only in cases stated in the "Revision
-              Policy" Please view it for further information on this issue.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              PRIVACY & SECURITY
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              For an explanation of the Company's practices and policies related
-              to the collection, use and storage of the online guests'
-              information, please read Our "Privacy Policy".
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We may use any contact information (emails and phone numbers)
-              submitted to this Website for the purposes stated in the "Order
-              placement" paragraph of this document. If You would like to opt
-              out of emails and SMS notifications from Us, please let Us know by
-              contacting us. After We receive Your request, We will stop sending
-              You messages immediately.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              WARRANTIES
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              By submitting the Order and/or payment, You acknowledge that You
-              are in complete understanding and agreement with the statements
-              above, as well as each of the following:
-            </p>
-            <ul className="list-disc pl-6 mb-6 text-gray-600 space-y-2">
-              <li>
-                Any information and/or ideas used from the Product must be
-                properly cited.
-              </li>
-              <li>
-                All Products are provided solely as examples to research,
-                reference, and/or for you to learn how to properly write a paper
-                in a particular citation style (MLA, APA, Chicago, Turabian,
-                Harvard, etc.).
-              </li>
-              <li>
-                All Products were acquired from freelance writers who
-                transferred all rights and ownership to the Company and/or its
-                affiliates and partners.
-              </li>
-              <li>
-                You are in agreement that this Website is acquiring payment for
-                the time and effort that goes into gathering, organizing,
-                correcting, editing, posting, and delivering these reference
-                materials and the maintenance, administration, and advertising
-                of this Website for educational access.
-              </li>
-              <li>
-                To make a request to us for any personal information we may need
-                you to put the request in writing addressing it to our Customer
-                Support Representatives via email. If you agree, we will try to
-                deal with your request informally, for example by providing you
-                with the specific information you need over the telephone. If we
-                do hold information about you, you can ask us to correct any
-                mistakes by, once again, contacting Customer Support
-                Representatives.
-              </li>
-              <li>
-                Aside from a reasonable number of copies for personal,
-                non-commercial use, You may not otherwise reproduce, distribute,
-                publish, transmit, modify, display or create derivative works
-                from or exploit the Products and/or contents of this Website
-                without the prior written consent of the Company.
-              </li>
-              <li>
-                You agree to destroy all delivered Products immediately after
-                Your research/reference use of the material is complete. No
-                copies shall be made for distribution, and no parts of any
-                Product shall be used without proper citation.
-              </li>
-            </ul>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              SEVERABILITY
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              It is understood and agreed by the Customer that if any part,
-              term, or provision of this Agreement is held by the courts to be
-              illegal or in conflict with any law of the state where made, the
-              validity of the remaining portions or provisions shall not be
-              affected, and the rights and obligations of the Customer shall be
-              construed and enforced as if the Agreement did not contain the
-              particular part, term, or provision held to be invalid.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              LAW GOVERNING
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              It is mutually understood and agreed that this Agreement shall be
-              governed by the laws of the place where the Company holds its
-              principal place of business, both as to interpretation and
-              performance, or in any other place at the determination of the
-              Company.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              PLACE OF SUIT
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Any action or other judicial proceeding for the enforcement of
-              this Agreement or any of its provisions shall be instituted in the
-              courts of competent jurisdiction in the place where the Company
-              holds its principal place of business or in any other place at the
-              determination of the Company.
-            </p>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              LIMITATION OF LIABILITY
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              You agree to release and hold the Company and its employees,
-              officers, directors, shareholders, agents, representatives,
-              affiliates, subsidiaries, advertising, promotion and fulfillment
-              agencies, any third-party providers or sources of information or
-              data and legal advisers (the "Company's Affiliates") harmless from
-              any and all losses, damages, rights, claims, and actions of any
-              kind arising from or related to the Products, including but not
-              limited to: (a) telephone, electronic, hardware or software,
-              network, Internet, email, or computer malfunctions, failures or
-              difficulties of any kind; (b) failed, incomplete, garbled or
-              delayed computer transmissions; (c) any condition caused by events
-              beyond the control of the Company that may cause the Product to be
-              delayed, disrupted, or corrupted; (d) any injuries, losses or
-              damages of any kind arising in connection with or as a result of
-              utilizing Our services; or (e) any printing or typographical
-              errors in any materials associated with Our services. In addition,
-              You agree to defend, indemnify, and hold the Company harmless from
-              any claim, suit or demand, including attorney's fees, made by a
-              third party due to or arising out of Your utilizing of Our
-              services, Your violation or breach of these Terms and Conditions,
-              Your violation of any rights of a third party, or any other act or
-              omission by You.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              IN NO EVENT SHALL THE COMPANY BE LIABLE FOR ANY DIRECT, INDIRECT,
-              PUNITIVE, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING OUT
-              OF OR IN ANY WAY CONNECTED WITH THE USE OF THIS WEBSITE OR ANY
-              INFORMATION PROVIDED ON THIS WEBSITE. BECAUSE SOME STATES OR
-              JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF
-              LIABILITY FOR CONSEQUENTIAL OR INCIDENTAL DAMAGES, THE ABOVE
-              LIMITATION MAY NOT APPLY TO YOU.
-            </p>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              You acknowledge and agree that We may unilaterally change these
-              Terms and Conditions. We recommend reviewing these Terms and
-              Conditions from time to time as any such changes will be reflected
-              in this section of Our Website.
-            </p>
-
-            <div className="bg-blue-50 rounded-lg p-6 mt-8">
-              <p className="text-blue-800 font-semibold mb-2">Last Updated:</p>
-              <p className="text-blue-700">January 1, 2025</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-white shadow-2xl">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold mb-4">
-                Questions About Our Terms and Conditions?
-              </h2>
-              <p className="text-xl mb-8 opacity-90 leading-relaxed">
-                We're here to help you understand our terms and conditions.
-                Contact us if you have any questions about your rights and
-                responsibilities.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/contact"
-                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            <div className="flex flex-wrap gap-3 items-center text-xs text-[#6b7280]">
+              <div className="inline-flex items-center gap-1.5 px-[11px] py-1.5 rounded-full bg-[rgba(255,255,255,0.98)] border border-[#e5e7eb] text-[#111827]">
+                <svg
+                  className="w-[11px] h-[11px] text-[#10b981]"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
-                  Contact Us
-                </Link>
-                <Link
-                  href="/privacy-policy"
-                  className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  View Privacy Policy
-                </Link>
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18l6 2.25v4.81c0 4.12-2.69 7.77-6 8.89-3.31-1.12-6-4.77-6-8.89V6.43l6-2.25z" />
+                </svg>
+                Last updated: <span>December 5, 2025</span>
               </div>
+              <span>
+                By using NursingMocks, you agree to the terms on this page.
+              </span>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      {/* Contact Form Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Need Clarification?
-            </h2>
-            <p className="text-xl text-gray-600">
-              Our team is here to help you understand our terms and conditions
-              and answer any questions you may have.
+      {/* Terms Main Content */}
+      <main className="flex-1 py-[30px] pb-10 flex justify-center max-w-[1320px] w-[94%] mx-auto">
+        <section className="w-full max-w-[980px]">
+          <article className="bg-white rounded-[22px] border border-[#e5e7eb] pt-[18px] px-4 pb-4 md:pt-[22px] md:px-[22px] md:pb-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
+            <p className="mt-1 text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              NursingMocks (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or
+              &ldquo;our&rdquo;) is an online platform that provides practice
+              questions, explanations, and study tools for nursing entrance
+              exams (including ATI TEAS and HESI A2), nursing test banks, and
+              nursing exit exams. When you create an account, start a free
+              trial, or purchase a plan, you are entering into an agreement with
+              us based on the terms below.
             </p>
-          </div>
-          <ContactForm title="Get in Touch" />
-        </div>
-      </section>
-    </Layout>
+
+            <div className="mt-1.5 p-[10px] px-3 rounded-[14px] bg-[#f9fafb] border border-dashed border-[#e5e7eb] text-[13px] text-[#4b5563]">
+              If something in these terms is unclear, the fastest way to get
+              clarification is to email
+              <strong> support@nursingmocks.com</strong> with the subject line{" "}
+              <strong>&ldquo;Question about Terms&rdquo;</strong>. We would
+              rather clear it up early than have you guessing.
+            </div>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              1. Acceptance Of These Terms
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              By accessing or using NursingMocks in any way (including browsing
+              the site, creating an account, or buying a subscription), you
+              confirm that you:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Have read and understood these Terms &amp; Conditions
+              </li>
+              <li className="mt-1">Agree to comply with them</li>
+              <li className="mt-1">
+                Are old enough in your region to enter into a binding agreement,
+                or have appropriate consent
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              If you do not agree with these terms, you should not use the
+              platform or purchase a plan.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              2. Who We Are (And Who We Are Not)
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              NursingMocks is an independent exam-prep provider. We are not
+              owned, operated, or endorsed by ATI, Elsevier, HESI, Pearson, or
+              any nursing school or testing body.
+            </p>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              Names such as &ldquo;ATI&rdquo;, &ldquo;TEAS&rdquo;,
+              &ldquo;HESI&rdquo;, and other trademarks belong to their
+              respective owners. We use these names only to describe which exams
+              our practice tools are designed to support. Our questions and
+              explanations are original practice materials and are not official
+              exam content.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              3. Using NursingMocks
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              NursingMocks is intended for individual nursing students and
+              health-care learners who want to prepare for their exams in a
+              legitimate, ethical way. You agree that you will:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Use the platform only for your own study and personal learning
+              </li>
+              <li className="mt-1">
+                Respect academic integrity and not use NursingMocks to cheat on
+                any exam
+              </li>
+              <li className="mt-1">
+                Follow any applicable laws and rules from your school, employer,
+                or testing provider
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              You agree that you will not:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Attempt to access or share real, live exam questions or secure
+                test content
+              </li>
+              <li className="mt-1">
+                Use the platform during a proctored or live exam in any form
+              </li>
+              <li className="mt-1">
+                Copy, scrape, or systematically download large amounts of
+                content for reuse elsewhere
+              </li>
+              <li className="mt-1">
+                Share your login details with others or allow multiple people to
+                use one account
+              </li>
+              <li className="mt-1">
+                Try to disable, bypass, or interfere with any security or usage
+                limits on the site
+              </li>
+            </ul>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              4. Accounts, Security &amp; Access
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              To access most features, you will need a NursingMocks account. You
+              are responsible for keeping your login credentials safe and for
+              all activity that occurs under your account.
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Use a strong password and keep it private.
+              </li>
+              <li className="mt-1">
+                Let us know quickly if you suspect someone else is using your
+                account.
+              </li>
+              <li className="mt-1">
+                Do not sell or transfer your account to another person.
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              We reserve the right to suspend or close accounts that are being
+              misused, accessed in suspicious ways, or involved in cheating or
+              abusive behaviour.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              5. Subscriptions, Billing &amp; Renewal
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              Some parts of NursingMocks are free to browse, but full access to
+              exam sets, dashboards, and advanced features usually requires a
+              paid subscription or plan.
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                <strong>Pricing:</strong> current prices and plan details are
+                displayed on the{" "}
+                <Link
+                  href="/pricing"
+                  className="text-[#2563eb] no-underline hover:underline"
+                >
+                  Pricing
+                </Link>
+                page. Prices may change over time; if they do, we will apply
+                changes on your next billing cycle where applicable.
+              </li>
+              <li className="mt-1">
+                <strong>Billing:</strong> payments are processed by third-party
+                payment providers. By purchasing a subscription, you authorise
+                us and our payment processor to charge your selected payment
+                method.
+              </li>
+              <li className="mt-1">
+                <strong>Renewal:</strong> unless stated otherwise, subscriptions
+                renew automatically at the end of each term (for example,
+                monthly) until you cancel.
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              You can usually manage or cancel your subscription through your
+              account settings. Cancelling stops future renewals; it does not
+              automatically trigger a refund for past payments unless our refund
+              policy applies.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              6. Refunds &amp; Money-Back Guarantee (Summary)
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              We want NursingMocks to feel fair. Any specific money-back
+              guarantee or refund criteria will be detailed on our dedicated{" "}
+              <Link
+                href="/money-back-guarantee"
+                className="text-[#2563eb] no-underline hover:underline"
+              >
+                Money-Back Guarantee
+              </Link>{" "}
+              page.
+            </p>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              In general:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Refunds are subject to the conditions and timeframes described
+                in that policy.
+              </li>
+              <li className="mt-1">
+                We may not be able to offer refunds if a large portion of the
+                content has already been used, or if the request falls outside
+                the stated refund window.
+              </li>
+              <li className="mt-1">
+                If you request a chargeback through your bank without contacting
+                us first, your account may be suspended while the issue is
+                reviewed.
+              </li>
+            </ul>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              7. Educational Use &amp; Academic Integrity
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              NursingMocks is designed to help you understand concepts, practise
+              questions, and build confidence. It is not designed to help you
+              break exam rules or get around academic policies.
+            </p>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              You agree that you will not use NursingMocks to:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Obtain or share real exam questions from live or recently
+                administered tests
+              </li>
+              <li className="mt-1">
+                Coordinate cheating or share answers during proctored
+                assessments
+              </li>
+              <li className="mt-1">
+                Represent our practice questions as official exam content
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              We may suspend or terminate accounts that appear to be involved in
+              cheating, IP violations, or behaviour that puts your nursing
+              career or our platform at risk.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              8. Intellectual Property &amp; Allowed Use
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              All content on NursingMocks—including questions, explanations,
+              rationales, diagrams, text, layout, branding, and design—is
+              protected by intellectual property laws.
+            </p>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              Unless we say otherwise in writing, you are allowed to:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Access the platform for your own personal, non-commercial study
+              </li>
+              <li className="mt-1">
+                View and interact with practice questions and explanations
+                inside your account
+              </li>
+              <li className="mt-1">
+                Print or save small portions of content only for your personal
+                revision
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              You may not:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Copy or re-upload our questions, explanations, or UI to another
+                website or app
+              </li>
+              <li className="mt-1">
+                Use our content to build a competing product or database
+              </li>
+              <li className="mt-1">
+                Remove or hide any copyright, trademark, or attribution notices
+              </li>
+            </ul>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              9. User Content (If You Share Anything)
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              If at any point you are able to post reviews, comments, or upload
+              your own content (for example, suggested questions or feedback),
+              you are responsible for what you share.
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                You should only submit content you have the right to share and
+                that does not violate someone else&rsquo;s intellectual
+                property.
+              </li>
+              <li className="mt-1">
+                By submitting content, you give us a non-exclusive licence to
+                use, display, and adapt that content in connection with the
+                platform (for example, to show your review or improve features).
+              </li>
+              <li className="mt-1">
+                We may remove or edit user content that is abusive, unlawful, or
+                clearly not aligned with our goals as an exam-prep platform.
+              </li>
+            </ul>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              10. Third-Party Services &amp; Links
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              NursingMocks may include links to other websites or services, or
+              rely on third-party tools (such as payment processors, analytics,
+              or email providers). We do not control these third parties and are
+              not responsible for their content, policies, or practices.
+            </p>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              If you choose to visit a third-party site or connect with a
+              third-party service, you do so at your own discretion and should
+              review their terms and privacy policies separately.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              11. Disclaimers
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              We work hard to keep NursingMocks accurate, up to date, and
+              genuinely helpful. At the same time, there are things we cannot
+              promise.
+            </p>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              To the fullest extent permitted by law:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                The platform and all content are provided on an &ldquo;as
+                is&rdquo; and &ldquo;as available&rdquo; basis.
+              </li>
+              <li className="mt-1">
+                We do not guarantee that using NursingMocks will result in a
+                specific score, admission offer, or job outcome.
+              </li>
+              <li className="mt-1">
+                We do not guarantee that the site will be available 100% of the
+                time or free from errors, though we do aim for stability and
+                reliability.
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              You are responsible for how you use the information you learn here
+              and how it fits into your individual situation, program
+              requirements, and local regulations.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              12. Limitation Of Liability
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              To the extent allowed by law, NursingMocks and its owners, team
+              members, and partners will not be liable for any indirect,
+              incidental, special, or consequential damages arising from or in
+              connection with your use of the platform. This includes, for
+              example:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">Lost study time or data</li>
+              <li className="mt-1">
+                Exam outcomes, admission decisions, or employment decisions
+              </li>
+              <li className="mt-1">
+                Issues arising from reliance on information found on the
+                platform
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              Where our liability cannot be excluded, it will be limited to the
+              amount you paid to us for access to the Services in the period
+              immediately before the event giving rise to the claim.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              13. Suspension &amp; Termination
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              We hope you never hit this section in real life, but we have to
+              include it. We may suspend or terminate your access to
+              NursingMocks if:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                You seriously or repeatedly violate these terms
+              </li>
+              <li className="mt-1">
+                We detect suspicious behaviour, abuse, or attempts to break
+                security
+              </li>
+              <li className="mt-1">
+                We are required to do so by law or by a valid legal request
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              Where reasonable, we will try to notify you before suspending or
+              terminating your account and may give you a chance to resolve the
+              issue. In urgent or severe cases (for example, clear evidence of
+              cheating or fraud), we may act without prior notice.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              14. Governing Law
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              These Terms &amp; Conditions are governed by the laws of the
+              jurisdiction in which NursingMocks is legally established, without
+              regard to conflict of law principles. Any dispute related to these
+              terms or your use of the platform will be handled in that
+              jurisdiction&rsquo;s courts, unless local consumer protection laws
+              give you additional rights.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              15. Changes To These Terms
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              We may update these Terms &amp; Conditions from time to time—for
+              example, when we add new features, update our pricing structure,
+              or respond to changes in law.
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                We will update the &ldquo;Last updated&rdquo; date at the top of
+                this page.
+              </li>
+              <li className="mt-1">
+                We will post the new version here so you can review it.
+              </li>
+              <li className="mt-1">
+                If the changes are significant, we may also notify you by email
+                or inside your dashboard, especially if they affect your rights
+                or obligations.
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              If you continue using NursingMocks after new terms are posted, it
+              means you accept those changes. If you do not agree, you should
+              stop using the platform and, if relevant, cancel your
+              subscription.
+            </p>
+
+            <h2 className="text-[18px] m-[18px_0_6px] font-semibold">
+              16. Contacting Us About These Terms
+            </h2>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              If something in these terms does not sit right with you, or you
+              need clarification before making a purchase, we want to hear from
+              you. You can reach us at:
+            </p>
+            <ul className="m-0 mb-2.5 ml-[18px] p-0 text-[14px] leading-[1.7] text-[#374151]">
+              <li className="mt-1">
+                Email: <strong>support@nursingmocks.com</strong>
+              </li>
+            </ul>
+            <p className="text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
+              Please include the email address associated with your account (if
+              you have one) and a brief description of your question or concern.
+              We do our best to respond within a reasonable timeframe, even
+              during busy exam seasons.
+            </p>
+          </article>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <NewFooter />
+
+      {/* Floating buttons */}
+      <FloatingWhatsAppButton />
+      <TawkToChat />
+    </div>
   );
 }

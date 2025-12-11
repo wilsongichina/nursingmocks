@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GetStartedButton from "@/components/ui/GetStartedButton";
 
 export default function AdditionalContentSection() {
   return (
@@ -176,12 +177,9 @@ export default function AdditionalContentSection() {
                 Join thousands of students who have successfully passed the TEAS
                 exam with our proven approach.
               </p>
-              <Link
-                href="/contact"
-                className="block w-full bg-gray-900 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-              >
+              <GetStartedButton className="block w-full bg-gray-900 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
                 Get Started Today
-              </Link>
+              </GetStartedButton>
             </div>
           </div>
         </div>
@@ -458,12 +456,9 @@ export default function AdditionalContentSection() {
                 request, and let us help you achieve that high score you need to advance in your nursing education and career.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/contact"
-                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors shadow-lg"
-                >
+                <GetStartedButton className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors shadow-lg">
                   Get Started Today
-                </Link>
+                </GetStartedButton>
                 <Link
                   href="/hesi-a2"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"

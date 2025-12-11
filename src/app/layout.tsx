@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import AuthProviderWrapper from "@/components/providers/AuthProviderWrapper";
-import { getSiteUrl } from "@/lib/config";
+import { getSiteUrl, getSiteName } from "@/lib/config";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -11,10 +11,12 @@ const outfit = Outfit({
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "TEAS Gurus";
+
 export const metadata: Metadata = {
   title: {
-    default: "TEAS Gurus - Master the TEAS Exam with Expert Guidance",
-    template: "%s | TEAS Gurus",
+    default: `${siteName} - Master the TEAS Exam with Expert Guidance`,
+    template: `%s | ${siteName}`,
   },
   description:
     "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring. Join thousands of successful students who achieved their nursing school dreams.",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
     "TEAS study materials",
     "TEAS tutoring",
   ],
-  authors: [{ name: "TEAS Gurus" }],
-  creator: "TEAS Gurus",
-  publisher: "TEAS Gurus",
+  authors: [{ name: siteName }],
+  creator: siteName,
+  publisher: siteName,
   formatDetection: {
     email: false,
     address: false,
@@ -50,8 +52,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com",
-    siteName: "TEAS Gurus",
-    title: "TEAS Gurus - Master the TEAS Exam with Expert Guidance",
+    siteName: siteName,
+    title: `${siteName} - Master the TEAS Exam with Expert Guidance`,
     description:
       "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
     images: [
@@ -59,13 +61,13 @@ export const metadata: Metadata = {
         url: "/teas-gurus-logo.png",
         width: 1200,
         height: 630,
-        alt: "TEAS Gurus - TEAS Exam Preparation",
+        alt: `${siteName} - TEAS Exam Preparation`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TEAS Gurus - Master the TEAS Exam with Expert Guidance",
+    title: `${siteName} - Master the TEAS Exam with Expert Guidance`,
     description:
       "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
     images: ["/teas-gurus-logo.png"],
@@ -92,6 +94,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const siteUrl = getSiteUrl();
+  const siteName = getSiteName();
   return (
     <html lang="en">
       <head>
@@ -101,7 +104,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "EducationalOrganization",
-              name: "TEAS Gurus",
+              name: siteName,
               description:
                 "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
               url: siteUrl,

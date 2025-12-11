@@ -1,45 +1,76 @@
 "use client";
 
 import Link from "next/link";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
+import UserProfileBadge from "@/components/layout/UserProfileBadge";
+import { useAuth } from "@/contexts/AuthContext";
 
-export default function AdminPage() {
+function AdminPageContent() {
+  const { isCollapsed } = useSidebar();
+  const { currentUser } = useAuth();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Admin Dashboard
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Manage your website content
-                </p>
-              </div>
+    <div className="min-h-screen bg-white overflow-x-hidden">
+      <AdminSidebar />
+      <div
+        className={`transition-all duration-300 ${
+          isCollapsed ? "md:ml-20" : "md:ml-64"
+        }`}
+      >
+        {/* Desktop: Show header bar with breadcrumbs - same as pillar pages */}
+        <div className="hidden md:block border-b border-gray-200 bg-white h-16">
+          <div className="flex justify-between items-center px-4 h-full">
+            {/* Breadcrumbs */}
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Link
+                href="/"
+                className="hover:text-blue-600 transition-colors font-medium"
+              >
+                Home
+              </Link>
+              <svg
+                className="w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              <span className="font-medium">Admin Dashboard</span>
             </div>
+            {/* Show UserProfileBadge if logged in, or Login/Register buttons if logged out */}
+            {currentUser ? (
+              <div>
+                <UserProfileBadge />
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  href="/login"
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+          {/* Main Content */}
+          <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Nursing Entrance Exam Card */}
           <Link
@@ -399,8 +430,18 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+          </div>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <SidebarProvider>
+      <AdminPageContent />
+    </SidebarProvider>
   );
 }

@@ -1,4 +1,5 @@
 import sgMail from "@sendgrid/mail";
+import { getSiteName } from "@/lib/config";
 
 // Initialize SendGrid with API key
 if (process.env.SENDGRID_API_KEY) {
@@ -11,6 +12,8 @@ export interface ContactEmailData {
   phone?: string;
   budget?: string;
   services: string;
+  topic?: string;
+  urgency?: string;
   message: string;
 }
 
@@ -56,7 +59,7 @@ export async function sendContactEmail(data: ContactEmailData): Promise<void> {
       <body>
         <div class="container">
           <div class="header">
-            <h2>New Contact Form Submission - TEAS Gurus</h2>
+            <h2>${data.topic ? `Support Request: ${escapeHtml(data.topic)}` : "New Contact Form Submission"} - ${getSiteName()}</h2>
           </div>
           <div class="content">
             <div class="field">
@@ -82,9 +85,21 @@ export async function sendContactEmail(data: ContactEmailData): Promise<void> {
               )}</div>
             </div>
             <div class="field">
-              <div class="label">Services:</div>
+              <div class="label">Services/Topic:</div>
               <div class="value">${escapeHtml(data.services)}</div>
             </div>
+            ${data.topic ? `
+            <div class="field">
+              <div class="label">Topic:</div>
+              <div class="value">${escapeHtml(data.topic)}</div>
+            </div>
+            ` : ""}
+            ${data.urgency ? `
+            <div class="field">
+              <div class="label">Urgency:</div>
+              <div class="value">${escapeHtml(data.urgency)}</div>
+            </div>
+            ` : ""}
             <div class="field">
               <div class="label">Message:</div>
               <div class="value">${escapeHtml(data.message).replace(
@@ -102,14 +117,14 @@ export async function sendContactEmail(data: ContactEmailData): Promise<void> {
   `;
 
   const textContent = `
-New Contact Form Submission - TEAS Gurus
+${data.topic ? `Support Request: ${data.topic}` : "New Contact Form Submission"} - ${getSiteName()}
 
 Name: ${data.name}
 Email: ${data.email}
 Phone: ${data.phone || "Not provided"}
 Budget: ${data.budget || "Not provided"}
-Services: ${data.services}
-
+Services/Topic: ${data.services}
+${data.topic ? `Topic: ${data.topic}\n` : ""}${data.urgency ? `Urgency: ${data.urgency}\n` : ""}
 Message:
 ${data.message}
 
@@ -122,7 +137,9 @@ Submitted on: ${new Date().toLocaleString()}
       email: fromEmail,
       name: "TEAS Gurus Contact Form",
     },
-    subject: "New Contact Form Submission - TEAS Gurus",
+    subject: data.topic 
+      ? `Support Request: ${data.topic} - ${getSiteName()}`
+      : "New Contact Form Submission - TEAS Gurus",
     text: textContent,
     html: htmlContent,
   };
@@ -168,6 +185,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com";
   const loginUrl =
     process.env.NEXT_PUBLIC_LOGIN_URL || `${siteUrl}/login`;
+  const siteName = getSiteName();
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -188,12 +206,12 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎉 Welcome to TEAS Gurus!</h1>
+            <h1>🎉 Welcome to ${siteName}!</h1>
           </div>
           <div class="content">
             <p>Hi ${escapeHtml(data.name)},</p>
             
-            <p>Welcome to TEAS Gurus! Your account has been created successfully, and you're all set to begin preparing for your TEAS or HESI exam with confidence.</p>
+            <p>Welcome to ${siteName}! Your account has been created successfully, and you're all set to begin preparing for your TEAS or HESI exam with confidence.</p>
             
             <p>You can now log in anytime using the email: <strong>${escapeHtml(
               data.email
@@ -216,7 +234,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
             
             <p>Welcome again, and we're excited to be part of your nursing journey! 💙</p>
             
-            <p>Best regards,<br>TEAS Gurus Team<br><a href="${siteUrl}">${siteUrl}</a></p>
+            <p>Best regards,<br>${siteName} Team<br><a href="${siteUrl}">${siteUrl}</a></p>
             
             <div class="footer">
               <p>This email was sent to ${escapeHtml(data.email)}</p>
@@ -228,11 +246,11 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
   `;
 
   const textContent = `
-🎉 Welcome to TEAS Gurus — Your Account Is Ready!
+🎉 Welcome to ${siteName} — Your Account Is Ready!
 
 Hi ${data.name},
 
-Welcome to TEAS Gurus! Your account has been created successfully, and you're all set to begin preparing for your TEAS or HESI exam with confidence.
+Welcome to ${siteName}! Your account has been created successfully, and you're all set to begin preparing for your TEAS or HESI exam with confidence.
 
 You can now log in anytime using the email: ${data.email}
 
@@ -250,7 +268,7 @@ If you ever need help, reply to this email — our support team is always happy 
 
 Welcome again, and we're excited to be part of your nursing journey! 💙
 
-TEAS Gurus Team
+${siteName} Team
 ${siteUrl}
   `.trim();
 
@@ -258,9 +276,9 @@ ${siteUrl}
     to: data.email,
     from: {
       email: fromEmail,
-      name: "TEAS Gurus",
+      name: siteName,
     },
-    subject: "🎉 Welcome to TEAS Gurus — Your Account Is Ready!",
+    subject: `🎉 Welcome to ${siteName} — Your Account Is Ready!`,
     text: textContent,
     html: htmlContent,
   };

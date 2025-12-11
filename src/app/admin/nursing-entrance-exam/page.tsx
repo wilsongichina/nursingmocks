@@ -1,12 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   getNursingEntranceExamSubPages,
   deleteNursingEntranceExamSubPage,
   uploadNursingEntranceExamSubPage,
+  getNestedSubPages,
+  getNursingEntranceExamQuizzes,
+  getRouteMappingSlugsByIds,
+  countExitEntranceQuizQuestions,
+  uploadNestedSubPage,
+  deleteNestedSubPage,
+  deleteNursingEntranceExamQuiz,
+  uploadNursingEntranceExamQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import {
+  SidebarProvider,
+  useSidebar,
+} from "@/components/layout/SidebarContext";
+import UserProfileBadge from "@/components/layout/UserProfileBadge";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSiteUrl } from "@/lib/config";
 
 interface SubPage {
   id: string;
@@ -16,16 +32,77 @@ interface SubPage {
   title?: string;
   lastUpdated?: string;
   version?: string;
+  status?: string;
   hero?: {
     title: string;
   };
 }
 
-export default function NursingEntranceExamAdminPage() {
+function NursingEntranceExamAdminPageContent() {
+  const { isCollapsed } = useSidebar();
+  const { currentUser } = useAuth();
   const [subPages, setSubPages] = useState<SubPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Get unique sub-page names for exam filter
+  const uniqueSubPageNames = useMemo(() => {
+    const names = subPages
+      .map((sp) => sp.pageName || sp.hero?.title || sp.title || sp.id)
+      .filter((name, index, self) => self.indexOf(name) === index && name)
+      .sort();
+    return names;
+  }, [subPages]);
+
+  // Helper function to check if a slug exists across all levels
+  const isSlugTaken = (
+    slug: string,
+    excludeId?: string
+  ): { taken: boolean; message?: string } => {
+    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-");
+
+    // Helper to normalize a slug for comparison
+    const normalizeSlug = (s: string) => s.toLowerCase().replace(/\s+/g, "-");
+
+    // Check sub-pages
+    const existingSubPage = subPages.find((sp) => {
+      const existingSlug = normalizeSlug(sp.slug || sp.id);
+      return existingSlug === normalizedSlug && sp.id !== excludeId;
+    });
+    if (existingSubPage) {
+      return {
+        taken: true,
+        message: `A sub-page with slug "${normalizedSlug}" already exists.`,
+      };
+    }
+
+    // Check nested sub-pages
+    const existingNestedSubPage = nestedSubPages.find((nsp) => {
+      const existingSlug = normalizeSlug(nsp.slug || nsp.id);
+      return existingSlug === normalizedSlug && nsp.id !== excludeId;
+    });
+    if (existingNestedSubPage) {
+      return {
+        taken: true,
+        message: `A nested sub-page with slug "${normalizedSlug}" already exists.`,
+      };
+    }
+
+    // Check quizzes
+    const existingQuiz = quizzes.find((quiz) => {
+      const existingSlug = normalizeSlug(quiz.slug || quiz.id);
+      return existingSlug === normalizedSlug && quiz.id !== excludeId;
+    });
+    if (existingQuiz) {
+      return {
+        taken: true,
+        message: `A quiz with slug "${normalizedSlug}" already exists.`,
+      };
+    }
+
+    return { taken: false };
+  };
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newSubPageId, setNewSubPageId] = useState("");
   const [newSubPageName, setNewSubPageName] = useState("");
@@ -34,6 +111,57 @@ export default function NursingEntranceExamAdminPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [subPageToDelete, setSubPageToDelete] = useState<SubPage | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState("sub-pages");
+  const [showCreateNestedModal, setShowCreateNestedModal] = useState(false);
+  const [selectedSubPageForNested, setSelectedSubPageForNested] =
+    useState<SubPage | null>(null);
+  const [newNestedSubPageId, setNewNestedSubPageId] = useState("");
+  const [newNestedSubPageName, setNewNestedSubPageName] = useState("");
+  const [nestedValidationError, setNestedValidationError] = useState("");
+  const [savingNested, setSavingNested] = useState(false);
+  const [showDeleteNestedModal, setShowDeleteNestedModal] = useState(false);
+  const [nestedSubPageToDelete, setNestedSubPageToDelete] = useState<
+    any | null
+  >(null);
+  const [deletingNested, setDeletingNested] = useState(false);
+  const [showDeleteQuizModal, setShowDeleteQuizModal] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState<any | null>(null);
+  const [deletingQuiz, setDeletingQuiz] = useState(false);
+  const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
+  const [selectedNestedSubPageForQuiz, setSelectedNestedSubPageForQuiz] =
+    useState<any | null>(null);
+  const [newQuizId, setNewQuizId] = useState("");
+  const [newQuizName, setNewQuizName] = useState("");
+  const [quizValidationError, setQuizValidationError] = useState("");
+  const [savingQuiz, setSavingQuiz] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [examFilter, setExamFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  // Reset pagination when tab changes
+  useEffect(() => {
+    setNestedSubPagesPage(1);
+    setQuizzesPage(1);
+  }, [activeTab]);
+
+  // Reset pagination when search query changes
+  useEffect(() => {
+    setNestedSubPagesPage(1);
+    setQuizzesPage(1);
+  }, [searchQuery]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setNestedSubPagesPage(1);
+    setQuizzesPage(1);
+  }, [examFilter, statusFilter]);
+  const [nestedSubPages, setNestedSubPages] = useState<any[]>([]);
+  const [quizzesCount, setQuizzesCount] = useState(0);
+  const [kbArticlesCount, setKbArticlesCount] = useState(0);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [nestedSubPagesPage, setNestedSubPagesPage] = useState(1);
+  const [quizzesPage, setQuizzesPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     loadSubPages();
@@ -48,6 +176,276 @@ export default function NursingEntranceExamAdminPage() {
 
       if (result.success && result.data) {
         setSubPages(result.data);
+
+        // Load nested sub-pages for all sub-pages in parallel
+        const allNestedSubPages: any[] = [];
+        let totalQuizzes = 0;
+
+        // Fetch all nested sub-pages in parallel using Promise.all
+        const nestedSubPagesPromises = result.data.map(async (subPage) => {
+          const subPageId = subPage.slug || subPage.id;
+          const subPageDocId = subPage.id; // Keep the document ID for route mappings
+          const subPageName =
+            subPage.pageName ||
+            subPage.hero?.title ||
+            subPage.title ||
+            subPage.id;
+          const nestedResult = await getNestedSubPages(subPageId);
+
+          if (nestedResult.success && nestedResult.data) {
+            // Add parent sub-page info to each nested sub-page
+            const nestedWithParent = nestedResult.data.map(
+              (nestedSubPage: any) => ({
+                ...nestedSubPage,
+                parentSubPageId: subPageId,
+                parentSubPageDocId: subPageDocId, // Document ID for route mappings
+                parentSubPageName: subPageName,
+              })
+            );
+
+            return { nestedWithParent, subPageId, subPageDocId };
+          }
+          return {
+            nestedWithParent: [],
+            subPageId,
+            subPageDocId: subPageDocId,
+          };
+        });
+
+        const nestedResults = await Promise.all(nestedSubPagesPromises);
+
+        // Collect all nested sub-pages and their parent info
+        const allNestedIds: string[] = [];
+        const nestedSubPageMap = new Map<
+          string,
+          { nested: any; subPageId: string; subPageDocId: string }
+        >();
+
+        for (const {
+          nestedWithParent,
+          subPageId,
+          subPageDocId,
+        } of nestedResults) {
+          for (const nested of nestedWithParent) {
+            allNestedSubPages.push(nested);
+            allNestedIds.push(nested.id);
+            nestedSubPageMap.set(nested.id, {
+              nested,
+              subPageId,
+              subPageDocId,
+            });
+          }
+        }
+
+        // Get route mapping slugs for all nested sub-pages in one query
+        // Group by subPageId to get slugs efficiently
+        const subPageGroups = new Map<string, string[]>();
+        for (const { nested, subPageDocId } of nestedSubPageMap.values()) {
+          if (!subPageGroups.has(subPageDocId)) {
+            subPageGroups.set(subPageDocId, []);
+          }
+          subPageGroups.get(subPageDocId)!.push(nested.id);
+        }
+
+        // Fetch route mapping slugs for each sub-page group in parallel
+        const slugMapPromises = Array.from(subPageGroups.entries()).map(
+          async ([subPageDocId, nestedIds]) => {
+            const slugResult = await getRouteMappingSlugsByIds({
+              pillarId: "nursing-entrance-exam",
+              type: "nested",
+              ids: nestedIds,
+              subPageId: subPageDocId,
+            });
+            return slugResult.success && slugResult.slugMap
+              ? slugResult.slugMap
+              : {};
+          }
+        );
+
+        const slugMaps = await Promise.all(slugMapPromises);
+        const combinedSlugMap: Record<string, string> = {};
+        slugMaps.forEach((map: Record<string, string>) => {
+          Object.assign(combinedSlugMap, map);
+        });
+
+        // Update nested sub-pages with route mapping slugs if available
+        const nestedWithSlugs = allNestedSubPages.map((nested) => {
+          const routeSlug = combinedSlugMap[nested.id];
+          return {
+            ...nested,
+            slug: routeSlug || nested.slug || nested.id, // Prefer route mapping slug
+          };
+        });
+
+        // Fetch all quizzes for all nested sub-pages in parallel
+        const allQuizzes: any[] = [];
+        const quizCountPromises = nestedWithSlugs.map(async (nestedSubPage) => {
+          const nestedSubPageId = nestedSubPage.slug || nestedSubPage.id;
+          const parentInfo = nestedSubPageMap.get(nestedSubPage.id);
+          if (!parentInfo) return { count: 0, quizzes: [] };
+
+          try {
+            const quizzesResult = await getNursingEntranceExamQuizzes(
+              parentInfo.subPageId,
+              nestedSubPageId
+            );
+
+            if (
+              quizzesResult.success &&
+              quizzesResult.data &&
+              quizzesResult.data.length > 0
+            ) {
+              // Add parent information to each quiz
+              const quizzesWithParent = quizzesResult.data.map((quiz: any) => ({
+                ...quiz,
+                parentSubPageId: parentInfo.subPageId, // slug for URL
+                parentSubPageDocId: parentInfo.subPageDocId, // document ID for route
+                parentSubPageName: nestedSubPage.parentSubPageName,
+                nestedSubPageId: nestedSubPageId, // slug for URL
+                nestedSubPageDocId: nestedSubPage.id, // document ID for route
+                nestedSubPageName:
+                  nestedSubPage.pageName ||
+                  nestedSubPage.hero?.title ||
+                  nestedSubPage.title ||
+                  nestedSubPage.id,
+              }));
+              allQuizzes.push(...quizzesWithParent);
+              return {
+                count: quizzesResult.data.length,
+                quizzes: quizzesWithParent,
+              };
+            }
+          } catch (error) {
+            console.error(
+              `Error loading quizzes for ${nestedSubPageId}:`,
+              error
+            );
+          }
+          return { count: 0, quizzes: [] };
+        });
+
+        const quizResults = await Promise.all(quizCountPromises);
+        totalQuizzes = quizResults.reduce(
+          (sum, result) => sum + result.count,
+          0
+        );
+
+        console.log(
+          "Total quizzes found:",
+          totalQuizzes,
+          "All quizzes:",
+          allQuizzes
+        );
+
+        // Get route mapping slugs for all quizzes
+        if (allQuizzes.length > 0) {
+          // Group quizzes by nested sub-page for efficient route mapping queries
+          const quizGroups = new Map<
+            string,
+            {
+              quizIds: string[];
+              subPageDocId: string;
+              nestedSubPageDocId: string;
+            }
+          >();
+
+          for (const quiz of allQuizzes) {
+            const key = `${quiz.parentSubPageDocId}_${quiz.nestedSubPageDocId}`;
+            if (!quizGroups.has(key)) {
+              quizGroups.set(key, {
+                quizIds: [],
+                subPageDocId: quiz.parentSubPageDocId,
+                nestedSubPageDocId: quiz.nestedSubPageDocId,
+              });
+            }
+            quizGroups.get(key)!.quizIds.push(quiz.id);
+          }
+
+          // Fetch route mapping slugs for each group in parallel
+          const quizSlugMapPromises = Array.from(quizGroups.entries()).map(
+            async ([key, group]) => {
+              try {
+                const slugResult = await getRouteMappingSlugsByIds({
+                  pillarId: "nursing-entrance-exam",
+                  type: "quiz",
+                  ids: group.quizIds,
+                  subPageId: group.subPageDocId,
+                  nestedPageId: group.nestedSubPageDocId,
+                });
+                return slugResult.success && slugResult.slugMap
+                  ? slugResult.slugMap
+                  : {};
+              } catch (error) {
+                console.error(
+                  `Error getting route mappings for quizzes in group ${key}:`,
+                  error
+                );
+                return {};
+              }
+            }
+          );
+
+          const quizSlugMaps = await Promise.all(quizSlugMapPromises);
+          const combinedQuizSlugMap: Record<string, string> = {};
+          quizSlugMaps.forEach((map: Record<string, string>) => {
+            Object.assign(combinedQuizSlugMap, map);
+          });
+
+          console.log("Quiz slug map:", combinedQuizSlugMap);
+
+          // Update quizzes with route mapping slugs
+          const quizzesWithSlugs = allQuizzes.map((quiz) => {
+            const routeSlug = combinedQuizSlugMap[quiz.id];
+            return {
+              ...quiz,
+              slug: routeSlug || quiz.slug || quiz.id, // Prefer route mapping slug
+            };
+          });
+
+          // Fetch question counts for all quizzes in parallel
+          const questionCountPromises = quizzesWithSlugs.map(async (quiz) => {
+            try {
+              const questionCount = await countExitEntranceQuizQuestions(
+                "nursing-entrance-exam",
+                quiz.parentSubPageId,
+                quiz.nestedSubPageId,
+                quiz.slug || quiz.id
+              );
+              return { quizId: quiz.id, questionCount };
+            } catch (error) {
+              console.error(
+                `Error counting questions for quiz ${quiz.id}:`,
+                error
+              );
+              return { quizId: quiz.id, questionCount: 0 };
+            }
+          });
+
+          const questionCounts = await Promise.all(questionCountPromises);
+          const questionCountMap = new Map<string, number>();
+          questionCounts.forEach(({ quizId, questionCount }) => {
+            questionCountMap.set(quizId, questionCount);
+          });
+
+          // Add question counts to quizzes
+          const quizzesWithCounts = quizzesWithSlugs.map((quiz) => ({
+            ...quiz,
+            questionCount: questionCountMap.get(quiz.id) || 0,
+          }));
+
+          console.log("Quizzes with slugs and counts:", quizzesWithCounts);
+          setQuizzes(quizzesWithCounts);
+        } else {
+          console.log("No quizzes found");
+          setQuizzes([]);
+        }
+
+        setNestedSubPages(nestedWithSlugs);
+        setQuizzesCount(totalQuizzes);
+
+        // TODO: Fetch KB articles count when the function is available
+        // For now, set to 0 or fetch from blog/articles collection if available
+        setKbArticlesCount(0);
       } else {
         setError("Failed to load sub-pages");
       }
@@ -96,6 +494,274 @@ export default function NursingEntranceExamAdminPage() {
     setSubPageToDelete(null);
   };
 
+  const handleDeleteNestedClick = (nestedSubPage: any) => {
+    setNestedSubPageToDelete(nestedSubPage);
+    setShowDeleteNestedModal(true);
+  };
+
+  const handleDeleteNestedConfirm = async () => {
+    if (!nestedSubPageToDelete) return;
+
+    try {
+      setDeletingNested(true);
+      setError("");
+      setSuccess("");
+
+      // Use parentSubPageDocId (document ID) instead of parentSubPageId (slug)
+      const parentSubPageDocId =
+        nestedSubPageToDelete.parentSubPageDocId ||
+        nestedSubPageToDelete.parentSubPageId;
+
+      const result = await deleteNestedSubPage(
+        parentSubPageDocId,
+        nestedSubPageToDelete.id
+      );
+
+      if (result.success) {
+        setSuccess("Nested sub-page deleted successfully!");
+        setShowDeleteNestedModal(false);
+        setNestedSubPageToDelete(null);
+        loadSubPages();
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(result.message || "Failed to delete nested sub-page");
+      }
+    } catch (err) {
+      setError("Failed to delete nested sub-page");
+      console.error("Error deleting nested sub-page:", err);
+    } finally {
+      setDeletingNested(false);
+    }
+  };
+
+  const handleDeleteNestedCancel = () => {
+    setShowDeleteNestedModal(false);
+    setNestedSubPageToDelete(null);
+  };
+
+  const handleDeleteQuizClick = (quiz: any) => {
+    setQuizToDelete(quiz);
+    setShowDeleteQuizModal(true);
+  };
+
+  const handleDeleteQuizConfirm = async () => {
+    if (!quizToDelete) return;
+
+    try {
+      setDeletingQuiz(true);
+      setError("");
+      setSuccess("");
+
+      const result = await deleteNursingEntranceExamQuiz(
+        quizToDelete.parentSubPageId,
+        quizToDelete.nestedSubPageId,
+        quizToDelete.id
+      );
+
+      if (result.success) {
+        setSuccess("Quiz deleted successfully!");
+        setShowDeleteQuizModal(false);
+        setQuizToDelete(null);
+        loadSubPages();
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(result.message || "Failed to delete quiz");
+      }
+    } catch (err) {
+      setError("Failed to delete quiz");
+      console.error("Error deleting quiz:", err);
+    } finally {
+      setDeletingQuiz(false);
+    }
+  };
+
+  const handleDeleteQuizCancel = () => {
+    setShowDeleteQuizModal(false);
+    setQuizToDelete(null);
+  };
+
+  const handleCreateQuiz = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setQuizValidationError("");
+
+    if (!newQuizId.trim() || !newQuizName.trim()) {
+      setQuizValidationError("Quiz ID and Name are required.");
+      return;
+    }
+
+    if (!selectedNestedSubPageForQuiz) {
+      setQuizValidationError("Nested sub-page is required.");
+      return;
+    }
+
+    const normalizedQuizId = newQuizId.toLowerCase().replace(/\s+/g, "-");
+
+    // Check if slug is taken across all levels
+    const slugCheck = isSlugTaken(normalizedQuizId);
+    if (slugCheck.taken) {
+      setQuizValidationError(
+        slugCheck.message ||
+          `A page with slug "${normalizedQuizId}" already exists.`
+      );
+      return;
+    }
+
+    try {
+      setSavingQuiz(true);
+      setError("");
+      setSuccess("");
+
+      // Use parentSubPageId (slug) for the function, as it resolves IDs internally
+      const parentSubPageId = selectedNestedSubPageForQuiz.parentSubPageId;
+      const nestedSubPageId =
+        selectedNestedSubPageForQuiz.slug || selectedNestedSubPageForQuiz.id;
+      const nestedSubPageName =
+        selectedNestedSubPageForQuiz.pageName ||
+        selectedNestedSubPageForQuiz.hero?.title ||
+        selectedNestedSubPageForQuiz.title ||
+        selectedNestedSubPageForQuiz.id;
+
+      const defaultQuizContent = {
+        pageName: newQuizName,
+        slug: normalizedQuizId,
+        meta: {
+          title: `${newQuizName} | TeasGurus`,
+          description: `Content for ${newQuizName} under ${nestedSubPageName}.`,
+          keywords: `${newQuizName}, ${nestedSubPageName}, nursing entrance exam`,
+          ogTitle: `${newQuizName} | TeasGurus`,
+          ogDescription: `Content for ${newQuizName}`,
+          ogImage: "/teas-gurus-logo.png",
+          canonicalUrl: `${getSiteUrl()}/${normalizedQuizId}`,
+        },
+        hero: {
+          title: newQuizName,
+        },
+        schema: "",
+      };
+
+      const result = await uploadNursingEntranceExamQuiz(
+        parentSubPageId,
+        nestedSubPageId,
+        normalizedQuizId,
+        defaultQuizContent
+      );
+
+      if (result.success) {
+        setSuccess(`Quiz "${newQuizName}" created successfully!`);
+        setShowCreateQuizModal(false);
+        setSelectedNestedSubPageForQuiz(null);
+        setNewQuizId("");
+        setNewQuizName("");
+        setQuizValidationError("");
+        loadSubPages(); // Reload to refresh quizzes
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setQuizValidationError(result.message || "Failed to create quiz.");
+      }
+    } catch (err) {
+      setQuizValidationError("Failed to create quiz.");
+      console.error("Error creating quiz:", err);
+    } finally {
+      setSavingQuiz(false);
+    }
+  };
+
+  const handleCreateNestedSubPage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNestedValidationError("");
+
+    if (!newNestedSubPageId.trim() || !newNestedSubPageName.trim()) {
+      setNestedValidationError("Nested sub-page ID and Name are required.");
+      return;
+    }
+
+    if (!selectedSubPageForNested) {
+      setNestedValidationError("Parent sub-page is required.");
+      return;
+    }
+
+    const normalizedNestedSubPageId = newNestedSubPageId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    // Check if slug is taken across all levels
+    const slugCheck = isSlugTaken(normalizedNestedSubPageId);
+    if (slugCheck.taken) {
+      setNestedValidationError(
+        slugCheck.message ||
+          `A page with slug "${normalizedNestedSubPageId}" already exists.`
+      );
+      return;
+    }
+
+    try {
+      setSavingNested(true);
+      setError("");
+      setSuccess("");
+
+      const parentSubPageName =
+        selectedSubPageForNested.pageName ||
+        selectedSubPageForNested.hero?.title ||
+        selectedSubPageForNested.title ||
+        selectedSubPageForNested.id;
+      const parentSubPageId =
+        selectedSubPageForNested.slug || selectedSubPageForNested.id;
+
+      const defaultNestedSubPageContent = {
+        pageName: newNestedSubPageName,
+        status: "Draft",
+        heading: "",
+        description: "",
+        seoLabel: newNestedSubPageName,
+        seoSlug: normalizedNestedSubPageId,
+        createdAt: new Date().toISOString(),
+        bodyContent: "",
+        meta: {
+          title: `${newNestedSubPageName} | TeasGurus`,
+          description: `Content for ${newNestedSubPageName} under ${parentSubPageName}.`,
+          keywords: `${newNestedSubPageName}, ${parentSubPageId}, nursing entrance exam`,
+          ogTitle: `${newNestedSubPageName} | TeasGurus`,
+          ogDescription: `Content for ${newNestedSubPageName}`,
+          ogImage: "/teas-gurus-logo.png",
+          canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,
+        },
+        schema: "",
+        hero: {
+          title: "",
+          description: "",
+        },
+      };
+
+      const result = await uploadNestedSubPage(
+        parentSubPageId,
+        normalizedNestedSubPageId,
+        defaultNestedSubPageContent
+      );
+
+      if (result.success) {
+        setSuccess(
+          `Nested sub-page "${newNestedSubPageName}" created successfully!`
+        );
+        setShowCreateNestedModal(false);
+        setSelectedSubPageForNested(null);
+        setNewNestedSubPageId("");
+        setNewNestedSubPageName("");
+        setNestedValidationError("");
+        loadSubPages(); // Reload to refresh nested sub-pages
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setNestedValidationError(
+          result.message || "Failed to create nested sub-page."
+        );
+      }
+    } catch (err) {
+      setNestedValidationError("Failed to create nested sub-page.");
+      console.error("Error creating nested sub-page:", err);
+    } finally {
+      setSavingNested(false);
+    }
+  };
+
   const handleCreateSubPage = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError("");
@@ -107,13 +773,12 @@ export default function NursingEntranceExamAdminPage() {
 
     const normalizedSubPageId = newSubPageId.toLowerCase().replace(/\s+/g, "-");
 
-    // Check for duplicates
-    const existingSubPage = subPages.find(
-      (page) => page.id === normalizedSubPageId
-    );
-    if (existingSubPage) {
+    // Check if slug is taken across all levels
+    const slugCheck = isSlugTaken(normalizedSubPageId);
+    if (slugCheck.taken) {
       setValidationError(
-        `A sub-page with ID "${normalizedSubPageId}" already exists.`
+        slugCheck.message ||
+          `A page with slug "${normalizedSubPageId}" already exists.`
       );
       return;
     }
@@ -125,6 +790,12 @@ export default function NursingEntranceExamAdminPage() {
 
       const defaultSubPageContent = {
         pageName: newSubPageName,
+        status: "Published",
+        heading: "",
+        description: "",
+        seoLabel: newSubPageName,
+        seoSlug: normalizedSubPageId,
+        createdAt: new Date().toISOString(),
         meta: {
           title: `${newSubPageName} | Nursing Entrance Exam`,
           description: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
@@ -132,16 +803,10 @@ export default function NursingEntranceExamAdminPage() {
           ogTitle: `${newSubPageName} | Nursing Entrance Exam`,
           ogDescription: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${normalizedSubPageId}`,
+          canonicalUrl: `${getSiteUrl()}/${normalizedSubPageId}`,
         },
-        hero: {
-          badge: "Nursing Entrance Exam",
-          title: newSubPageName,
-          subtitle: `Detailed information about ${newSubPageName}.`,
-        },
-        content: `<p>This is the default content for the <strong>${newSubPageName}</strong> sub-page. You can edit this content using the rich text editor.</p>`,
-        image: "",
         schema: "",
+        bodyContent: "",
       };
 
       const result = await uploadNursingEntranceExamSubPage(
@@ -170,150 +835,52 @@ export default function NursingEntranceExamAdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading sub-pages...</p>
+      <div className="min-h-screen bg-white overflow-x-hidden">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading sub-pages...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
-                <svg
-                  className="w-6 h-6 text-indigo-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Nursing Entrance Exam CMS
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Manage the main page and sub-pages
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
+    <div className="min-h-screen bg-white overflow-x-hidden">
+      <AdminSidebar />
+      <div
+        className={`transition-all duration-300 ${
+          isCollapsed ? "md:ml-20" : "md:ml-64"
+        }`}
+      >
+        {/* Desktop: Show header bar with breadcrumbs - same as pillar pages */}
+        <div
+          className="hidden md:block h-16"
+          style={{
+            background: "rgba(255, 255, 255, 0.95)",
+            borderBottom: "1px solid #d9def3",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <div className="flex justify-between items-center px-8 h-full">
+            {/* Breadcrumbs */}
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Link
-                href="/admin"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                href="/"
+                className="hover:text-blue-600 transition-colors font-medium"
               >
-                Dashboard
+                Home
               </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-800">{success}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Page Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-          <div className="flex justify-between items-center">
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Nursing Entrance Exam Main Page
-              </h3>
-              <p className="text-sm text-gray-600 mb-2">
-                Edit the main Nursing Entrance Exam page content
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Link
-                href="/admin/nursing-entrance-exam/edit"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-              >
-                Edit Main Page
-              </Link>
-              <Link
-                href="/nursing-entrance-exam"
-                target="_blank"
-                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-              >
-                View Page →
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Sub-Pages Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Sub-Pages</h2>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-            >
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -322,282 +889,3818 @@ export default function NursingEntranceExamAdminPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  d="M9 5l7 7-7 7"
                 />
               </svg>
-              <span>Create Sub-page</span>
-            </button>
-          </div>
-
-          {subPages.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No sub-pages found
-              </h3>
-              <p className="text-gray-600">Create a sub-page to get started.</p>
+              <Link
+                href="/admin"
+                className="hover:text-blue-600 transition-colors font-medium"
+              >
+                Admin Dashboard
+              </Link>
+              <svg
+                className="w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              <span className="font-medium">Nursing Entrance Exam</span>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subPages.map((subPage) => (
-                <div
-                  key={subPage.id}
-                  className="bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300"
+            {/* Show UserProfileBadge if logged in, or Login/Register buttons if logged out */}
+            {currentUser ? (
+              <div>
+                <UserProfileBadge />
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  href="/login"
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        {subPage.pageName ||
-                          subPage.hero?.title ||
-                          subPage.title ||
-                          subPage.id}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        ID: {subPage.id}
-                      </p>
-                      {subPage.lastUpdated && (
-                        <p className="text-sm text-gray-500">
-                          Updated:{" "}
-                          {new Date(subPage.lastUpdated).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className="min-h-screen"
+          style={{
+            background:
+              "radial-gradient(circle at top left, #eef2ff 0, #f4f5fb 55%, #f9fafb 100%)",
+          }}
+        >
+          {/* Main Content */}
+          <div style={{ padding: "24px 32px 32px" }}>
+            {/* Alerts */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-red-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                      />
+                    </svg>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Link
-                      href={`/admin/nursing-entrance-exam/${subPage.id}/manage`}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center space-x-2"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      <span>Manage</span>
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteClick(subPage)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center space-x-2"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                  <div className="mt-4">
-                    <Link
-                      href={`/${subPage.slug || subPage.id}`}
-                      target="_blank"
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                    >
-                      View Page →
-                    </Link>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{error}</p>
                   </div>
                 </div>
-              ))}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-green-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-green-800">{success}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Page Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "16px",
+                marginBottom: "20px",
+              }}
+            >
+              <div>
+                <h1
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: 700,
+                    marginBottom: "6px",
+                    fontFamily:
+                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    color: "#111827",
+                  }}
+                >
+                  Nursing Entrance Exam – Admin
+                </h1>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    maxWidth: "520px",
+                    fontFamily:
+                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                  }}
+                >
+                  Manage the main pillar page, sub pages, nested sub pages,
+                  knowledge base links, and quizzes for ATI TEAS & HESI A2. Use
+                  this panel to add, edit, and organize content that appears on
+                  NursingMocks.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  style={{
+                    borderRadius: "999px",
+                    padding: "8px 14px",
+                    fontSize: "13px",
+                    border: "1px solid #4f46e5",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "#4f46e5",
+                    color: "#ffffff",
+                    fontFamily:
+                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    fontWeight: 500,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#4338ca";
+                    e.currentTarget.style.borderColor = "#4338ca";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#4f46e5";
+                    e.currentTarget.style.borderColor = "#4f46e5";
+                  }}
+                >
+                  + New Sub Page
+                </button>
+              </div>
+            </div>
+
+            {/* Overview Grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "2fr 1.2fr",
+                gap: "20px",
+                marginBottom: "24px",
+              }}
+            >
+              {/* Structure Overview Card */}
+              <div
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "18px",
+                  padding: "18px 20px",
+                  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.03)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <h2
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      color: "#312e81",
+                    }}
+                  >
+                    Structure overview
+                  </h2>
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#9ca3af",
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    }}
+                  >
+                    Entrance pillar → TEAS & HESI
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "#4b5563",
+                    fontFamily:
+                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                  }}
+                >
+                  <ul style={{ listStyle: "none", marginTop: "6px" }}>
+                    <li style={{ margin: "4px 0" }}>
+                      <span style={{ fontWeight: 500, color: "#111827" }}>
+                        Main Pillar Page:
+                      </span>{" "}
+                      Nursing Entrance Exam
+                    </li>
+                    <li style={{ margin: "4px 0" }}>
+                      <span style={{ fontWeight: 500, color: "#111827" }}>
+                        Sub Pages:
+                      </span>{" "}
+                      {subPages.length > 0
+                        ? subPages
+                            .map(
+                              (sp) =>
+                                sp.pageName ||
+                                sp.hero?.title ||
+                                sp.title ||
+                                sp.id
+                            )
+                            .join(", ")
+                        : "None"}
+                    </li>
+                    <li style={{ margin: "4px 0" }}>
+                      <span style={{ fontWeight: 500, color: "#111827" }}>
+                        Nested Sub Pages:
+                      </span>{" "}
+                      {nestedSubPages.length > 0
+                        ? nestedSubPages
+                            .slice(0, 5)
+                            .map(
+                              (nsp) =>
+                                nsp.pageName ||
+                                nsp.hero?.title ||
+                                nsp.title ||
+                                nsp.id
+                            )
+                            .join(", ") +
+                          (nestedSubPages.length > 5 ? ", etc." : "")
+                        : "None"}
+                    </li>
+                    <li style={{ margin: "4px 0" }}>
+                      <span style={{ fontWeight: 500, color: "#111827" }}>
+                        KB:
+                      </span>{" "}
+                      TEAS & HESI knowledge base articles linked from this
+                      pillar
+                      {kbArticlesCount > 0
+                        ? ` (${kbArticlesCount} articles)`
+                        : ""}
+                    </li>
+                    <li style={{ margin: "4px 0" }}>
+                      <span style={{ fontWeight: 500, color: "#111827" }}>
+                        Linked Quizzes:
+                      </span>{" "}
+                      {quizzesCount > 0
+                        ? `${quizzesCount} quiz${
+                            quizzesCount !== 1 ? "zes" : ""
+                          } (each quiz links to its own questions in the question bank)`
+                        : "None (each quiz links to its own questions in the question bank)"}
+                    </li>
+                  </ul>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {subPages.map((sp) => {
+                      const name =
+                        sp.pageName || sp.hero?.title || sp.title || sp.id;
+                      return (
+                        <span
+                          key={sp.id}
+                          style={{
+                            fontSize: "11px",
+                            padding: "3px 8px",
+                            borderRadius: "999px",
+                            background: "#eef2ff",
+                            color: "#4338ca",
+                            fontFamily:
+                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                          }}
+                        >
+                          Sub Pages: {name}
+                        </span>
+                      );
+                    })}
+                    {nestedSubPages.slice(0, 6).map((nsp) => {
+                      const name =
+                        nsp.pageName || nsp.hero?.title || nsp.title || nsp.id;
+                      return (
+                        <span
+                          key={nsp.id}
+                          style={{
+                            fontSize: "11px",
+                            padding: "3px 8px",
+                            borderRadius: "999px",
+                            background: "#eef2ff",
+                            color: "#4338ca",
+                            fontFamily:
+                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                          }}
+                        >
+                          Nested: {name}
+                        </span>
+                      );
+                    })}
+                    {kbArticlesCount > 0 && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          padding: "3px 8px",
+                          borderRadius: "999px",
+                          background: "#eef2ff",
+                          color: "#4338ca",
+                          fontFamily:
+                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        }}
+                      >
+                        KB: TEAS & HESI
+                      </span>
+                    )}
+                    {quizzesCount > 0 && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          padding: "3px 8px",
+                          borderRadius: "999px",
+                          background: "#eef2ff",
+                          color: "#4338ca",
+                          fontFamily:
+                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        }}
+                      >
+                        Quiz: {quizzesCount}{" "}
+                        {quizzesCount === 1 ? "Quiz" : "Quizzes"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Content Stats Card */}
+              <div
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "18px",
+                  padding: "18px 20px",
+                  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.03)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <h2
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      color: "#312e81",
+                    }}
+                  >
+                    Content stats
+                  </h2>
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#9ca3af",
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    }}
+                  >
+                    For Nursing Entrance Exam
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: "10px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "12px 12px",
+                      borderRadius: "14px",
+                      background:
+                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
+                      border: "1px dashed #e2e4f0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "#9ca3af",
+                        marginBottom: "4px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      Sub pages
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        marginBottom: "2px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        color: "#111827",
+                      }}
+                    >
+                      {subPages.length}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      {subPages.length > 0
+                        ? subPages
+                            .map(
+                              (sp) =>
+                                sp.pageName ||
+                                sp.hero?.title ||
+                                sp.title ||
+                                sp.id
+                            )
+                            .join(" & ")
+                        : "None"}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px 12px",
+                      borderRadius: "14px",
+                      background:
+                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
+                      border: "1px dashed #e2e4f0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "#9ca3af",
+                        marginBottom: "4px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      Nested sub pages
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        marginBottom: "2px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        color: "#111827",
+                      }}
+                    >
+                      {nestedSubPages.length}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      {nestedSubPages.length > 0
+                        ? nestedSubPages
+                            .slice(0, 4)
+                            .map(
+                              (nsp) =>
+                                nsp.pageName ||
+                                nsp.hero?.title ||
+                                nsp.title ||
+                                nsp.id
+                            )
+                            .join(", ") +
+                          (nestedSubPages.length > 4 ? ", ..." : "")
+                        : "None"}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px 12px",
+                      borderRadius: "14px",
+                      background:
+                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
+                      border: "1px dashed #e2e4f0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "#9ca3af",
+                        marginBottom: "4px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      KB articles
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        marginBottom: "2px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        color: "#111827",
+                      }}
+                    >
+                      {kbArticlesCount}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      Linked from Entrance pillar
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px 12px",
+                      borderRadius: "14px",
+                      background:
+                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
+                      border: "1px dashed #e2e4f0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "#9ca3af",
+                        marginBottom: "4px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      Linked quizzes
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        marginBottom: "2px",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        color: "#111827",
+                      }}
+                    >
+                      {quizzesCount}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      }}
+                    >
+                      {quizzesCount > 0
+                        ? `${quizzesCount} quiz${
+                            quizzesCount !== 1 ? "zes" : ""
+                          } linked`
+                        : "No quizzes linked"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs Row */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "12px",
+              }}
+            >
+              <button
+                onClick={() => setActiveTab("sub-pages")}
+                style={{
+                  fontSize: "13px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  border:
+                    activeTab === "sub-pages"
+                      ? "1px solid #c7d2fe"
+                      : "1px solid transparent",
+                  cursor: "pointer",
+                  color: activeTab === "sub-pages" ? "#4338ca" : "#6b7280",
+                  background:
+                    activeTab === "sub-pages" ? "#eef2ff" : "transparent",
+                  fontWeight: activeTab === "sub-pages" ? 500 : 400,
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}
+              >
+                Sub Pages
+              </button>
+              <button
+                onClick={() => setActiveTab("nested")}
+                style={{
+                  fontSize: "13px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  border:
+                    activeTab === "nested"
+                      ? "1px solid #c7d2fe"
+                      : "1px solid transparent",
+                  cursor: "pointer",
+                  color: activeTab === "nested" ? "#4338ca" : "#6b7280",
+                  background:
+                    activeTab === "nested" ? "#eef2ff" : "transparent",
+                  fontWeight: activeTab === "nested" ? 500 : 400,
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}
+              >
+                Nested Sub Pages
+              </button>
+              <button
+                onClick={() => setActiveTab("kb")}
+                style={{
+                  fontSize: "13px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  border:
+                    activeTab === "kb"
+                      ? "1px solid #c7d2fe"
+                      : "1px solid transparent",
+                  cursor: "pointer",
+                  color: activeTab === "kb" ? "#4338ca" : "#6b7280",
+                  background: activeTab === "kb" ? "#eef2ff" : "transparent",
+                  fontWeight: activeTab === "kb" ? 500 : 400,
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}
+              >
+                KB Articles
+              </button>
+              <button
+                onClick={() => setActiveTab("quizzes")}
+                style={{
+                  fontSize: "13px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  border:
+                    activeTab === "quizzes"
+                      ? "1px solid #c7d2fe"
+                      : "1px solid transparent",
+                  cursor: "pointer",
+                  color: activeTab === "quizzes" ? "#4338ca" : "#6b7280",
+                  background:
+                    activeTab === "quizzes" ? "#eef2ff" : "transparent",
+                  fontWeight: activeTab === "quizzes" ? 500 : 400,
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}
+              >
+                Quizzes
+              </button>
+              <button
+                onClick={() => setActiveTab("settings")}
+                style={{
+                  fontSize: "13px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  border:
+                    activeTab === "settings"
+                      ? "1px solid #c7d2fe"
+                      : "1px solid transparent",
+                  cursor: "pointer",
+                  color: activeTab === "settings" ? "#4338ca" : "#6b7280",
+                  background:
+                    activeTab === "settings" ? "#eef2ff" : "transparent",
+                  fontWeight: activeTab === "settings" ? 500 : 400,
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}
+              >
+                Main Page Settings
+              </button>
+            </div>
+
+            {/* Sub Pages Table Card */}
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "18px",
+                padding: "18px 20px",
+                boxShadow: "0 10px 30px rgba(15, 23, 42, 0.03)",
+                marginTop: "8px",
+              }}
+            >
+              {/* Toolbar */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginBottom: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder={
+                      activeTab === "nested"
+                        ? "Search nested sub pages..."
+                        : activeTab === "quizzes"
+                        ? "Search quizzes..."
+                        : "Search sub pages..."
+                    }
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      fontSize: "13px",
+                      padding: "6px 12px",
+                      borderRadius: "999px",
+                      border: "1px solid #e5e7eb",
+                      background: "#ffffff",
+                      color: "#111827",
+                      minWidth: "120px",
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    }}
+                  />
+                  <select
+                    value={examFilter}
+                    onChange={(e) => setExamFilter(e.target.value)}
+                    style={{
+                      fontSize: "13px",
+                      padding: "6px 10px",
+                      borderRadius: "999px",
+                      border: "1px solid #e5e7eb",
+                      background: "#ffffff",
+                      color: "#111827",
+                      minWidth: "120px",
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    }}
+                  >
+                    <option value="">All exams</option>
+                    {uniqueSubPageNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    style={{
+                      fontSize: "13px",
+                      padding: "6px 10px",
+                      borderRadius: "999px",
+                      border: "1px solid #e5e7eb",
+                      background: "#ffffff",
+                      color: "#111827",
+                      minWidth: "120px",
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    }}
+                  >
+                    <option value="">All statuses</option>
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    style={{
+                      borderRadius: "999px",
+                      padding: "8px 14px",
+                      fontSize: "13px",
+                      border: "1px solid #e5e7eb",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "#ffffff",
+                      color: "#111827",
+                      fontFamily:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                      fontWeight: 500,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#f3f4ff";
+                      e.currentTarget.style.borderColor = "#c7d2fe";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#ffffff";
+                      e.currentTarget.style.borderColor = "#e5e7eb";
+                    }}
+                  >
+                    + New Sub Page
+                  </button>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div
+                style={{
+                  borderRadius: "14px",
+                  border: "1px solid #e5e7eb",
+                  overflow: "hidden",
+                  background: "#ffffff",
+                  overflowX: "auto",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "13px",
+                    fontFamily:
+                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    minWidth: "800px",
+                  }}
+                >
+                  <thead style={{ background: "#f9fafb" }}>
+                    <tr>
+                      <th
+                        style={{
+                          padding: "10px 12px",
+                          textAlign: "left",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: 500,
+                          minWidth: "210px",
+                        }}
+                      >
+                        Title
+                      </th>
+                      <th
+                        style={{
+                          padding: "10px 12px",
+                          textAlign: "left",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Exam
+                      </th>
+                      <th
+                        style={{
+                          padding: "10px 12px",
+                          textAlign: "left",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Level
+                      </th>
+                      {activeTab === "quizzes" && (
+                        <th
+                          style={{
+                            padding: "10px 12px",
+                            textAlign: "left",
+                            borderBottom: "1px solid #f3f4f6",
+                            fontSize: "12px",
+                            color: "#6b7280",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Questions
+                        </th>
+                      )}
+                      <th
+                        style={{
+                          padding: "10px 12px",
+                          textAlign: "left",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: 500,
+                          minWidth: "180px",
+                        }}
+                      >
+                        URL slug
+                      </th>
+                      <th
+                        style={{
+                          padding: "10px 12px",
+                          textAlign: "left",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Status
+                      </th>
+                      <th
+                        style={{
+                          padding: "10px 12px",
+                          textAlign: "left",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Last updated
+                      </th>
+                      <th
+                        style={{
+                          padding: "10px 12px",
+                          textAlign: "left",
+                          borderBottom: "1px solid #f3f4f6",
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeTab === "quizzes" ? (
+                      (() => {
+                        const filteredQuizzes = quizzes.filter((quiz) => {
+                          // Search filter
+                          if (searchQuery) {
+                            const name =
+                              quiz.quizName ||
+                              quiz.pageName ||
+                              quiz.title ||
+                              quiz.name ||
+                              quiz.id;
+                            if (
+                              !name
+                                .toLowerCase()
+                                .includes(searchQuery.toLowerCase())
+                            ) {
+                              return false;
+                            }
+                          }
+
+                          // Exam filter - compare against Exam column value (sub-page name)
+                          if (examFilter) {
+                            // Get sub-page name from subPages array (same logic as Exam column)
+                            const parentSubPage = subPages.find(
+                              (sp) =>
+                                sp.id === quiz.parentSubPageDocId ||
+                                sp.slug === quiz.parentSubPageId ||
+                                sp.id === quiz.parentSubPageId
+                            );
+                            const examName = parentSubPage
+                              ? parentSubPage.pageName ||
+                                parentSubPage.hero?.title ||
+                                parentSubPage.title ||
+                                parentSubPage.id
+                              : quiz.parentSubPageName || quiz.parentSubPageId;
+
+                            // Compare exact match with filter value
+                            if (examName !== examFilter) {
+                              return false;
+                            }
+                          }
+
+                          // Status filter
+                          if (statusFilter) {
+                            // For now, all quizzes are published, but check if status field exists
+                            const status = quiz.status || "published";
+                            if (statusFilter !== status.toLowerCase()) {
+                              return false;
+                            }
+                          }
+
+                          return true;
+                        });
+                        const sortedQuizzes = [...filteredQuizzes].sort(
+                          (a, b) => {
+                            const dateA = a.lastUpdated
+                              ? new Date(a.lastUpdated).getTime()
+                              : 0;
+                            const dateB = b.lastUpdated
+                              ? new Date(b.lastUpdated).getTime()
+                              : 0;
+                            return dateB - dateA; // Descending order (newest first)
+                          }
+                        );
+                        const startIndex = (quizzesPage - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedQuizzes = sortedQuizzes.slice(
+                          startIndex,
+                          endIndex
+                        );
+
+                        return sortedQuizzes.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={8}
+                              style={{
+                                padding: "40px 12px",
+                                textAlign: "center",
+                                color: "#6b7280",
+                              }}
+                            >
+                              No quizzes found.
+                            </td>
+                          </tr>
+                        ) : (
+                          paginatedQuizzes.map((quiz) => {
+                            const quizName =
+                              quiz.quizName ||
+                              quiz.pageName ||
+                              quiz.title ||
+                              quiz.name ||
+                              quiz.id;
+                            const lastUpdated = quiz.lastUpdated
+                              ? new Date(quiz.lastUpdated).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  }
+                                ) +
+                                " · " +
+                                new Date(quiz.lastUpdated).toLocaleTimeString(
+                                  "en-US",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )
+                              : "—";
+
+                            // Get sub-page name from subPages array
+                            const parentSubPage = subPages.find(
+                              (sp) =>
+                                sp.id === quiz.parentSubPageDocId ||
+                                sp.slug === quiz.parentSubPageId ||
+                                sp.id === quiz.parentSubPageId
+                            );
+                            const examName = parentSubPage
+                              ? parentSubPage.pageName ||
+                                parentSubPage.hero?.title ||
+                                parentSubPage.title ||
+                                parentSubPage.id
+                              : quiz.parentSubPageName || quiz.parentSubPageId;
+
+                            return (
+                              <tr key={quiz.id}>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                    minWidth: "210px",
+                                  }}
+                                >
+                                  {quizName}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {examName}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Quiz
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {quiz.questionCount !== undefined
+                                    ? quiz.questionCount
+                                    : "—"}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#6b7280",
+                                    whiteSpace: "nowrap",
+                                    minWidth: "180px",
+                                    fontFamily:
+                                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  /{quiz.slug || quiz.id}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      padding: "3px 8px",
+                                      borderRadius: "999px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      background: "#dcfce7",
+                                      color: "#15803d",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                    }}
+                                  >
+                                    Published
+                                  </span>
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {lastUpdated}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "6px",
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <Link
+                                      href={`/admin/nursing-entrance-exam/${
+                                        quiz.parentSubPageDocId ||
+                                        quiz.parentSubPageId
+                                      }/nested/${
+                                        quiz.nestedSubPageDocId ||
+                                        quiz.nestedSubPageId
+                                      }/quizzes/${quiz.id}/manage`}
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#4f46e5",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Edit
+                                    </Link>
+                                    <Link
+                                      href={`/${quiz.slug || quiz.id}`}
+                                      target="_blank"
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#4f46e5",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      View
+                                    </Link>
+                                    <span
+                                      onClick={() =>
+                                        handleDeleteQuizClick(quiz)
+                                      }
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#ef4444",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Delete
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        );
+                      })()
+                    ) : activeTab === "nested" ? (
+                      (() => {
+                        const filteredNestedSubPages = nestedSubPages.filter(
+                          (nsp) => {
+                            // Search filter
+                            if (searchQuery) {
+                              const name =
+                                nsp.pageName ||
+                                nsp.hero?.title ||
+                                nsp.title ||
+                                nsp.id;
+                              if (
+                                !name
+                                  .toLowerCase()
+                                  .includes(searchQuery.toLowerCase())
+                              ) {
+                                return false;
+                              }
+                            }
+
+                            // Exam filter - compare against Exam column value (sub-page name)
+                            if (examFilter) {
+                              // Get sub-page name from subPages array (same logic as Exam column)
+                              const parentSubPage = subPages.find(
+                                (sp) =>
+                                  sp.id === nsp.parentSubPageDocId ||
+                                  sp.slug === nsp.parentSubPageId ||
+                                  sp.id === nsp.parentSubPageId
+                              );
+                              const examName = parentSubPage
+                                ? parentSubPage.pageName ||
+                                  parentSubPage.hero?.title ||
+                                  parentSubPage.title ||
+                                  parentSubPage.id
+                                : nsp.parentSubPageName || nsp.parentSubPageId;
+
+                              // Compare exact match with filter value
+                              if (examName !== examFilter) {
+                                return false;
+                              }
+                            }
+
+                            // Status filter
+                            if (statusFilter) {
+                              // For now, all nested sub-pages are published, but check if status field exists
+                              const status = nsp.status || "published";
+                              if (statusFilter !== status.toLowerCase()) {
+                                return false;
+                              }
+                            }
+
+                            return true;
+                          }
+                        );
+                        const sortedNestedSubPages = [
+                          ...filteredNestedSubPages,
+                        ].sort((a, b) => {
+                          const dateA = a.lastUpdated
+                            ? new Date(a.lastUpdated).getTime()
+                            : 0;
+                          const dateB = b.lastUpdated
+                            ? new Date(b.lastUpdated).getTime()
+                            : 0;
+                          return dateB - dateA; // Descending order (newest first)
+                        });
+                        const startIndex =
+                          (nestedSubPagesPage - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedNestedSubPages =
+                          sortedNestedSubPages.slice(startIndex, endIndex);
+
+                        return sortedNestedSubPages.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={7}
+                              style={{
+                                padding: "40px 12px",
+                                textAlign: "center",
+                                color: "#6b7280",
+                              }}
+                            >
+                              No nested sub-pages found.
+                            </td>
+                          </tr>
+                        ) : (
+                          paginatedNestedSubPages.map((nestedSubPage) => {
+                            const pageName =
+                              nestedSubPage.pageName ||
+                              nestedSubPage.hero?.title ||
+                              nestedSubPage.title ||
+                              nestedSubPage.id;
+                            const lastUpdated = nestedSubPage.lastUpdated
+                              ? new Date(
+                                  nestedSubPage.lastUpdated
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }) +
+                                " · " +
+                                new Date(
+                                  nestedSubPage.lastUpdated
+                                ).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "—";
+
+                            // Get sub-page name from subPages array
+                            const parentSubPage = subPages.find(
+                              (sp) =>
+                                sp.id === nestedSubPage.parentSubPageDocId ||
+                                sp.slug === nestedSubPage.parentSubPageId ||
+                                sp.id === nestedSubPage.parentSubPageId
+                            );
+                            const examName = parentSubPage
+                              ? parentSubPage.pageName ||
+                                parentSubPage.hero?.title ||
+                                parentSubPage.title ||
+                                parentSubPage.id
+                              : nestedSubPage.parentSubPageName ||
+                                nestedSubPage.parentSubPageId;
+
+                            return (
+                              <tr key={nestedSubPage.id}>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                    minWidth: "210px",
+                                  }}
+                                >
+                                  {pageName}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {examName}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Nested Sub Page
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#6b7280",
+                                    whiteSpace: "nowrap",
+                                    minWidth: "180px",
+                                    fontFamily:
+                                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  /{nestedSubPage.slug || nestedSubPage.id}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      padding: "3px 8px",
+                                      borderRadius: "999px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      background: "#dcfce7",
+                                      color: "#15803d",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                    }}
+                                  >
+                                    Published
+                                  </span>
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {lastUpdated}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "6px",
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <span
+                                      onClick={() => {
+                                        setSelectedNestedSubPageForQuiz(
+                                          nestedSubPage
+                                        );
+                                        setShowCreateQuizModal(true);
+                                      }}
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#4f46e5",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Add
+                                    </span>
+                                    <Link
+                                      href={`/admin/nursing-entrance-exam/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}/manage`}
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#4f46e5",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Edit
+                                    </Link>
+                                    <Link
+                                      href={`/${
+                                        nestedSubPage.slug || nestedSubPage.id
+                                      }`}
+                                      target="_blank"
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#4f46e5",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      View
+                                    </Link>
+                                    <span
+                                      onClick={() =>
+                                        handleDeleteNestedClick(nestedSubPage)
+                                      }
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#ef4444",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Delete
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        );
+                      })()
+                    ) : subPages.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          style={{
+                            padding: "40px 12px",
+                            textAlign: "center",
+                            color: "#6b7280",
+                          }}
+                        >
+                          No sub-pages found. Create a sub-page to get started.
+                        </td>
+                      </tr>
+                    ) : (
+                      subPages
+                        .filter((sp) => {
+                          // Search filter
+                          if (searchQuery) {
+                            const name =
+                              sp.pageName ||
+                              sp.hero?.title ||
+                              sp.title ||
+                              sp.id;
+                            if (
+                              !name
+                                .toLowerCase()
+                                .includes(searchQuery.toLowerCase())
+                            ) {
+                              return false;
+                            }
+                          }
+
+                          // Exam filter - compare against Exam column value (sub-page name)
+                          if (examFilter) {
+                            const pageName =
+                              sp.pageName ||
+                              sp.hero?.title ||
+                              sp.title ||
+                              sp.id;
+
+                            // Compare exact match with filter value
+                            if (pageName !== examFilter) {
+                              return false;
+                            }
+                          }
+
+                          // Status filter
+                          if (statusFilter) {
+                            // For now, all sub-pages are published, but check if status field exists
+                            const status = sp.status || "published";
+                            if (statusFilter !== status.toLowerCase()) {
+                              return false;
+                            }
+                          }
+
+                          return true;
+                        })
+                        .sort((a, b) => {
+                          const dateA = a.lastUpdated
+                            ? new Date(a.lastUpdated).getTime()
+                            : 0;
+                          const dateB = b.lastUpdated
+                            ? new Date(b.lastUpdated).getTime()
+                            : 0;
+                          return dateB - dateA; // Descending order (newest first)
+                        })
+                        .map((subPage) => {
+                          const pageName =
+                            subPage.pageName ||
+                            subPage.hero?.title ||
+                            subPage.title ||
+                            subPage.id;
+                          const lastUpdated = subPage.lastUpdated
+                            ? new Date(subPage.lastUpdated).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              ) +
+                              " · " +
+                              new Date(subPage.lastUpdated).toLocaleTimeString(
+                                "en-US",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )
+                            : "—";
+
+                          return (
+                            <tr key={subPage.id}>
+                              <td
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "left",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  color: "#4b5563",
+                                  whiteSpace: "nowrap",
+                                  minWidth: "210px",
+                                }}
+                              >
+                                {pageName}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "left",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  color: "#4b5563",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {pageName}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "left",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  color: "#4b5563",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                Sub Page
+                              </td>
+                              <td
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "left",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  color: "#6b7280",
+                                  whiteSpace: "nowrap",
+                                  minWidth: "180px",
+                                  fontFamily:
+                                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                                  fontSize: "12px",
+                                }}
+                              >
+                                /{subPage.slug || subPage.id}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "left",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  color: "#4b5563",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    padding: "3px 8px",
+                                    borderRadius: "999px",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    background: "#dcfce7",
+                                    color: "#15803d",
+                                    fontFamily:
+                                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                  }}
+                                >
+                                  Published
+                                </span>
+                              </td>
+                              <td
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "left",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  color: "#4b5563",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {lastUpdated}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "left",
+                                  borderBottom: "1px solid #f3f4f6",
+                                  color: "#4b5563",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: "6px",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <span
+                                    onClick={() => {
+                                      setSelectedSubPageForNested(subPage);
+                                      setShowCreateNestedModal(true);
+                                    }}
+                                    style={{
+                                      fontSize: "12px",
+                                      color: "#4f46e5",
+                                      cursor: "pointer",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    Add
+                                  </span>
+                                  <Link
+                                    href={`/admin/nursing-entrance-exam/${subPage.id}`}
+                                    style={{
+                                      fontSize: "12px",
+                                      color: "#4f46e5",
+                                      cursor: "pointer",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    Edit
+                                  </Link>
+                                  <Link
+                                    href={`/${subPage.slug || subPage.id}`}
+                                    target="_blank"
+                                    style={{
+                                      fontSize: "12px",
+                                      color: "#4f46e5",
+                                      cursor: "pointer",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    View
+                                  </Link>
+                                  <span
+                                    onClick={() => handleDeleteClick(subPage)}
+                                    style={{
+                                      fontSize: "12px",
+                                      color: "#ef4444",
+                                      cursor: "pointer",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    Delete
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {(activeTab === "nested" || activeTab === "quizzes") &&
+                (() => {
+                  if (activeTab === "quizzes") {
+                    const filteredQuizzes = quizzes.filter((quiz) => {
+                      // Search filter
+                      if (searchQuery) {
+                        const name =
+                          quiz.quizName ||
+                          quiz.pageName ||
+                          quiz.title ||
+                          quiz.name ||
+                          quiz.id;
+                        if (
+                          !name
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase())
+                        ) {
+                          return false;
+                        }
+                      }
+
+                      // Exam filter - compare against Exam column value (sub-page name)
+                      if (examFilter) {
+                        // Get sub-page name from subPages array (same logic as Exam column)
+                        const parentSubPage = subPages.find(
+                          (sp) =>
+                            sp.id === quiz.parentSubPageDocId ||
+                            sp.slug === quiz.parentSubPageId ||
+                            sp.id === quiz.parentSubPageId
+                        );
+                        const examName = parentSubPage
+                          ? parentSubPage.pageName ||
+                            parentSubPage.hero?.title ||
+                            parentSubPage.title ||
+                            parentSubPage.id
+                          : quiz.parentSubPageName || quiz.parentSubPageId;
+
+                        // Compare exact match with filter value
+                        if (examName !== examFilter) {
+                          return false;
+                        }
+                      }
+
+                      // Status filter
+                      if (statusFilter) {
+                        const status = quiz.status || "published";
+                        if (statusFilter !== status.toLowerCase()) {
+                          return false;
+                        }
+                      }
+
+                      return true;
+                    });
+                    const sortedQuizzes = [...filteredQuizzes].sort((a, b) => {
+                      const dateA = a.lastUpdated
+                        ? new Date(a.lastUpdated).getTime()
+                        : 0;
+                      const dateB = b.lastUpdated
+                        ? new Date(b.lastUpdated).getTime()
+                        : 0;
+                      return dateB - dateA; // Descending order (newest first)
+                    });
+                    const totalPages = Math.ceil(
+                      sortedQuizzes.length / itemsPerPage
+                    );
+                    if (totalPages <= 1) return null;
+
+                    return (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: "16px",
+                          padding: "12px 0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            color: "#6b7280",
+                            fontFamily:
+                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                          }}
+                        >
+                          Showing {(quizzesPage - 1) * itemsPerPage + 1} to{" "}
+                          {Math.min(
+                            quizzesPage * itemsPerPage,
+                            sortedQuizzes.length
+                          )}{" "}
+                          of {sortedQuizzes.length} quizzes
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            alignItems: "center",
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              setQuizzesPage((prev) => Math.max(1, prev - 1))
+                            }
+                            disabled={quizzesPage === 1}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "13px",
+                              border:
+                                quizzesPage === 1
+                                  ? "1px solid #e5e7eb"
+                                  : "1px solid #e5e7eb",
+                              borderRadius: "999px",
+                              background:
+                                quizzesPage === 1 ? "#f9fafb" : "transparent",
+                              color: quizzesPage === 1 ? "#9ca3af" : "#6b7280",
+                              cursor:
+                                quizzesPage === 1 ? "not-allowed" : "pointer",
+                              fontFamily:
+                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              fontWeight: 500,
+                            }}
+                            onMouseEnter={(e) => {
+                              if (quizzesPage !== 1) {
+                                e.currentTarget.style.background = "#eef2ff";
+                                e.currentTarget.style.borderColor = "#c7d2fe";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (quizzesPage !== 1) {
+                                e.currentTarget.style.background =
+                                  "transparent";
+                                e.currentTarget.style.borderColor = "#e5e7eb";
+                              }
+                            }}
+                          >
+                            Previous
+                          </button>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            {Array.from(
+                              { length: totalPages },
+                              (_, i) => i + 1
+                            ).map((page) => {
+                              if (
+                                page === 1 ||
+                                page === totalPages ||
+                                (page >= quizzesPage - 1 &&
+                                  page <= quizzesPage + 1)
+                              ) {
+                                return (
+                                  <button
+                                    key={page}
+                                    onClick={() => setQuizzesPage(page)}
+                                    style={{
+                                      padding: "6px 12px",
+                                      fontSize: "13px",
+                                      border:
+                                        quizzesPage === page
+                                          ? "1px solid #c7d2fe"
+                                          : "1px solid transparent",
+                                      borderRadius: "999px",
+                                      background:
+                                        quizzesPage === page
+                                          ? "#eef2ff"
+                                          : "transparent",
+                                      color:
+                                        quizzesPage === page
+                                          ? "#4338ca"
+                                          : "#6b7280",
+                                      cursor: "pointer",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                      fontWeight:
+                                        quizzesPage === page ? 500 : 400,
+                                      minWidth: "36px",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (quizzesPage !== page) {
+                                        e.currentTarget.style.background =
+                                          "#eef2ff";
+                                        e.currentTarget.style.borderColor =
+                                          "#c7d2fe";
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (quizzesPage !== page) {
+                                        e.currentTarget.style.background =
+                                          "transparent";
+                                        e.currentTarget.style.borderColor =
+                                          "transparent";
+                                      }
+                                    }}
+                                  >
+                                    {page}
+                                  </button>
+                                );
+                              } else if (
+                                page === quizzesPage - 2 ||
+                                page === quizzesPage + 2
+                              ) {
+                                return (
+                                  <span
+                                    key={page}
+                                    style={{
+                                      padding: "6px 4px",
+                                      fontSize: "13px",
+                                      color: "#6b7280",
+                                    }}
+                                  >
+                                    ...
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                          <button
+                            onClick={() =>
+                              setQuizzesPage((prev) =>
+                                Math.min(totalPages, prev + 1)
+                              )
+                            }
+                            disabled={quizzesPage === totalPages}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "13px",
+                              border:
+                                quizzesPage === totalPages
+                                  ? "1px solid #e5e7eb"
+                                  : "1px solid #e5e7eb",
+                              borderRadius: "999px",
+                              background:
+                                quizzesPage === totalPages
+                                  ? "#f9fafb"
+                                  : "transparent",
+                              color:
+                                quizzesPage === totalPages
+                                  ? "#9ca3af"
+                                  : "#6b7280",
+                              cursor:
+                                quizzesPage === totalPages
+                                  ? "not-allowed"
+                                  : "pointer",
+                              fontFamily:
+                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              fontWeight: 500,
+                            }}
+                            onMouseEnter={(e) => {
+                              if (quizzesPage !== totalPages) {
+                                e.currentTarget.style.background = "#eef2ff";
+                                e.currentTarget.style.borderColor = "#c7d2fe";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (quizzesPage !== totalPages) {
+                                e.currentTarget.style.background =
+                                  "transparent";
+                                e.currentTarget.style.borderColor = "#e5e7eb";
+                              }
+                            }}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  } else if (activeTab === "nested") {
+                    const filteredNestedSubPages = nestedSubPages.filter(
+                      (nsp) => {
+                        // Search filter
+                        if (searchQuery) {
+                          const name =
+                            nsp.pageName ||
+                            nsp.hero?.title ||
+                            nsp.title ||
+                            nsp.id;
+                          if (
+                            !name
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase())
+                          ) {
+                            return false;
+                          }
+                        }
+
+                        // Exam filter - compare against Exam column value (sub-page name)
+                        if (examFilter) {
+                          // Get sub-page name from subPages array (same logic as Exam column)
+                          const parentSubPage = subPages.find(
+                            (sp) =>
+                              sp.id === nsp.parentSubPageDocId ||
+                              sp.slug === nsp.parentSubPageId ||
+                              sp.id === nsp.parentSubPageId
+                          );
+                          const examName = parentSubPage
+                            ? parentSubPage.pageName ||
+                              parentSubPage.hero?.title ||
+                              parentSubPage.title ||
+                              parentSubPage.id
+                            : nsp.parentSubPageName || nsp.parentSubPageId;
+
+                          // Compare exact match with filter value
+                          if (examName !== examFilter) {
+                            return false;
+                          }
+                        }
+
+                        // Status filter
+                        if (statusFilter) {
+                          const status = nsp.status || "published";
+                          if (statusFilter !== status.toLowerCase()) {
+                            return false;
+                          }
+                        }
+
+                        return true;
+                      }
+                    );
+                    const sortedNestedSubPages = [
+                      ...filteredNestedSubPages,
+                    ].sort((a, b) => {
+                      const dateA = a.lastUpdated
+                        ? new Date(a.lastUpdated).getTime()
+                        : 0;
+                      const dateB = b.lastUpdated
+                        ? new Date(b.lastUpdated).getTime()
+                        : 0;
+                      return dateB - dateA; // Descending order (newest first)
+                    });
+                    const totalPages = Math.ceil(
+                      sortedNestedSubPages.length / itemsPerPage
+                    );
+                    if (totalPages <= 1) return null;
+
+                    return (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: "16px",
+                          padding: "12px 0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            color: "#6b7280",
+                            fontFamily:
+                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                          }}
+                        >
+                          Showing {(nestedSubPagesPage - 1) * itemsPerPage + 1}{" "}
+                          to{" "}
+                          {Math.min(
+                            nestedSubPagesPage * itemsPerPage,
+                            sortedNestedSubPages.length
+                          )}{" "}
+                          of {sortedNestedSubPages.length} nested sub-pages
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            alignItems: "center",
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              setNestedSubPagesPage((prev) =>
+                                Math.max(1, prev - 1)
+                              )
+                            }
+                            disabled={nestedSubPagesPage === 1}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "13px",
+                              border:
+                                nestedSubPagesPage === 1
+                                  ? "1px solid #e5e7eb"
+                                  : "1px solid #e5e7eb",
+                              borderRadius: "999px",
+                              background:
+                                nestedSubPagesPage === 1
+                                  ? "#f9fafb"
+                                  : "transparent",
+                              color:
+                                nestedSubPagesPage === 1
+                                  ? "#9ca3af"
+                                  : "#6b7280",
+                              cursor:
+                                nestedSubPagesPage === 1
+                                  ? "not-allowed"
+                                  : "pointer",
+                              fontFamily:
+                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              fontWeight: 500,
+                            }}
+                            onMouseEnter={(e) => {
+                              if (nestedSubPagesPage !== 1) {
+                                e.currentTarget.style.background = "#eef2ff";
+                                e.currentTarget.style.borderColor = "#c7d2fe";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (nestedSubPagesPage !== 1) {
+                                e.currentTarget.style.background =
+                                  "transparent";
+                                e.currentTarget.style.borderColor = "#e5e7eb";
+                              }
+                            }}
+                          >
+                            Previous
+                          </button>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            {Array.from(
+                              { length: totalPages },
+                              (_, i) => i + 1
+                            ).map((page) => {
+                              if (
+                                page === 1 ||
+                                page === totalPages ||
+                                (page >= nestedSubPagesPage - 1 &&
+                                  page <= nestedSubPagesPage + 1)
+                              ) {
+                                return (
+                                  <button
+                                    key={page}
+                                    onClick={() => setNestedSubPagesPage(page)}
+                                    style={{
+                                      padding: "6px 12px",
+                                      fontSize: "13px",
+                                      border:
+                                        nestedSubPagesPage === page
+                                          ? "1px solid #c7d2fe"
+                                          : "1px solid transparent",
+                                      borderRadius: "999px",
+                                      background:
+                                        nestedSubPagesPage === page
+                                          ? "#eef2ff"
+                                          : "transparent",
+                                      color:
+                                        nestedSubPagesPage === page
+                                          ? "#4338ca"
+                                          : "#6b7280",
+                                      cursor: "pointer",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                      fontWeight:
+                                        nestedSubPagesPage === page ? 500 : 400,
+                                      minWidth: "36px",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (nestedSubPagesPage !== page) {
+                                        e.currentTarget.style.background =
+                                          "#eef2ff";
+                                        e.currentTarget.style.borderColor =
+                                          "#c7d2fe";
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (nestedSubPagesPage !== page) {
+                                        e.currentTarget.style.background =
+                                          "transparent";
+                                        e.currentTarget.style.borderColor =
+                                          "transparent";
+                                      }
+                                    }}
+                                  >
+                                    {page}
+                                  </button>
+                                );
+                              } else if (
+                                page === nestedSubPagesPage - 2 ||
+                                page === nestedSubPagesPage + 2
+                              ) {
+                                return (
+                                  <span
+                                    key={page}
+                                    style={{
+                                      padding: "6px 4px",
+                                      fontSize: "13px",
+                                      color: "#6b7280",
+                                    }}
+                                  >
+                                    ...
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                          <button
+                            onClick={() =>
+                              setNestedSubPagesPage((prev) =>
+                                Math.min(totalPages, prev + 1)
+                              )
+                            }
+                            disabled={nestedSubPagesPage === totalPages}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "13px",
+                              border:
+                                nestedSubPagesPage === totalPages
+                                  ? "1px solid #e5e7eb"
+                                  : "1px solid #e5e7eb",
+                              borderRadius: "999px",
+                              background:
+                                nestedSubPagesPage === totalPages
+                                  ? "#f9fafb"
+                                  : "transparent",
+                              color:
+                                nestedSubPagesPage === totalPages
+                                  ? "#9ca3af"
+                                  : "#6b7280",
+                              cursor:
+                                nestedSubPagesPage === totalPages
+                                  ? "not-allowed"
+                                  : "pointer",
+                              fontFamily:
+                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              fontWeight: 500,
+                            }}
+                            onMouseEnter={(e) => {
+                              if (nestedSubPagesPage !== totalPages) {
+                                e.currentTarget.style.background = "#eef2ff";
+                                e.currentTarget.style.borderColor = "#c7d2fe";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (nestedSubPagesPage !== totalPages) {
+                                e.currentTarget.style.background =
+                                  "transparent";
+                                e.currentTarget.style.borderColor = "#e5e7eb";
+                              }
+                            }}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+              <div
+                style={{
+                  marginTop: "8px",
+                  fontSize: "11px",
+                  color: "#9ca3af",
+                  fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}
+              >
+                {activeTab === "nested" ? (
+                  <>
+                    Nested sub pages (like TEAS Reading, TEAS Math, HESI
+                    Vocabulary, HESI A&P) live under their parent sub pages.
+                    Each nested sub page can have its own quizzes and content.
+                  </>
+                ) : activeTab === "quizzes" ? (
+                  <>
+                    Quizzes are linked to nested sub pages. Each quiz contains
+                    its own questions stored in the question bank. You can
+                    manage quiz questions from the Edit action.
+                  </>
+                ) : (
+                  <>
+                    Sub pages represent ATI TEAS and HESI A2. Nested sub pages
+                    (like TEAS Reading, TEAS Math, HESI Vocabulary, HESI A&P)
+                    live under those sub pages. Knowledge base (KB) articles are
+                    linked from this pillar and TEAS/HESI sub pages under the
+                    "KB Articles" tab. Linked quizzes such as "ATI TEAS Math
+                    Questions – Set 1" are managed under the Quizzes tab, and
+                    each quiz contains its own questions stored in the question
+                    bank.
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteModal && subPageToDelete && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "26px 26px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "999px",
+                    margin: "0 auto 14px",
+                    background: "#fee2e2",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "999px",
+                      border: "2px solid #ef4444",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ef4444",
+                      fontSize: "18px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    !
+                  </div>
+                </div>
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    color: "#111827",
+                  }}
+                >
+                  Delete Sub-page
+                </h2>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    lineHeight: 1.5,
+                    marginBottom: "18px",
+                  }}
+                >
+                  Are you sure you want to delete the sub-page{" "}
+                  <strong>
+                    "
+                    {subPageToDelete.pageName ||
+                      subPageToDelete.hero?.title ||
+                      subPageToDelete.title ||
+                      subPageToDelete.id}
+                    "
+                  </strong>
+                  ?<br />
+                  This action cannot be undone.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "12px",
+                    marginTop: "6px",
+                  }}
+                >
+                  <button
+                    onClick={handleDeleteCancel}
+                    disabled={deleting}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid #e5e7eb",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deleting ? "not-allowed" : "pointer",
+                      background: "#ffffff",
+                      color: "#111827",
+                      boxShadow: "0 3px 8px rgba(148, 163, 184, 0.25)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deleting ? 0.5 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deleting) {
+                        e.currentTarget.style.background = "#f9fafb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deleting) {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    disabled={deleting}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid transparent",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deleting ? "not-allowed" : "pointer",
+                      background: deleting ? "#9ca3af" : "#ef4444",
+                      color: "#ffffff",
+                      boxShadow: deleting
+                        ? "none"
+                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deleting ? 0.5 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deleting) {
+                        e.currentTarget.style.background = "#dc2626";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deleting) {
+                        e.currentTarget.style.background = "#ef4444";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    {deleting ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <span>Delete</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Nested Sub-page Modal */}
+          {showDeleteNestedModal && nestedSubPageToDelete && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "26px 26px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "999px",
+                    margin: "0 auto 14px",
+                    background: "#fee2e2",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "999px",
+                      border: "2px solid #ef4444",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ef4444",
+                      fontSize: "18px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    !
+                  </div>
+                </div>
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    color: "#111827",
+                  }}
+                >
+                  Delete Nested Sub-page
+                </h2>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    lineHeight: 1.5,
+                    marginBottom: "18px",
+                  }}
+                >
+                  Are you sure you want to delete the nested sub-page{" "}
+                  <strong>
+                    "
+                    {nestedSubPageToDelete.pageName ||
+                      nestedSubPageToDelete.hero?.title ||
+                      nestedSubPageToDelete.title ||
+                      nestedSubPageToDelete.id}
+                    "
+                  </strong>
+                  ?<br />
+                  This action cannot be undone.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "12px",
+                    marginTop: "6px",
+                  }}
+                >
+                  <button
+                    onClick={handleDeleteNestedCancel}
+                    disabled={deletingNested}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid #e5e7eb",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deletingNested ? "not-allowed" : "pointer",
+                      background: "#ffffff",
+                      color: "#111827",
+                      boxShadow: "0 3px 8px rgba(148, 163, 184, 0.25)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deletingNested ? 0.5 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deletingNested) {
+                        e.currentTarget.style.background = "#f9fafb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deletingNested) {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteNestedConfirm}
+                    disabled={deletingNested}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid transparent",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deletingNested ? "not-allowed" : "pointer",
+                      background: deletingNested ? "#9ca3af" : "#ef4444",
+                      color: "#ffffff",
+                      boxShadow: deletingNested
+                        ? "none"
+                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deletingNested ? 0.5 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deletingNested) {
+                        e.currentTarget.style.background = "#dc2626";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deletingNested) {
+                        e.currentTarget.style.background = "#ef4444";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    {deletingNested ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <span>Delete</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Quiz Modal */}
+          {showDeleteQuizModal && quizToDelete && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "26px 26px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "999px",
+                    margin: "0 auto 14px",
+                    background: "#fee2e2",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "999px",
+                      border: "2px solid #ef4444",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ef4444",
+                      fontSize: "18px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    !
+                  </div>
+                </div>
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    color: "#111827",
+                  }}
+                >
+                  Delete Quiz
+                </h2>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    lineHeight: 1.5,
+                    marginBottom: "18px",
+                  }}
+                >
+                  Are you sure you want to delete the quiz{" "}
+                  <strong>
+                    "
+                    {quizToDelete.quizName ||
+                      quizToDelete.pageName ||
+                      quizToDelete.title ||
+                      quizToDelete.name ||
+                      quizToDelete.id}
+                    "
+                  </strong>
+                  ?<br />
+                  This action cannot be undone.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "12px",
+                    marginTop: "6px",
+                  }}
+                >
+                  <button
+                    onClick={handleDeleteQuizCancel}
+                    disabled={deletingQuiz}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid #e5e7eb",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deletingQuiz ? "not-allowed" : "pointer",
+                      background: "#ffffff",
+                      color: "#111827",
+                      boxShadow: "0 3px 8px rgba(148, 163, 184, 0.25)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deletingQuiz ? 0.5 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deletingQuiz) {
+                        e.currentTarget.style.background = "#f9fafb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deletingQuiz) {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteQuizConfirm}
+                    disabled={deletingQuiz}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid transparent",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deletingQuiz ? "not-allowed" : "pointer",
+                      background: deletingQuiz ? "#9ca3af" : "#ef4444",
+                      color: "#ffffff",
+                      boxShadow: deletingQuiz
+                        ? "none"
+                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deletingQuiz ? 0.5 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deletingQuiz) {
+                        e.currentTarget.style.background = "#dc2626";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deletingQuiz) {
+                        e.currentTarget.style.background = "#ef4444";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    {deletingQuiz ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <span>Delete</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Create Sub-page Modal */}
+          {showCreateModal && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "24px 26px 20px",
+                }}
+              >
+                <div style={{ marginBottom: "18px" }}>
+                  <h2
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      marginBottom: "4px",
+                      color: "#111827",
+                    }}
+                  >
+                    Create New Sub-page
+                  </h2>
+                </div>
+                <form onSubmit={handleCreateSubPage}>
+                  {validationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-red-800">{validationError}</p>
+                    </div>
+                  )}
+                  <div style={{ marginBottom: "18px" }}>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Sub-page Name
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={newSubPageName}
+                        onChange={(e) => setNewSubPageName(e.target.value)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.background = "#ffffff";
+                          e.target.style.borderColor = "#4f46e5";
+                          e.target.style.boxShadow =
+                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.background = "#f9fafb";
+                          e.target.style.borderColor = "#e5e7eb";
+                          e.target.style.boxShadow = "none";
+                        }}
+                        placeholder="e.g., Math Review, Reading Strategies"
+                        required
+                      />
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        The display name for this sub-page.
+                      </p>
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Slug URL
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "stretch",
+                          width: "100%",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "11px 12px",
+                            borderRadius: "999px 0 0 999px",
+                            border: "1px solid #e5e7eb",
+                            borderRight: "none",
+                            fontSize: "13px",
+                            color: "#6b7280",
+                            background: "#f9fafb",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {getSiteUrl()}/
+                        </div>
+                        <input
+                          type="text"
+                          value={newSubPageId}
+                          onChange={(e) =>
+                            setNewSubPageId(
+                              e.target.value.toLowerCase().replace(/\s+/g, "-")
+                            )
+                          }
+                          style={{
+                            flex: 1,
+                            borderRadius: "0 999px 999px 0",
+                            border: "1px solid #e5e7eb",
+                            borderLeft: "none",
+                            padding: "11px 13px",
+                            fontSize: "14px",
+                            color: "#111827",
+                            background: "#f9fafb",
+                            outline: "none",
+                            transition:
+                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.background = "#ffffff";
+                            e.target.style.borderColor = "#4f46e5";
+                            e.target.style.boxShadow =
+                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.background = "#f9fafb";
+                            e.target.style.borderColor = "#e5e7eb";
+                            e.target.style.boxShadow = "none";
+                          }}
+                          placeholder="e.g., ati-teas, math-review"
+                          required
+                        />
+                      </div>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        This will create a page at /
+                        {newSubPageId || "sub-page-id"}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: "10px",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setNewSubPageId("");
+                        setNewSubPageName("");
+                        setValidationError("");
+                      }}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid #e5e7eb",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        background: "#f3f4f6",
+                        color: "#111827",
+                        transition:
+                          "background 0.15s, border-color 0.15s, transform 0.08s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#e5e7eb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#f3f4f6";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid transparent",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: saving ? "not-allowed" : "pointer",
+                        background: saving ? "#9ca3af" : "#4f46e5",
+                        color: "#ffffff",
+                        boxShadow: saving
+                          ? "none"
+                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
+                        transition: "background 0.15s, transform 0.08s",
+                        opacity: saving ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!saving) {
+                          e.currentTarget.style.background = "#4338ca";
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!saving) {
+                          e.currentTarget.style.background = "#4f46e5";
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }
+                      }}
+                    >
+                      {saving ? "Creating..." : "Create Sub-page"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Create Nested Sub-page Modal */}
+          {showCreateNestedModal && selectedSubPageForNested && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "24px 26px 20px",
+                }}
+              >
+                <div style={{ marginBottom: "18px" }}>
+                  <h2
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      marginBottom: "4px",
+                      color: "#111827",
+                    }}
+                  >
+                    Create New Nested Sub-page
+                  </h2>
+                </div>
+                <form onSubmit={handleCreateNestedSubPage}>
+                  {nestedValidationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-red-800">
+                        {nestedValidationError}
+                      </p>
+                    </div>
+                  )}
+                  <div style={{ marginBottom: "18px" }}>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Nested Sub-page Name
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={newNestedSubPageName}
+                        onChange={(e) =>
+                          setNewNestedSubPageName(e.target.value)
+                        }
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.background = "#ffffff";
+                          e.target.style.borderColor = "#4f46e5";
+                          e.target.style.boxShadow =
+                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.background = "#f9fafb";
+                          e.target.style.borderColor = "#e5e7eb";
+                          e.target.style.boxShadow = "none";
+                        }}
+                        placeholder="e.g., TEAS Reading, TEAS Math, HESI Vocabulary"
+                        required
+                      />
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        The display name for this nested sub-page.
+                      </p>
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Slug URL
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "stretch",
+                          width: "100%",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "11px 12px",
+                            borderRadius: "999px 0 0 999px",
+                            border: "1px solid #e5e7eb",
+                            borderRight: "none",
+                            fontSize: "13px",
+                            color: "#6b7280",
+                            background: "#f9fafb",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {getSiteUrl()}/
+                        </div>
+                        <input
+                          type="text"
+                          value={newNestedSubPageId}
+                          onChange={(e) =>
+                            setNewNestedSubPageId(
+                              e.target.value.toLowerCase().replace(/\s+/g, "-")
+                            )
+                          }
+                          style={{
+                            flex: 1,
+                            borderRadius: "0 999px 999px 0",
+                            border: "1px solid #e5e7eb",
+                            borderLeft: "none",
+                            padding: "11px 13px",
+                            fontSize: "14px",
+                            color: "#111827",
+                            background: "#f9fafb",
+                            outline: "none",
+                            transition:
+                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.background = "#ffffff";
+                            e.target.style.borderColor = "#4f46e5";
+                            e.target.style.boxShadow =
+                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.background = "#f9fafb";
+                            e.target.style.borderColor = "#e5e7eb";
+                            e.target.style.boxShadow = "none";
+                          }}
+                          placeholder="e.g., ati-teas-practice-questions"
+                          required
+                        />
+                      </div>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        This will create a page at /
+                        {newNestedSubPageId || "nested-sub-page-id"}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: "10px",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateNestedModal(false);
+                        setSelectedSubPageForNested(null);
+                        setNewNestedSubPageId("");
+                        setNewNestedSubPageName("");
+                        setNestedValidationError("");
+                      }}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid #e5e7eb",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        background: "#f3f4f6",
+                        color: "#111827",
+                        transition:
+                          "background 0.15s, border-color 0.15s, transform 0.08s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#e5e7eb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#f3f4f6";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingNested}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid transparent",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: savingNested ? "not-allowed" : "pointer",
+                        background: savingNested ? "#9ca3af" : "#4f46e5",
+                        color: "#ffffff",
+                        boxShadow: savingNested
+                          ? "none"
+                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
+                        transition: "background 0.15s, transform 0.08s",
+                        opacity: savingNested ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!savingNested) {
+                          e.currentTarget.style.background = "#4338ca";
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!savingNested) {
+                          e.currentTarget.style.background = "#4f46e5";
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }
+                      }}
+                    >
+                      {savingNested ? "Creating..." : "Create Nested Sub-page"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Create Quiz Modal */}
+          {showCreateQuizModal && selectedNestedSubPageForQuiz && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "24px 26px 20px",
+                }}
+              >
+                <div style={{ marginBottom: "18px" }}>
+                  <h2
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      marginBottom: "4px",
+                      color: "#111827",
+                    }}
+                  >
+                    Create New Quiz
+                  </h2>
+                </div>
+                <form onSubmit={handleCreateQuiz}>
+                  {quizValidationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-red-800">
+                        {quizValidationError}
+                      </p>
+                    </div>
+                  )}
+                  <div style={{ marginBottom: "18px" }}>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Quiz Name
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={newQuizName}
+                        onChange={(e) => setNewQuizName(e.target.value)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.background = "#ffffff";
+                          e.target.style.borderColor = "#4f46e5";
+                          e.target.style.boxShadow =
+                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.background = "#f9fafb";
+                          e.target.style.borderColor = "#e5e7eb";
+                          e.target.style.boxShadow = "none";
+                        }}
+                        placeholder="e.g., ATI TEAS Math Questions – Set 1"
+                        required
+                      />
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        The display name for this quiz.
+                      </p>
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Slug URL
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "stretch",
+                          width: "100%",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "11px 12px",
+                            borderRadius: "999px 0 0 999px",
+                            border: "1px solid #e5e7eb",
+                            borderRight: "none",
+                            fontSize: "13px",
+                            color: "#6b7280",
+                            background: "#f9fafb",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {getSiteUrl()}/
+                        </div>
+                        <input
+                          type="text"
+                          value={newQuizId}
+                          onChange={(e) =>
+                            setNewQuizId(
+                              e.target.value.toLowerCase().replace(/\s+/g, "-")
+                            )
+                          }
+                          style={{
+                            flex: 1,
+                            borderRadius: "0 999px 999px 0",
+                            border: "1px solid #e5e7eb",
+                            borderLeft: "none",
+                            padding: "11px 13px",
+                            fontSize: "14px",
+                            color: "#111827",
+                            background: "#f9fafb",
+                            outline: "none",
+                            transition:
+                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.background = "#ffffff";
+                            e.target.style.borderColor = "#4f46e5";
+                            e.target.style.boxShadow =
+                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.background = "#f9fafb";
+                            e.target.style.borderColor = "#e5e7eb";
+                            e.target.style.boxShadow = "none";
+                          }}
+                          placeholder="e.g., ati-teas-math-questions-set-1"
+                          required
+                        />
+                      </div>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        This will create a quiz at /{newQuizId || "quiz-id"}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: "10px",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateQuizModal(false);
+                        setSelectedNestedSubPageForQuiz(null);
+                        setNewQuizId("");
+                        setNewQuizName("");
+                        setQuizValidationError("");
+                      }}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid #e5e7eb",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        background: "#f3f4f6",
+                        color: "#111827",
+                        transition:
+                          "background 0.15s, border-color 0.15s, transform 0.08s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#e5e7eb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#f3f4f6";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingQuiz}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid transparent",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: savingQuiz ? "not-allowed" : "pointer",
+                        background: savingQuiz ? "#9ca3af" : "#4f46e5",
+                        color: "#ffffff",
+                        boxShadow: savingQuiz
+                          ? "none"
+                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
+                        transition: "background 0.15s, transform 0.08s",
+                        opacity: savingQuiz ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!savingQuiz) {
+                          e.currentTarget.style.background = "#4338ca";
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!savingQuiz) {
+                          e.currentTarget.style.background = "#4f46e5";
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }
+                      }}
+                    >
+                      {savingQuiz ? "Creating..." : "Create Quiz"}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && subPageToDelete && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
-              <svg
-                className="w-8 h-8 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              Delete Sub-page
-            </h2>
-            <p className="text-gray-600 mb-6 text-center">
-              Are you sure you want to delete the sub-page{" "}
-              <span className="font-semibold text-gray-900">
-                "
-                {subPageToDelete.pageName ||
-                  subPageToDelete.hero?.title ||
-                  subPageToDelete.title ||
-                  subPageToDelete.id}
-                "
-              </span>
-              ? This action cannot be undone.
-            </p>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleDeleteCancel}
-                disabled={deleting}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={deleting}
-                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {deleting ? (
-                  <>
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <span>Delete</span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Sub-page Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 overflow-y-auto py-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 my-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Create New Sub-page
-            </h2>
-            <form onSubmit={handleCreateSubPage} className="space-y-4">
-              {validationError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">{validationError}</p>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Sub-page Name *
-                </label>
-                <input
-                  type="text"
-                  value={newSubPageName}
-                  onChange={(e) => setNewSubPageName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                  placeholder="e.g., Math Review, Reading Strategies"
-                  required
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  The display name for this sub-page.
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Slug URL *
-                </label>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    https://teasgurus.com/
-                  </span>
-                  <input
-                    type="text"
-                    value={newSubPageId}
-                    onChange={(e) =>
-                      setNewSubPageId(
-                        e.target.value.toLowerCase().replace(/\s+/g, "-")
-                      )
-                    }
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                    placeholder="e.g., ati-teas, math-review"
-                    required
-                  />
-                </div>
-                <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /{newSubPageId || "sub-page-id"}
-                </p>
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50"
-                >
-                  {saving ? "Creating..." : "Create Sub-page"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewSubPageId("");
-                    setNewSubPageName("");
-                    setValidationError("");
-                  }}
-                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+export default function NursingEntranceExamAdminPage() {
+  return (
+    <SidebarProvider>
+      <NursingEntranceExamAdminPageContent />
+    </SidebarProvider>
   );
 }

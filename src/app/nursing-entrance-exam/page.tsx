@@ -1,858 +1,868 @@
-import { Metadata } from "next";
+"use client";
+
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
-import ContentRenderer from "@/components/ui/ContentRenderer";
-import {
-  getPillarPageContent,
-  getNursingEntranceExamSubPages,
-  countSubPageQuestions,
-  countPillarPageQuestions,
-} from "@/lib/firestore-operations";
+import { useState } from "react";
 
-// Force dynamic rendering to avoid build-time timeouts with Firestore queries
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export default function NursingEntranceExamPage() {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
-// Icon components for dashboard-style cards
-const LaptopIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-    />
-  </svg>
-);
-
-const LightbulbIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-    />
-  </svg>
-);
-
-const MedalIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-    />
-  </svg>
-);
-
-interface ServiceContent {
-  meta?: {
-    title: string;
-    description: string;
-    keywords: string;
-    ogTitle: string;
-    ogDescription: string;
-    ogImage: string;
-    canonicalUrl: string;
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
-  schema?: string;
-  hero: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    description: string;
-  };
-  trustIndicators: Array<{
-    title: string;
-    icon: string;
-  }>;
-  whatToExpect: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    cards: Array<{
-      title: string;
-      icon: string;
-      content: string[];
-    }>;
-    footer: string;
-  };
-  mostCommonQuestions: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    cards: Array<{
-      title: string;
-      content: string[];
-    }>;
-  };
-  studyGuide: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    sections: Array<{
-      title: string;
-      icon: string;
-      content: string;
-    }>;
-  };
-  privacyPricing: Array<{
-    title: string;
-    icon: string;
-    content: string;
-  }>;
-  faq: {
-    title: string;
-    subtitle: string;
-    questions: Array<{
-      question: string;
-      paragraphs: string[];
-      additionalParagraphs?: string[];
-    }>;
-  };
-}
-
-const getIconComponent = (iconName: string) => {
-  const iconMap: { [key: string]: React.ReactNode } = {
-    check: (
-      <svg
-        className="w-12 h-12 text-green-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    shield: (
-      <svg
-        className="w-12 h-12 text-blue-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-        />
-      </svg>
-    ),
-    clock: (
-      <svg
-        className="w-12 h-12 text-purple-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    star: (
-      <svg
-        className="w-12 h-12 text-yellow-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-        />
-      </svg>
-    ),
-    users: (
-      <svg
-        className="w-12 h-12 text-indigo-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-        />
-      </svg>
-    ),
-    book: (
-      <svg
-        className="w-12 h-12 text-green-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-        />
-      </svg>
-    ),
-    lightbulb: (
-      <svg
-        className="w-12 h-12 text-yellow-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-        />
-      </svg>
-    ),
-    trophy: (
-      <svg
-        className="w-12 h-12 text-yellow-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-        />
-      </svg>
-    ),
-  };
-
-  return iconMap[iconName] || iconMap.check;
-};
-
-export async function generateMetadata(): Promise<Metadata> {
-  const result = await getPillarPageContent("nursing-entrance-exam");
-
-  if (result.success && result.data) {
-    const data = result.data as any;
-    if (data.meta) {
-      return {
-        title: data.meta.title || "Nursing Entrance Exam | TeasGurus",
-        description: data.meta.description || "",
-        keywords: data.meta.keywords || "",
-        openGraph: {
-          title:
-            data.meta.ogTitle ||
-            data.meta.title ||
-            "Nursing Entrance Exam | TeasGurus",
-          description: data.meta.ogDescription || data.meta.description || "",
-          url:
-            data.meta.canonicalUrl ||
-            `${
-              process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
-            }/nursing-entrance-exam`,
-          images: [
-            {
-              url: data.meta.ogImage || "/teas-gurus-logo.png",
-              width: 1200,
-              height: 630,
-              alt: data.meta.title || "Nursing Entrance Exam",
-            },
-          ],
-        },
-        alternates: {
-          canonical: data.meta.canonicalUrl || "/nursing-entrance-exam",
-        },
-      };
-    }
-  }
-
-  return {
-    title: "Nursing Entrance Exam | TeasGurus",
-    description: "Comprehensive guide to nursing entrance exams",
-  };
-}
-
-export default async function NursingEntranceExamPage() {
-  const result = await getPillarPageContent("nursing-entrance-exam");
-  const subPagesResult = await getNursingEntranceExamSubPages();
-
-  // Provide default content structure if not found in Firebase
-  const pageData = result.success && result.data ? (result.data as any) : null;
-  const subPages =
-    subPagesResult.success && subPagesResult.data
-      ? (subPagesResult.data as any[])
-      : [];
-
-  // Fetch question counts for sub-pages
-  const subPagesWithCounts = await Promise.all(
-    subPages.slice(0, 2).map(async (subPage: any) => {
-      const pageSlug = subPage.slug || subPage.id || subPage.subPageId;
-      const questionCount = await countSubPageQuestions(
-        "nursing-entrance-exam",
-        pageSlug
-      );
-      return {
-        ...subPage,
-        questionCount,
-      };
-    })
-  );
-
-  // Fetch total question count for the pillar page
-  const pillarPageQuestionCount = await countPillarPageQuestions(
-    "nursing-entrance-exam"
-  );
-
-  const content: ServiceContent = pageData
-    ? {
-        meta: pageData.meta || {
-          title: "Nursing Entrance Exam | TeasGurus",
-          description: "Comprehensive guide to nursing entrance exams",
-          keywords: "nursing entrance exam, nursing school, exam preparation",
-          ogTitle: "Nursing Entrance Exam | TeasGurus",
-          ogDescription: "Comprehensive guide to nursing entrance exams",
-          ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `${
-            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
-          }/nursing-entrance-exam`,
-        },
-        schema: pageData.schema || "",
-        hero: pageData.hero || {
-          badge: "We are Teas Gurus",
-          title: "Nursing Entrance Exam",
-          subtitle:
-            "Comprehensive guide to help you succeed in your nursing entrance exam.",
-          description: "",
-        },
-        trustIndicators: pageData.trustIndicators || [],
-        whatToExpect: pageData.whatToExpect || {
-          badge: "",
-          title: "",
-          subtitle: "",
-          cards: [],
-          footer: "",
-        },
-        mostCommonQuestions: pageData.mostCommonQuestions || {
-          badge: "",
-          title: "",
-          subtitle: "",
-          cards: [],
-        },
-        studyGuide: pageData.studyGuide || {
-          badge: "",
-          title: "",
-          subtitle: "",
-          sections: [],
-        },
-        privacyPricing: pageData.privacyPricing || [],
-        faq: pageData.faq || {
-          title: "",
-          subtitle: "",
-          questions: [],
-        },
-      }
-    : {
-        meta: {
-          title: "Nursing Entrance Exam | TeasGurus",
-          description: "Comprehensive guide to nursing entrance exams",
-          keywords: "nursing entrance exam, nursing school, exam preparation",
-          ogTitle: "Nursing Entrance Exam | TeasGurus",
-          ogDescription: "Comprehensive guide to nursing entrance exams",
-          ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `${
-            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
-          }/nursing-entrance-exam`,
-        },
-        schema: "",
-        hero: {
-          badge: "We are Teas Gurus",
-          title: "Nursing Entrance Exam",
-          subtitle:
-            "Comprehensive guide to help you succeed in your nursing entrance exam.",
-          description: "",
-        },
-        trustIndicators: [],
-        whatToExpect: {
-          badge: "",
-          title: "",
-          subtitle: "",
-          cards: [],
-          footer: "",
-        },
-        mostCommonQuestions: {
-          badge: "",
-          title: "",
-          subtitle: "",
-          cards: [],
-        },
-        studyGuide: {
-          badge: "",
-          title: "",
-          subtitle: "",
-          sections: [],
-        },
-        privacyPricing: [],
-        faq: {
-          title: "",
-          subtitle: "",
-          questions: [],
-        },
-      };
 
   return (
     <Layout>
-      {/* Schema Script */}
-      {content.schema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: content.schema,
-          }}
-        />
-      )}
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 via-gray-50 to-gray-50">
+        {/* Hero Section */}
+        <section className="py-14 pb-10">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs text-indigo-700 mb-4">
+                  <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full bg-indigo-100 text-[0.7rem]">
+                    ★
+                  </span>
+                  Trusted Nursing Entrance Prep
+                </div>
+                <h1 className="text-[2.2rem] lg:text-[2.7rem] leading-[1.1] tracking-[-0.04em] mb-3 text-slate-900 font-bold">
+                  Nursing Entrance Exams For{" "}
+                  <span className="bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    ATI TEAS
+                  </span>{" "}
+                  And{" "}
+                  <span className="bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    HESI A2
+                  </span>
+                </h1>
+                <p className="text-[0.98rem] text-gray-600 max-w-[32rem] mb-6 font-normal">
+                  Walk into test day knowing exactly what to expect. Build
+                  confidence with realistic ATI TEAS and HESI A2 questions,
+                  full-length exams, and skill-by-skill feedback tailored to
+                  nursing students.
+                </p>
 
-      {/* Hero Section */}
-      <section className="bg-white py-[1.25rem]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3">
-              {content.hero.title || "Nursing Entrance Exam - TEAS Gurus"}
-            </h1>
-            <div className="text-gray-600 text-base leading-relaxed">
-              <ContentRenderer content={content.hero.description || ""} />
-            </div>
-          </div>
+                <div className="flex flex-wrap gap-3 mb-6 text-xs">
+                  <div className="px-3 py-1 rounded-full bg-white border border-slate-400/65 flex items-center gap-2 text-gray-900">
+                    <div className="w-[7px] h-[7px] rounded-full bg-green-500"></div>
+                    Updated For Current ATI TEAS And HESI A2 Blueprints
+                  </div>
+                  <div className="px-3 py-1 rounded-full bg-white border border-slate-400/65 flex items-center gap-2 text-gray-900">
+                    <span>⏱</span>
+                    Timed Exam And Review Modes
+                  </div>
+                  <div className="px-3 py-1 rounded-full bg-white border border-slate-400/65 flex items-center gap-2 text-gray-900">
+                    <span>📊</span>
+                    Skill Analytics For Every Subject
+                  </div>
+                </div>
 
-          {/* Sub-Pages Cards - Dashboard Style */}
-          <div className="mt-6">
-            <div className="flex flex-wrap justify-center gap-4">
-              {/* First 2 cards - Dynamic sub-pages */}
-              {subPagesWithCounts.map((subPage: any, index: number) => {
-                const pageName =
-                  subPage.pageName ||
-                  subPage.hero?.title ||
-                  subPage.title ||
-                  subPage.id;
-                const pageId = subPage.id || subPage.subPageId;
-
-                // Get dynamic question count
-                const formattedCount = (
-                  subPage.questionCount || 0
-                ).toLocaleString();
-
-                // Card configuration based on index
-                const cardConfigs = [
-                  {
-                    iconBg: "bg-purple-500",
-                    iconColor: "text-white",
-                    numberColor: "text-purple-600",
-                    icon: <LaptopIcon className="w-6 h-6 text-white" />,
-                    number: formattedCount,
-                    caption: "Total Questions",
-                  },
-                  {
-                    iconBg: "bg-blue-500",
-                    iconColor: "text-white",
-                    numberColor: "text-blue-600",
-                    icon: <LightbulbIcon className="w-6 h-6 text-white" />,
-                    number: formattedCount,
-                    caption: "Total Questions",
-                  },
-                ];
-
-                const config = cardConfigs[index] || cardConfigs[0];
-
-                // Get the slug for URL generation - use slug directly (no suffix for subpages)
-                const pageSlug = subPage.slug || pageId;
-
-                return (
+                <div className="flex flex-wrap gap-3 mb-5">
                   <Link
-                    key={pageId}
-                    href={`/${pageSlug}`}
-                    {...({ name: pageName } as any)}
-                    className="bg-white rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm"
+                    href="/register"
+                    className="rounded-full px-6 py-3 text-sm border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/50 flex items-center gap-2 hover:brightness-105 transition-all"
                   >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                      >
-                        {config.icon}
+                    <span className="text-[1.05rem] translate-y-[1px]">➤</span>
+                    Start ATI TEAS Prep
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="rounded-full px-5 py-3 text-sm border border-slate-300 bg-white/95 text-gray-900 font-medium flex items-center gap-2 hover:bg-white transition-all"
+                  >
+                    <span className="text-base opacity-75">⟲</span>
+                    Explore HESI A2 Practice
+                  </Link>
+                </div>
+
+                <p className="text-xs text-gray-400 font-normal">
+                  <strong className="text-gray-600 font-semibold">One login.</strong> Switch
+                  between ATI TEAS and HESI A2 without losing your progress.
+                </p>
+              </div>
+
+              <div className="relative">
+                <div className="relative bg-gradient-to-br from-indigo-50 via-white to-gray-50 rounded-[2rem] p-6 shadow-lg border border-slate-300 overflow-hidden">
+                  <div className="absolute -top-10 -right-6 w-[140px] h-[140px] rounded-full bg-gradient-radial from-indigo-100 via-indigo-200 to-indigo-600 opacity-15 blur-[0.5px]"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm font-semibold text-gray-900">
+                        Entrance Exam Snapshot
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-600 mb-1">
-                          {pageName}
-                        </p>
-                        <p
-                          className={`text-3xl font-bold ${config.numberColor}`}
-                        >
-                          {config.number}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {config.caption}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <svg
-                          className="w-5 h-5 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
+                      <div className="rounded-full px-2 py-1 bg-green-50 border border-green-300 text-xs text-green-800">
+                        Study Streak · 6 Days
                       </div>
                     </div>
-                  </Link>
-                );
-              })}
 
-              {/* Third card - Always show pillar page name */}
-              <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MedalIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      {content.hero?.title || "Nursing Entrance Exam"}
-                    </p>
-                    <p className="text-3xl font-bold text-orange-600">
-                      {pillarPageQuestionCount.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Questions Available
-                    </p>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="bg-white/90 rounded-2xl p-3 border border-gray-200">
+                        <div className="text-[0.7rem] uppercase tracking-wider text-gray-400 mb-1">
+                          ATI TEAS
+                        </div>
+                        <div className="text-lg font-bold mb-1 text-gray-900">
+                          72%
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Reading And Math Are Improving
+                        </div>
+                      </div>
+                      <div className="bg-white/90 rounded-2xl p-3 border border-gray-200">
+                        <div className="text-[0.7rem] uppercase tracking-wider text-gray-400 mb-1">
+                          HESI A2
+                        </div>
+                        <div className="text-lg font-bold mb-1 text-gray-900">
+                          68%
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Vocabulary Needs More Practice
+                        </div>
+                      </div>
+                      <div className="bg-white/90 rounded-2xl p-3 border border-gray-200">
+                        <div className="text-[0.7rem] uppercase tracking-wider text-gray-400 mb-1">
+                          Questions Answered
+                        </div>
+                        <div className="text-lg font-bold mb-1 text-gray-900">
+                          420
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Last 7 Days Across Both Exams
+                        </div>
+                      </div>
+                      <div className="bg-white/90 rounded-2xl p-3 border border-gray-200">
+                        <div className="text-[0.7rem] uppercase tracking-wider text-gray-400 mb-1">
+                          Strongest Area
+                        </div>
+                        <div className="text-lg font-bold mb-1 text-gray-900">
+                          Anatomy
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Above 80% Accuracy
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-3">
+                      <div>Entrance Exam Readiness</div>
+                      <div className="flex-1 h-1 rounded-full bg-gray-300 overflow-hidden ml-3">
+                        <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-indigo-600 to-purple-600"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Indicators Section */}
-      {content.trustIndicators && content.trustIndicators.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap justify-center gap-8">
-              {content.trustIndicators.map((indicator, index) => (
-                <div
-                  key={index}
-                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-xs"
-                >
-                  <div className="mb-4 flex justify-center items-center">
-                    {getIconComponent(indicator.icon)}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {indicator.title}
-                  </h3>
-                </div>
-              ))}
             </div>
           </div>
         </section>
-      )}
 
-      {/* What to Expect Section */}
-      {content.whatToExpect && (
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-6">
-                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-                {content.whatToExpect.badge}
+        {/* Choose Your Exam Section */}
+        <section className="py-9 pb-6">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <div className="text-center mb-7">
+              <div className="text-xs uppercase tracking-widest text-gray-400 mb-2">
+                Choose Your Nursing Entrance Exam
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.whatToExpect.title}
+              <h2 className="text-2xl tracking-tight mb-2 text-slate-900">
+                Focus On ATI TEAS Or HESI A2 — Or Both
               </h2>
-              <div className="text-xl text-gray-600 max-w-3xl mx-auto">
-                <ContentRenderer
-                  content={content.whatToExpect.subtitle || ""}
-                />
-              </div>
-            </div>
-
-            <div
-              className={`grid gap-8 ${
-                content.whatToExpect.cards.length === 1
-                  ? "grid-cols-1"
-                  : "grid-cols-1 md:grid-cols-2"
-              }`}
-            >
-              {content.whatToExpect.cards.map((card, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
-                >
-                  <div className="mb-6 flex justify-center items-center">
-                    {getIconComponent(card.icon)}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {card.title}
-                  </h3>
-                  <ul className="space-y-3">
-                    {card.content.map((item, itemIndex) => (
-                      <li
-                        key={itemIndex}
-                        className="flex items-start space-x-3 text-gray-600"
-                      >
-                        <span className="text-green-500 mt-1">✓</span>
-                        <ContentRenderer content={item} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {content.whatToExpect.footer && (
-              <div className="text-center mt-12">
-                <div className="text-lg text-gray-600">
-                  <ContentRenderer content={content.whatToExpect.footer} />
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Most Common Questions Section */}
-      {content.mostCommonQuestions && (
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold mb-6">
-                <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
-                {content.mostCommonQuestions.badge}
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.mostCommonQuestions.title}
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                {content.mostCommonQuestions.subtitle}
+              <p className="text-sm text-gray-600 max-w-[32rem] mx-auto">
+                Build separate study plans for ATI TEAS and HESI A2 while
+                keeping all your stats in one clean dashboard. Switch exams in a
+                click without starting over.
               </p>
             </div>
 
-            <div
-              className={`grid gap-8 ${
-                content.mostCommonQuestions.cards.length === 1
-                  ? "grid-cols-1"
-                  : "grid-cols-1 md:grid-cols-2"
-              }`}
-            >
-              {content.mostCommonQuestions.cards.map((card, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 rounded-2xl p-8 hover:bg-gray-100 transition-colors"
-                >
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {card.title}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* ATI TEAS Card */}
+              <article className="relative bg-white rounded-2xl p-5 border border-gray-200 shadow-lg overflow-hidden">
+                <div className="absolute -top-9 -right-6 w-[110px] h-[110px] rounded-full bg-gradient-radial from-indigo-100 via-indigo-200 to-indigo-600 opacity-14 blur-[0.5px]"></div>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
+                      Entrance Exam · ATI TEAS
+                    </div>
+                    <div className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-900 border border-yellow-300">
+                      Most Popular
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-bold mb-1 text-slate-900">
+                    ATI TEAS 7 Practice Hub
                   </h3>
-                  <ul className="space-y-3">
-                    {card.content.map((item, itemIndex) => (
-                      <li
-                        key={itemIndex}
-                        className="flex items-start space-x-3 text-gray-600"
-                      >
-                        <span className="text-purple-500 mt-1">•</span>
-                        <ContentRenderer content={item} />
-                      </li>
-                    ))}
+                  <p className="text-sm text-gray-600 mb-4">
+                    Walk through every section with question sets that feel like
+                    the real exam: Reading, Math, Science, and English and
+                    Language Usage.
+                  </p>
+
+                  <div className="flex flex-wrap gap-3 mb-4 text-xs">
+                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                      <span>📝</span>
+                      Full-Length TEAS Practice Exams
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                      <span>📚</span>
+                      Section Banks For Every Subject
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                      <span>🎯</span>
+                      Skill Mastery Tags On Each Question
+                    </div>
+                  </div>
+
+                  <div className="text-xs uppercase tracking-wider text-gray-400 mb-1">
+                    What You Can Practice
+                  </div>
+                  <ul className="text-sm text-gray-700 mb-4 space-y-1">
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Reading passages with main idea, inference, and detail
+                      questions.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      ATI TEAS Math skills: ratios, proportions, conversions,
+                      and word problems.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Science topics including human anatomy, physiology, and
+                      scientific reasoning.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Grammar, punctuation, and word choice under English and
+                      Language Usage.
+                    </li>
                   </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
-      {/* Study Guide Section */}
-      {content.studyGuide && (
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
-                <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                {content.studyGuide.badge}
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.studyGuide.title}
-              </h2>
-              <div className="text-xl text-gray-600 max-w-3xl mx-auto">
-                <ContentRenderer content={content.studyGuide.subtitle || ""} />
-              </div>
-            </div>
-
-            <div
-              className={`grid grid-cols-1 gap-8 ${
-                content.studyGuide.sections.length === 1
-                  ? "md:grid-cols-1"
-                  : content.studyGuide.sections.length === 2
-                  ? "md:grid-cols-2"
-                  : content.studyGuide.sections.length === 3
-                  ? "md:grid-cols-3"
-                  : "md:grid-cols-2 lg:grid-cols-4"
-              }`}
-            >
-              {content.studyGuide.sections.map((section, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
-                >
-                  <div className="mb-6 flex justify-center items-center">
-                    {getIconComponent(section.icon)}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {section.title}
-                  </h3>
-                  <div className="text-gray-600 leading-relaxed">
-                    <ContentRenderer content={section.content} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Privacy & Pricing Section */}
-      {content.privacyPricing && content.privacyPricing.length > 0 && (
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div
-              className={`grid gap-8 ${
-                content.privacyPricing.length === 1
-                  ? "grid-cols-1"
-                  : "grid-cols-1 md:grid-cols-2"
-              }`}
-            >
-              {content.privacyPricing.map((item, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
-                >
-                  <div className="mb-6 flex justify-center items-center">
-                    {getIconComponent(item.icon)}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {item.title}
-                  </h3>
-                  <div className="text-gray-600 leading-relaxed">
-                    <ContentRenderer content={item.content} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* FAQ Section */}
-      {content.faq && (
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.faq.title}
-              </h2>
-              <div className="text-xl text-gray-600">
-                <ContentRenderer content={content.faq.subtitle || ""} />
-              </div>
-            </div>
-
-            <div className="space-y-8">
-              {content.faq.questions.map((faq, index) => (
-                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                    {faq.question}
-                  </h3>
-                  <div className="space-y-4">
-                    {faq.paragraphs.map((paragraph, pIndex) => (
-                      <div
-                        key={pIndex}
-                        className="text-gray-600 leading-relaxed"
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex flex-col gap-1 text-xs text-gray-600">
+                      <strong className="font-semibold text-gray-900">
+                        Best For Students Applying To ATI TEAS Schools
+                      </strong>
+                      <span>
+                        Use Review Mode to see explanations, then Exam Mode to
+                        simulate test day.
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href="/register"
+                        className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
                       >
-                        <ContentRenderer content={paragraph} />
+                        <span>Start TEAS Practice</span>
+                        <span>➜</span>
+                      </Link>
+                      <Link
+                        href="/register"
+                        className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
+                      >
+                        <span className="opacity-70">👁</span>
+                        View TEAS Question Sets
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              {/* HESI A2 Card */}
+              <article className="relative bg-white rounded-2xl p-5 border border-gray-200 shadow-lg overflow-hidden">
+                <div className="absolute -top-9 -right-6 w-[110px] h-[110px] rounded-full bg-gradient-radial from-indigo-100 via-indigo-200 to-indigo-600 opacity-14 blur-[0.5px]"></div>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
+                      Entrance Exam · HESI A2
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-bold mb-1 text-slate-900">
+                    HESI A2 Practice Hub
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Prepare for the seven core HESI A2 subjects with targeted
+                    practice and skill analytics built around nursing entrance
+                    requirements.
+                  </p>
+
+                  <div className="flex flex-wrap gap-3 mb-4 text-xs">
+                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                      <span>📊</span>
+                      Section Performance Skills
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                      <span>⏳</span>
+                      Timed And Untimed Exams
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                      <span>🔁</span>
+                      Smart Question Review
+                    </div>
+                  </div>
+
+                  <div className="text-xs uppercase tracking-wider text-gray-400 mb-1">
+                    What You Can Practice
+                  </div>
+                  <ul className="text-sm text-gray-700 mb-4 space-y-1">
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Reading comprehension with health-focused passages.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Vocabulary and general knowledge built around medical
+                      terms.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Grammar and sentence structure for nursing-level writing.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Math skills for dosage, ratios, and conversions.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0">•</span>
+                      Biology, Anatomy and Physiology, and Chemistry
+                      foundations.
+                    </li>
+                  </ul>
+
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex flex-col gap-1 text-xs text-gray-600">
+                      <strong className="font-semibold text-gray-900">
+                        Best For Students Taking HESI A2 Entrance Exams
+                      </strong>
+                      <span>
+                        Track every subject separately so you know where to
+                        spend your study time.
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href="/register"
+                        className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
+                      >
+                        <span>Start HESI A2 Practice</span>
+                        <span>➜</span>
+                      </Link>
+                      <Link
+                        href="/register"
+                        className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
+                      >
+                        <span className="opacity-70">📁</span>
+                        View HESI Question Sets
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* What You Get Section */}
+        <section className="py-9 pb-6">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <div className="text-center mb-7">
+              <div className="text-xs uppercase tracking-widest text-gray-400 mb-2">
+                What You Get With NursingMocks
+              </div>
+              <h2 className="text-2xl tracking-tight mb-2 text-slate-900">
+                One Prep Platform For Both Entrance Exams
+              </h2>
+              <p className="text-sm text-gray-600 max-w-[32rem] mx-auto">
+                Whether you are sitting ATI TEAS, HESI A2, or both, your
+                practice, stats, and streaks stay in one place. No more juggling
+                multiple apps or losing progress between different nursing
+                entrance exam prep tools.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <article className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-base text-indigo-700 mb-3">
+                  🧪
+                </div>
+                <h3 className="text-sm font-semibold mb-1 text-gray-900">
+                  Realistic Practice Exams
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Full length practice tests for both ATI TEAS and HESI A2 with
+                  question styles, timing, and difficulty that feel close to the
+                  actual entrance exam. Use Exam Mode when you want a timed
+                  session and Review Mode when you want to slow down and read
+                  the explanations.
+                </p>
+              </article>
+              <article className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-base text-indigo-700 mb-3">
+                  🎯
+                </div>
+                <h3 className="text-sm font-semibold mb-1 text-gray-900">
+                  Skill Level Feedback
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Every item is tagged by skill, not just by subject. When you
+                  miss an ATI TEAS math question, you see if it was a ratio
+                  issue, a conversion problem, or a data interpretation error.
+                  The same idea applies to HESI A2 reading comprehension,
+                  vocabulary, and grammar questions.
+                </p>
+              </article>
+              <article className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-base text-indigo-700 mb-3">
+                  📈
+                </div>
+                <h3 className="text-sm font-semibold mb-1 text-gray-900">
+                  Entrance Exam Analytics
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Track your average scores, accuracy by subject, and study
+                  streak across ATI TEAS and HESI A2 in one analytics view. You
+                  can quickly see whether you are closer to test ready for the
+                  ATI TEAS reading section or the HESI A2 math section.
+                </p>
+              </article>
+              <article className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-base text-indigo-700 mb-3">
+                  🧭
+                </div>
+                <h3 className="text-sm font-semibold mb-1 text-gray-900">
+                  Guided Study Paths
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Use guided plans when you want a structured route to test day,
+                  or build your own path by drilling only your weak areas.
+                  NursingMocks adapts to students who are focused on ATI TEAS
+                  prep, HESI A2 prep, or a combination of both entrance exams.
+                </p>
+              </article>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">
+                  ATI TEAS Entrance Exam
+                </div>
+                <h3 className="text-sm font-semibold mb-2 text-gray-900">
+                  ATI TEAS Practice That Feels Familiar On Test Day
+                </h3>
+                <p className="text-xs text-gray-700 mb-3">
+                  Many students search for ATI TEAS practice tests and end up
+                  with random questions that do not match the official blueprint.
+                  Inside NursingMocks, ATI TEAS questions are grouped by section
+                  so you can move naturally from Reading to Math, then to Science
+                  and English and Language Usage. The goal is to help you
+                  recognize the patterns you will see on ATI TEAS test day, not
+                  to overwhelm you with disconnected trivia.
+                </p>
+                <ul className="text-xs text-gray-700 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    Reading passages that mirror the length and tone of real ATI
+                    TEAS passages.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    ATI TEAS Math questions covering ratios, proportions,
+                    measurements, and word problems.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    Science practice with human anatomy, physiology, and
+                    scientific reasoning skills.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    English and Language Usage items that focus on punctuation,
+                    spelling, and word choice.
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">
+                  HESI A2 Entrance Exam
+                </div>
+                <h3 className="text-sm font-semibold mb-2 text-gray-900">
+                  HESI A2 Practice Built For Nursing Students
+                </h3>
+                <p className="text-xs text-gray-700 mb-3">
+                  If your nursing program uses the HESI A2 entrance exam, you can
+                  switch to a full HESI A2 practice environment without changing
+                  platforms. NursingMocks includes Reading Comprehension,
+                  Vocabulary and General Knowledge, Grammar, Basic Math Skills,
+                  Biology, Anatomy and Physiology, and Chemistry practice written
+                  with nursing students in mind.
+                </p>
+                <ul className="text-xs text-gray-700 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    Health-focused Reading passages that train you for HESI A2
+                    Reading Comprehension questions.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    Vocabulary sets that blend everyday language with common
+                    medical prefixes and suffixes.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    Grammar and sentence structure questions that improve your
+                    written communication.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    HESI A2 Math questions that prepare you for dosage
+                    calculations and conversion-style problems.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 rounded-xl border border-dashed border-slate-300 bg-gray-50 text-xs text-gray-700">
+              <strong className="text-gray-900 font-semibold">
+                One Nursing Entrance Account, Two Major Exams.
+              </strong>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                <div>
+                  Use ATI TEAS practice exams when your program requires the ATI
+                  TEAS test, then keep your score history even if you later add
+                  HESI A2.
+                </div>
+                <div>
+                  Switch into HESI A2 prep without losing your existing
+                  analytics, streaks, or completed ATI TEAS question sets.
+                </div>
+                <div>
+                  Treat NursingMocks as your central home for all nursing
+                  entrance exam practice, instead of spreading your study time
+                  across multiple disconnected tools.
+                </div>
+              </div>
+            </div>
+
+            {/* Article Section */}
+            <article className="mt-7 p-6 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white shadow-lg">
+              <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4 items-start sm:items-center">
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-gray-400 mb-1">
+                    Real-World Nursing Entrance Strategy
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    How To Use One Platform To Balance ATI TEAS And HESI A2 Prep
+                  </h3>
+                </div>
+                <div className="text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 whitespace-nowrap">
+                  ATI TEAS & HESI A2 Study Guide
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_0.95fr] gap-6 text-sm text-gray-700">
+                <div className="flex flex-col gap-4">
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                    <p className="mb-3">
+                      Most students do not start ATI TEAS or HESI A2 prep with a
+                      perfect plan. You hear a date from an advisor, look at your
+                      work schedule, and suddenly there is a countdown on your
+                      phone and a stack of notes in front of you. The hardest
+                      part is not finding questions; it is keeping all of your
+                      entrance exam practice organised so you can see what is
+                      working and what still needs attention.
+                    </p>
+                    <p className="mb-3">
+                      NursingMocks is built around that problem. You log in once,
+                      choose ATI TEAS or HESI A2, and every question you answer
+                      feeds back into a single entrance exam dashboard. Instead
+                      of guessing whether your reading score is improving, you
+                      can see it move week by week. Instead of wondering why math
+                      feels harder this month, you see exactly which skills have
+                      slipped.
+                    </p>
+                    <p>
+                      A typical week might start with a full ATI TEAS Reading set
+                      in Review Mode. You read the passages, answer the
+                      questions, then slow down and walk through the
+                      explanations. Two days later, you are on shift at work and
+                      squeeze in fifteen HESI A2 Grammar questions during a
+                      break. The sessions are short, but they stack. By Friday
+                      evening the dashboard already reflects your effort.
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                    <p className="mb-3">
+                      When everything lives inside one platform, patterns start to
+                      appear. You may notice that your ATI TEAS Science accuracy
+                      rises whenever you spend time on HESI A2 Anatomy and
+                      Physiology, or that a week of focused TEAS Math practice
+                      quietly improves your HESI A2 dosage questions. The goal is
+                      not to grind endlessly, but to use the data to decide what
+                      deserves your next thirty minutes.
+                    </p>
+                    <span className="inline-block mt-3 px-2 py-1 rounded-lg bg-green-50 text-green-800 text-xs font-medium">
+                      Short Sessions, Long-Term Gain
+                    </span>
+                    <p className="mt-3 mb-3">
+                      Ten questions while the kettle boils, another ten on the
+                      bus, and a single timed mini exam on the weekend can move
+                      your ATI TEAS and HESI A2 scores more than one long,
+                      stressed-out cram night. Because NursingMocks keeps your
+                      history for both exams, you can come back to tricky items
+                      later, re-take sets, and check whether your second attempt
+                      really matches what you learned.
+                    </p>
+                    <p>
+                      Over time, this slow but steady rhythm makes the entrance
+                      exam feel less like a wall and more like another shift you
+                      know how to handle. You recognise the question styles. You
+                      know roughly how long each section takes you. And instead
+                      of hoping you have practised enough, you can open your
+                      dashboard and see the story of your ATI TEAS and HESI A2
+                      preparation written in numbers.
+                    </p>
+                  </div>
+                </div>
+
+                <aside className="relative rounded-xl bg-gradient-to-br from-indigo-50 via-white to-gray-50 p-4 border border-indigo-200 shadow-lg overflow-hidden">
+                  <div className="absolute bottom-8 -right-9 w-[120px] h-[120px] rounded-full bg-gradient-radial from-indigo-200 via-purple-600 to-indigo-600 opacity-24 blur-[0.5px]"></div>
+                  <div className="relative z-10">
+                    <h4 className="text-sm font-semibold mb-2 text-gray-900">
+                      A Simple Routine That Works For Both Exams
+                    </h4>
+                    <p className="text-xs text-gray-700 mb-3">
+                      You do not need a complicated schedule to make progress.
+                      Many students follow a simple three-step rhythm that fits
+                      around busy clinical and work days and still moves ATI TEAS
+                      and HESI A2 scores in the right direction.
+                    </p>
+                    <ul className="text-xs mb-3 space-y-3">
+                      <li className="pb-3 border-b border-dashed border-slate-300">
+                        <div className="text-xs uppercase tracking-wider text-gray-600 mb-1">
+                          Step 1 · Warm Up In Review Mode
+                        </div>
+                        <strong className="text-gray-900 font-semibold block mb-1">
+                          Start with 10–15 ATI TEAS or HESI A2 questions
+                        </strong>
+                        Read each explanation, even for the questions you got
+                        right. This is where you spot small habits, like
+                        misreading units or rushing the last sentence of a
+                        passage.
+                      </li>
+                      <li className="pb-3 border-b border-dashed border-slate-300">
+                        <div className="text-xs uppercase tracking-wider text-gray-600 mb-1">
+                          Step 2 · Test Yourself In Exam Mode
+                        </div>
+                        <strong className="text-gray-900 font-semibold block mb-1">
+                          Once or twice a week, run a timed mixed set
+                        </strong>
+                        Combine sections from your chosen exam and let the clock
+                        run. The goal is not a perfect score; it is learning how
+                        your pacing feels when time pressure is real.
+                      </li>
+                      <li>
+                        <div className="text-xs uppercase tracking-wider text-gray-600 mb-1">
+                          Step 3 · Check The Entrance Dashboard
+                        </div>
+                        <strong className="text-gray-900 font-semibold block mb-1">
+                          Use the data to pick tomorrow's focus
+                        </strong>
+                        Look at which subject dipped during the week. If HESI A2
+                        Math or ATI TEAS Science slipped, make that area the
+                        first thing you touch in your next short study block.
+                      </li>
+                    </ul>
+                    <div className="text-xs text-gray-600 mt-3">
+                      When you repeat this pattern for several weeks, your
+                      preparation for both ATI TEAS and HESI A2 becomes less
+                      about cramming and more about building a steady, predictable
+                      habit that leads to genuine test-day confidence.
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        {/* Comparison Section */}
+        <section className="py-9 pb-6">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+              <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4 items-start sm:items-center">
+                <div className="max-w-[60%]">
+                  <h2 className="text-lg font-semibold mb-1 text-slate-900">
+                    Compare ATI TEAS And HESI A2 Entrance Prep
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Not sure which exam you will take? Use this quick comparison
+                    to understand how NursingMocks supports both ATI TEAS and
+                    HESI A2 so you can pick the right path.
+                  </p>
+                </div>
+                <div className="text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  ATI TEAS Vs HESI A2
+                </div>
+              </div>
+
+              <table className="w-full border-collapse text-xs">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="p-2 text-left font-semibold text-gray-900 text-xs uppercase tracking-wider">
+                      Feature
+                    </th>
+                    <th className="p-2 text-left font-semibold text-gray-900 text-xs uppercase tracking-wider">
+                      ATI TEAS
+                    </th>
+                    <th className="p-2 text-left font-semibold text-gray-900 text-xs uppercase tracking-wider">
+                      HESI A2
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-gray-50">
+                    <td className="p-2 font-medium text-gray-900 w-[40%]">
+                      Full-Length Practice Exams
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 font-medium text-gray-900">
+                      Section Question Banks
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">
+                      ✓ Reading, Math, Science, English
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">
+                      ✓ All Seven HESI Subjects
+                    </td>
+                  </tr>
+                  <tr className="bg-gray-50">
+                    <td className="p-2 font-medium text-gray-900">
+                      Skill Tags And Analytics
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 font-medium text-gray-900">
+                      Timed Exam Mode
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                  </tr>
+                  <tr className="bg-gray-50">
+                    <td className="p-2 font-medium text-gray-900">
+                      Review Mode With Explanations
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                    <td className="p-2 text-green-600 font-semibold">✓</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 font-medium text-gray-900">
+                      Entrance Exam-Specific Study Plans
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">
+                      ✓ ATI TEAS Plans
+                    </td>
+                    <td className="p-2 text-green-600 font-semibold">
+                      ✓ HESI A2 Plans
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <p className="text-xs text-gray-600 mt-3">
+                You can activate either exam or both within the same subscription.
+                Your dashboard keeps scores separate so you always know your
+                readiness for each nursing entrance exam.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-9 pb-6">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <div className="text-center mb-7">
+              <div className="text-xs uppercase tracking-widest text-gray-400 mb-2">
+                Entrance Exam Questions
+              </div>
+              <h2 className="text-2xl tracking-tight mb-2 text-slate-900">
+                ATI TEAS And HESI A2 Frequently Asked Questions
+              </h2>
+              <p className="text-sm text-gray-600 max-w-[32rem] mx-auto">
+                These quick answers cover how NursingMocks works with ATI TEAS
+                and HESI A2. You can always add more detail later inside your
+                knowledge base.
+              </p>
+            </div>
+
+            <div className="max-w-[800px] mx-auto space-y-3">
+              {[
+                {
+                  question: "Can I Practice ATI TEAS And HESI A2 At The Same Time?",
+                  answer:
+                    "Yes. You can switch between ATI TEAS and HESI A2 from the same account. Each exam has its own question sets, skill tags, and analytics. Your scores stay separate so you can see progress for every entrance exam you plan to sit.",
+                },
+                {
+                  question:
+                    "How Close Are The Questions To The Real Entrance Exams?",
+                  answer:
+                    "The questions are designed to mirror the style, wording, and difficulty of actual ATI TEAS and HESI A2 items without copying them. The goal is to train your brain to recognize patterns, not to memorize exact questions.",
+                },
+                {
+                  question: "Do I Get Explanations For Every Question?",
+                  answer:
+                    "In Review Mode you can see correct answers and explanations for ATI TEAS and HESI A2 questions. This helps you understand the reasoning behind the answer instead of just memorizing letters.",
+                },
+                {
+                  question:
+                    "What If I Am Not Sure Which Entrance Exam My School Uses?",
+                  answer:
+                    "Many programs clearly list ATI TEAS or HESI A2 on their admissions page. If you are still unsure, you can prepare using both exam hubs inside NursingMocks until you confirm which test your nursing school prefers.",
+                },
+              ].map((faq, index) => (
+                <div
+                  key={index}
+                  className={`rounded-2xl border border-gray-200 bg-white overflow-hidden ${
+                    openFaqIndex === index ? "shadow-md" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFaq(index)}
+                    className="w-full border-none bg-transparent p-3 flex justify-between items-center text-left text-sm text-gray-900 cursor-pointer hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-[18px] h-[18px] rounded-full border border-slate-300 flex items-center justify-center text-xs text-gray-600">
+                        Q
                       </div>
-                    ))}
-                    {faq.additionalParagraphs && (
-                      <div className="mt-6 pt-6 border-t border-gray-200">
-                        {faq.additionalParagraphs.map((paragraph, pIndex) => (
-                          <div
-                            key={pIndex}
-                            className="text-gray-600 leading-relaxed"
-                          >
-                            <ContentRenderer content={paragraph} />
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                      <span>{faq.question}</span>
+                    </div>
+                    <span
+                      className={`text-base text-gray-400 transition-transform ${
+                        openFaqIndex === index
+                          ? "rotate-90 text-indigo-600"
+                          : ""
+                      }`}
+                    >
+                      ›
+                    </span>
+                  </button>
+                  <div
+                    className={`overflow-hidden transition-all duration-150 ${
+                      openFaqIndex === index
+                        ? "max-h-[200px] pb-3"
+                        : "max-h-0 pb-0"
+                    }`}
+                  >
+                    <div className="px-3 text-xs text-gray-600">{faq.answer}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
-      )}
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Ace Your Nursing Entrance Exam?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Get expert help with your nursing entrance exam preparation and
-            achieve your nursing school dreams.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/contact"
-              className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
-            >
-              Get Started Today
-            </Link>
-            <Link
-              href="/prices"
-              className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-            >
-              View Pricing
-            </Link>
-          </div>
-        </div>
-      </section>
+      </div>
     </Layout>
   );
 }

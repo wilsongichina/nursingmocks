@@ -3,11 +3,32 @@ import { sendContactEmail } from "@/lib/sendgrid";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, email, phone, budget, services, message } = body;
+    // Check if request is FormData (for file uploads) or JSON
+    const contentType = request.headers.get("content-type") || "";
+    let formData: any;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formDataObj = await request.formData();
+      formData = {
+        name: formDataObj.get("name") as string,
+        email: formDataObj.get("email") as string,
+        phone: formDataObj.get("phone") as string || "",
+        budget: formDataObj.get("budget") as string || "",
+        services: formDataObj.get("services") as string || formDataObj.get("topic") as string || "",
+        topic: formDataObj.get("topic") as string || "",
+        urgency: formDataObj.get("urgency") as string || "",
+        message: formDataObj.get("message") as string,
+        attachment: formDataObj.get("attachment") as File | null,
+      };
+    } else {
+      const body = await request.json();
+      formData = body;
+    }
+
+    const { name, email, phone, budget, services, topic, urgency, message } = formData;
 
     // Validate required fields
-    if (!name || !email || !services || !message) {
+    if (!name || !email || !message) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -37,9 +58,11 @@ export async function POST(request: NextRequest) {
     await sendContactEmail({
       name,
       email,
-      phone,
-      budget,
-      services,
+      phone: phone || undefined,
+      budget: budget || undefined,
+      services: services || topic || "General Inquiry",
+      topic: topic || undefined,
+      urgency: urgency || undefined,
       message,
     });
 

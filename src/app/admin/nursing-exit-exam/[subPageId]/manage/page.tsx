@@ -125,13 +125,11 @@ export default function ManageSubPage({
       setLoading(true);
       setError("");
 
-      const result = await getNursingExitExamSubPage(
-        resolvedParams.subPageId
-      );
+      const result = await getNursingExitExamSubPage(resolvedParams.subPageId);
 
       if (result.success && result.data) {
         const pageData = result.data as any;
-        
+
         // Load slug from pageData or use subPageId as default
         setSlug(pageData.slug || resolvedParams.subPageId);
 
@@ -147,7 +145,9 @@ export default function ManageSubPage({
             ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${resolvedParams.subPageId}`,
+              `${
+                process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+              }/nursing-exit-exam/${resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -198,7 +198,9 @@ export default function ManageSubPage({
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${resolvedParams.subPageId}`,
+            canonicalUrl: `${
+              process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+            }/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {
@@ -249,7 +251,9 @@ export default function ManageSubPage({
 
     try {
       setNestedLoading(true);
-      const result = await getNursingExitExamNestedSubPages(resolvedParams.subPageId);
+      const result = await getNursingExitExamNestedSubPages(
+        resolvedParams.subPageId
+      );
       if (result.success && result.data) {
         setNestedSubPages(result.data);
       }
@@ -326,6 +330,13 @@ export default function ManageSubPage({
 
       const defaultNestedSubPageContent = {
         pageName: newNestedSubPageName,
+        status: "Draft",
+        heading: "",
+        description: "",
+        seoLabel: newNestedSubPageName,
+        seoSlug: normalizedNestedSubPageId,
+        createdAt: new Date().toISOString(),
+        bodyContent: "",
         meta: {
           title: `${newNestedSubPageName} | TeasGurus`,
           description: `Content for ${newNestedSubPageName} under ${
@@ -335,39 +346,14 @@ export default function ManageSubPage({
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${slug || resolvedParams.subPageId}-${normalizedNestedSubPageId}`,
-        },
-        hero: {
-          badge: content?.pageName || resolvedParams.subPageId,
-          title: newNestedSubPageName,
-          subtitle: `Detailed information about ${newNestedSubPageName}.`,
+          canonicalUrl: `${
+            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+          }/${normalizedNestedSubPageId}`,
         },
         schema: "",
-        trustIndicators: [],
-        whatToExpect: {
-          badge: "",
+        hero: {
           title: "",
-          subtitle: "",
-          cards: [],
-          footer: "",
-        },
-        mostCommonQuestions: {
-          badge: "",
-          title: "",
-          subtitle: "",
-          cards: [],
-        },
-        studyGuide: {
-          badge: "",
-          title: "",
-          subtitle: "",
-          sections: [],
-        },
-        privacyPricing: [],
-        faq: {
-          title: "",
-          subtitle: "",
-          questions: [],
+          description: "",
         },
       };
 
@@ -643,7 +629,11 @@ export default function ManageSubPage({
                   </div>
                   <div className="flex items-center space-x-2 flex-wrap gap-2">
                     <Link
-                      href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${nestedSubPage.slug || nestedSubPage.id}/manage`}
+                      href={`/admin/nursing-exit-exam/${
+                        resolvedParams.subPageId
+                      }/nested/${
+                        nestedSubPage.slug || nestedSubPage.id
+                      }/manage`}
                       className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center space-x-1"
                     >
                       <svg
@@ -662,7 +652,9 @@ export default function ManageSubPage({
                       <span>Manage</span>
                     </Link>
                     <Link
-                      href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${nestedSubPage.slug || nestedSubPage.id}`}
+                      href={`/admin/nursing-exit-exam/${
+                        resolvedParams.subPageId
+                      }/nested/${nestedSubPage.slug || nestedSubPage.id}`}
                       className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
                     >
                       Edit
@@ -746,7 +738,8 @@ export default function ManageSubPage({
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1 break-words">
-                  This will create a page at /{newNestedSubPageId || "nested-sub-page-id"}
+                  This will create a page at /
+                  {newNestedSubPageId || "nested-sub-page-id"}
                 </p>
               </div>
               <div className="flex space-x-3 pt-4">
@@ -777,4 +770,3 @@ export default function ManageSubPage({
     </div>
   );
 }
-

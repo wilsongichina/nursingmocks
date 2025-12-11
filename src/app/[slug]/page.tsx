@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
+import TiptapContentRenderer from "@/components/editor/TiptapContentRenderer";
 import QuestionCard from "@/components/quiz/QuestionCard";
+import QuestionSetsSection from "@/components/ui/QuestionSetsSection";
+import FAQAccordion from "@/components/ui/FAQAccordion";
 import {
   getRouteMappingBySlugOnly,
   getPageByContentPath,
@@ -43,7 +46,7 @@ const LaptopIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const MedalIcon = ({ className }: { className?: string }) => (
+const _MedalIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -218,7 +221,7 @@ interface ServiceContent {
   };
 }
 
-const getIconComponent = (iconName: string) => {
+const _getIconComponent = (iconName: string) => {
   const iconMap: { [key: string]: React.ReactNode } = {
     check: (
       <svg
@@ -462,7 +465,11 @@ export async function generateMetadata({
         openGraph: {
           title: data.meta.ogTitle || data.meta.title || `${slug} | TeasGurus`,
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${slug}`,
+          url:
+            data.meta.canonicalUrl ||
+            `${
+              process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+            }/${slug}`,
           images: [
             {
               url: data.meta.ogImage || "/teas-gurus-logo.png",
@@ -574,6 +581,136 @@ export default async function DynamicPage({
       return allowedQuestionTypes.includes(questionTypeId);
     });
 
+    // Load related quizzes from the same parent
+    let relatedQuizzes: any[] = [];
+    let quizSlugMap: Record<string, string> = {};
+
+    if (pillarId === "nursing-entrance-exam" && mapping.nestedPageId) {
+      const quizzesResult = await getNursingEntranceExamQuizzes(
+        mapping.subPageId!,
+        mapping.nestedPageId
+      );
+      if (quizzesResult.success && quizzesResult.data) {
+        relatedQuizzes = quizzesResult.data.filter(
+          (quiz: any) => quiz.id !== mapping.quizId
+        );
+        // Get slug mappings for related quizzes
+        const quizIds = relatedQuizzes.map((q: any) => q.id);
+        if (quizIds.length > 0) {
+          const slugMappingResult = await getRouteMappingSlugsByIds({
+            pillarId,
+            type: "quiz",
+            ids: quizIds,
+            subPageId: mapping.subPageId,
+            nestedPageId: mapping.nestedPageId,
+          });
+          if (slugMappingResult.success && slugMappingResult.slugMap) {
+            quizSlugMap = slugMappingResult.slugMap;
+          }
+        }
+      }
+    } else if (pillarId === "nursing-exit-exam" && mapping.nestedPageId) {
+      const quizzesResult = await getNursingExitExamQuizzes(
+        mapping.subPageId!,
+        mapping.nestedPageId
+      );
+      if (quizzesResult.success && quizzesResult.data) {
+        relatedQuizzes = quizzesResult.data.filter(
+          (quiz: any) => quiz.id !== mapping.quizId
+        );
+        // Get slug mappings for related quizzes
+        const quizIds = relatedQuizzes.map((q: any) => q.id);
+        if (quizIds.length > 0) {
+          const slugMappingResult = await getRouteMappingSlugsByIds({
+            pillarId,
+            type: "quiz",
+            ids: quizIds,
+            subPageId: mapping.subPageId,
+            nestedPageId: mapping.nestedPageId,
+          });
+          if (slugMappingResult.success && slugMappingResult.slugMap) {
+            quizSlugMap = slugMappingResult.slugMap;
+          }
+        }
+      }
+    } else if (pillarId === "nursing-test-bank" && mapping.topicId) {
+      const quizzesResult = await getNursingTestBankQuizzes(
+        mapping.subPageId!,
+        mapping.nestedPageId!,
+        mapping.topicId
+      );
+      if (quizzesResult.success && quizzesResult.data) {
+        relatedQuizzes = quizzesResult.data.filter(
+          (quiz: any) => quiz.id !== mapping.quizId
+        );
+        // Get slug mappings for related quizzes
+        const quizIds = relatedQuizzes.map((q: any) => q.id);
+        if (quizIds.length > 0) {
+          const slugMappingResult = await getRouteMappingSlugsByIds({
+            pillarId,
+            type: "quiz",
+            ids: quizIds,
+            subPageId: mapping.subPageId,
+            nestedPageId: mapping.nestedPageId,
+            topicId: mapping.topicId,
+          });
+          if (slugMappingResult.success && slugMappingResult.slugMap) {
+            quizSlugMap = slugMappingResult.slugMap;
+          }
+        }
+      }
+    }
+
+    // Limit to 12 related quizzes
+    relatedQuizzes = relatedQuizzes.slice(0, 12);
+
+    // Helper function to get card icon and colors (same as used in header)
+    const getCardIcon = (name: string, index: number) => {
+      const nameLower = name.toLowerCase();
+      const colorVariants = [
+        { iconBg: "bg-purple-500", numberColor: "text-purple-600" },
+        { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
+        { iconBg: "bg-orange-500", numberColor: "text-orange-600" },
+        { iconBg: "bg-green-500", numberColor: "text-green-600" },
+        { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
+        { iconBg: "bg-indigo-500", numberColor: "text-indigo-600" },
+        { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
+        { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
+      ];
+
+      if (nameLower.includes("reading")) {
+        return {
+          icon: <BookIcon className="w-6 h-6 text-white" />,
+          iconBg: "bg-purple-500",
+          numberColor: "text-purple-600",
+        };
+      } else if (nameLower.includes("math")) {
+        return {
+          icon: <CalculatorIcon className="w-6 h-6 text-white" />,
+          iconBg: "bg-blue-500",
+          numberColor: "text-blue-600",
+        };
+      } else if (nameLower.includes("science")) {
+        return {
+          icon: <FlaskIcon className="w-6 h-6 text-white" />,
+          iconBg: "bg-orange-500",
+          numberColor: "text-orange-600",
+        };
+      } else if (nameLower.includes("english")) {
+        return {
+          icon: <ABCIcon className="w-6 h-6 text-white" />,
+          iconBg: "bg-green-500",
+          numberColor: "text-green-600",
+        };
+      }
+      const colorVariant = colorVariants[index % colorVariants.length];
+      return {
+        icon: <LaptopIcon className="w-6 h-6 text-white" />,
+        iconBg: colorVariant.iconBg,
+        numberColor: colorVariant.numberColor,
+      };
+    };
+
     return (
       <Layout>
         {/* Schema Script */}
@@ -591,19 +728,10 @@ export default async function DynamicPage({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Centered Title */}
             <div className="mb-6 text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">
-                {pageData.hero?.title || pageData.pageName || slug}
+              <h1 className="text-[1.5rem] md:text-4xl font-bold text-gray-900 mb-3">
+                {pageData.heading || pageData.pageName || slug}
               </h1>
             </div>
-
-            {/* Text Above Button */}
-            {pageData.hero?.textAboveButton && (
-              <div className="mb-6 text-center">
-                <p className="text-gray-600 text-base leading-relaxed">
-                  {pageData.hero.textAboveButton}
-                </p>
-              </div>
-            )}
 
             {/* Start Test button */}
             {questions.length > 0 && (
@@ -614,15 +742,6 @@ export default async function DynamicPage({
                 >
                   Start Test
                 </a>
-              </div>
-            )}
-
-            {/* Text Below Button */}
-            {pageData.hero?.textBelowButton && (
-              <div className="text-center">
-                <div className="text-gray-600 text-base leading-relaxed">
-                  <ContentRenderer content={pageData.hero.textBelowButton || ""} />
-                </div>
               </div>
             )}
           </div>
@@ -713,6 +832,73 @@ export default async function DynamicPage({
                 })}
               </div>
             )}
+
+            {/* Related Quizzes Section */}
+            {relatedQuizzes.length > 0 && (
+              <div className="mt-16">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 text-center">
+                  Related Quizzes
+                </h2>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {relatedQuizzes.map((quiz: any, index: number) => {
+                    // Use route mapping slug if available, otherwise fall back to document slug or id
+                    const quizSlug =
+                      quizSlugMap[quiz.id] || quiz.slug || quiz.id;
+                    const quizName =
+                      quiz.pageName || quiz.title || quiz.quizName || quiz.id;
+                    const config = getCardIcon(quizName, index);
+                    const questionCount = (
+                      quiz.questionCount || 0
+                    ).toLocaleString();
+
+                    return (
+                      <Link
+                        key={quiz.id}
+                        href={`/${quizSlug}`}
+                        {...({ name: quizName } as any)}
+                        className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
+                          >
+                            {config.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-600 mb-1">
+                              {quizName}
+                            </p>
+                            <p
+                              className={`text-3xl font-bold ${config.numberColor}`}
+                            >
+                              {questionCount}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Total Questions Available
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <svg
+                              className="w-5 h-5 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </Layout>
@@ -727,20 +913,20 @@ export default async function DynamicPage({
   let nestedPageSlugMap: Record<string, string> = {};
   let topicSlugMap: Record<string, string> = {};
   let quizSlugMap: Record<string, string> = {};
-  let subPageQuestionCount = 0;
-  let topicQuestionCount = 0;
-  let nestedPageQuestionCount = 0;
 
   if (pageType === "nested") {
     // Fetch question count for the nested page
-    if (pillarId === "nursing-entrance-exam" || pillarId === "nursing-exit-exam") {
-      nestedPageQuestionCount = await countNestedPageQuestions(
+    if (
+      pillarId === "nursing-entrance-exam" ||
+      pillarId === "nursing-exit-exam"
+    ) {
+      const _nestedPageQuestionCount = await countNestedPageQuestions(
         pillarId as "nursing-exit-exam" | "nursing-entrance-exam",
         mapping.subPageId!,
         mapping.nestedPageId!
       );
     }
-    
+
     // Load quizzes for nested pages (entrance and exit exams)
     if (pillarId === "nursing-entrance-exam") {
       const quizzesResult = await getNursingEntranceExamQuizzes(
@@ -831,9 +1017,9 @@ export default async function DynamicPage({
           );
           totalNestedCount += count;
         }
-        nestedPageQuestionCount = totalNestedCount;
+        const _nestedPageQuestionCount = totalNestedCount;
       }
-      
+
       // Load topics for test bank nested pages
       if (topicsResult.success && topicsResult.data) {
         topics = topicsResult.data;
@@ -868,12 +1054,12 @@ export default async function DynamicPage({
     }
   } else if (pageType === "topic" && pillarId === "nursing-test-bank") {
     // Fetch question count for the topic
-    topicQuestionCount = await countTopicQuestions(
+    const _topicQuestionCount = await countTopicQuestions(
       mapping.subPageId!,
       mapping.nestedPageId!,
       mapping.topicId!
     );
-    
+
     // Load quizzes for test bank topic pages
     const quizzesResult = await getNursingTestBankQuizzes(
       mapping.subPageId!,
@@ -914,11 +1100,11 @@ export default async function DynamicPage({
     }
   } else if (pageType === "sub") {
     // Fetch question count for the sub-page
-    subPageQuestionCount = await countSubPageQuestions(
+    const _subPageQuestionCount = await countSubPageQuestions(
       pillarId,
       mapping.subPageId!
     );
-    
+
     // Load nested sub-pages
     if (pillarId === "nursing-entrance-exam") {
       const nestedResult = await getNestedSubPages(mapping.subPageId!);
@@ -1035,7 +1221,7 @@ export default async function DynamicPage({
 
   // Prepare content structure
   const content: ServiceContent = {
-    pageName: pageData.pageName || slug,
+    pageName: pageData.seoLabel || pageData.pageName || slug,
     meta: pageData.meta || {
       title: `${slug} | TeasGurus`,
       description: `Content for ${slug}`,
@@ -1043,14 +1229,16 @@ export default async function DynamicPage({
       ogTitle: `${slug} | TeasGurus`,
       ogDescription: `Content for ${slug}`,
       ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${slug}`,
+      canonicalUrl: `${
+        process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+      }/${slug}`,
     },
     schema: pageData.schema || "",
-    hero: pageData.hero || {
+    hero: {
       badge: "",
-      title: pageData.pageName || slug,
+      title: pageData.heading || pageData.pageName || slug,
       subtitle: "",
-      description: pageData.content || "",
+      description: pageData.description || pageData.content || "",
     },
     trustIndicators: pageData.trustIndicators || [],
     whatToExpect: pageData.whatToExpect || {
@@ -1080,52 +1268,10 @@ export default async function DynamicPage({
     },
   };
 
-  // Helper function to get card icon and colors
-  const getCardIcon = (name: string, index: number) => {
-    const nameLower = name.toLowerCase();
-    const colorVariants = [
-      { iconBg: "bg-purple-500", numberColor: "text-purple-600" },
-      { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
-      { iconBg: "bg-orange-500", numberColor: "text-orange-600" },
-      { iconBg: "bg-green-500", numberColor: "text-green-600" },
-      { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
-      { iconBg: "bg-indigo-500", numberColor: "text-indigo-600" },
-      { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
-      { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
-    ];
-
-    if (nameLower.includes("reading")) {
-      return {
-        icon: <BookIcon className="w-6 h-6 text-white" />,
-        iconBg: "bg-purple-500",
-        numberColor: "text-purple-600",
-      };
-    } else if (nameLower.includes("math")) {
-      return {
-        icon: <CalculatorIcon className="w-6 h-6 text-white" />,
-        iconBg: "bg-blue-500",
-        numberColor: "text-blue-600",
-      };
-    } else if (nameLower.includes("science")) {
-      return {
-        icon: <FlaskIcon className="w-6 h-6 text-white" />,
-        iconBg: "bg-orange-500",
-        numberColor: "text-orange-600",
-      };
-    } else if (nameLower.includes("english")) {
-      return {
-        icon: <ABCIcon className="w-6 h-6 text-white" />,
-        iconBg: "bg-green-500",
-        numberColor: "text-green-600",
-      };
-    }
-    const colorVariant = colorVariants[index % colorVariants.length];
-    return {
-      icon: <LaptopIcon className="w-6 h-6 text-white" />,
-      iconBg: colorVariant.iconBg,
-      numberColor: colorVariant.numberColor,
-    };
-  };
+  // Get heading and description from Firebase
+  const pageHeading = pageData.heading || pageData.pageName || slug;
+  const pageDescription = pageData.description || pageData.content || "";
+  const bodyContent = pageData.bodyContent || "";
 
   // Render content page (sub, nested, or topic)
   return (
@@ -1140,678 +1286,837 @@ export default async function DynamicPage({
         />
       )}
 
-      {/* Hero Section */}
-      <section className="bg-white py-[1.25rem]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3">
-              {content.hero.title || content.pageName || slug}
-            </h1>
-            <div className="text-gray-600 text-base leading-relaxed">
-              <ContentRenderer
-                content={content.hero.description || pageData.content || ""}
-              />
-            </div>
-          </div>
+      <div className="max-w-[1220px] mx-auto px-16 pt-8 pb-12">
+        {/* Hero Section */}
+        <section className="mb-7">
+          {/* Hero Wrapper */}
+          <div className="relative overflow-hidden rounded-[26px] p-[26px_40px_30px] grid grid-cols-1 lg:grid-cols-[1.4fr_1.1fr] gap-8 items-start bg-gradient-to-br from-[#f0f9ff] via-[#e7e5ff] to-[#fdfbff] shadow-[0_26px_70px_rgba(88,28,135,0.22)]">
+            {/* Decorative background circle */}
+            <div
+              className="absolute w-[420px] h-[420px] rounded-full -right-[140px] -top-[160px] opacity-90 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(106, 92, 255, 0.26), transparent 70%)",
+              }}
+            />
 
-          {/* Quiz Cards (for topic pages - show first) */}
-          {pageType === "topic" &&
-            pillarId === "nursing-test-bank" && (
-              <div id="quiz-cards" className="mt-6 mb-8">
-                <div className="flex flex-wrap justify-center gap-4">
-                  {quizzes.map((quiz: any, index: number) => {
-                    // Use route mapping slug if available, otherwise fall back to document slug or id
-                    const quizSlug =
-                      quizSlugMap[quiz.id] || quiz.slug || quiz.id;
-                    const quizName =
-                      quiz.pageName ||
-                      quiz.hero?.title ||
-                      quiz.title ||
-                      quiz.quizName ||
-                      quiz.id;
-                    const config = getCardIcon(quizName, index);
-                    const questionCount = (quiz.questionCount || 0).toLocaleString();
+            {/* Hero Left */}
+            <div className="relative z-10 flex flex-col pr-2">
+              {/* Hero Pill */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(32,36,55,0.06)] backdrop-blur-sm text-[11px] uppercase tracking-wider text-[#202437] mb-[14px]">
+                <span className="w-[7px] h-[7px] rounded-full bg-[#4ade80]" />
+                <span>
+                  {pageData.badge ||
+                    `${
+                      pageData.seoLabel || content.pageName
+                    } Practice · Full Exam`}
+                </span>
+              </div>
 
-                    return (
-                      <Link
-                        key={quiz.id}
-                        href={`/${quizSlug}`}
-                        {...({ name: quizName } as any)}
-                        className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                          >
-                            {config.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-600 mb-1">
-                              {quizName}
-                            </p>
-                            <p
-                              className={`text-3xl font-bold ${config.numberColor}`}
-                            >
-                              {questionCount}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Questions Available
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <svg
-                              className="w-5 h-5 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                  
-                  {/* Page question count card (for topic pages) */}
-                  {pageType === "topic" && (
-                    <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <MedalIcon className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-600 mb-1">
-                            {content.pageName || content.hero.title || slug}
-                          </p>
-                          <p className="text-3xl font-bold text-orange-600">
-                            {topicQuestionCount.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+              {/* Hero Title */}
+              <h1 className="text-[30px] leading-[1.16] font-extrabold mb-[10px] text-[#202437]">
+                <ContentRenderer content={pageHeading} />
+              </h1>
+
+              {/* Hero Description */}
+              <div className="text-sm leading-[1.7] text-[#202437] max-w-[540px] mb-4">
+                <ContentRenderer content={pageDescription} />
+              </div>
+
+              {/* Hero Chip Row */}
+              <div className="flex flex-wrap gap-2 mb-[18px]">
+                <div className="inline-flex items-center gap-[6px] px-[11px] py-1 rounded-full bg-[rgba(255,255,255,0.98)] border border-dotted border-[rgba(188,195,255,0.9)] text-[11.5px] text-[#4b5563] shadow-[0_6px_16px_rgba(15,23,42,0.12)] whitespace-nowrap">
+                  <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
+                  Updated for {pageData.seoLabel || content.pageName} blueprint
+                </div>
+                <div className="inline-flex items-center gap-[6px] px-[11px] py-1 rounded-full bg-[rgba(255,255,255,0.98)] border border-dotted border-[rgba(188,195,255,0.9)] text-[11.5px] text-[#4b5563] shadow-[0_6px_16px_rgba(15,23,42,0.12)] whitespace-nowrap">
+                  <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
+                  Review & Exam modes for every subject
+                </div>
+                <div className="inline-flex items-center gap-[6px] px-[11px] py-1 rounded-full bg-[rgba(255,255,255,0.98)] border border-dotted border-[rgba(188,195,255,0.9)] text-[11.5px] text-[#4b5563] shadow-[0_6px_16px_rgba(15,23,42,0.12)] whitespace-nowrap">
+                  <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
+                  Skill analytics in your dashboard
                 </div>
               </div>
-            )}
 
-          {/* Start Test Button (for topic pages with quizzes) */}
-          {pageType === "topic" &&
-            pillarId === "nursing-test-bank" &&
-            quizzes.length > 0 && (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+              {/* Hero Actions */}
+              <div className="flex flex-wrap gap-[10px] items-center mb-2">
                 <a
-                  href={`/${
-                    quizSlugMap[quizzes[0]?.id] ||
-                    quizzes[0]?.slug ||
-                    quizzes[0]?.id
-                  }`}
-                  className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-[2rem] font-bold hover:bg-yellow-400 transition-colors text-center"
+                  href="#question-sets"
+                  className="inline-flex items-center justify-center gap-2 px-[22px] py-[10px] rounded-full bg-gradient-to-r from-[#6a5cff] to-[#8b5cf6] text-white font-semibold text-sm border-none shadow-[0_20px_42px_rgba(90,78,255,0.6)] cursor-pointer no-underline whitespace-nowrap hover:brightness-[1.03]"
                 >
-                  Start Test
+                  <span className="w-[18px] h-[18px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center text-[11px]">
+                    ▶
+                  </span>
+                  Start {content.pageName} Practice Now
+                </a>
+                <a
+                  href="#question-sets"
+                  className="inline-flex items-center justify-center gap-[6px] px-4 py-[9px] rounded-full border border-dashed border-[rgba(106,92,255,0.32)] bg-[rgba(255,255,255,0.96)] text-[13px] font-medium text-[#202437] no-underline shadow-[0_10px_24px_rgba(15,23,42,0.12)] hover:bg-[#f3f4ff]"
+                >
+                  View All {content.pageName} Question Sets
                 </a>
               </div>
-            )}
 
-          {/* Nested Sub-Pages Cards */}
-          {nestedPages.length > 0 && (
-            <div className="mt-6 mb-8">
-              <div className="flex flex-wrap justify-center gap-4">
-                {nestedPages.map((nestedPage: any, index: number) => {
-                  // Use route mapping slug if available, otherwise fall back to document slug or id
-                  const nestedSlug =
-                    nestedPageSlugMap[nestedPage.id] ||
-                    nestedPage.slug ||
-                    nestedPage.id;
-                  const pageName =
-                    nestedPage.pageName ||
-                    nestedPage.hero?.title ||
-                    nestedPage.id;
-                  const config = getCardIcon(pageName, index);
-                  const questionCount = (nestedPage.questionCount || 0).toLocaleString();
-
-                  return (
-                    <Link
-                      key={nestedPage.id}
-                      href={`/${nestedSlug}`}
-                      {...({ name: pageName } as any)}
-                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                        >
-                          {config.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-600 mb-1">
-                            {pageName}
-                          </p>
-                          <p
-                            className={`text-3xl font-bold ${config.numberColor}`}
-                          >
-                            {questionCount}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="w-5 h-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-
-                {/* Third card - Always show sub-page name */}
-                {nestedPages.length > 0 && (
-                  <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <MedalIcon className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-600 mb-1">
-                          {content.pageName || content.hero.title || slug}
-                        </p>
-                        <p className="text-3xl font-bold text-orange-600">
-                          {subPageQuestionCount.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Questions Available
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Topics Cards (for test bank nested pages) */}
-          {topics.length > 0 && (
-            <div className="mt-6 mb-8">
-              <div className="flex flex-wrap justify-center gap-4">
-                {topics.map((topic: any, index: number) => {
-                  // Use route mapping slug if available, otherwise fall back to document slug or id
-                  const topicSlug =
-                    topicSlugMap[topic.id] || topic.slug || topic.id;
-                  const topicName =
-                    topic.pageName || topic.hero?.title || topic.id;
-                  const config = getCardIcon(topicName, index);
-                  const questionCount = (topic.questionCount || 0).toLocaleString();
-
-                  return (
-                    <Link
-                      key={topic.id}
-                      href={`/${topicSlug}`}
-                      {...({ name: topicName } as any)}
-                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                        >
-                          {config.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-600 mb-1">
-                            {topicName}
-                          </p>
-                          <p
-                            className={`text-3xl font-bold ${config.numberColor}`}
-                          >
-                            {questionCount}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="w-5 h-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-                
-                {/* Page question count card (for nested pages) */}
-                {pageType === "nested" && (
-                  <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <MedalIcon className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-600 mb-1">
-                          {content.pageName || content.hero.title || slug}
-                        </p>
-                        <p className="text-3xl font-bold text-orange-600">
-                          {nestedPageQuestionCount.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Questions Available
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Quiz Cards (for nested pages only - topic pages handled above) */}
-          {quizzes.length > 0 &&
-            !(pageType === "topic" && pillarId === "nursing-test-bank") && (
-              <div id="quiz-cards" className="mt-6 mb-8">
-                <div className="flex flex-wrap justify-center gap-4">
-                  {quizzes.map((quiz: any, index: number) => {
-                    // Use route mapping slug if available, otherwise fall back to document slug or id
-                    const quizSlug =
-                      quizSlugMap[quiz.id] || quiz.slug || quiz.id;
-                    const quizName =
-                      quiz.pageName ||
-                      quiz.hero?.title ||
-                      quiz.title ||
-                      quiz.quizName ||
-                      quiz.id;
-                    const config = getCardIcon(quizName, index);
-                    const questionCount = (quiz.questionCount || 0).toLocaleString();
-
-                    return (
-                      <Link
-                        key={quiz.id}
-                        href={`/${quizSlug}`}
-                        {...({ name: quizName } as any)}
-                        className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                          >
-                            {config.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-600 mb-1">
-                              {quizName}
-                            </p>
-                            <p
-                              className={`text-3xl font-bold ${config.numberColor}`}
-                            >
-                              {questionCount}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Questions Available
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <svg
-                              className="w-5 h-5 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                  
-                  {/* Page question count card (for nested pages) */}
-                  {pageType === "nested" && (
-                    <div className="bg-white rounded-lg shadow-sm p-6 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <MedalIcon className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-600 mb-1">
-                            {content.pageName || content.hero.title || slug}
-                          </p>
-                          <p className="text-3xl font-bold text-orange-600">
-                            {nestedPageQuestionCount.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Questions Available
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-        </div>
-      </section>
-
-      {/* Trust Indicators Section */}
-      {content.trustIndicators && content.trustIndicators.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap justify-center gap-8">
-              {content.trustIndicators.map((indicator, index) => (
-                <div
-                  key={index}
-                  className="text-center p-6 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-xs"
-                >
-                  <div className="mb-4 flex justify-center items-center">
-                    {getIconComponent(indicator.icon)}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {indicator.title}
-                  </h3>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* What to Expect Section */}
-      {content.whatToExpect && (
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-6">
-                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-                {content.whatToExpect.badge}
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.whatToExpect.title}
-              </h2>
-              <div className="text-xl text-gray-600 max-w-3xl mx-auto">
-                <ContentRenderer
-                  content={content.whatToExpect.subtitle || ""}
-                />
-              </div>
-            </div>
-
-            <div
-              className={`grid gap-8 ${
-                content.whatToExpect.cards.length === 1
-                  ? "grid-cols-1"
-                  : "grid-cols-1 md:grid-cols-2"
-              }`}
-            >
-              {content.whatToExpect.cards.map((card, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
-                >
-                  <div className="mb-6 flex justify-center items-center">
-                    {getIconComponent(card.icon)}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {card.title}
-                  </h3>
-                  <ul className="space-y-3">
-                    {card.content.map((item, itemIndex) => (
-                      <li
-                        key={itemIndex}
-                        className="flex items-start space-x-3 text-gray-600"
-                      >
-                        <span className="text-green-500 mt-1">✓</span>
-                        <ContentRenderer content={item} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {content.whatToExpect.footer && (
-              <div className="text-center mt-12">
-                <div className="text-lg text-gray-600">
-                  <ContentRenderer content={content.whatToExpect.footer} />
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Most Common Questions Section */}
-      {content.mostCommonQuestions && (
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold mb-6">
-                <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
-                {content.mostCommonQuestions.badge}
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.mostCommonQuestions.title}
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                {content.mostCommonQuestions.subtitle}
+              {/* Hero Footnote */}
+              <p className="text-[11.5px] text-[#7a819c] max-w-[520px] mt-[2px]">
+                One login. Your {content.pageName} mastery updates whenever you
+                answer a linked {content.pageName} practice question.
               </p>
             </div>
 
-            <div
-              className={`grid gap-8 ${
-                content.mostCommonQuestions.cards.length === 1
-                  ? "grid-cols-1"
-                  : "grid-cols-1 md:grid-cols-2"
-              }`}
-            >
-              {content.mostCommonQuestions.cards.map((card, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 rounded-2xl p-8 hover:bg-gray-100 transition-colors"
-                >
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {card.title}
-                  </h3>
-                  <ul className="space-y-3">
-                    {card.content.map((item, itemIndex) => (
-                      <li
-                        key={itemIndex}
-                        className="flex items-start space-x-3 text-gray-600"
-                      >
-                        <span className="text-purple-500 mt-1">•</span>
-                        <ContentRenderer content={item} />
+            {/* Hero Right - Knowledge Base Card (desktop) */}
+            <div className="relative z-10 pl-3 mt-3 items-end hidden lg:flex">
+              <div className="max-w-[480px] w-full bg-white rounded-[22px] p-[16px_18px_18px] shadow-[0_22px_60px_rgba(15,23,42,0.35)] border border-[rgba(148,163,184,0.55)]">
+                <div className="flex items-center justify-between mb-4 gap-[10px]">
+                  <div>
+                    <div className="text-base font-semibold text-[#202437]">
+                      {content.pageName} Knowledge Base
+                    </div>
+                    <div className="text-xs text-[#9ca3af] mt-[2px]">
+                      Quick answers and guides to go with your{" "}
+                      {content.pageName} practice.
+                    </div>
+                  </div>
+                  <span className="text-[11px] px-2 py-1 rounded-full bg-[#f1f0ff] text-[#5548e0] uppercase tracking-[0.08em] whitespace-nowrap">
+                    Articles
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-[14px_18px]">
+                  <div className="mb-1">
+                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
+                      1 · TEAS Basics & Foundations
+                    </div>
+                    <ul className="list-none text-xs text-[#4b5563] pl-0">
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/what-is-the-teas-test"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          What Is the TEAS Test?
+                        </Link>
                       </li>
-                    ))}
-                  </ul>
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/what-is-on-the-teas-test"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          What Is on the TEAS Test?
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-1">
+                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
+                      2 · Study Guides & Preparation
+                    </div>
+                    <ul className="list-none text-xs text-[#4b5563] pl-0">
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/how-to-study-for-the-teas"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          How to Study for the TEAS Test?
+                        </Link>
+                      </li>
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/how-long-should-i-study"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          How Long Should I Study for the TEAS?
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-1">
+                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
+                      3 · Registration, Cost & Policies
+                    </div>
+                    <ul className="list-none text-xs text-[#4b5563] pl-0">
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/how-to-register-for-the-teas"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          How to Register for the TEAS Test
+                        </Link>
+                      </li>
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/how-much-does-the-teas-cost"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          How Much Does the TEAS Test Cost?
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-1">
+                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
+                      4 · Scoring, Results & Interpretation
+                    </div>
+                    <ul className="list-none text-xs text-[#4b5563] pl-0">
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/what-is-a-good-teas-score"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          What Is a Good TEAS Score?
+                        </Link>
+                      </li>
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/what-is-passing-teas-score"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          What Is the Passing TEAS Score?
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-1">
+                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
+                      5 · Test Day & Experience
+                    </div>
+                    <ul className="list-none text-xs text-[#4b5563] pl-0">
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/test-day-tips"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          TEAS 7 Test Day Tips
+                        </Link>
+                      </li>
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/online-vs-in-person"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          Online vs In-Person TEAS Exam
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-1">
+                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
+                      6 · FAQs & Common Questions
+                    </div>
+                    <ul className="list-none text-xs text-[#4b5563] pl-0">
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/faq-calculators"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          Are Calculators Allowed on the TEAS?
+                        </Link>
+                      </li>
+                      <li className="mt-[2px]">
+                        <Link
+                          href="/kb/teas/faq-retake-policy"
+                          className="text-[#2563eb] no-underline hover:underline break-words"
+                        >
+                          How Many Times Can I Retake the TEAS?
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-              ))}
+
+                <div className="mt-3 text-xs text-right w-full">
+                  <Link href="/kb/teas" className="text-[#6b21a8] font-medium">
+                    View all {content.pageName} Knowledge Base articles →
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>
-      )}
 
-      {/* Study Guide Section */}
-      {content.studyGuide && (
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
-                <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                {content.studyGuide.badge}
+        {/* Question Sets Section */}
+        <section id="question-sets" className="mt-4">
+          <QuestionSetsSection
+            pageName={content.pageName || slug}
+            questionSets={[
+              ...nestedPages.map((nestedPage: any) => {
+                const nestedSlug =
+                  nestedPageSlugMap[nestedPage.id] ||
+                  nestedPage.slug ||
+                  nestedPage.id;
+                const nestedPageName =
+                  nestedPage.pageName || nestedPage.heading || nestedPage.id;
+                const nameLower = nestedPageName.toLowerCase();
+                const parentPageName = content.pageName || slug;
+
+                const getSubject = () => {
+                  if (nameLower.includes("math")) return "Math";
+                  if (nameLower.includes("reading")) return "Reading";
+                  if (nameLower.includes("science")) return "Science";
+                  if (nameLower.includes("english")) return "English";
+                  if (nameLower.includes("all")) return "All Subjects";
+                  return null;
+                };
+
+                const getTag = () => {
+                  if (nameLower.includes("math")) return "M1";
+                  if (nameLower.includes("reading")) return "R1";
+                  if (nameLower.includes("science")) return "S1";
+                  if (nameLower.includes("english")) return "E1";
+                  if (nameLower.includes("all")) return "A1";
+                  return undefined;
+                };
+
+                const getSubtitle = () => {
+                  if (nameLower.includes("math"))
+                    return "Numbers, ratios, percentages";
+                  if (nameLower.includes("reading"))
+                    return "Passages, inference, main idea";
+                  if (nameLower.includes("science"))
+                    return "A&P, biology, chemistry";
+                  if (nameLower.includes("english"))
+                    return "Grammar, spelling, punctuation";
+                  if (nameLower.includes("all"))
+                    return "Mixed-section practice";
+                  return "";
+                };
+
+                const subject = getSubject();
+                const title = subject
+                  ? `${parentPageName} ${subject} Questions`
+                  : nestedPageName;
+
+                return {
+                  id: nestedPage.id,
+                  title: title,
+                  subtitle: getSubtitle(),
+                  questionCount: nestedPage.questionCount || 0,
+                  tag: getTag(),
+                  slug: nestedSlug,
+                };
+              }),
+              ...topics.map((topic: any) => {
+                const topicSlug =
+                  topicSlugMap[topic.id] || topic.slug || topic.id;
+                const topicName = topic.pageName || topic.heading || topic.id;
+                const nameLower = topicName.toLowerCase();
+                const parentPageName = content.pageName || slug;
+
+                const getSubject = () => {
+                  if (nameLower.includes("math")) return "Math";
+                  if (nameLower.includes("reading")) return "Reading";
+                  if (nameLower.includes("science")) return "Science";
+                  if (nameLower.includes("english")) return "English";
+                  if (nameLower.includes("all")) return "All Subjects";
+                  return null;
+                };
+
+                const getTag = () => {
+                  if (nameLower.includes("math")) return "M1";
+                  if (nameLower.includes("reading")) return "R1";
+                  if (nameLower.includes("science")) return "S1";
+                  if (nameLower.includes("english")) return "E1";
+                  if (nameLower.includes("all")) return "A1";
+                  return undefined;
+                };
+
+                const getSubtitle = () => {
+                  if (nameLower.includes("math"))
+                    return "Numbers, ratios, percentages";
+                  if (nameLower.includes("reading"))
+                    return "Passages, inference, main idea";
+                  if (nameLower.includes("science"))
+                    return "A&P, biology, chemistry";
+                  if (nameLower.includes("english"))
+                    return "Grammar, spelling, punctuation";
+                  if (nameLower.includes("all"))
+                    return "Mixed-section practice";
+                  return "";
+                };
+
+                const subject = getSubject();
+                const title = subject
+                  ? `${parentPageName} ${subject} Questions`
+                  : topicName;
+
+                return {
+                  id: topic.id,
+                  title: title,
+                  subtitle: getSubtitle(),
+                  questionCount: topic.questionCount || 0,
+                  tag: getTag(),
+                  slug: topicSlug,
+                };
+              }),
+              ...quizzes.map((quiz: any) => {
+                const quizSlug = quizSlugMap[quiz.id] || quiz.slug || quiz.id;
+                const quizName =
+                  quiz.pageName ||
+                  quiz.heading ||
+                  quiz.title ||
+                  quiz.quizName ||
+                  quiz.id;
+                const nameLower = quizName.toLowerCase();
+                const parentPageName = content.pageName || slug;
+
+                const getSubject = () => {
+                  if (nameLower.includes("math")) return "Math";
+                  if (nameLower.includes("reading")) return "Reading";
+                  if (nameLower.includes("science")) return "Science";
+                  if (nameLower.includes("english")) return "English";
+                  if (nameLower.includes("all")) return "All Subjects";
+                  return null;
+                };
+
+                const getTag = () => {
+                  if (nameLower.includes("math")) return "M1";
+                  if (nameLower.includes("reading")) return "R1";
+                  if (nameLower.includes("science")) return "S1";
+                  if (nameLower.includes("english")) return "E1";
+                  if (nameLower.includes("all")) return "A1";
+                  return undefined;
+                };
+
+                const getSubtitle = () => {
+                  if (nameLower.includes("math"))
+                    return "Numbers, ratios, percentages";
+                  if (nameLower.includes("reading"))
+                    return "Passages, inference, main idea";
+                  if (nameLower.includes("science"))
+                    return "A&P, biology, chemistry";
+                  if (nameLower.includes("english"))
+                    return "Grammar, spelling, punctuation";
+                  if (nameLower.includes("all"))
+                    return "Mixed-section practice";
+                  return "";
+                };
+
+                const subject = getSubject();
+                const title = subject
+                  ? `${parentPageName} ${subject} Questions`
+                  : quizName;
+
+                return {
+                  id: quiz.id,
+                  title: title,
+                  subtitle: getSubtitle(),
+                  questionCount: quiz.questionCount || 0,
+                  tag: getTag(),
+                  slug: quizSlug,
+                };
+              }),
+            ]}
+          />
+        </section>
+
+        {/* MOBILE-ONLY KB HERO CARD (shown after question sets) */}
+        <section className="mt-[18px] lg:hidden">
+          <div className="max-w-[480px] w-full bg-white rounded-[22px] p-[16px_18px_18px] shadow-[0_22px_60px_rgba(15,23,42,0.35)] border border-[rgba(148,163,184,0.55)]">
+            <div className="flex items-center justify-between mb-4 gap-[10px]">
+              <div>
+                <div className="text-base font-semibold">
+                  TEAS Knowledge Base
+                </div>
+                <div className="text-xs text-[#9ca3af] mt-[2px]">
+                  Quick answers and guides to go with your TEAS practice.
+                </div>
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.studyGuide.title}
-              </h2>
-              <div className="text-xl text-gray-600 max-w-3xl mx-auto">
-                <ContentRenderer content={content.studyGuide.subtitle || ""} />
+              <span className="text-[11px] px-2 py-1 rounded-full bg-[#f1f0ff] text-[#5548e0] uppercase tracking-[0.08em] whitespace-nowrap">
+                Articles
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-[14px_18px]">
+              <div className="mb-1">
+                <div className="text-[13px] font-semibold mb-1">
+                  1 · TEAS Basics & Foundations
+                </div>
+                <ul className="list-none text-xs text-[#4b5563] pl-0">
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/what-is-the-teas-test"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      What Is the TEAS Test?
+                    </Link>
+                  </li>
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/what-is-on-the-teas-test"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      What Is on the TEAS Test?
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mb-1">
+                <div className="text-[13px] font-semibold mb-1">
+                  2 · Study Guides & Preparation
+                </div>
+                <ul className="list-none text-xs text-[#4b5563] pl-0">
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/how-to-study-for-the-teas"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      How to Study for the TEAS Test?
+                    </Link>
+                  </li>
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/how-long-should-i-study"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      How Long Should I Study for the TEAS?
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mb-1">
+                <div className="text-[13px] font-semibold mb-1">
+                  3 · Registration, Cost & Policies
+                </div>
+                <ul className="list-none text-xs text-[#4b5563] pl-0">
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/how-to-register-for-the-teas"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      How to Register for the TEAS Test
+                    </Link>
+                  </li>
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/how-much-does-the-teas-cost"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      How Much Does the TEAS Test Cost?
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mb-1">
+                <div className="text-[13px] font-semibold mb-1">
+                  4 · Scoring, Results & Interpretation
+                </div>
+                <ul className="list-none text-xs text-[#4b5563] pl-0">
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/what-is-a-good-teas-score"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      What Is a Good TEAS Score?
+                    </Link>
+                  </li>
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/what-is-passing-teas-score"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      What Is the Passing TEAS Score?
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mb-1">
+                <div className="text-[13px] font-semibold mb-1">
+                  5 · Test Day & Experience
+                </div>
+                <ul className="list-none text-xs text-[#4b5563] pl-0">
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/test-day-tips"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      TEAS 7 Test Day Tips
+                    </Link>
+                  </li>
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/online-vs-in-person"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      Online vs In-Person TEAS Exam
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mb-1">
+                <div className="text-[13px] font-semibold mb-1">
+                  6 · FAQs & Common Questions
+                </div>
+                <ul className="list-none text-xs text-[#4b5563] pl-0">
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/faq-calculators"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      Are Calculators Allowed on the TEAS?
+                    </Link>
+                  </li>
+                  <li className="mt-[2px]">
+                    <Link
+                      href="/kb/teas/faq-retake-policy"
+                      className="text-[#2563eb] no-underline hover:underline break-words"
+                    >
+                      How Many Times Can I Retake the TEAS?
+                    </Link>
+                  </li>
+                </ul>
               </div>
             </div>
 
-            <div className={`grid grid-cols-1 gap-8 ${
-              content.studyGuide.sections.length === 1 
-                ? 'md:grid-cols-1' 
-                : content.studyGuide.sections.length === 2 
-                ? 'md:grid-cols-2' 
-                : content.studyGuide.sections.length === 3 
-                ? 'md:grid-cols-3' 
-                : 'md:grid-cols-2 lg:grid-cols-4'
-            }`}>
-              {content.studyGuide.sections.map((section, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+            <div className="mt-3 text-xs text-right w-full">
+              <Link href="/kb/teas" className="text-[#6b21a8] font-medium">
+                View all TEAS Knowledge Base articles →
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* CONTENT AREA */}
+        <section className="mt-8">
+          {/* Summary widget */}
+          <div className="bg-gradient-to-br from-white to-[#edf3ff] rounded-[18px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[16px_18px_14px] max-w-[900px] mx-auto my-7 flex flex-col items-center text-center gap-4 w-full">
+            <div className="text-[13px] text-[#7a819c] max-w-[720px]">
+              <div className="text-[11px] uppercase tracking-[0.14em] text-[#7a819c] mb-1">
+                Article summary
+              </div>
+              <div className="text-base font-semibold mb-[6px] text-[#202437]">
+                Big-picture view of the {content.pageName} exam
+              </div>
+              <div>
+                This page gives you a clear snapshot of what the{" "}
+                {content.pageName}
+                looks like on test day and how to use our practice questions the
+                smart way. You'll see how many questions are on the exam, how
+                much time you get for each section, and how to blend skill
+                practice with full-length practice tests inside your dashboard.
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-[10px_24px] items-center justify-center text-xs text-[#7a819c] w-full">
+              <div className="min-w-[110px]">
+                <div className="text-[11px] uppercase tracking-[0.12em] text-[#7a819c] mb-[2px]">
+                  Total questions
+                </div>
+                <div className="text-[15px] font-semibold">170</div>
+              </div>
+              <div className="min-w-[110px]">
+                <div className="text-[11px] uppercase tracking-[0.12em] text-[#7a819c] mb-[2px]">
+                  Scored questions
+                </div>
+                <div className="text-[15px] font-semibold">150</div>
+              </div>
+              <div className="min-w-[110px]">
+                <div className="text-[11px] uppercase tracking-[0.12em] text-[#7a819c] mb-[2px]">
+                  Exam time
+                </div>
+                <div className="text-[15px] font-semibold">209 minutes</div>
+              </div>
+              <div className="inline-flex items-center px-[9px] py-[3px] rounded-full text-[11px] border border-[#d1d5db] bg-[#f9fafb] text-[#7a819c] gap-[6px] whitespace-nowrap">
+                <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
+                Version: {content.pageName}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.1fr)_minmax(260px,1fr)] gap-5 items-start w-full">
+            {/* LEFT COLUMN: Article + FAQ */}
+            <div className="flex flex-col gap-8 w-full">
+              <article className="bg-white rounded-[18px] border border-[rgba(148,163,184,0.55)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[16px_18px_18px] w-full">
+                <h2
+                  id="what-is-teas-7"
+                  className="text-center text-xl font-bold my-[22px_18px] pb-[10px] relative after:content-[''] after:block after:h-[1px] after:border-t after:border-dotted after:border-[#d4d7f0] after:w-full after:mt-[10px] text-[#202437]"
                 >
-                  <div className="mb-6 flex justify-center items-center">
-                    {getIconComponent(section.icon)}
+                  Quick Overview – {content.pageName} Practice at a Glance
+                </h2>
+
+                {bodyContent && (
+                  <div className="text-sm leading-[1.7] text-[#202437]">
+                    <TiptapContentRenderer content={bodyContent} />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {section.title}
-                  </h3>
-                  <div className="text-gray-600 leading-relaxed">
-                    <ContentRenderer content={section.content} />
+                )}
+              </article>
+
+              {/* FAQ */}
+              <section className="text-left">
+                <div className="text-center mb-10">
+                  <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">
+                    {content.pageName} Questions
+                  </div>
+                  <h2 className="text-2xl font-semibold mb-3 text-slate-900">
+                    {content.pageName} Practice Test FAQ
+                  </h2>
+                  <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+                    These short answers cover how the {content.pageName}{" "}
+                    practice questions work and how to use them effectively for
+                    exam preparation.
+                  </p>
+                </div>
+
+                <div className="max-w-[800px] mx-auto">
+                  <div className="space-y-3">
+                    <FAQAccordion
+                      question={`How many questions are in each ${content.pageName} practice test?`}
+                      answer={`Our ${content.pageName} practice sets are built to feel like mini-exams. Each set usually ranges from 20–40 questions, and full-length practice tests mirror the real ${content.pageName} structure as closely as possible. You'll see separate sets for Reading, Math, Science, and English, as well as mixed "all subjects" practice for realistic exam days.`}
+                      defaultOpen={true}
+                    />
+                    <FAQAccordion
+                      question={`Are your ${content.pageName} practice questions similar to the real exam?`}
+                      answer={`Yes. Every question is written to match the current ${content.pageName} blueprint in both difficulty and style. We focus on the same skills you'll see on test day—passage reading, applied math, core science concepts, and English grammar—so your practice time directly prepares you for the real exam, not just a generic quiz.`}
+                    />
+                    <FAQAccordion
+                      question={`How often should I take a full-length ${content.pageName} practice test?`}
+                      answer={`If your exam is more than a month away, taking a full-length practice test every 1–2 weeks is usually enough. In the final two weeks, many students like to add an extra full test to check timing and stamina. Between those full runs, use shorter, focused sessions in Review Mode to fix your weak spots.`}
+                    />
                   </div>
                 </div>
-              ))}
+              </section>
             </div>
-          </div>
-        </section>
-      )}
 
-      {/* Privacy & Pricing Section */}
-      {content.privacyPricing && content.privacyPricing.length > 0 && (
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div
-              className={`grid gap-8 ${
-                content.privacyPricing.length === 1
-                  ? "grid-cols-1"
-                  : "grid-cols-1 md:grid-cols-2"
-              }`}
-            >
-              {content.privacyPricing.map((item, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
-                >
-                  <div className="mb-6 flex justify-center items-center">
-                    {getIconComponent(item.icon)}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                    {item.title}
-                  </h3>
-                  <div className="text-gray-600 leading-relaxed">
-                    <ContentRenderer content={item.content} />
-                  </div>
+            {/* RIGHT COLUMN: sidebar */}
+            <aside className="flex flex-col gap-3 w-full">
+              <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
+                <div className="text-sm font-semibold mb-1 text-[#202437]">
+                  On this page
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* FAQ Section */}
-      {content.faq && (
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                {content.faq.title}
-              </h2>
-              <div className="text-xl text-gray-600">
-                <ContentRenderer content={content.faq.subtitle || ""} />
+                <div className="text-xs text-[#6b7280] mb-2">
+                  Jump to any section of the article.
+                </div>
+                <ul className="list-none p-0 m-0 text-[13px]">
+                  <li className="py-1">
+                    <a
+                      href="#what-is-teas-7"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      1. Quick Overview – {content.pageName} Practice at a
+                      Glance
+                    </a>
+                  </li>
+                  <li className="py-1">
+                    <a
+                      href="#section-breakdown"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      2. {content.pageName} Practice Questions by Subject
+                    </a>
+                  </li>
+                  <li className="py-1">
+                    <a
+                      href="#how-to-use-this-page"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      3. How to Use This {content.pageName} Practice Page
+                    </a>
+                  </li>
+                  <li className="py-1">
+                    <a
+                      href="#weekly-plan"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      4. Sample 1–2 Week {content.pageName} Practice Plan
+                    </a>
+                  </li>
+                  <li className="py-1">
+                    <a
+                      href="#review-vs-exam-mode"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      5. Review Mode vs Exam Mode
+                    </a>
+                  </li>
+                </ul>
               </div>
-            </div>
 
-            <div className="space-y-8">
-              {content.faq.questions.map((faq, index) => (
-                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                    {faq.question}
-                  </h3>
-                  <div className="space-y-4">
-                    {faq.paragraphs.map((paragraph, pIndex) => (
-                      <div
-                        key={pIndex}
-                        className="text-gray-600 leading-relaxed"
-                      >
-                        <ContentRenderer content={paragraph} />
-                      </div>
-                    ))}
-                    {faq.additionalParagraphs && (
-                      <div className="mt-6 pt-6 border-t border-gray-200">
-                        {faq.additionalParagraphs.map((paragraph, pIndex) => (
-                          <div
-                            key={pIndex}
-                            className="text-gray-600 leading-relaxed"
-                          >
-                            <ContentRenderer content={paragraph} />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
+                <div className="text-sm font-semibold mb-1 text-[#202437]">
+                  Quick {content.pageName} facts
                 </div>
-              ))}
-            </div>
+                <div className="text-xs text-[#6b7280] mb-2">
+                  Useful numbers you can memorize quickly.
+                </div>
+                <div className="grid grid-cols-[1.1fr_1fr] gap-[4px_12px] text-xs mt-1">
+                  <div className="text-[#7a819c]">Total questions</div>
+                  <div className="font-medium text-[#202437]">170</div>
+                  <div className="text-[#7a819c]">Scored questions</div>
+                  <div className="font-medium text-[#202437]">150</div>
+                  <div className="text-[#7a819c]">Total time</div>
+                  <div className="font-medium text-[#202437]">209 minutes</div>
+                  <div className="text-[#7a819c]">Sections</div>
+                  <div className="font-medium text-[#202437]">4</div>
+                </div>
+                <div className="mt-2">
+                  <span className="inline-flex items-center rounded-full px-[7px] py-[2px] text-[11px] border border-[#bbf7d0] bg-[#dcfce7] text-[#166534] gap-1">
+                    <span className="w-[7px] h-[7px] bg-[#22c55e] rounded-full" />
+                    Good to memorize before exam day
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
+                <div className="text-sm font-semibold mb-1 text-[#202437]">
+                  Related {content.pageName} articles
+                </div>
+                <div className="text-xs text-[#6b7280] mb-2">
+                  These guides build on what you just read about{" "}
+                  {content.pageName} structure.
+                </div>
+                <ul className="list-none p-0 m-0 text-[13px]">
+                  <li className="py-1 border-b border-[#e5e7eb]">
+                    <a
+                      href="#"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      {content.pageName} Reading section: question types and
+                      timing
+                    </a>
+                  </li>
+                  <li className="py-1 border-b border-[#e5e7eb]">
+                    <a
+                      href="#"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      {content.pageName} Math topics you should master first
+                    </a>
+                  </li>
+                  <li className="py-1 border-b border-[#e5e7eb]">
+                    <a
+                      href="#"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      How {content.pageName} scoring works (with example score
+                      reports)
+                    </a>
+                  </li>
+                  <li className="py-1 border-b-0">
+                    <a
+                      href="#"
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      How to build a 4-week {content.pageName} study plan
+                    </a>
+                  </li>
+                </ul>
+                <button className="mt-2 rounded-full border border-[#6a5cff] bg-white text-[#5548e0] px-3 py-[7px] text-xs inline-flex items-center gap-[6px] cursor-pointer font-medium whitespace-nowrap">
+                  <span className="text-sm leading-none">▶</span>
+                  View all {content.pageName} articles
+                </button>
+              </div>
+            </aside>
           </div>
         </section>
-      )}
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Ace Your Exam?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Get expert help with your exam preparation and achieve your goals.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/contact"
-              className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-colors"
-            >
-              Get Started Today
-            </Link>
-            <Link
-              href="/prices"
-              className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-            >
-              View Pricing
-            </Link>
-          </div>
-        </div>
-      </section>
+      </div>
     </Layout>
   );
 }

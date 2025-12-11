@@ -16,8 +16,8 @@ const TawkToChat = () => {
     style.innerHTML = `
       #tawk-bubble-container {
         bottom: 0 !important;
-        left: 0 !important;
-        right: auto !important;
+        right: 0 !important;
+        left: auto !important;
       }
     `;
     document.head.appendChild(style);

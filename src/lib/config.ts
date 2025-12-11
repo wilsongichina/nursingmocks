@@ -1,6 +1,6 @@
 /**
  * Site configuration utilities
- * Centralized configuration for site URL and domain
+ * Centralized configuration for site URL, domain, and name
  */
 
 export const getSiteUrl = (): string => {
@@ -15,4 +15,8 @@ export const getSiteDomain = (): string => {
   } catch {
     return "teasgurus.com";
   }
+};
+
+export const getSiteName = (): string => {
+  return process.env.NEXT_PUBLIC_SITE_NAME || "TEAS Gurus";
 };

@@ -160,6 +160,13 @@ export default function ManageTopics({
 
       const defaultTopicContent = {
         pageName: newTopicName,
+        status: "Draft",
+        heading: "",
+        description: "",
+        seoLabel: newTopicName,
+        seoSlug: normalizedTopicId,
+        createdAt: new Date().toISOString(),
+        bodyContent: "",
         slug: normalizedTopicId, // User-entered slug (no prefix)
         meta: {
           title: `${newTopicName} | TeasGurus`,
@@ -170,40 +177,14 @@ export default function ManageTopics({
           ogTitle: `${newTopicName} | TeasGurus`,
           ogDescription: `Content for ${newTopicName}`,
           ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `https://teasgurus.com/${finalSlug}`,
-        },
-        hero: {
-          badge: nestedSubPageName || resolvedParams.nestedSubPageId,
-          title: newTopicName,
-          subtitle: `Detailed information about ${newTopicName}.`,
-          description: "",
+          canonicalUrl: `${
+            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+          }/${finalSlug}`,
         },
         schema: "",
-        trustIndicators: [],
-        whatToExpect: {
-          badge: "",
+        hero: {
           title: "",
-          subtitle: "",
-          cards: [],
-          footer: "",
-        },
-        mostCommonQuestions: {
-          badge: "",
-          title: "",
-          subtitle: "",
-          cards: [],
-        },
-        studyGuide: {
-          badge: "",
-          title: "",
-          subtitle: "",
-          sections: [],
-        },
-        privacyPricing: [],
-        faq: {
-          title: "",
-          subtitle: "",
-          questions: [],
+          description: "",
         },
       };
 

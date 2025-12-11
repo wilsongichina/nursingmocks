@@ -3,6 +3,7 @@ import Layout from "@/components/layout/Layout";
 import ContactForm from "@/components/ui/ContactForm";
 import AboutPageSchema from "@/components/ui/AboutPageSchema";
 import Link from "next/link";
+import GetStartedButton from "@/components/ui/GetStartedButton";
 
 export const metadata: Metadata = {
   title: "About TeasGurus | Trusted TEAS Exam Help & Expert Support",
@@ -237,12 +238,9 @@ export default function AboutPage() {
                 only after you pass.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/contact"
-                  className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
+                <GetStartedButton className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
                   Get Started Today
-                </Link>
+                </GetStartedButton>
                 <Link
                   href="/contact"
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"

@@ -83,13 +83,13 @@ export default function RichTextEditor({
   };
 
   return (
-    <div className={`border border-gray-300 rounded-lg ${className}`}>
+    <div className={`border border-[#e2e4f0] rounded-lg ${className}`}>
       {/* Toolbar */}
-      <div className="border-b border-gray-300 p-2 bg-gray-50 flex flex-wrap gap-1">
+      <div className="border-b border-[#e2e4f0] p-2 bg-gradient-to-r from-[#f9fafb] via-[#f4f5ff] to-[#f9fafb] flex flex-wrap gap-1">
         <button
           type="button"
           onClick={() => execCommand("bold")}
-          className="p-2 hover:bg-gray-200 rounded text-gray-700 hover:text-gray-900"
+          className="p-2 hover:bg-[#f4f5ff] rounded text-[#7a819c] hover:text-[#202437]"
           title="Bold"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -117,7 +117,7 @@ export default function RichTextEditor({
           </svg>
         </button>
 
-        <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        <div className="w-px h-6 bg-[#e2e4f0] mx-1"></div>
 
         <button
           type="button"
@@ -152,7 +152,7 @@ export default function RichTextEditor({
           P
         </button>
 
-        <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        <div className="w-px h-6 bg-[#e2e4f0] mx-1"></div>
 
         <button
           type="button"
@@ -175,7 +175,7 @@ export default function RichTextEditor({
           </svg>
         </button>
 
-        <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        <div className="w-px h-6 bg-[#e2e4f0] mx-1"></div>
 
         {!disableLinks && (
           <button
@@ -218,8 +218,8 @@ export default function RichTextEditor({
         onInput={handleInput}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className={`min-h-[200px] p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset text-gray-900 rich-text-editor-content ${
-          isFocused ? "bg-white" : "bg-gray-50"
+        className={`min-h-[200px] p-4 focus:outline-none focus:ring-2 focus:ring-[#6a5cff] focus:ring-inset text-[#202437] rich-text-editor-content ${
+          isFocused ? "bg-white" : "bg-[#f9f9ff]"
         }`}
         style={{ minHeight: "200px" }}
         data-placeholder={placeholder}

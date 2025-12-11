@@ -1,7 +1,8 @@
-import { getSiteUrl } from "@/lib/config";
+import { getSiteUrl, getSiteName } from "@/lib/config";
 
 export default function FAQPageSchema() {
   const siteUrl = getSiteUrl();
+  const siteName = getSiteName();
   return (
     <script
       type="application/ld+json"
@@ -12,7 +13,7 @@ export default function FAQPageSchema() {
             {
               "@type": "Organization",
               "@id": `${siteUrl}/#organization`,
-              name: "Teas Gurus",
+              name: siteName,
               url: `${siteUrl}/`,
               logo: `${siteUrl}/teas-gurus-logo.png`,
               sameAs: [
@@ -34,7 +35,7 @@ export default function FAQPageSchema() {
               "@type": "WebSite",
               "@id": `${siteUrl}/#website`,
               url: `${siteUrl}/`,
-              name: "Teas Gurus",
+              name: siteName,
               publisher: {
                 "@id": `${siteUrl}/#organization`,
               },
