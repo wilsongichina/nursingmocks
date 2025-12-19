@@ -838,6 +838,50 @@ details[open] .faq-chevron {
   color: #111827;
 }
 
+/* Custom Heading Styles - Show ID badge in editor only */
+.tiptap-editor:not(.tiptap-readonly) .custom-heading {
+  position: relative;
+}
+
+/* Show ID badge if present */
+.tiptap-editor:not(.tiptap-readonly) .custom-heading[id] {
+  padding-right: 6rem;
+}
+
+.tiptap-editor:not(.tiptap-readonly) .custom-heading[id]::after {
+  content: "#" attr(id);
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #6a5cff;
+  background: rgba(106, 92, 255, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: "Courier New", monospace;
+  opacity: 0.7;
+  pointer-events: auto;
+  white-space: nowrap;
+  max-width: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.tiptap-editor:not(.tiptap-readonly) .custom-heading[id]:hover::after {
+  opacity: 1;
+  background: rgba(106, 92, 255, 0.15);
+  max-width: none;
+  overflow: visible;
+}
+
+/* Make the heading text area show text cursor, but ID badge area shows pointer */
+.tiptap-editor:not(.tiptap-readonly) .custom-heading[id] {
+  cursor: text;
+}
+
 .tiptap-editor p {
   margin-bottom: 0.75rem;
   color: #111827;
@@ -979,6 +1023,33 @@ details[open] .faq-chevron {
   margin-bottom: 0.5rem;
 }
 
+/* Dotted Separator Styles */
+.tiptap-editor .dotted-separator {
+  width: 100%;
+  height: 1px;
+  margin: 1.5rem 0;
+  border: none;
+  border-top: 2px dotted #d1d5db;
+  background: transparent;
+  position: relative;
+}
+
+.tiptap-editor .dotted-separator::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 1px;
+}
+
+.tiptap-readonly .dotted-separator {
+  width: 100%;
+  height: 1px;
+  margin: 1.5rem 0;
+  border: none;
+  border-top: 2px dotted #d1d5db;
+  background: transparent;
+}
+
 .tiptap-editor img {
   max-width: 100%;
   height: auto;
@@ -1098,6 +1169,8 @@ details[open] .faq-chevron {
   margin-bottom: 0.5rem;
   color: #111827;
 }
+
+/* No custom heading styles in readonly mode - render normally */
 
 .tiptap-readonly p {
   margin-bottom: 1rem;
@@ -1404,4 +1477,29 @@ details[open] .faq-chevron {
 
 .alt-input-container button:last-of-type:hover {
   background: #4338ca;
+}
+
+/* Section Headings List Styles */
+.section-headings-list {
+  background: white;
+  border: 1px solid #e2e4f0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.section-headings-list button {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.section-headings-list button:hover {
+  background: #f4f5ff;
+  color: #6a5cff;
+}
+
+.section-headings-list button:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: #6a5cff;
+  ring-offset: 2px;
 }

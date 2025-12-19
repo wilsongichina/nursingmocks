@@ -7,6 +7,7 @@ import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
 import TawkToChat from "@/components/ui/TawkToChat";
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import TiptapContentRenderer from "@/components/editor/TiptapContentRenderer";
+import SectionHeadingsList from "@/components/editor/SectionHeadingsList";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -190,9 +191,33 @@ export default function TipTapEditorPage() {
               </div>
             </div>
 
-            {/* Saved Content Display */}
+            {/* Section Headings List Component - Test */}
             <div className="mt-6">
-              <TiptapContentRenderer content='<p>This is a <em>test</em> for a <s>brand-new</s> <a target="_blank" rel="noopener noreferrer nofollow" class="tiptap-link" href="/">editor.</a></p><p>Check the custom module</p><ul><li><p>This to <strong>check</strong></p></li><li><p>1</p></li><li><p>2</p></li></ul><p></p><ol><li><p>x</p></li><li><p>y</p></li><li><p>z</p></li></ol><h1>Test</h1><h2>Test</h2><h3>test</h3><p><code>12312</code></p><blockquote><p>21</p></blockquote><pre><code>1231313</code></pre><p></p><table style="min-width: 132px;"><colgroup><col style="width: 82px;"><col style="min-width: 25px;"><col style="min-width: 25px;"></colgroup><tbody><tr><th colspan="1" rowspan="1" colwidth="82"><p>Testing </p></th><th colspan="1" rowspan="1"><p>testin</p></th><th colspan="1" rowspan="1"><p>test</p></th></tr><tr><td colspan="1" rowspan="1" colwidth="82"><p>12</p></td><td colspan="1" rowspan="1"><p>123</p></td><td colspan="1" rowspan="1"><p>1234</p></td></tr><tr><td colspan="1" rowspan="1" colwidth="82"><p>1234</p></td><td colspan="1" rowspan="1"><p>1234</p></td><td colspan="1" rowspan="1"><p>1234</p></td></tr></tbody></table><p></p>' />
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                Section Headings Navigation (Test)
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+                {/* Section Headings List */}
+                <div className="lg:sticky lg:top-4 h-fit">
+                  <SectionHeadingsList
+                    content='<h2 id="introduction" class="custom-heading">Introduction to Tiptap</h2><p>This is the introduction section content.</p><h2 id="getting-started" class="custom-heading">Getting Started</h2><p>Learn how to get started with Tiptap editor.</p><h3 id="installation" class="custom-heading">Installation</h3><p>Installation instructions go here.</p><h3 id="configuration" class="custom-heading">Configuration</h3><p>Configuration details are explained here.</p><h2 id="features" class="custom-heading">Key Features</h2><p>Discover the powerful features of Tiptap.</p><h3 id="extensions" class="custom-heading">Extensions</h3><p>Learn about available extensions.</p><h3 id="customization" class="custom-heading">Customization</h3><p>Customize the editor to your needs.</p><h2 id="advanced-topics" class="custom-heading">Advanced Topics</h2><p>Explore advanced features and techniques.</p><h3 id="api-reference" class="custom-heading">API Reference</h3><p>Complete API documentation.</p><h3 id="best-practices" class="custom-heading">Best Practices</h3><p>Follow these best practices for optimal results.</p><h2 id="conclusion" class="custom-heading">Conclusion</h2><p>Wrap up and next steps.</p>'
+                    title="Table of Contents"
+                    showLevels={true}
+                    showIds={true}
+                    className="mb-4"
+                  />
+                </div>
+
+                {/* Rendered Content */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                    Rendered Content with Section Headings
+                  </h3>
+                  <div className="prose max-w-none">
+                    <TiptapContentRenderer content='<h2 id="introduction" class="custom-heading">Introduction to Tiptap</h2><p>This is the introduction section content. The Tiptap editor is a powerful, extensible rich text editor built on top of ProseMirror. It provides a modern editing experience with a clean API.</p><p>You can use various formatting options, insert custom modules, and create structured content with ease.</p><h2 id="getting-started" class="custom-heading">Getting Started</h2><p>Learn how to get started with Tiptap editor. This section covers the basics of setting up and using the editor in your projects.</p><h3 id="installation" class="custom-heading">Installation</h3><p>Installation instructions go here. You can install Tiptap using npm, yarn, or pnpm. The installation process is straightforward and well-documented.</p><h3 id="configuration" class="custom-heading">Configuration</h3><p>Configuration details are explained here. You can customize the editor behavior, add extensions, and configure various options to match your needs.</p><h2 id="features" class="custom-heading">Key Features</h2><p>Discover the powerful features of Tiptap. The editor comes with a wide range of built-in features and supports custom extensions for additional functionality.</p><h3 id="extensions" class="custom-heading">Extensions</h3><p>Learn about available extensions. Tiptap has a rich ecosystem of extensions that you can use to extend the editor functionality.</p><h3 id="customization" class="custom-heading">Customization</h3><p>Customize the editor to your needs. You can modify the appearance, behavior, and functionality of the editor to match your specific requirements.</p><h2 id="advanced-topics" class="custom-heading">Advanced Topics</h2><p>Explore advanced features and techniques. This section covers more complex use cases and advanced customization options.</p><h3 id="api-reference" class="custom-heading">API Reference</h3><p>Complete API documentation. Learn about all available methods, properties, and events in the Tiptap API.</p><h3 id="best-practices" class="custom-heading">Best Practices</h3><p>Follow these best practices for optimal results. These guidelines will help you get the most out of the Tiptap editor.</p><h2 id="conclusion" class="custom-heading">Conclusion</h2><p>Wrap up and next steps. This concludes our overview of the Tiptap editor. Continue exploring the documentation to learn more.</p>' />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>

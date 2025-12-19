@@ -7,6 +7,10 @@ import {
   getNursingExitExamQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
+import UserProfileBadge from "@/components/layout/UserProfileBadge";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ParsedQuestion {
   id: number | string;
@@ -93,7 +97,7 @@ export default function BulkUploadQuestions({
       setParsedQuestions(parsed.questions);
       setSuccess(`Successfully parsed ${parsed.questions.length} questions!`);
       setPreviewExpanded(true);
-      setCurrentPage(1); // Reset to first page when new questions are parsed
+      setCurrentPage(1);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(
@@ -107,8 +111,7 @@ export default function BulkUploadQuestions({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check if file is JSON
-    if (!file.name.toLowerCase().endsWith('.json')) {
+    if (!file.name.toLowerCase().endsWith(".json")) {
       setError("Please upload a .json file");
       return;
     }
@@ -117,7 +120,7 @@ export default function BulkUploadQuestions({
     reader.onload = (e) => {
       try {
         const fileContent = e.target?.result as string;
-        setJsonInput(fileContent); // Update textarea with file content
+        setJsonInput(fileContent);
         handleJsonParse(fileContent);
       } catch (err) {
         setError(
@@ -132,7 +135,6 @@ export default function BulkUploadQuestions({
 
     reader.readAsText(file);
   };
-
 
   const handleBulkUpload = async () => {
     if (parsedQuestions.length === 0) {
@@ -215,27 +217,35 @@ export default function BulkUploadQuestions({
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Bulk Upload Questions
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                Upload multiple questions for: {quizName || resolvedParams.quizId}
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Link
-                href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
-              >
+  const sampleRows = parsedQuestions.slice(0, 3);
+  const readyCount = parsedQuestions.length;
+  const needsReviewCount = Math.max(0, parsedQuestions.length - 50);
+  const parsedCount = parsedQuestions.length;
+  const validationProgress = parsedQuestions.length ? 64 : 0;
+
+  function LayoutShell({ children }: { children: React.ReactNode }) {
+    const { isCollapsed } = useSidebar();
+    const { currentUser } = useAuth();
+
+    return (
+      <div className="min-h-screen bg-white overflow-x-hidden">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <div className="hidden md:block border-b border-gray-200 bg-white h-16">
+            <div className="flex justify-between items-center px-4 h-full">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <Link
+                  href="/"
+                  className="hover:text-blue-600 transition-colors font-medium"
+                >
+                  Home
+                </Link>
                 <svg
-                  className="w-4 h-4"
+                  className="w-4 h-4 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -244,330 +254,433 @@ export default function BulkUploadQuestions({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    d="M9 5l7 7-7 7"
                   />
                 </svg>
-                <span>Back</span>
-              </Link>
+                <Link
+                  href="/admin"
+                  className="hover:text-blue-600 transition-colors font-medium"
+                >
+                  Admin
+                </Link>
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+                <span className="font-medium text-gray-800">Bulk Upload</span>
+              </div>
+              {currentUser ? (
+                <UserProfileBadge />
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <Link
+                    href="/login"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
             </div>
+          </div>
+          <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffffff_0,#f5f6fb_40%,#e8ebff_100%)]">
+            {children}
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
+  return (
+    <SidebarProvider>
+      <LayoutShell>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-col gap-2 min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold text-slate-900">
+                  Bulk Upload Questions (JSON)
+                </h1>
+              </div>
+              <div className="text-sm text-slate-600 flex flex-wrap items-center gap-3">
+                <span>
+                  Import questions for{" "}
+                  <strong>{quizName || resolvedParams.quizId}</strong>. We’ll
+                  validate and preview before sending them to Firestore.
+                </span>
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Draft upload
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Link
+                href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+              >
+                ← Back to Admin
+              </Link>
+              <Link
+                href={`/${resolvedParams.quizId}`}
+                target="_blank"
+                className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+              >
+                View Page
+              </Link>
+              <button
+                type="button"
+                onClick={handleBulkUpload}
+                disabled={uploading || parsedQuestions.length === 0}
+                className="btn btn-primary rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold shadow disabled:opacity-50"
+              >
+                {uploading
+                  ? "Uploading..."
+                  : `Save & Upload${parsedQuestions.length ? ` (${parsedQuestions.length})` : ""}`}
+              </button>
+            </div>
+          </header>
 
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-green-800">{success}</p>
-          </div>
-        )}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
+            <section className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                    Upload JSON File
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Drop a JSON array of questions. We parse, validate, and show
+                    a preview before importing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                  onClick={() =>
+                    setJsonInput(
+                      `{"questions":[{"id":1,"question":"Sample question?","options":["A","B","C","D"],"correctAnswer":"A","solution":"Example solution","question_type_id":1}]}`
+                    )
+                  }
+                >
+                  View JSON Schema
+                </button>
+              </div>
 
-        {/* Upload Form */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Upload JSON Data
-          </h2>
-
-          <div className="space-y-6">
-            {/* File Upload Option */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload JSON File
-              </label>
-              <div className="flex items-center space-x-4">
-                <label className="flex-1 cursor-pointer">
+              <div className="grid grid-cols-1 gap-3">
+                <label className="cursor-pointer">
                   <input
                     type="file"
                     accept=".json"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
-                  <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors">
-                    <div className="text-center">
-                      <svg
-                        className="mx-auto h-12 w-12 text-gray-400"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
-                      >
-                        <path
-                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <p className="mt-2 text-sm text-gray-600">
-                        <span className="font-medium text-indigo-600">
-                          Click to upload
-                        </span>{" "}
-                        or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        JSON file only (.json)
-                      </p>
+                  <div className="relative rounded-2xl border border-dashed border-indigo-100 bg-gradient-to-br from-white to-indigo-50/60 p-5 text-center hover:border-indigo-300 transition">
+                    <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-white border border-indigo-100 shadow">
+                      <span className="text-lg font-semibold text-indigo-600">
+                        {"{ }"}
+                      </span>
                     </div>
+                    <div className="text-sm font-semibold text-slate-800">
+                      Drop your JSON here
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      or choose a .json file from your computer
+                    </div>
+                    <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-2">
+                      <span className="rounded-full bg-indigo-600 text-white px-3 py-1 text-xs font-semibold">
+                        Choose JSON File
+                      </span>
+                      <span className="rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-600">
+                        Preview Example Payload
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-3">
+                      Expected: <code className="font-mono">{"{ questions: [...] }"}</code>{" "}
+                      up to ~5,000 items.
+                    </p>
                   </div>
                 </label>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-600">
+                    Paste JSON Data
+                  </label>
+                  <textarea
+                    value={jsonInput}
+                    onChange={(e) => setJsonInput(e.target.value)}
+                    placeholder='Paste your JSON data here. Expected format: { "questions": [...] }'
+                    className="w-full h-48 p-4 border border-slate-200 rounded-xl font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 bg-white"
+                  />
+                </div>
+
+                <button
+                  onClick={() => handleJsonParse()}
+                  disabled={!jsonInput.trim()}
+                  className="w-full rounded-full bg-indigo-600 text-white px-4 py-3 text-sm font-semibold shadow hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Parse & Preview Questions
+                </button>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-2">
+                  {[
+                    ["Question Key", "question"],
+                    ["Options Key", "options"],
+                    ["Correct Answer Key", "correctAnswer"],
+                    ["Skill / Tag Key", "skill"],
+                    ["Difficulty Key", "difficulty"],
+                    ["Solution Key", "solution"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="space-y-1">
+                      <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                        {label}
+                      </div>
+                      <div className="relative">
+                        <select className="w-full rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                          <option>{value}</option>
+                          <option>choices</option>
+                          <option>answerKey</option>
+                          <option>explanation</option>
+                        </select>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400">
+                          ▾
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {sampleRows.length > 0 && (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500 uppercase tracking-[0.1em] font-semibold">
+                      <span>Sample Questions From JSON</span>
+                      <span className="text-[11px] normal-case">
+                        Showing {sampleRows.length} of {parsedQuestions.length} parsed items
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-sm">
+                        <thead className="bg-slate-100">
+                          <tr className="text-slate-600">
+                            <th className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.08em]">
+                              #
+                            </th>
+                            <th className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.08em]">
+                              Question
+                            </th>
+                            <th className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.08em]">
+                              Skill
+                            </th>
+                            <th className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.08em]">
+                              Difficulty
+                            </th>
+                            <th className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.08em]">
+                              Correct
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sampleRows.map((row, idx) => (
+                            <tr
+                              key={row.id || idx}
+                              className="border-t border-dashed border-slate-200"
+                            >
+                              <td className="px-3 py-2 text-slate-700">
+                                {idx + 1}
+                              </td>
+                              <td className="px-3 py-2 text-slate-800 max-w-xs truncate">
+                                {row.question || "—"}
+                              </td>
+                              <td className="px-3 py-2 text-slate-600">
+                                <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-slate-200 bg-white text-[11px]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  {(row as any).skill || (row as any).tag || "—"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-slate-600 text-xs">
+                                {(row as any).difficulty || "—"}
+                              </td>
+                              <td className="px-3 py-2 text-slate-800 text-xs font-semibold">
+                                {row.correctAnswer || (row as any).correct_answer || "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </section>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">OR</span>
-              </div>
-            </div>
-
-            {/* JSON Textarea */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Paste JSON Data
-              </label>
-              <textarea
-                value={jsonInput}
-                onChange={(e) => setJsonInput(e.target.value)}
-                placeholder='Paste your JSON data here. Expected format: { "questions": [...] }'
-                className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
-              />
-            </div>
-
-            <button
-              onClick={() => handleJsonParse()}
-              disabled={!jsonInput.trim()}
-              className="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Parse & Preview Questions
-            </button>
-          </div>
-        </div>
-
-        {/* Preview Section */}
-        {parsedQuestions.length > 0 && (
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Preview ({parsedQuestions.length} questions)
-              </h2>
-              <button
-                onClick={() => setPreviewExpanded(!previewExpanded)}
-                className="text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                {previewExpanded ? "Collapse" : "Expand"}
-              </button>
-            </div>
-
-            {previewExpanded && (
-              <>
-                {/* Pagination Info */}
-                <div className="mb-4 flex justify-between items-center">
-                  <p className="text-sm text-gray-600">
-                    Showing{" "}
-                    {Math.min(
-                      (currentPage - 1) * questionsPerPage + 1,
-                      parsedQuestions.length
-                    )}{" "}
-                    to{" "}
-                    {Math.min(
-                      currentPage * questionsPerPage,
-                      parsedQuestions.length
-                    )}{" "}
-                    of {parsedQuestions.length} questions
+            <aside className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                    Import Summary
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Review validation and where these questions will be placed.
                   </p>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="p-2 text-gray-900 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Previous"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                    </button>
-                    <span className="text-sm text-gray-600">
-                      Page {currentPage} of{" "}
-                      {Math.ceil(parsedQuestions.length / questionsPerPage)}
-                    </span>
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) =>
-                          Math.min(
-                            Math.ceil(parsedQuestions.length / questionsPerPage),
-                            prev + 1
-                          )
-                        )
-                      }
-                      disabled={
-                        currentPage >=
-                        Math.ceil(parsedQuestions.length / questionsPerPage)
-                      }
-                      className="p-2 text-gray-900 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Next"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
+                    <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                      Objects Parsed
+                    </div>
+                    <div className="text-base font-semibold text-slate-900">
+                      {parsedCount || 0}
+                      <span className="ml-2 text-xs text-slate-500">
+                        From JSON input
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      We’ll skip duplicates already linked in your DB.
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
+                    <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                      Ready To Import
+                    </div>
+                    <div className="text-base font-semibold text-slate-900">
+                      {readyCount || 0}
+                      <span className="ml-2 text-xs text-slate-500">
+                        {needsReviewCount} need review
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Only valid objects will be written to your question bank.
+                    </div>
                   </div>
                 </div>
 
-                {/* Questions List */}
-                <div className="space-y-6 max-h-[600px] overflow-y-auto">
-                  {parsedQuestions
-                    .slice(
-                      (currentPage - 1) * questionsPerPage,
-                      currentPage * questionsPerPage
-                    )
-                    .map((q, index) => {
-                      const globalIndex =
-                        (currentPage - 1) * questionsPerPage + index;
-                      const options = parseOptions(q.options);
-                      return (
-                        <div
-                          key={q.id || globalIndex}
-                          className="border border-gray-200 rounded-lg p-4"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-sm font-medium text-gray-500">
-                              Question #{globalIndex + 1} (ID: {q.id})
-                            </span>
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              Type: {q.question_type_id || 1}
-                            </span>
-                          </div>
-                          <div
-                            className="text-gray-900 mb-3"
-                            dangerouslySetInnerHTML={{
-                              __html: q.question || "No question text",
-                            }}
-                          />
-                          {options.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-sm font-medium text-gray-700 mb-2">
-                                Options:
-                              </p>
-                              <ul className="list-disc list-inside space-y-1">
-                                {options.map((opt, optIndex) => (
-                                  <li
-                                    key={optIndex}
-                                    className={`text-sm ${
-                                      String.fromCharCode(65 + optIndex) ===
-                                      (q.correctAnswer || q.correct_answer)
-                                        ? "text-green-700 font-semibold"
-                                        : "text-gray-600"
-                                    }`}
-                                  >
-                                    <span className="font-medium">
-                                      {String.fromCharCode(65 + optIndex)}:
-                                    </span>{" "}
-                                    <span
-                                      dangerouslySetInnerHTML={{ __html: opt }}
-                                    />
-                                    {String.fromCharCode(65 + optIndex) ===
-                                      (q.correctAnswer || q.correct_answer) && (
-                                      <span className="ml-2 text-green-600">
-                                        ✓ Correct
-                                      </span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {q.solution && (
-                            <div className="mt-3 pt-3 border-t border-gray-200">
-                              <p className="text-sm font-medium text-gray-700 mb-1">
-                                Solution:
-                              </p>
-                              <div
-                                className="text-sm text-gray-600"
-                                dangerouslySetInnerHTML={{
-                                  __html: q.solution.substring(0, 200) + "...",
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                    Validation Progress
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden border border-slate-200">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all"
+                      style={{ width: `${validationProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-slate-500">
+                    <span>Checking JSON shape, keys, and options…</span>
+                    <span className="font-semibold text-slate-600">
+                      {validationProgress}%
+                    </span>
+                  </div>
                 </div>
 
-                {/* Pagination Controls at Bottom */}
-                {parsedQuestions.length > questionsPerPage && (
-                  <div className="mt-6 pt-6 border-t border-gray-200 flex justify-center">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setCurrentPage(1)}
-                        disabled={currentPage === 1}
-                        className="p-2 text-gray-900 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="First"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-                          />
-                        </svg>
-                      </button>
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-3 space-y-2 text-[12px] text-slate-600">
+                  <div className="flex items-start gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs">
+                      ✓
+                    </span>
+                    <span>
+                      Valid JSON array detected with a <strong>questions</strong> field.
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs">
+                      ✓
+                    </span>
+                    <span>
+                      Required keys mapped: <strong>question</strong>,{" "}
+                      <strong>options</strong>, <strong>correctAnswer</strong>,
+                      <strong> skill</strong>.
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-50 border border-amber-200 text-amber-600 text-xs">
+                      !
+                    </span>
+                    <span>
+                      Missing solutions are allowed but will skip explanations in review
+                      mode.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                    Placement
+                  </div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {quizName || resolvedParams.quizId}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Sub-page: {resolvedParams.subPageId} · Nested:{" "}
+                    {resolvedParams.nestedSubPageId}
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          {parsedQuestions.length > 0 && (
+            <section className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    Preview ({parsedQuestions.length} questions)
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    Scroll to review parsed content before importing.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPreviewExpanded(!previewExpanded)}
+                  className="text-indigo-600 hover:text-indigo-700 text-sm font-semibold"
+                >
+                  {previewExpanded ? "Collapse" : "Expand"}
+                </button>
+              </div>
+
+              {previewExpanded && (
+                <>
+                  <div className="flex flex-wrap items-center justify-between text-sm text-slate-600">
+                    <span>
+                      Showing{" "}
+                      {Math.min(
+                        (currentPage - 1) * questionsPerPage + 1,
+                        parsedQuestions.length
+                      )}{" "}
+                      –{" "}
+                      {Math.min(
+                        currentPage * questionsPerPage,
+                        parsedQuestions.length
+                      )}{" "}
+                      of {parsedQuestions.length}
+                    </span>
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="p-2 text-gray-900 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Previous"
+                        className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 19l-7-7 7-7"
-                          />
-                        </svg>
+                        «
                       </button>
-                      <span className="text-sm text-gray-600 px-3">
+                      <span className="text-xs text-slate-600">
                         Page {currentPage} of{" "}
                         {Math.ceil(parsedQuestions.length / questionsPerPage)}
                       </span>
@@ -584,91 +697,148 @@ export default function BulkUploadQuestions({
                           currentPage >=
                           Math.ceil(parsedQuestions.length / questionsPerPage)
                         }
-                        className="p-2 text-gray-900 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Next"
+                        className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() =>
-                          setCurrentPage(
-                            Math.ceil(parsedQuestions.length / questionsPerPage)
-                          )
-                        }
-                        disabled={
-                          currentPage >=
-                          Math.ceil(parsedQuestions.length / questionsPerPage)
-                        }
-                        className="p-2 text-gray-900 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Last"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                          />
-                        </svg>
+                        »
                       </button>
                     </div>
                   </div>
-                )}
-              </>
-            )}
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <button
-                onClick={handleBulkUpload}
-                disabled={uploading || parsedQuestions.length === 0}
-                className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {uploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Uploading...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
-                    </svg>
-                    <span>Upload {parsedQuestions.length} Questions</span>
-                  </>
-                )}
-              </button>
+                  <div className="space-y-4 max-h-[520px] overflow-y-auto">
+                    {parsedQuestions
+                      .slice(
+                        (currentPage - 1) * questionsPerPage,
+                        currentPage * questionsPerPage
+                      )
+                      .map((q, index) => {
+                        const globalIndex =
+                          (currentPage - 1) * questionsPerPage + index;
+                        const options = parseOptions(q.options);
+                        const correct = q.correctAnswer || (q as any).correct_answer;
+                        return (
+                          <div
+                            key={q.id || globalIndex}
+                            className="border border-slate-200 rounded-xl p-4 bg-white"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <span className="text-xs font-semibold text-slate-500">
+                                Question #{globalIndex + 1} (ID: {q.id})
+                              </span>
+                              <span className="text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-1 rounded-full">
+                                Type: {q.question_type_id || 1}
+                              </span>
+                            </div>
+                            <div
+                              className="text-slate-900 mb-3"
+                              dangerouslySetInnerHTML={{
+                                __html: q.question || "No question text",
+                              }}
+                            />
+                            {options.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-sm font-semibold text-slate-800 mb-2">
+                                  Options
+                                </p>
+                                <ul className="space-y-1">
+                                  {options.map((opt, optIndex) => {
+                                    const label = String.fromCharCode(65 + optIndex);
+                                    const isCorrect = label === correct;
+                                    return (
+                                      <li
+                                        key={optIndex}
+                                        className={`text-sm ${
+                                          isCorrect
+                                            ? "text-emerald-700 font-semibold"
+                                            : "text-slate-700"
+                                        }`}
+                                      >
+                                        <span className="font-semibold">{label}:</span>{" "}
+                                        <span
+                                          dangerouslySetInnerHTML={{ __html: opt }}
+                                        />
+                                        {isCorrect && (
+                                          <span className="ml-2 text-emerald-600">
+                                            ✓ Correct
+                                          </span>
+                                        )}
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
+                            )}
+                            {q.solution && (
+                              <div className="mt-3 pt-3 border-t border-slate-200">
+                                <p className="text-sm font-semibold text-slate-800 mb-1">
+                                  Solution
+                                </p>
+                                <div
+                                  className="text-sm text-slate-700"
+                                  dangerouslySetInnerHTML={{
+                                    __html: (q.solution || "").substring(0, 240) + "...",
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
+                <div className="text-xs text-slate-500">
+                  Imports run in the background. You can keep editing while this completes.
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleJsonParse()}
+                    className="rounded-full border border-slate-200 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                  >
+                    Run Validation Only
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setParsedQuestions([]);
+                      setJsonInput("");
+                      setSuccess("");
+                      setError("");
+                    }}
+                    className="rounded-full border border-red-200 px-3 py-2 text-xs text-red-700 bg-red-50 hover:bg-red-100"
+                  >
+                    Clear This Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkUpload}
+                    disabled={uploading || parsedQuestions.length === 0}
+                    className="rounded-full bg-indigo-600 text-white px-4 py-2 text-xs font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {uploading
+                      ? "Uploading..."
+                      : `Confirm & Import ${parsedQuestions.length || 0} Questions`}
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
             </div>
-          </div>
-        )}
-      </div>
-    </div>
+          )}
+          {success && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {success}
+            </div>
+          )}
+        </div>
+      </LayoutShell>
+    </SidebarProvider>
   );
 }
 

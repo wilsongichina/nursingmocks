@@ -19,6 +19,9 @@ import {
   Table,
   Link as LinkIcon,
   Unlink,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from "lucide-react";
 interface ToolbarProps {
   editor: Editor;
@@ -526,6 +529,40 @@ export default function Toolbar({ editor }: ToolbarProps) {
           </div>
         )}
       </div>
+
+      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+
+      {/* Text Alignment */}
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        className={`${buttonClass} ${
+          editor.isActive({ textAlign: "left" }) ? activeButtonClass : ""
+        }`}
+        title="Align Left"
+      >
+        <AlignLeft className="w-4 h-4 text-[#202437]" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        className={`${buttonClass} ${
+          editor.isActive({ textAlign: "center" }) ? activeButtonClass : ""
+        }`}
+        title="Align Center"
+      >
+        <AlignCenter className="w-4 h-4 text-[#202437]" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        className={`${buttonClass} ${
+          editor.isActive({ textAlign: "right" }) ? activeButtonClass : ""
+        }`}
+        title="Align Right"
+      >
+        <AlignRight className="w-4 h-4 text-[#202437]" />
+      </button>
 
       <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
 

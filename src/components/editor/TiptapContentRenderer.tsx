@@ -1,11 +1,12 @@
 /**
- * Static HTML Renderer for Tiptap Content
+ * Tiptap Content Renderer
  *
- * This component renders Tiptap HTML content as static HTML during build time.
- * Use this for pages that need to be statically generated.
- *
- * For client-side rendering with Tiptap features, use TiptapEditor with editable={false}
+ * This component renders Tiptap HTML content using the TiptapEditor in read-only mode.
+ * This ensures all custom modules (QuizCard, Callout, etc.) are properly rendered
+ * with their React components and styling.
  */
+
+import TiptapEditor from "./TiptapEditor";
 
 interface TiptapContentRendererProps {
   content: string;
@@ -21,9 +22,12 @@ export default function TiptapContentRenderer({
   }
 
   return (
-    <div
-      className={`tiptap-readonly ${className}`}
-      dangerouslySetInnerHTML={{ __html: content }}
-    />
+    <div className={className}>
+      <TiptapEditor
+        content={content}
+        editable={false}
+        placeholder=""
+      />
+    </div>
   );
 }

@@ -7,9 +7,11 @@ import TiptapContentRenderer from "@/components/editor/TiptapContentRenderer";
 import QuestionCard from "@/components/quiz/QuestionCard";
 import QuestionSetsSection from "@/components/ui/QuestionSetsSection";
 import FAQAccordion from "@/components/ui/FAQAccordion";
+import KbArticleViewer from "@/components/knowledge-base/KbArticleViewer";
 import {
   getRouteMappingBySlugOnly,
   getPageByContentPath,
+  getKbArticleBySlug,
   getNursingEntranceExamQuizQuestions,
   getNursingExitExamQuizQuestions,
   getNursingTestBankQuizQuestions,
@@ -512,7 +514,23 @@ export default async function DynamicPage({
 
   // Get route mapping
   const routeMappingResult = await getRouteMappingBySlugOnly(slug);
+  
+  // If no route mapping found, try to find KB article directly by slug
   if (!routeMappingResult.success || !routeMappingResult.data) {
+    // Fallback: Check if it's a KB article by searching knowledgeBase collection
+    const kbArticleResult = await getKbArticleBySlug(slug);
+    
+    if (kbArticleResult.success && kbArticleResult.data) {
+      const pageData = kbArticleResult.data;
+      const pillarId = (pageData as any).pillarId || "nursing-entrance-exam";
+      
+      return (
+        <Layout showSidebar={true}>
+          <KbArticleViewer article={pageData} pillarId={pillarId} />
+        </Layout>
+      );
+    }
+    
     notFound();
   }
 
@@ -527,6 +545,15 @@ export default async function DynamicPage({
   const pageData = contentResult.data as any;
   const pageType = mapping.type;
   const pillarId = mapping.pillarId;
+
+  // Handle knowledge base articles
+  if (mapping.refPath && mapping.refPath.startsWith("knowledgeBase/")) {
+    return (
+      <Layout showSidebar={true}>
+        <KbArticleViewer article={pageData} pillarId={pillarId} />
+      </Layout>
+    );
+  }
 
   // Handle quiz pages separately
   if (pageType === "quiz") {
@@ -665,7 +692,7 @@ export default async function DynamicPage({
     relatedQuizzes = relatedQuizzes.slice(0, 12);
 
     // Helper function to get card icon and colors (same as used in header)
-    const getCardIcon = (name: string, index: number) => {
+    const _getCardIcon = (name: string, index: number) => {
       const nameLower = name.toLowerCase();
       const colorVariants = [
         { iconBg: "bg-purple-500", numberColor: "text-purple-600" },
@@ -724,102 +751,239 @@ export default async function DynamicPage({
         )}
 
         {/* Hero Section */}
-        <section className="bg-white py-[1.25rem]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Centered Title */}
-            <div className="mb-6 text-center">
-              <h1 className="text-[1.5rem] md:text-4xl font-bold text-gray-900 mb-3">
-                {pageData.heading || pageData.pageName || slug}
-              </h1>
+        <section className="mb-7">
+          <div className="max-w-[1220px] mx-auto px-4 py-6 md:py-10">
+            {/* Breadcrumbs */}
+            <div className="flex flex-wrap gap-1.5 text-xs mb-2.5 text-[#7a819c]">
+              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
+                ATI TEAS
+              </span>
+              <span className="text-[11px] text-[#a0a5bf]">›</span>
+              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
+                English
+              </span>
+              <span className="text-[11px] text-[#a0a5bf]">›</span>
+              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
+                Question Sets
+              </span>
+              <span className="text-[11px] text-[#a0a5bf]">›</span>
+              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
+                Set 1
+              </span>
             </div>
 
-            {/* Start Test button */}
-            {questions.length > 0 && (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-                <a
-                  href="#quiz-questions"
-                  className="bg-yellow-500 text-gray-900 px-[3.75rem] py-4 rounded-lg text-base font-bold hover:bg-yellow-400 transition-colors text-center"
-                >
-                  Start Test
-                </a>
+            {/* Back Link */}
+            <a
+              href="#"
+              className="inline-flex items-center gap-1.5 text-[13px] text-[#4f46e5] no-underline mb-3 hover:underline"
+            >
+              <span className="text-base">←</span>
+              <span>Back to ATI TEAS English Questions</span>
+            </a>
+
+            {/* Hero Card */}
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-5 lg:gap-5.5 p-6 md:p-7 lg:p-6 rounded-[26px] md:rounded-[20px] border border-[rgba(226,229,249,0.9)] shadow-[0_18px_45px_rgba(15,23,42,0.08)] bg-gradient-to-br from-[#f5f1ff] to-[#e5efff] overflow-hidden">
+              {/* Decorative circles */}
+              <div className="absolute w-[220px] h-[220px] rounded-full bg-[radial-gradient(circle,rgba(106,92,255,0.22),transparent_60%)] -top-20 -right-10 pointer-events-none" />
+              <div className="absolute w-[180px] h-[180px] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.2),transparent_60%)] -bottom-20 right-[60px] pointer-events-none" />
+
+              {/* Main Content */}
+              <div className="relative z-10 flex-1 min-w-0 lg:flex-[1_1_60%]">
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[rgba(106,92,255,0.12)] text-[#4338ca] text-[11px] font-semibold tracking-[0.12em] uppercase mb-2.5">
+                  <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                  <span>ATI TEAS ENGLISH · QUESTION SET</span>
+                </div>
+
+                <h1 className="mt-0 mb-2.5 text-[32px] md:text-[26px] lg:text-[24px] font-extrabold tracking-[-0.03em] text-[#0f172a]">
+                  Master <span className="text-[#4f46e5]">ATI TEAS English</span> Question Set 1
+                </h1>
+
+                <p className="text-[15px] text-[#7a819c] max-w-[620px] my-0 mb-3.5 leading-relaxed">
+                  Practice TEAS-style English questions that strengthen punctuation, capitalization,
+                  sentence clarity, and grammar. Explanations stay blurred until you reveal them, so you
+                  can test yourself first and review like an instructor later.
+                </p>
+
+                <div className="flex flex-wrap gap-2 mb-3.5">
+                  <div className="px-3 py-1.5 rounded-full bg-white/96 border border-[rgba(219,222,247,0.9)] text-xs text-[#a0a5bf] inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(106,92,255,0.85)]" />
+                    <span>{questions.length} TEAS-style English questions</span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-full bg-white/96 border border-[rgba(219,222,247,0.9)] text-xs text-[#a0a5bf] inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(106,92,255,0.85)]" />
+                    <span>Single-select multiple choice</span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-full bg-white/96 border border-[rgba(219,222,247,0.9)] text-xs text-[#a0a5bf] inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(106,92,255,0.85)]" />
+                    <span>Review & exam-style practice</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5 items-center mb-2">
+                  <a
+                    href="#questions-start"
+                    className="inline-flex items-center justify-center gap-1.5 px-5.5 py-2.75 rounded-full border-none text-sm font-semibold text-white bg-gradient-to-br from-[#6a5cff] to-[#4f46e5] no-underline shadow-[0_12px_26px_rgba(80,72,220,0.55)] transition-all hover:-translate-y-px hover:shadow-[0_16px_34px_rgba(80,72,220,0.6)] whitespace-nowrap"
+                  >
+                    <span>Start English Set 1</span>
+                    <span>›</span>
+                  </a>
+                  <a
+                    href="#"
+                    className="text-[13px] text-[#e0ecff] no-underline inline-flex items-center gap-1 hover:underline"
+                  >
+                    <span>Browse all English sets</span>
+                    <span className="text-[15px]">↗</span>
+                  </a>
+                </div>
+
+                <div className="text-xs text-[#a0a5bf] mb-2">
+                  No sign-up required to start. Create a free NursingMocks account to save your progress and unlock more sets.
+                </div>
+
+                <div className="flex flex-wrap gap-2.5 mt-1 text-[11px] text-[#a0a5bf]">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.25 rounded-full bg-white/95 border border-dashed border-[rgba(210,213,247,0.9)]">
+                    <span className="text-[13px]">⭐</span>
+                    <span>4.8/5 average student rating</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.25 rounded-full bg-white/95 border border-dashed border-[rgba(210,213,247,0.9)]">
+                    <span className="text-[13px]">👩‍⚕️</span>
+                    <span>Used by thousands of aspiring nurses</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.25 rounded-full bg-white/95 border border-dashed border-[rgba(210,213,247,0.9)]">
+                    <span className="text-[13px]">📈</span>
+                    <span>Designed around ATI TEAS 7 English skills</span>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Side Banner */}
+              <aside className="relative z-10 w-full lg:w-auto lg:flex-[0_0_38%] lg:max-w-[38%] bg-white rounded-[26px] md:rounded-[20px] p-5 md:p-4.5 border border-[rgba(226,229,249,0.9)] shadow-[0_10px_30px_rgba(15,23,42,0.06)] flex flex-col justify-between gap-2.5">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <h2 className="m-0 text-[15px] font-bold">Set overview</h2>
+                    <span className="px-2.5 py-1 rounded-full bg-[#ecfdf3] border border-[#bbf7d0] text-[11px] text-[#16a34a]">
+                      Student view
+                    </span>
+                  </div>
+
+                  <ul className="list-none m-0 pt-1 grid gap-2.5 text-[13px] text-[#7a819c] leading-relaxed">
+                    <li className="flex items-start gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
+                      <span>{questions.length} TEAS-style English questions focused on ATI TEAS 7 exam skills.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
+                      <span>Targets punctuation, capitalization, sentence structure, and usage.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
+                      <span>Correct answers and full explanations stay blurred until you click <strong>Show</strong>.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
+                      <span>Perfect warm-up before taking a full-length ATI TEAS English practice test.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="mt-1 pt-2 border-t border-dashed border-[rgba(222,225,248,0.9)] text-[11px] text-[#a0a5bf]">
+                  Tip: Answer each question on your own first, then reveal the explanation and note <strong>why</strong> the correct option works.
+                </div>
+              </aside>
+            </div>
           </div>
         </section>
 
-        {/* Quiz Content */}
-        <section id="quiz-questions" className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {questions.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No questions available
-                </h3>
-                <p className="text-gray-600">
-                  Questions for this quiz are not available yet.
-                </p>
+        {/* Progress / Info Bar */}
+        {questions.length > 0 && (
+          <section className="mt-4.5 mb-3.5 px-3.5 py-2.5 rounded-2xl bg-white/96 border border-dashed border-[rgba(206,210,244,0.95)] flex flex-wrap items-center justify-between gap-2.5 max-w-[1220px] mx-auto">
+            <div className="text-[13px] text-[#7a819c] flex items-center gap-2">
+              <span>Set 1 · {questions.length} Questions</span>
+              <span className="px-2.5 py-1 rounded-full bg-[#eef0ff] border border-[rgba(187,192,234,0.9)] text-[11px] text-[#a0a5bf]">
+                Practice at your own pace
+              </span>
+            </div>
+            <div className="relative flex-1 min-w-[140px] h-2 rounded-full bg-[#e5e7f5] overflow-hidden">
+              <div
+                className="absolute top-0 left-0 bottom-0 rounded-full bg-gradient-to-r from-[#6a5cff] to-[#22c55e]"
+                style={{ width: "18%" }}
+              />
+            </div>
+            <div className="text-[11px] text-[#a0a5bf] min-w-[120px] text-right">
+              Example: 7 / {questions.length} questions completed · Upgrade your account later to track real progress.
+            </div>
+          </section>
+        )}
+
+        {/* Questions */}
+        <main id="questions-start" className="mt-2.5 max-w-[1220px] mx-auto px-4">
+          {questions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
               </div>
-            ) : (
-              <div className="space-y-12">
-                {questions.map((question: any, index: number) => {
-                  const questionTypeId =
-                    question.questionTypeId || question.question_type_id || 1;
+              <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                No questions available
+              </h3>
+              <p className="text-slate-600">
+                Questions for this quiz are not available yet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4.5">
+              {questions.map((question: any, index: number) => {
+                const questionTypeId =
+                  question.questionTypeId || question.question_type_id || 1;
 
-                  // Parse options - handle both array and stringified array
-                  let options: string[] = [];
-                  if (question.options) {
-                    if (Array.isArray(question.options)) {
-                      options = question.options;
-                    } else if (typeof question.options === "string") {
-                      try {
-                        const parsed = JSON.parse(question.options);
-                        options = Array.isArray(parsed) ? parsed : [parsed];
-                      } catch {
-                        options = [question.options];
-                      }
-                    }
-                  }
-
-                  const correctAnswer = question.correctAnswer || "";
-
-                  // Parse correct answer based on question type
-                  let correctAnswers: string[] = [];
-                  if (questionTypeId === 2) {
+                let options: string[] = [];
+                if (question.options) {
+                  if (Array.isArray(question.options)) {
+                    options = question.options;
+                  } else if (typeof question.options === "string") {
                     try {
-                      const parsed =
-                        typeof correctAnswer === "string"
-                          ? JSON.parse(correctAnswer)
-                          : correctAnswer;
-                      correctAnswers = Array.isArray(parsed) ? parsed : [];
+                      const parsed = JSON.parse(question.options);
+                      options = Array.isArray(parsed) ? parsed : [parsed];
                     } catch {
-                      correctAnswers = [];
+                      options = [question.options];
                     }
-                  } else if (questionTypeId === 7) {
-                    correctAnswers = Array.isArray(correctAnswer)
-                      ? correctAnswer
-                      : [correctAnswer];
-                  } else {
-                    correctAnswers = [correctAnswer];
                   }
+                }
 
-                  return (
+                const correctAnswer = question.correctAnswer || "";
+                let correctAnswers: string[] = [];
+                if (questionTypeId === 2) {
+                  try {
+                    const parsed =
+                      typeof correctAnswer === "string"
+                        ? JSON.parse(correctAnswer)
+                        : correctAnswer;
+                    correctAnswers = Array.isArray(parsed) ? parsed : [];
+                  } catch {
+                    correctAnswers = [];
+                  }
+                } else if (questionTypeId === 7) {
+                  correctAnswers = Array.isArray(correctAnswer)
+                    ? correctAnswer
+                    : [correctAnswer];
+                } else {
+                  correctAnswers = [correctAnswer];
+                }
+
+                return (
+                  <div key={question.id || index}>
                     <QuestionCard
-                      key={question.id || index}
                       question={question}
                       index={index}
                       questionTypeId={questionTypeId}
@@ -828,79 +992,102 @@ export default async function DynamicPage({
                       questionTypeName={getQuestionTypeName(questionTypeId)}
                       totalQuestions={questions.length}
                     />
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Related Quizzes Section */}
-            {relatedQuizzes.length > 0 && (
-              <div className="mt-16">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 text-center">
-                  Related Quizzes
-                </h2>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {relatedQuizzes.map((quiz: any, index: number) => {
-                    // Use route mapping slug if available, otherwise fall back to document slug or id
-                    const quizSlug =
-                      quizSlugMap[quiz.id] || quiz.slug || quiz.id;
-                    const quizName =
-                      quiz.pageName || quiz.title || quiz.quizName || quiz.id;
-                    const config = getCardIcon(quizName, index);
-                    const questionCount = (
-                      quiz.questionCount || 0
-                    ).toLocaleString();
-
-                    return (
-                      <Link
-                        key={quiz.id}
-                        href={`/${quizSlug}`}
-                        {...({ name: quizName } as any)}
-                        className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:bg-gray-50 transition-all duration-200 w-full sm:w-[calc(33.333%-0.67rem)] max-w-sm block"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`w-12 h-12 ${config.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}
-                          >
-                            {config.icon}
+                    {/* CTA Band after question 2 */}
+                    {index === 1 && questions.length > 2 && (
+                      <section className="my-5.5 px-4.5 py-4 rounded-[20px] bg-gradient-to-br from-[#fef3c7] to-[#e0ecff] border border-[rgba(250,204,21,0.4)] shadow-[0_10px_30px_rgba(15,23,42,0.06)] flex flex-wrap gap-3.5 items-center justify-between">
+                        <div className="max-w-[620px]">
+                          <div className="text-[11px] tracking-[0.12em] uppercase text-[#92400e] font-semibold mb-1">
+                            Boost your TEAS English score
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-600 mb-1">
-                              {quizName}
-                            </p>
-                            <p
-                              className={`text-3xl font-bold ${config.numberColor}`}
-                            >
-                              {questionCount}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Total Questions Available
-                            </p>
+                          <div className="text-[15px] font-bold mb-1 text-[#202437]">
+                            Unlock more English sets, score tracking & timed exams
                           </div>
-                          <div className="flex-shrink-0">
-                            <svg
-                              className="w-5 h-5 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
+                          <p className="text-[13px] text-[#7a819c] mb-0">
+                            Enjoying Set 1? Create a free NursingMocks account to unlock all ATI TEAS English question
+                            sets, track your accuracy over time, and switch between review and exam mode whenever you need.
+                          </p>
+                          <div className="text-[11px] text-[#a0a5bf] mt-1">
+                            No credit card required · Cancel anytime · Ideal for serious TEAS prep.
                           </div>
                         </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+                        <div className="flex flex-col gap-1.5 min-w-[190px] items-end">
+                          <Link
+                            href="/signup"
+                            className="inline-flex items-center justify-center gap-1.5 px-5.5 py-2.75 rounded-full border-none text-sm font-semibold text-white bg-gradient-to-br from-[#6a5cff] to-[#4f46e5] no-underline shadow-[0_12px_26px_rgba(80,72,220,0.55)] transition-all hover:-translate-y-px hover:shadow-[0_16px_34px_rgba(80,72,220,0.6)]"
+                          >
+                            <span>Create free account</span>
+                            <span>›</span>
+                          </Link>
+                          <Link
+                            href="/pricing"
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full border border-dashed border-[rgba(251,191,36,0.9)] bg-white/85 text-xs text-[#92400e] no-underline"
+                          >
+                            <span>View premium English bundles</span>
+                            <span>↗</span>
+                          </Link>
+                          <div className="text-[11px] text-[#a0a5bf] text-right">
+                            Students who practice with multiple sets improve English scores significantly.
+                          </div>
+                        </div>
+                      </section>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+
+        {/* Related Sets Section */}
+        {relatedQuizzes.length > 0 && (
+          <section className="mt-6 px-4.5 py-4.5 rounded-[20px] bg-white border border-[#e0e3f5] shadow-[0_10px_30px_rgba(15,23,42,0.06)] max-w-[1220px] mx-auto">
+            <div className="flex justify-between items-center gap-2.5 mb-2">
+              <div className="text-[15px] font-bold">Next ATI TEAS English Question Sets</div>
+              <span className="px-2.25 py-0.75 rounded-full bg-[#f3f4ff] border border-dashed border-[rgba(177,181,233,0.9)] text-[11px] text-[#4f46e5]">
+                Keep building English mastery
+              </span>
+            </div>
+            <p className="text-[13px] text-[#7a819c] mb-3">
+              When you finish Set 1, continue your practice with more TEAS-style English sets and focused skill drills.
+              Each set builds on what you just practiced so you can walk into test day confident.
+            </p>
+
+            <div className="grid grid-cols-3 gap-2.5 mb-3">
+              {relatedQuizzes.slice(0, 3).map((quiz: any, index: number) => {
+                const quizSlug = quizSlugMap[quiz.id] || quiz.slug || quiz.id;
+                const quizName =
+                  quiz.pageName || quiz.title || quiz.quizName || quiz.id;
+                const questionCount = (quiz.questionCount || 0).toLocaleString();
+
+                return (
+                  <article
+                    key={quiz.id}
+                    className="rounded-[14px] p-2.25 bg-[#f8f7ff] border border-dashed border-[rgba(190,195,239,0.9)] text-xs flex flex-col gap-1"
+                  >
+                    <div className="font-medium text-[#202437]">{quizName}</div>
+                    <div className="text-[11px] text-[#a0a5bf]">{questionCount} questions · Mixed grammar & clarity</div>
+                    <Link
+                      href={`/${quizSlug}`}
+                      className="mt-1 text-[11px] text-[#4f46e5] no-underline hover:underline"
+                    >
+                      Open Set {index + 2} →
+                    </Link>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="mt-0.5 pt-2 border-t border-dashed border-[rgba(215,218,245,0.9)] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#a0a5bf]">
+              <span>Want to follow a full English study path instead of picking sets manually?</span>
+              <Link
+                href="#"
+                className="text-xs text-[#4f46e5] no-underline font-medium hover:underline"
+              >
+                View TEAS English study path →
+              </Link>
+            </div>
+          </section>
+        )}
       </Layout>
     );
   }

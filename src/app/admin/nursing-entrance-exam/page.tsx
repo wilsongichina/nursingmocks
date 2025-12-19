@@ -13,6 +13,9 @@ import {
   deleteNestedSubPage,
   deleteNursingEntranceExamQuiz,
   uploadNursingEntranceExamQuiz,
+  uploadNursingEntranceExamKbArticle,
+  getNursingEntranceExamKbArticles,
+  deleteNursingEntranceExamKbArticle,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 import AdminSidebar from "@/components/layout/AdminSidebar";
@@ -62,6 +65,15 @@ function NursingEntranceExamAdminPageContent() {
   ): { taken: boolean; message?: string } => {
     const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-");
 
+    // Check for reserved static routes
+    const reservedRoutes = ["knowledge-base"];
+    if (reservedRoutes.includes(normalizedSlug)) {
+      return {
+        taken: true,
+        message: `The slug "${normalizedSlug}" is reserved and cannot be used. Please choose a different slug.`,
+      };
+    }
+
     // Helper to normalize a slug for comparison
     const normalizeSlug = (s: string) => s.toLowerCase().replace(/\s+/g, "-");
 
@@ -101,13 +113,31 @@ function NursingEntranceExamAdminPageContent() {
       };
     }
 
+    // Check KB articles
+    const existingKbArticle = kbArticles.find((kb) => {
+      const existingSlug = normalizeSlug(kb.slug || kb.id);
+      return existingSlug === normalizedSlug && kb.id !== excludeId;
+    });
+    if (existingKbArticle) {
+      return {
+        taken: true,
+        message: `A KB article with slug "${normalizedSlug}" already exists.`,
+      };
+    }
+
     return { taken: false };
   };
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateKbModal, setShowCreateKbModal] = useState(false);
   const [newSubPageId, setNewSubPageId] = useState("");
   const [newSubPageName, setNewSubPageName] = useState("");
   const [validationError, setValidationError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [newKbArticleId, setNewKbArticleId] = useState("");
+  const [newKbArticleName, setNewKbArticleName] = useState("");
+  const [selectedSubPageForKb, setSelectedSubPageForKb] = useState("");
+  const [kbValidationError, setKbValidationError] = useState("");
+  const [savingKb, setSavingKb] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [subPageToDelete, setSubPageToDelete] = useState<SubPage | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -142,26 +172,34 @@ function NursingEntranceExamAdminPageContent() {
   useEffect(() => {
     setNestedSubPagesPage(1);
     setQuizzesPage(1);
+    setKbArticlesPage(1);
   }, [activeTab]);
 
   // Reset pagination when search query changes
   useEffect(() => {
     setNestedSubPagesPage(1);
     setQuizzesPage(1);
+    setKbArticlesPage(1);
   }, [searchQuery]);
 
   // Reset pagination when filters change
   useEffect(() => {
     setNestedSubPagesPage(1);
     setQuizzesPage(1);
+    setKbArticlesPage(1);
   }, [examFilter, statusFilter]);
   const [nestedSubPages, setNestedSubPages] = useState<any[]>([]);
   const [quizzesCount, setQuizzesCount] = useState(0);
   const [kbArticlesCount, setKbArticlesCount] = useState(0);
   const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [kbArticles, setKbArticles] = useState<any[]>([]);
   const [nestedSubPagesPage, setNestedSubPagesPage] = useState(1);
   const [quizzesPage, setQuizzesPage] = useState(1);
+  const [kbArticlesPage, setKbArticlesPage] = useState(1);
   const itemsPerPage = 10;
+  const [showDeleteKbModal, setShowDeleteKbModal] = useState(false);
+  const [kbArticleToDelete, setKbArticleToDelete] = useState<any | null>(null);
+  const [deletingKb, setDeletingKb] = useState(false);
 
   useEffect(() => {
     loadSubPages();
@@ -443,9 +481,15 @@ function NursingEntranceExamAdminPageContent() {
         setNestedSubPages(nestedWithSlugs);
         setQuizzesCount(totalQuizzes);
 
-        // TODO: Fetch KB articles count when the function is available
-        // For now, set to 0 or fetch from blog/articles collection if available
-        setKbArticlesCount(0);
+        // Fetch KB articles
+        const kbResult = await getNursingEntranceExamKbArticles();
+        if (kbResult.success && kbResult.data) {
+          setKbArticles(kbResult.data);
+          setKbArticlesCount(kbResult.data.length);
+        } else {
+          setKbArticles([]);
+          setKbArticlesCount(0);
+        }
       } else {
         setError("Failed to load sub-pages");
       }
@@ -572,6 +616,49 @@ function NursingEntranceExamAdminPageContent() {
       console.error("Error deleting quiz:", err);
     } finally {
       setDeletingQuiz(false);
+    }
+  };
+
+  const handleDeleteKbClick = (kbArticle: any) => {
+    setKbArticleToDelete(kbArticle);
+    setShowDeleteKbModal(true);
+  };
+
+  const handleDeleteKbCancel = () => {
+    setShowDeleteKbModal(false);
+    setKbArticleToDelete(null);
+  };
+
+  const handleDeleteKbArticle = async () => {
+    if (!kbArticleToDelete) return;
+
+    try {
+      setDeletingKb(true);
+      setError("");
+      setSuccess("");
+
+      const result = await deleteNursingEntranceExamKbArticle(
+        kbArticleToDelete.id
+      );
+
+      if (result.success) {
+        setSuccess(
+          `KB Article "${
+            kbArticleToDelete.pageName || kbArticleToDelete.id
+          }" deleted successfully!`
+        );
+        setShowDeleteKbModal(false);
+        setKbArticleToDelete(null);
+        loadSubPages(); // Reload to refresh KB articles
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(result.message || "Failed to delete KB article.");
+      }
+    } catch (err) {
+      setError("Failed to delete KB article.");
+      console.error("Error deleting KB article:", err);
+    } finally {
+      setDeletingKb(false);
     }
   };
 
@@ -759,6 +846,102 @@ function NursingEntranceExamAdminPageContent() {
       console.error("Error creating nested sub-page:", err);
     } finally {
       setSavingNested(false);
+    }
+  };
+
+  const handleCreateKbArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setKbValidationError("");
+
+    if (!newKbArticleId.trim() || !newKbArticleName.trim()) {
+      setKbValidationError("KB Article ID and Name are required.");
+      return;
+    }
+
+    if (!selectedSubPageForKb) {
+      setKbValidationError("Please select a sub-page.");
+      return;
+    }
+
+    const normalizedKbArticleId = newKbArticleId
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    // Check if slug is taken across all levels
+    const slugCheck = isSlugTaken(normalizedKbArticleId);
+    if (slugCheck.taken) {
+      setKbValidationError(
+        slugCheck.message ||
+          `A page with slug "${normalizedKbArticleId}" already exists.`
+      );
+      return;
+    }
+
+    try {
+      setSavingKb(true);
+      setError("");
+      setSuccess("");
+
+      const defaultKbArticleContent = {
+        pageName: newKbArticleName,
+        status: "Published",
+        heading: "",
+        description: "",
+        seoLabel: newKbArticleName,
+        seoSlug: normalizedKbArticleId,
+        createdAt: new Date().toISOString(),
+        parentId: selectedSubPageForKb,
+        parentSubPageId: selectedSubPageForKb,
+        meta: {
+          title: `${newKbArticleName} | Nursing Entrance Exam`,
+          description: `KB Article: ${newKbArticleName} under Nursing Entrance Exam.`,
+          keywords: `${newKbArticleName}, nursing entrance exam, knowledge base`,
+          ogTitle: `${newKbArticleName} | Nursing Entrance Exam`,
+          ogDescription: `KB Article: ${newKbArticleName} under Nursing Entrance Exam.`,
+          ogImage: "/teas-gurus-logo.png",
+          canonicalUrl: `${getSiteUrl()}/${normalizedKbArticleId}`,
+        },
+        schema: "",
+        bodyContent: "",
+        tags: [],
+        isFeatured: false,
+        isFaq: false,
+        isStudentFacing: true,
+        readingTimeMinutes: 0,
+        difficultyLevel: "",
+        authorId: "",
+        authorName: "",
+        source: "",
+        relatedArticleIds: [],
+        relatedQuizIds: [],
+        viewsCount: 0,
+        helpfulVotes: 0,
+        notHelpfulVotes: 0,
+        publishedAt: new Date().toISOString(),
+        skillId: "",
+      };
+
+      const result = await uploadNursingEntranceExamKbArticle(
+        normalizedKbArticleId,
+        defaultKbArticleContent
+      );
+
+      if (result.success) {
+        setSuccess(`KB Article "${newKbArticleName}" created successfully!`);
+        setShowCreateKbModal(false);
+        setNewKbArticleId("");
+        setNewKbArticleName("");
+        setSelectedSubPageForKb("");
+        setKbValidationError("");
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setKbValidationError(result.message || "Failed to create KB article.");
+      }
+    } catch (err) {
+      setKbValidationError("Failed to create KB article.");
+      console.error("Error creating KB article:", err);
+    } finally {
+      setSavingKb(false);
     }
   };
 
@@ -1674,6 +1857,8 @@ function NursingEntranceExamAdminPageContent() {
                         ? "Search nested sub pages..."
                         : activeTab === "quizzes"
                         ? "Search quizzes..."
+                        : activeTab === "kb"
+                        ? "Search KB articles..."
                         : "Search sub pages..."
                     }
                     value={searchQuery}
@@ -1741,34 +1926,65 @@ function NursingEntranceExamAdminPageContent() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    style={{
-                      borderRadius: "999px",
-                      padding: "8px 14px",
-                      fontSize: "13px",
-                      border: "1px solid #e5e7eb",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      background: "#ffffff",
-                      color: "#111827",
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      fontWeight: 500,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#f3f4ff";
-                      e.currentTarget.style.borderColor = "#c7d2fe";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "#ffffff";
-                      e.currentTarget.style.borderColor = "#e5e7eb";
-                    }}
-                  >
-                    + New Sub Page
-                  </button>
+                  {activeTab === "kb" ? (
+                    <button
+                      onClick={() => setShowCreateKbModal(true)}
+                      style={{
+                        borderRadius: "999px",
+                        padding: "8px 14px",
+                        fontSize: "13px",
+                        border: "1px solid #e5e7eb",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#ffffff",
+                        color: "#111827",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        fontWeight: 500,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#f3f4ff";
+                        e.currentTarget.style.borderColor = "#c7d2fe";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.borderColor = "#e5e7eb";
+                      }}
+                    >
+                      + New KB Article
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      style={{
+                        borderRadius: "999px",
+                        padding: "8px 14px",
+                        fontSize: "13px",
+                        border: "1px solid #e5e7eb",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#ffffff",
+                        color: "#111827",
+                        fontFamily:
+                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        fontWeight: 500,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#f3f4ff";
+                        e.currentTarget.style.borderColor = "#c7d2fe";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.borderColor = "#e5e7eb";
+                      }}
+                    >
+                      + New Sub Page
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2157,7 +2373,7 @@ function NursingEntranceExamAdminPageContent() {
                                         whiteSpace: "nowrap",
                                       }}
                                     >
-                                      Edit
+                                      Manage
                                     </Link>
                                     <Link
                                       href={`/${quiz.slug || quiz.id}`}
@@ -2177,6 +2393,269 @@ function NursingEntranceExamAdminPageContent() {
                                       onClick={() =>
                                         handleDeleteQuizClick(quiz)
                                       }
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#ef4444",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Delete
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        );
+                      })()
+                    ) : activeTab === "kb" ? (
+                      (() => {
+                        const filteredKbArticles = kbArticles.filter((kb) => {
+                          // Search filter
+                          if (searchQuery) {
+                            const name = kb.pageName || kb.title || kb.id;
+                            if (
+                              !name
+                                .toLowerCase()
+                                .includes(searchQuery.toLowerCase())
+                            ) {
+                              return false;
+                            }
+                          }
+
+                          // Exam filter - compare against parent sub-page
+                          if (examFilter) {
+                            const parentSubPage = subPages.find(
+                              (sp) => sp.id === kb.parentId
+                            );
+                            const examName = parentSubPage
+                              ? parentSubPage.pageName ||
+                                parentSubPage.hero?.title ||
+                                parentSubPage.title ||
+                                parentSubPage.id
+                              : "";
+
+                            if (examName !== examFilter) {
+                              return false;
+                            }
+                          }
+
+                          // Status filter
+                          if (statusFilter) {
+                            const status = kb.status || "published";
+                            if (statusFilter !== status.toLowerCase()) {
+                              return false;
+                            }
+                          }
+
+                          return true;
+                        });
+                        const sortedKbArticles = [...filteredKbArticles].sort(
+                          (a, b) => {
+                            const dateA = a.lastUpdated
+                              ? new Date(a.lastUpdated).getTime()
+                              : 0;
+                            const dateB = b.lastUpdated
+                              ? new Date(b.lastUpdated).getTime()
+                              : 0;
+                            return dateB - dateA; // Descending order (newest first)
+                          }
+                        );
+                        const startIndex = (kbArticlesPage - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedKbArticles = sortedKbArticles.slice(
+                          startIndex,
+                          endIndex
+                        );
+
+                        return sortedKbArticles.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={7}
+                              style={{
+                                padding: "40px 12px",
+                                textAlign: "center",
+                                color: "#6b7280",
+                              }}
+                            >
+                              No KB articles found.
+                            </td>
+                          </tr>
+                        ) : (
+                          paginatedKbArticles.map((kbArticle) => {
+                            const pageName =
+                              kbArticle.pageName ||
+                              kbArticle.title ||
+                              kbArticle.id;
+                            const lastUpdated = kbArticle.lastUpdated
+                              ? new Date(
+                                  kbArticle.lastUpdated
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }) +
+                                " · " +
+                                new Date(
+                                  kbArticle.lastUpdated
+                                ).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "—";
+
+                            // Get sub-page name from subPages array
+                            const parentSubPage = subPages.find(
+                              (sp) => sp.id === kbArticle.parentId
+                            );
+                            const examName = parentSubPage
+                              ? parentSubPage.pageName ||
+                                parentSubPage.hero?.title ||
+                                parentSubPage.title ||
+                                parentSubPage.id
+                              : "—";
+
+                            return (
+                              <tr key={kbArticle.id}>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                    minWidth: "210px",
+                                  }}
+                                >
+                                  {pageName}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {examName}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  KB Article
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#6b7280",
+                                    whiteSpace: "nowrap",
+                                    minWidth: "180px",
+                                    fontFamily:
+                                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  /{kbArticle.slug || kbArticle.id}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      padding: "3px 8px",
+                                      borderRadius: "999px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      background: "#dcfce7",
+                                      color: "#15803d",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                    }}
+                                  >
+                                    {kbArticle.status || "Published"}
+                                  </span>
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {lastUpdated}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "left",
+                                    borderBottom: "1px solid #f3f4f6",
+                                    color: "#4b5563",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "6px",
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <Link
+                                      href={`/${
+                                        kbArticle.slug || kbArticle.id
+                                      }`}
+                                      target="_blank"
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#4f46e5",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      View
+                                    </Link>
+                                    <Link
+                                      href={`/admin/nursing-entrance-exam/kb-articles/${kbArticle.id}`}
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#6a5cff",
+                                        cursor: "pointer",
+                                        fontFamily:
+                                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Edit
+                                    </Link>
+                                    <span
+                                      onClick={() => {
+                                        handleDeleteKbClick(kbArticle);
+                                      }}
                                       style={{
                                         fontSize: "12px",
                                         color: "#ef4444",
@@ -2755,9 +3234,258 @@ function NursingEntranceExamAdminPageContent() {
               </div>
 
               {/* Pagination Controls */}
-              {(activeTab === "nested" || activeTab === "quizzes") &&
+              {(activeTab === "nested" ||
+                activeTab === "quizzes" ||
+                activeTab === "kb") &&
                 (() => {
-                  if (activeTab === "quizzes") {
+                  if (activeTab === "kb") {
+                    const filteredKbArticles = kbArticles.filter((kb) => {
+                      if (searchQuery) {
+                        const name = kb.pageName || kb.title || kb.id;
+                        if (
+                          !name
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase())
+                        ) {
+                          return false;
+                        }
+                      }
+                      if (examFilter) {
+                        const parentSubPage = subPages.find(
+                          (sp) => sp.id === kb.parentId
+                        );
+                        const examName = parentSubPage
+                          ? parentSubPage.pageName ||
+                            parentSubPage.hero?.title ||
+                            parentSubPage.title ||
+                            parentSubPage.id
+                          : "";
+                        if (examName !== examFilter) {
+                          return false;
+                        }
+                      }
+                      if (statusFilter) {
+                        const status = kb.status || "published";
+                        if (statusFilter !== status.toLowerCase()) {
+                          return false;
+                        }
+                      }
+                      return true;
+                    });
+                    const sortedKbArticles = [...filteredKbArticles].sort(
+                      (a, b) => {
+                        const dateA = a.lastUpdated
+                          ? new Date(a.lastUpdated).getTime()
+                          : 0;
+                        const dateB = b.lastUpdated
+                          ? new Date(b.lastUpdated).getTime()
+                          : 0;
+                        return dateB - dateA;
+                      }
+                    );
+                    const totalPages = Math.ceil(
+                      sortedKbArticles.length / itemsPerPage
+                    );
+                    if (totalPages <= 1) return null;
+
+                    return (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: "16px",
+                          padding: "12px 0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            color: "#6b7280",
+                            fontFamily:
+                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                          }}
+                        >
+                          Showing {(kbArticlesPage - 1) * itemsPerPage + 1} to{" "}
+                          {Math.min(
+                            kbArticlesPage * itemsPerPage,
+                            sortedKbArticles.length
+                          )}{" "}
+                          of {sortedKbArticles.length} KB articles
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            alignItems: "center",
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              setKbArticlesPage((prev) => Math.max(1, prev - 1))
+                            }
+                            disabled={kbArticlesPage === 1}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "13px",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "999px",
+                              background:
+                                kbArticlesPage === 1
+                                  ? "#f9fafb"
+                                  : "transparent",
+                              color:
+                                kbArticlesPage === 1 ? "#9ca3af" : "#6b7280",
+                              cursor:
+                                kbArticlesPage === 1
+                                  ? "not-allowed"
+                                  : "pointer",
+                              fontFamily:
+                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              fontWeight: 500,
+                            }}
+                            onMouseEnter={(e) => {
+                              if (kbArticlesPage !== 1) {
+                                e.currentTarget.style.background = "#eef2ff";
+                                e.currentTarget.style.borderColor = "#c7d2fe";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (kbArticlesPage !== 1) {
+                                e.currentTarget.style.background =
+                                  "transparent";
+                                e.currentTarget.style.borderColor = "#e5e7eb";
+                              }
+                            }}
+                          >
+                            Previous
+                          </button>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            {Array.from(
+                              { length: totalPages },
+                              (_, i) => i + 1
+                            ).map((page) => {
+                              if (
+                                page === 1 ||
+                                page === totalPages ||
+                                (page >= kbArticlesPage - 1 &&
+                                  page <= kbArticlesPage + 1)
+                              ) {
+                                return (
+                                  <button
+                                    key={page}
+                                    onClick={() => setKbArticlesPage(page)}
+                                    style={{
+                                      padding: "6px 12px",
+                                      fontSize: "13px",
+                                      border:
+                                        kbArticlesPage === page
+                                          ? "1px solid #c7d2fe"
+                                          : "1px solid transparent",
+                                      borderRadius: "999px",
+                                      background:
+                                        kbArticlesPage === page
+                                          ? "#eef2ff"
+                                          : "transparent",
+                                      color:
+                                        kbArticlesPage === page
+                                          ? "#4338ca"
+                                          : "#6b7280",
+                                      cursor: "pointer",
+                                      fontFamily:
+                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                                      fontWeight:
+                                        kbArticlesPage === page ? 500 : 400,
+                                      minWidth: "36px",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (kbArticlesPage !== page) {
+                                        e.currentTarget.style.background =
+                                          "#eef2ff";
+                                        e.currentTarget.style.borderColor =
+                                          "#c7d2fe";
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (kbArticlesPage !== page) {
+                                        e.currentTarget.style.background =
+                                          "transparent";
+                                        e.currentTarget.style.borderColor =
+                                          "transparent";
+                                      }
+                                    }}
+                                  >
+                                    {page}
+                                  </button>
+                                );
+                              } else if (
+                                page === kbArticlesPage - 2 ||
+                                page === kbArticlesPage + 2
+                              ) {
+                                return (
+                                  <span
+                                    key={page}
+                                    style={{
+                                      padding: "6px 4px",
+                                      color: "#9ca3af",
+                                      fontSize: "13px",
+                                    }}
+                                  >
+                                    ...
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                          <button
+                            onClick={() =>
+                              setKbArticlesPage((prev) =>
+                                Math.min(totalPages, prev + 1)
+                              )
+                            }
+                            disabled={kbArticlesPage === totalPages}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "13px",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "999px",
+                              background:
+                                kbArticlesPage === totalPages
+                                  ? "#f9fafb"
+                                  : "transparent",
+                              color:
+                                kbArticlesPage === totalPages
+                                  ? "#9ca3af"
+                                  : "#6b7280",
+                              cursor:
+                                kbArticlesPage === totalPages
+                                  ? "not-allowed"
+                                  : "pointer",
+                              fontFamily:
+                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              fontWeight: 500,
+                            }}
+                            onMouseEnter={(e) => {
+                              if (kbArticlesPage !== totalPages) {
+                                e.currentTarget.style.background = "#eef2ff";
+                                e.currentTarget.style.borderColor = "#c7d2fe";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (kbArticlesPage !== totalPages) {
+                                e.currentTarget.style.background =
+                                  "transparent";
+                                e.currentTarget.style.borderColor = "#e5e7eb";
+                              }
+                            }}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  } else if (activeTab === "quizzes") {
                     const filteredQuizzes = quizzes.filter((quiz) => {
                       // Search filter
                       if (searchQuery) {
@@ -3319,7 +4047,7 @@ function NursingEntranceExamAdminPageContent() {
                   <>
                     Quizzes are linked to nested sub pages. Each quiz contains
                     its own questions stored in the question bank. You can
-                    manage quiz questions from the Edit action.
+                    manage quiz questions from the Manage action.
                   </>
                 ) : (
                   <>
@@ -4148,6 +4876,534 @@ function NursingEntranceExamAdminPageContent() {
                       }}
                     >
                       {saving ? "Creating..." : "Create Sub-page"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Delete KB Article Modal */}
+          {showDeleteKbModal && kbArticleToDelete && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "26px 26px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "999px",
+                    margin: "0 auto 14px",
+                    background: "#fee2e2",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "999px",
+                      border: "2px solid #ef4444",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ef4444",
+                      fontSize: "18px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    !
+                  </div>
+                </div>
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    color: "#111827",
+                  }}
+                >
+                  Delete KB Article
+                </h2>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    lineHeight: 1.5,
+                    marginBottom: "18px",
+                  }}
+                >
+                  Are you sure you want to delete the KB article{" "}
+                  <strong>
+                    "
+                    {kbArticleToDelete.pageName ||
+                      kbArticleToDelete.title ||
+                      kbArticleToDelete.id}
+                    "
+                  </strong>
+                  ?<br />
+                  This action cannot be undone.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "12px",
+                    marginTop: "6px",
+                  }}
+                >
+                  <button
+                    onClick={handleDeleteKbCancel}
+                    disabled={deletingKb}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid #e5e7eb",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deletingKb ? "not-allowed" : "pointer",
+                      background: "#ffffff",
+                      color: "#111827",
+                      boxShadow: "0 3px 8px rgba(148, 163, 184, 0.25)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deletingKb ? 0.5 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deletingKb) {
+                        e.currentTarget.style.background = "#f9fafb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deletingKb) {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteKbArticle}
+                    disabled={deletingKb}
+                    style={{
+                      minWidth: "120px",
+                      borderRadius: "999px",
+                      border: "1px solid transparent",
+                      padding: "11px 18px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: deletingKb ? "not-allowed" : "pointer",
+                      background: deletingKb ? "#9ca3af" : "#ef4444",
+                      color: "#ffffff",
+                      boxShadow: deletingKb
+                        ? "none"
+                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
+                      transition: "background 0.15s, transform 0.08s",
+                      opacity: deletingKb ? 0.5 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deletingKb) {
+                        e.currentTarget.style.background = "#dc2626";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deletingKb) {
+                        e.currentTarget.style.background = "#ef4444";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    {deletingKb ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <span>Delete KB Article</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Create KB Article Modal */}
+          {showCreateKbModal && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            >
+              <div
+                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                style={{
+                  borderRadius: "20px",
+                  boxShadow:
+                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
+                  padding: "24px 26px 20px",
+                }}
+              >
+                <div style={{ marginBottom: "18px" }}>
+                  <h2
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      marginBottom: "4px",
+                      color: "#111827",
+                    }}
+                  >
+                    Create New KB Article
+                  </h2>
+                </div>
+                <form onSubmit={handleCreateKbArticle}>
+                  {kbValidationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-red-800">
+                        {kbValidationError}
+                      </p>
+                    </div>
+                  )}
+                  <div style={{ marginBottom: "18px" }}>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Sub-page
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <select
+                        value={selectedSubPageForKb}
+                        onChange={(e) =>
+                          setSelectedSubPageForKb(e.target.value)
+                        }
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                          cursor: "pointer",
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.background = "#ffffff";
+                          e.target.style.borderColor = "#4f46e5";
+                          e.target.style.boxShadow =
+                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.background = "#f9fafb";
+                          e.target.style.borderColor = "#e5e7eb";
+                          e.target.style.boxShadow = "none";
+                        }}
+                        required
+                      >
+                        <option value="">Select a sub-page</option>
+                        {subPages.map((subPage) => {
+                          const pageName =
+                            subPage.pageName ||
+                            subPage.hero?.title ||
+                            subPage.title ||
+                            subPage.id;
+                          return (
+                            <option key={subPage.id} value={subPage.id}>
+                              {pageName}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        Select the sub-page this KB article belongs to.
+                      </p>
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          KB Article Name
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={newKbArticleName}
+                        onChange={(e) => setNewKbArticleName(e.target.value)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.background = "#ffffff";
+                          e.target.style.borderColor = "#4f46e5";
+                          e.target.style.boxShadow =
+                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.background = "#f9fafb";
+                          e.target.style.borderColor = "#e5e7eb";
+                          e.target.style.boxShadow = "none";
+                        }}
+                        placeholder="e.g., How to Study for TEAS Math"
+                        required
+                      />
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        The display name for this KB article.
+                      </p>
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
+                          Slug URL
+                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                            *
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "stretch",
+                          width: "100%",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "11px 12px",
+                            borderRadius: "999px 0 0 999px",
+                            border: "1px solid #e5e7eb",
+                            borderRight: "none",
+                            fontSize: "13px",
+                            color: "#6b7280",
+                            background: "#f9fafb",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {getSiteUrl()}/
+                        </div>
+                        <input
+                          type="text"
+                          value={newKbArticleId}
+                          onChange={(e) =>
+                            setNewKbArticleId(
+                              e.target.value.toLowerCase().replace(/\s+/g, "-")
+                            )
+                          }
+                          style={{
+                            flex: 1,
+                            borderRadius: "0 999px 999px 0",
+                            border: "1px solid #e5e7eb",
+                            borderLeft: "none",
+                            padding: "11px 13px",
+                            fontSize: "14px",
+                            color: "#111827",
+                            background: "#f9fafb",
+                            outline: "none",
+                            transition:
+                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.background = "#ffffff";
+                            e.target.style.borderColor = "#4f46e5";
+                            e.target.style.boxShadow =
+                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.background = "#f9fafb";
+                            e.target.style.borderColor = "#e5e7eb";
+                            e.target.style.boxShadow = "none";
+                          }}
+                          placeholder="e.g., how-to-study-teas-math"
+                          required
+                        />
+                      </div>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        This will create a page at /
+                        {newKbArticleId || "kb-article-id"}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: "10px",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateKbModal(false);
+                        setNewKbArticleId("");
+                        setNewKbArticleName("");
+                        setSelectedSubPageForKb("");
+                        setKbValidationError("");
+                      }}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid #e5e7eb",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        background: "#f3f4f6",
+                        color: "#111827",
+                        transition:
+                          "background 0.15s, border-color 0.15s, transform 0.08s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#e5e7eb";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#f3f4f6";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingKb}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid transparent",
+                        padding: "11px 16px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: savingKb ? "not-allowed" : "pointer",
+                        background: savingKb ? "#9ca3af" : "#4f46e5",
+                        color: "#ffffff",
+                        boxShadow: savingKb
+                          ? "none"
+                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
+                        transition: "background 0.15s, transform 0.08s",
+                        opacity: savingKb ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!savingKb) {
+                          e.currentTarget.style.background = "#4338ca";
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!savingKb) {
+                          e.currentTarget.style.background = "#4f46e5";
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }
+                      }}
+                    >
+                      {savingKb ? "Creating..." : "Create KB Article"}
                     </button>
                   </div>
                 </form>

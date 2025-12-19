@@ -9,6 +9,10 @@ import {
 } from "@/lib/firestore-operations";
 import Link from "next/link";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
+import UserProfileBadge from "@/components/layout/UserProfileBadge";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface QuestionType {
   id: string;
@@ -25,6 +29,7 @@ interface QuestionData {
   question_type_id?: number;
   slug?: string;
   units?: string;
+  isCopyRight?: boolean;
   meta?: {
     title?: string;
     description?: string;
@@ -40,6 +45,7 @@ interface QuestionData {
 }
 
 const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
 
 export default function CreateQuestion({
   params,
@@ -64,6 +70,7 @@ export default function CreateQuestion({
     questionTypeId: 1,
     slug: "",
     units: "",
+    isCopyRight: false,
     meta: {
       title: "",
       description: "",
@@ -83,7 +90,6 @@ export default function CreateQuestion({
   const [success, setSuccess] = useState("");
   const [quizName, setQuizName] = useState("");
 
-  // Helper function to strip HTML tags
   const stripHtmlTags = (html: string): string => {
     if (!html) return "";
     if (typeof window === "undefined") {
@@ -94,7 +100,6 @@ export default function CreateQuestion({
     return (tempDiv.textContent || tempDiv.innerText || html).trim();
   };
 
-  // Generate slug from question text (first 180 characters)
   const generateSlug = (questionText: string): string => {
     if (!questionText) return "";
     const cleanText = stripHtmlTags(questionText);
@@ -122,22 +127,19 @@ export default function CreateQuestion({
 
       try {
         setLoading(true);
-        
-        // Load question types
+
         const typesResult = await getAllQuestionTypes();
         if (typesResult.success && typesResult.data) {
-          // Filter to only show types 1, 2, 3, 7
           const allowedTypes = typesResult.data.filter(
-            (type: QuestionType) => 
-              type.questionTypeId === "1" || 
-              type.questionTypeId === "2" || 
-              type.questionTypeId === "3" || 
+            (type: QuestionType) =>
+              type.questionTypeId === "1" ||
+              type.questionTypeId === "2" ||
+              type.questionTypeId === "3" ||
               type.questionTypeId === "7"
           );
           setQuestionTypes(allowedTypes);
         }
 
-        // Load quiz name
         const quizResult = await getNursingEntranceExamQuiz(
           resolvedParams.subPageId,
           resolvedParams.nestedSubPageId,
@@ -161,59 +163,52 @@ export default function CreateQuestion({
   const handleInputChange = (field: string, value: any) => {
     if (field.startsWith("meta.")) {
       const metaField = field.split(".")[1];
-      setQuestionData({
-        ...questionData,
+      setQuestionData((prev) => ({
+        ...prev,
         meta: {
-          ...questionData.meta,
+          ...prev.meta,
           [metaField]: value,
         },
-      });
+      }));
     } else if (field === "questionTypeId") {
-      // When question type changes, reset options and correct answer based on type
       const newType = parseInt(value);
       let newOptions: string[] = [];
       let newCorrectAnswer: string | string[] = "";
-      
+
       if (newType === 3) {
-        // True/False
         newOptions = ["True", "False"];
         newCorrectAnswer = "";
       } else if (newType === 7) {
-        // Numeric/Fill-in
         newOptions = [];
         newCorrectAnswer = "";
       } else {
-        // Single/Multiple choice
-        newOptions = questionData.options && questionData.options.length > 0
-          ? questionData.options
-          : ["", "", "", ""];
+        newOptions =
+          questionData.options && questionData.options.length > 0
+            ? questionData.options
+            : ["", "", "", ""];
         newCorrectAnswer = "";
       }
-      
-      setQuestionData({
-        ...questionData,
+
+      setQuestionData((prev) => ({
+        ...prev,
         questionTypeId: newType,
         options: newOptions,
         correctAnswer: newCorrectAnswer,
-      });
+      }));
     } else {
-      const updatedData = {
+      const updatedData: QuestionData = {
         ...questionData,
         [field]: value,
       };
-      
-      // Auto-generate slug when question text changes
       if (field === "question") {
         updatedData.slug = generateSlug(value);
       }
-      
       setQuestionData(updatedData);
     }
   };
 
   const handleOptionChange = (index: number, value: string) => {
     if (!questionData.options) return;
-
     const newOptions = [...questionData.options];
     newOptions[index] = value;
     setQuestionData({
@@ -224,7 +219,6 @@ export default function CreateQuestion({
 
   const handleAddOption = () => {
     if (!questionData.options) return;
-
     setQuestionData({
       ...questionData,
       options: [...questionData.options, ""],
@@ -233,8 +227,7 @@ export default function CreateQuestion({
 
   const handleRemoveOption = (index: number) => {
     if (!questionData.options) return;
-
-    const newOptions = questionData.options.filter((_: any, i: number) => i !== index);
+    const newOptions = questionData.options.filter((_, i) => i !== index);
     setQuestionData({
       ...questionData,
       options: newOptions,
@@ -244,7 +237,6 @@ export default function CreateQuestion({
   const handleSave = async () => {
     if (!resolvedParams || !questionData) return;
 
-    // Validation
     if (!questionData.question?.trim()) {
       setError("Question text is required");
       return;
@@ -257,42 +249,56 @@ export default function CreateQuestion({
 
     const questionTypeId = questionData.questionTypeId;
 
-    // Validate based on question type
     if (questionTypeId === 1) {
-      // Single choice
-      const validOptions = questionData.options?.filter((opt: string) => opt.trim()) || [];
+      const validOptions =
+        questionData.options?.filter((opt) => opt.trim()) || [];
       if (validOptions.length < 2) {
         setError("At least 2 options are required");
         return;
       }
-      if (!questionData.correctAnswer || (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+      if (
+        !questionData.correctAnswer ||
+        (typeof questionData.correctAnswer === "string" &&
+          !questionData.correctAnswer.trim())
+      ) {
         setError("Correct answer is required");
         return;
       }
     } else if (questionTypeId === 2) {
-      // Multiple choice
-      const validOptions = questionData.options?.filter((opt: string) => opt.trim()) || [];
+      const validOptions =
+        questionData.options?.filter((opt) => opt.trim()) || [];
       if (validOptions.length < 2) {
         setError("At least 2 options are required");
         return;
       }
-      if (!questionData.correctAnswer || 
-          (Array.isArray(questionData.correctAnswer) && questionData.correctAnswer.length === 0) ||
-          (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+      if (
+        !questionData.correctAnswer ||
+        (Array.isArray(questionData.correctAnswer) &&
+          questionData.correctAnswer.length === 0) ||
+        (typeof questionData.correctAnswer === "string" &&
+          !questionData.correctAnswer.trim())
+      ) {
         setError("At least one correct answer is required");
         return;
       }
     } else if (questionTypeId === 3) {
-      // True/False
-      if (!questionData.correctAnswer || (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+      if (
+        !questionData.correctAnswer ||
+        (typeof questionData.correctAnswer === "string" &&
+          !questionData.correctAnswer.trim())
+      ) {
         setError("Correct answer is required");
         return;
       }
     } else if (questionTypeId === 7) {
-      // Numeric
-      if (!questionData.correctAnswer || 
-          (Array.isArray(questionData.correctAnswer) && (!questionData.correctAnswer[0] || !questionData.correctAnswer[0].trim())) ||
-          (typeof questionData.correctAnswer === "string" && !questionData.correctAnswer.trim())) {
+      if (
+        !questionData.correctAnswer ||
+        (Array.isArray(questionData.correctAnswer) &&
+          (!questionData.correctAnswer[0] ||
+            !questionData.correctAnswer[0].trim())) ||
+        (typeof questionData.correctAnswer === "string" &&
+          !questionData.correctAnswer.trim())
+      ) {
         setError("Correct answer is required");
         return;
       }
@@ -303,10 +309,8 @@ export default function CreateQuestion({
       setError("");
       setSuccess("");
 
-      // Prepare question content
       let correctAnswerToSave: any = questionData.correctAnswer;
-      
-      // For type 2 (multiple choice), ensure correctAnswer is an array
+
       if (questionTypeId === 2) {
         if (typeof correctAnswerToSave === "string") {
           try {
@@ -319,8 +323,7 @@ export default function CreateQuestion({
           correctAnswerToSave = [correctAnswerToSave];
         }
       }
-      
-      // For type 7 (numeric), ensure correctAnswer is an array
+
       if (questionTypeId === 7) {
         if (typeof correctAnswerToSave === "string") {
           correctAnswerToSave = [correctAnswerToSave];
@@ -331,27 +334,31 @@ export default function CreateQuestion({
 
       const questionContent = {
         question: questionData.question,
-        options: questionData.options?.filter((opt: string) => opt.trim()) || [],
+        options: questionData.options?.filter((opt) => opt.trim()) || [],
         correctAnswer: correctAnswerToSave,
         explanation: questionData.explanation || "",
         questionTypeId: questionTypeId,
         slug: questionData.slug || generateSlug(questionData.question || ""),
         units: questionData.units || null,
-        meta: questionData.meta || {
-          title: "",
-          description: "",
-          keywords: "",
-          ogTitle: "",
-          ogDescription: "",
-          ogImage: "",
-          canonicalUrl: "",
-        },
+        isCopyRight: questionData.isCopyRight || false,
+        meta:
+          questionData.meta || {
+            title: "",
+            description: "",
+            keywords: "",
+            ogTitle: "",
+            ogDescription: "",
+            ogImage: "",
+            canonicalUrl: "",
+          },
         schema: questionData.schema || "",
         status: questionData.status || "published",
       };
 
-      // Generate question ID from slug
-      const questionId = questionData.slug || generateSlug(questionData.question || "") || `question-${Date.now()}`;
+      const questionId =
+        questionData.slug ||
+        generateSlug(questionData.question || "") ||
+        `question-${Date.now()}`;
 
       const result = await uploadNursingEntranceExamQuizQuestion(
         resolvedParams.subPageId,
@@ -390,27 +397,28 @@ export default function CreateQuestion({
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Create Question
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                Add a new question to: {quizName || resolvedParams.quizId}
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Link
-                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
-              >
+  function LayoutShell({ children }: { children: React.ReactNode }) {
+    const { isCollapsed } = useSidebar();
+    const { currentUser } = useAuth();
+    return (
+      <div className="min-h-screen bg-white overflow-x-hidden">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <div className="hidden md:block border-b border-gray-200 bg-white h-16">
+            <div className="flex justify-between items-center px-4 h-full">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <Link
+                  href="/"
+                  className="hover:text-blue-600 transition-colors font-medium"
+                >
+                  Home
+                </Link>
                 <svg
-                  className="w-4 h-4"
+                  className="w-4 h-4 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -419,466 +427,574 @@ export default function CreateQuestion({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    d="M9 5l7 7-7 7"
                   />
                 </svg>
-                <span>Back</span>
+                <Link
+                  href="/admin"
+                  className="hover:text-blue-600 transition-colors font-medium"
+                >
+                  Admin
+                </Link>
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+                <span className="font-medium text-gray-800">Create Question</span>
+              </div>
+              {currentUser ? (
+                <UserProfileBadge />
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <Link
+                    href="/login"
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffffff_0,#f5f6fb_40%,#e8ebff_100%)]">
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SidebarProvider>
+      <LayoutShell>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-col gap-2 min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold text-slate-900">
+                  Create Question
+                </h1>
+              </div>
+              <div className="text-sm text-slate-600 flex flex-wrap items-center gap-3">
+                <span>
+                  Add a new question to{" "}
+                  <strong>{quizName || resolvedParams.quizId}</strong>.
+                </span>
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Draft mode
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Link
+                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-50"
+              >
+                ← Back to Admin
               </Link>
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium disabled:opacity-50"
+                className="rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
               >
-                {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <span>Save Question</span>
-                  </>
-                )}
+                {saving ? "Saving..." : "Save Question"}
               </button>
             </div>
-          </div>
-        </div>
-      </div>
+          </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-green-800">{success}</p>
-          </div>
-        )}
-
-        {/* Page Settings Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Page Settings</h2>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Question Slug URL
-            </label>
-            <input
-              type="text"
-              value={questionData.slug || ""}
-              readOnly
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-900"
-              placeholder="Slug will be auto-generated from question text"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Automatically generated from the first 180 characters of the question text
-            </p>
-          </div>
-        </div>
-
-        {/* Meta Data Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Meta Data</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Meta Title
-              </label>
-              <input
-                type="text"
-                value={questionData.meta?.title || ""}
-                onChange={(e) => handleInputChange("meta.title", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                placeholder="Meta title"
-              />
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Meta Description
-              </label>
-              <textarea
-                value={questionData.meta?.description || ""}
-                onChange={(e) => handleInputChange("meta.description", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                placeholder="Meta description"
-                rows={2}
-              />
+          )}
+          {success && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {success}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Keywords
-              </label>
-              <input
-                type="text"
-                value={questionData.meta?.keywords || ""}
-                onChange={(e) => handleInputChange("meta.keywords", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                placeholder="Keywords (comma separated)"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                OG Title
-              </label>
-              <input
-                type="text"
-                value={questionData.meta?.ogTitle || ""}
-                onChange={(e) => handleInputChange("meta.ogTitle", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                placeholder="Open Graph title"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                OG Description
-              </label>
-              <textarea
-                value={questionData.meta?.ogDescription || ""}
-                onChange={(e) => handleInputChange("meta.ogDescription", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                placeholder="Open Graph description"
-                rows={2}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                OG Image URL
-              </label>
-              <input
-                type="text"
-                value={questionData.meta?.ogImage || ""}
-                onChange={(e) => handleInputChange("meta.ogImage", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                placeholder="Open Graph image URL"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Canonical URL
-              </label>
-              <input
-                type="text"
-                value={questionData.meta?.canonicalUrl || ""}
-                onChange={(e) => handleInputChange("meta.canonicalUrl", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                placeholder="Canonical URL"
-              />
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Schema Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Schema Markup</h2>
-          <textarea
-            value={questionData.schema || ""}
-            onChange={(e) => handleInputChange("schema", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm text-gray-900"
-            placeholder="Enter JSON-LD schema markup..."
-            rows={8}
-          />
-        </div>
-
-        {/* Question Data Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 space-y-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Question Data</h2>
-          
-          {/* Question Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Question Type *
-            </label>
-            <select
-              value={questionData.questionTypeId || 1}
-              onChange={(e) =>
-                handleInputChange("questionTypeId", parseInt(e.target.value))
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
-            >
-              {questionTypes
-                .filter((type) => {
-                  const typeId = parseInt(type.questionTypeId);
-                  return typeId === 1 || typeId === 2 || typeId === 3 || typeId === 7;
-                })
-                .map((type) => (
-                  <option key={type.id} value={type.questionTypeId}>
-                    {type.questionTypeName}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          {/* Question Text */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Question Text *
-            </label>
-            <RichTextEditor
-              value={questionData.question || ""}
-              onChange={(val) => handleInputChange("question", val)}
-              placeholder="Enter the question text..."
-            />
-          </div>
-
-          {/* Options - Different UI based on question type */}
-          {questionData.questionTypeId === 3 ? (
-            // True/False - Fixed options
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Options (Fixed for True/False)
-              </label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-semibold text-gray-600 min-w-[30px]">A:</span>
-                  <span className="text-gray-700">True</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-semibold text-gray-600 min-w-[30px]">B:</span>
-                  <span className="text-gray-700">False</span>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
+            <section className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-900">
+                  Question Content
                 </div>
               </div>
-            </div>
-          ) : questionData.questionTypeId === 7 ? (
-            // Numeric/Fill-in - No options needed
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Answer Type: Numeric/Fill-in-the-Blank
-              </label>
-              <p className="text-sm text-gray-500">Enter the numeric answer below.</p>
-            </div>
-          ) : (
-            // Type 1 and 2: Multiple choice options
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Options *
-                </label>
-                {questionData.questionTypeId !== 3 && questionData.questionTypeId !== 7 && (
-                  <button
-                    type="button"
-                    onClick={handleAddOption}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Question Type *
+                  </label>
+                  <select
+                    value={questionData.questionTypeId || 1}
+                    onChange={(e) =>
+                      handleInputChange("questionTypeId", parseInt(e.target.value))
+                    }
+                    className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
                   >
-                    + Add Option
-                  </button>
-                )}
-              </div>
-              <div className="space-y-3">
-                {questionData.options?.map((option: string, index: number) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-gray-600 min-w-[30px]">
-                      {ANSWER_LABELS[index] || String(index + 1)}:
-                    </span>
+                    {questionTypes
+                      .filter((type) => {
+                        const typeId = parseInt(type.questionTypeId);
+                        return typeId === 1 || typeId === 2 || typeId === 3 || typeId === 7;
+                      })
+                      .map((type) => (
+                        <option key={type.id} value={type.questionTypeId}>
+                          {type.questionTypeName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Question Text *
+                  </label>
+                  <div className="mt-1 rounded-xl border border-slate-200 bg-white">
                     <RichTextEditor
-                      value={option}
-                      onChange={(val) => handleOptionChange(index, val)}
-                      placeholder={`Option ${ANSWER_LABELS[index] || String(index + 1)}`}
+                      value={questionData.question || ""}
+                      onChange={(val) => handleInputChange("question", val)}
+                      placeholder="Enter the question text..."
                     />
-                    {questionData.questionTypeId !== 3 && questionData.questionTypeId !== 7 && (
+                  </div>
+                </div>
+
+                {questionData.questionTypeId === 3 ? (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Options (Fixed for True/False)
+                    </label>
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
+                        <span className="text-xs font-semibold text-slate-600 min-w-[30px]">
+                          A:
+                        </span>
+                        <span className="text-slate-800">True</span>
+                      </div>
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
+                        <span className="text-xs font-semibold text-slate-600 min-w-[30px]">
+                          B:
+                        </span>
+                        <span className="text-slate-800">False</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : questionData.questionTypeId === 7 ? (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Answer Type: Numeric/Fill-in-the-Blank
+                    </label>
+                    <p className="text-[12px] text-slate-500 mt-1">
+                      Enter the numeric answer below.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold text-slate-600">
+                        Options *
+                      </label>
                       <button
                         type="button"
-                        onClick={() => handleRemoveOption(index)}
-                        className="text-red-600 hover:text-red-700 p-2"
-                        disabled={questionData.options && questionData.options.length <= 2}
+                        onClick={handleAddOption}
+                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
                       >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
+                        + Add Option
                       </button>
-                    )}
+                    </div>
+                    <div className="space-y-3">
+                      {questionData.options?.map((option: string, index: number) => (
+                        <div
+                          key={index}
+                          className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                        >
+                          <span className="text-xs font-semibold text-slate-600 min-w-[24px] pt-1">
+                            {ANSWER_LABELS[index] || String(index + 1)}:
+                          </span>
+                          <div className="flex-1">
+                            <RichTextEditor
+                              value={option}
+                              onChange={(val) => handleOptionChange(index, val)}
+                              placeholder={`Option ${ANSWER_LABELS[index] || String(index + 1)}`}
+                            />
+                          </div>
+                          {questionData.questionTypeId !== 3 &&
+                            questionData.questionTypeId !== 7 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveOption(index)}
+                                className="text-red-500 hover:text-red-600 p-1"
+                                disabled={
+                                  questionData.options &&
+                                  questionData.options.length <= 2
+                                }
+                              >
+                                ✕
+                              </button>
+                            )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                )}
 
-          {/* Correct Answer - Different UI based on question type */}
-          {questionData.questionTypeId === 3 ? (
-            // True/False - Radio buttons
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correct Answer *
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="correctAnswer"
-                    value="True"
-                    checked={questionData.correctAnswer === "True"}
-                    onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
-                    className="w-4 h-4 text-indigo-600"
-                  />
-                  <span className="text-gray-700">True</span>
-                </label>
-                <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="correctAnswer"
-                    value="False"
-                    checked={questionData.correctAnswer === "False"}
-                    onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
-                    className="w-4 h-4 text-indigo-600"
-                  />
-                  <span className="text-gray-700">False</span>
-                </label>
-              </div>
-            </div>
-          ) : questionData.questionTypeId === 7 ? (
-            // Numeric/Fill-in - Text input with units
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correct Answer (Numeric) *
-                  </label>
-                  <input
-                    type="text"
-                    value={Array.isArray(questionData.correctAnswer) ? questionData.correctAnswer[0] || "" : (questionData.correctAnswer as string) || ""}
-                    onChange={(e) => handleInputChange("correctAnswer", [e.target.value])}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                    placeholder="Enter numeric answer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Units
-                  </label>
-                  <input
-                    type="text"
-                    value={questionData.units || ""}
-                    onChange={(e) => handleInputChange("units", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                    placeholder="e.g., mL, mg, units"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : questionData.questionTypeId === 2 ? (
-            // Multiple choice - Checkboxes
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correct Answer(s) * (Select all that apply)
-              </label>
-              <div className="space-y-2">
-                {questionData.options?.map((option: string, index: number) => {
-                  const optionLabel = ANSWER_LABELS[index];
-                  const selectedAnswers = Array.isArray(questionData.correctAnswer)
-                    ? questionData.correctAnswer
-                    : [];
-                  const isSelected = selectedAnswers.includes(optionLabel);
-                  
-                  return (
-                    <label
-                      key={index}
-                      className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          const currentAnswers = Array.isArray(questionData.correctAnswer)
-                            ? questionData.correctAnswer
-                            : [];
-                          
-                          let newAnswers: string[];
-                          if (e.target.checked) {
-                            newAnswers = [...currentAnswers, optionLabel];
-                          } else {
-                            newAnswers = currentAnswers.filter((ans) => ans !== optionLabel);
-                          }
-                          handleInputChange("correctAnswer", newAnswers);
-                        }}
-                        className="w-4 h-4 text-indigo-600 rounded"
-                      />
-                      <span className="text-sm font-semibold text-gray-600 min-w-[30px]">
-                        {optionLabel}:
-                      </span>
-                      <span className="text-gray-700 flex-1 line-clamp-1">
-                        {stripHtmlTags(option)}
-                      </span>
+                {questionData.questionTypeId === 3 ? (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Correct Answer *
                     </label>
-                  );
-                })}
+                    <div className="mt-2 space-y-2">
+                      {["True", "False"].map((val) => (
+                        <label
+                          key={val}
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                        >
+                          <input
+                            type="radio"
+                            name="correctAnswer"
+                            value={val}
+                            checked={questionData.correctAnswer === val}
+                            onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
+                            className="w-4 h-4 text-indigo-600"
+                          />
+                          <span className="text-sm text-slate-800">{val}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : questionData.questionTypeId === 7 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        Correct Answer (Numeric) *
+                      </label>
+                      <input
+                        type="text"
+                        value={
+                          Array.isArray(questionData.correctAnswer)
+                            ? questionData.correctAnswer[0] || ""
+                            : (questionData.correctAnswer as string) || ""
+                        }
+                        onChange={(e) => handleInputChange("correctAnswer", [e.target.value])}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Enter numeric answer"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        Units
+                      </label>
+                      <input
+                        type="text"
+                        value={questionData.units || ""}
+                        onChange={(e) => handleInputChange("units", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="e.g., mL, mg, units"
+                      />
+                    </div>
+                  </div>
+                ) : questionData.questionTypeId === 2 ? (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Correct Answer(s) * (Select all that apply)
+                    </label>
+                    <div className="mt-2 space-y-2">
+                      {questionData.options?.map((option: string, index: number) => {
+                        const optionLabel = ANSWER_LABELS[index];
+                        const selectedAnswers = Array.isArray(questionData.correctAnswer)
+                          ? questionData.correctAnswer
+                          : [];
+                        const isSelected = selectedAnswers.includes(optionLabel);
+                        return (
+                          <label
+                            key={index}
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const currentAnswers = Array.isArray(questionData.correctAnswer)
+                                  ? questionData.correctAnswer
+                                  : [];
+                                let newAnswers: string[];
+                                if (e.target.checked) {
+                                  newAnswers = [...currentAnswers, optionLabel];
+                                } else {
+                                  newAnswers = currentAnswers.filter((ans) => ans !== optionLabel);
+                                }
+                                handleInputChange("correctAnswer", newAnswers);
+                              }}
+                              className="w-4 h-4 text-indigo-600 rounded"
+                            />
+                            <span className="text-xs font-semibold text-slate-600 min-w-[26px]">
+                              {optionLabel}:
+                            </span>
+                            <span className="text-sm text-slate-800 flex-1 line-clamp-1">
+                              {stripHtmlTags(option)}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Correct Answer *
+                    </label>
+                    <select
+                      value={
+                        Array.isArray(questionData.correctAnswer)
+                          ? ""
+                          : (questionData.correctAnswer as string) || ""
+                      }
+                      onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
+                      className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                    >
+                      <option value="">Select correct answer</option>
+                      {questionData.options?.map((_, index: number) => (
+                        <option key={index} value={ANSWER_LABELS[index]}>
+                          {ANSWER_LABELS[index]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Explanation
+                  </label>
+                  <div className="mt-1 rounded-xl border border-slate-200 bg-white">
+                    <RichTextEditor
+                      value={questionData.explanation || ""}
+                      onChange={(val) => handleInputChange("explanation", val)}
+                      placeholder="Enter the explanation for the correct answer..."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Status
+                    </label>
+                    <select
+                      value={questionData.status || "published"}
+                      onChange={(e) => handleInputChange("status", e.target.value)}
+                      className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                    >
+                      <option value="published">Published</option>
+                      <option value="draft">Draft</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                    <div>
+                      <span className="block text-sm font-semibold text-slate-800">
+                        Copyright Protected
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        Mark this question as copyright protected
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleInputChange("isCopyRight", !questionData.isCopyRight)
+                      }
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        questionData.isCopyRight ? "bg-indigo-600" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          questionData.isCopyRight ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </label>
+                </div>
               </div>
+            </section>
+
+            <aside className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Meta & Schema</div>
+                  <p className="text-xs text-slate-500">
+                    Keep SEO metadata and structured data in sync.
+                  </p>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 px-3 py-1 text-[11px] font-semibold border border-indigo-100">
+                  SEO
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
+                  <label className="text-xs font-semibold text-slate-600">
+                    Question Slug URL
+                  </label>
+                  <input
+                    type="text"
+                    value={questionData.slug || ""}
+                    readOnly
+                    className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 ${gradientBg}`}
+                    placeholder="Slug auto-generated from question text"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Auto-generated from the first 180 characters of the question text.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        Meta Title
+                      </label>
+                      <input
+                        type="text"
+                        value={questionData.meta?.title || ""}
+                        onChange={(e) => handleInputChange("meta.title", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Meta title"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        Meta Description
+                      </label>
+                      <textarea
+                        value={questionData.meta?.description || ""}
+                        onChange={(e) => handleInputChange("meta.description", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Meta description"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        Keywords
+                      </label>
+                      <input
+                        type="text"
+                        value={questionData.meta?.keywords || ""}
+                        onChange={(e) => handleInputChange("meta.keywords", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Keywords (comma separated)"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        OG Title
+                      </label>
+                      <input
+                        type="text"
+                        value={questionData.meta?.ogTitle || ""}
+                        onChange={(e) => handleInputChange("meta.ogTitle", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Open Graph title"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        OG Description
+                      </label>
+                      <textarea
+                        value={questionData.meta?.ogDescription || ""}
+                        onChange={(e) => handleInputChange("meta.ogDescription", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Open Graph description"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600">
+                        OG Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={questionData.meta?.ogImage || ""}
+                        onChange={(e) => handleInputChange("meta.ogImage", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Open Graph image URL"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-slate-600">
+                        Canonical URL
+                      </label>
+                      <input
+                        type="text"
+                        value={questionData.meta?.canonicalUrl || ""}
+                        onChange={(e) => handleInputChange("meta.canonicalUrl", e.target.value)}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        placeholder="Canonical URL"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                  <label className="text-xs font-semibold text-slate-600">
+                    Schema Markup
+                  </label>
+                  <textarea
+                    value={questionData.schema || ""}
+                    onChange={(e) => handleInputChange("schema", e.target.value)}
+                    className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                    placeholder="Enter JSON-LD schema markup..."
+                    rows={8}
+                  />
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <footer className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
+            <div className="text-xs text-slate-500">
+              Autosave not enabled; click Save Question to persist changes.
             </div>
-          ) : (
-            // Type 1: Single choice - Dropdown
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correct Answer *
-              </label>
-              <select
-                value={Array.isArray(questionData.correctAnswer) ? "" : (questionData.correctAnswer as string) || ""}
-                onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm hover:bg-slate-50"
               >
-                <option value="">Select correct answer</option>
-                {questionData.options?.map((_: string, index: number) => (
-                  <option key={index} value={ANSWER_LABELS[index]}>
-                    {ANSWER_LABELS[index]}
-                  </option>
-                ))}
-              </select>
+                Cancel
+              </Link>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="rounded-full bg-indigo-600 text-white px-4 py-2 text-xs font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Question"}
+              </button>
             </div>
-          )}
-
-          {/* Explanation */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Explanation
-            </label>
-            <RichTextEditor
-              value={questionData.explanation || ""}
-              onChange={(val) => handleInputChange("explanation", val)}
-              placeholder="Enter the explanation for the correct answer..."
-            />
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              value={questionData.status || "published"}
-              onChange={(e) => handleInputChange("status", e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
-            >
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-            </select>
-          </div>
+          </footer>
         </div>
-      </div>
-    </div>
+      </LayoutShell>
+    </SidebarProvider>
   );
 }
+
 

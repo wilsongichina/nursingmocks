@@ -140,16 +140,112 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
             return "Nursing Exit Exam";
           case "nursing-test-bank":
             return "Nursing Test Bank";
+          case "knowledge-base":
+            return "Knowledge Base";
           default:
             return formatBreadcrumbLabel(pillarId);
         }
       };
 
+      // Handle knowledge-base routes
+      if (pathname.startsWith("/knowledge-base/")) {
+        const subPageSlug = pathSegments[1]; // Get the subPage slug
+        if (subPageSlug) {
+          setBreadcrumbData({
+            pillarName: "Knowledge Base",
+            pillarId: "knowledge-base",
+            items: [],
+            loading: true,
+          });
+
+          try {
+            const { getPageBySlug, getKbArticleBySlug } = await import("@/lib/firestore-operations");
+            const pageResult = await getPageBySlug(subPageSlug);
+            let pageData: any = null;
+            let pillarId: string = "nursing-entrance-exam";
+            
+            // If getPageBySlug found the page, use it
+            if (pageResult.success && pageResult.data) {
+              pageData = pageResult.data;
+              // Get pillarId from the result
+              pillarId = (pageResult as any).pillarId || pageData.pillarId || "nursing-entrance-exam";
+            } else {
+              // Fallback: try to find in knowledgeBase collection
+              const kbResult = await getKbArticleBySlug(subPageSlug);
+              if (kbResult.success && kbResult.data) {
+                pageData = kbResult.data;
+                pillarId = pageData.pillarId || "nursing-entrance-exam";
+              }
+            }
+            
+            if (pageData) {
+              const pageName =
+                pageData.pageName ||
+                pageData.hero?.title ||
+                pageData.title ||
+                pageData.heading ||
+                formatBreadcrumbLabel(subPageSlug);
+              
+              const pillarName = getPillarName(pillarId);
+
+              setBreadcrumbData({
+                pillarName: pillarName,
+                pillarId: pillarId,
+                items: [
+                  {
+                    name: pageName,
+                    slug: subPageSlug,
+                    url: `/knowledge-base/${subPageSlug}`,
+                  },
+                ],
+                loading: false,
+              });
+            } else {
+              // If page not found, default to nursing-entrance-exam
+              const pillarName = getPillarName(pillarId);
+              
+              setBreadcrumbData({
+                pillarName: pillarName,
+                pillarId: pillarId,
+                items: [
+                  {
+                    name: formatBreadcrumbLabel(subPageSlug),
+                    slug: subPageSlug,
+                    url: `/knowledge-base/${subPageSlug}`,
+                  },
+                ],
+                loading: false,
+              });
+            }
+          } catch (error) {
+            console.error("Error loading knowledge-base page:", error);
+            // Default to nursing-entrance-exam on error
+            const pillarId = "nursing-entrance-exam";
+            const pillarName = getPillarName(pillarId);
+            
+            setBreadcrumbData({
+              pillarName: pillarName,
+              pillarId: pillarId,
+              items: [
+                {
+                  name: formatBreadcrumbLabel(subPageSlug),
+                  slug: subPageSlug,
+                  url: `/knowledge-base/${subPageSlug}`,
+                },
+              ],
+              loading: false,
+            });
+          }
+          return;
+        }
+      }
+
       // Handle main pillar pages
       if (
         pathname === "/nursing-entrance-exam" ||
         pathname === "/nursing-exit-exam" ||
-        pathname === "/nursing-test-bank"
+        pathname === "/nursing-test-bank" ||
+        pathname === "/knowledge-base"
       ) {
         const pillarId = pathname.substring(1); // Remove leading slash
         const pillarName = getPillarName(pillarId);
@@ -170,7 +266,76 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
 
       const routeMappingResult = await getRouteMappingBySlugOnly(pageSlug);
 
+      // If no route mapping found, check if it's a KB article
       if (!routeMappingResult.success || !routeMappingResult.data) {
+        const { getKbArticleBySlug } = await import("@/lib/firestore-operations");
+        const kbArticleResult = await getKbArticleBySlug(pageSlug);
+        
+        if (kbArticleResult.success && kbArticleResult.data) {
+          const kbArticleData = kbArticleResult.data as any;
+          const kbPillarId = kbArticleData.pillarId || "nursing-entrance-exam";
+          
+          // Only handle the three nursing pillar pages
+          if (
+            kbPillarId !== "nursing-entrance-exam" &&
+            kbPillarId !== "nursing-exit-exam" &&
+            kbPillarId !== "nursing-test-bank"
+          ) {
+            setBreadcrumbData(null);
+            return;
+          }
+          
+          const kbPillarName = getPillarName(kbPillarId);
+          const breadcrumbItems: Array<{
+            name: string;
+            slug: string;
+            url: string;
+          }> = [];
+          
+          // Check if KB article has a parent sub page
+          const parentId = kbArticleData.parentId || kbArticleData.parentSubPageId;
+          if (parentId) {
+            const subPageRefPath = `pillarPages/${kbPillarId}/subPages/${parentId}`;
+            const subPageResult = await getPageByContentPath(subPageRefPath);
+            
+            if (subPageResult.success && subPageResult.data) {
+              const subPageData = subPageResult.data as any;
+              const subPageSlug = subPageData.slug || parentId;
+              const subPageName =
+                subPageData.pageName ||
+                subPageData.hero?.title ||
+                formatBreadcrumbLabel(parentId);
+              
+              breadcrumbItems.push({
+                name: subPageName,
+                slug: subPageSlug,
+                url: `/${subPageSlug}`,
+              });
+            }
+          }
+          
+          // Add the KB article itself
+          const articleName =
+            kbArticleData.pageName ||
+            kbArticleData.hero?.title ||
+            formatBreadcrumbLabel(pageSlug);
+          const articleSlug = kbArticleData.slug || pageSlug;
+          
+          breadcrumbItems.push({
+            name: articleName,
+            slug: articleSlug,
+            url: `/${articleSlug}`,
+          });
+          
+          setBreadcrumbData({
+            pillarName: kbPillarName,
+            pillarId: kbPillarId,
+            items: breadcrumbItems,
+            loading: false,
+          });
+          return;
+        }
+        
         setBreadcrumbData(null);
         return;
       }
@@ -209,6 +374,59 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
           slug: string;
           url: string;
         }> = [];
+
+        // Handle knowledge base articles
+        if (refPath.startsWith("knowledgeBase/")) {
+          // Get KB article data
+          const kbArticleResult = await getPageByContentPath(refPath);
+          
+          if (kbArticleResult.success && kbArticleResult.data) {
+            const kbArticleData = kbArticleResult.data as any;
+            const parentId = kbArticleData.parentId || kbArticleData.parentSubPageId;
+            
+            // If KB article has a parent sub page, add it to breadcrumbs
+            if (parentId) {
+              const subPageRefPath = `pillarPages/${pillarId}/subPages/${parentId}`;
+              const subPageResult = await getPageByContentPath(subPageRefPath);
+              
+              if (subPageResult.success && subPageResult.data) {
+                const subPageData = subPageResult.data as any;
+                const subPageSlug = subPageData.slug || parentId;
+                const subPageName =
+                  subPageData.pageName ||
+                  subPageData.hero?.title ||
+                  formatBreadcrumbLabel(parentId);
+                
+                breadcrumbItems.push({
+                  name: subPageName,
+                  slug: subPageSlug,
+                  url: `/${subPageSlug}`,
+                });
+              }
+            }
+            
+            // Add the KB article itself as the last breadcrumb
+            const articleName =
+              kbArticleData.pageName ||
+              kbArticleData.hero?.title ||
+              formatBreadcrumbLabel(pageSlug);
+            const articleSlug = kbArticleData.slug || mapping.slug || pageSlug;
+            
+            breadcrumbItems.push({
+              name: articleName,
+              slug: articleSlug,
+              url: `/${articleSlug}`,
+            });
+            
+            setBreadcrumbData({
+              pillarName,
+              pillarId,
+              items: breadcrumbItems,
+              loading: false,
+            });
+            return;
+          }
+        }
 
         // Parse refPath to extract parent IDs
         // Format: pillarPages/{pillarId}/subPages/{subPageId}/nestedSubPages/{nestedSubPageId}/topics/{topicId}/quizzes/{quizId}

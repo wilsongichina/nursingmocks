@@ -17,6 +17,7 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { mathPageContent } from "./math-page-content";
+import { getSiteUrl } from "./config";
 
 // Upload math page content to Firestore
 export const uploadMathPageContent = async () => {
@@ -1108,6 +1109,956 @@ export const deleteNursingEntranceExamSubPage = async (subPageId: string) => {
     return {
       success: false,
       message: `Failed to delete sub-page ${subPageId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== KNOWLEDGE BASE ARTICLES OPERATIONS ====================
+
+// Upload/update KB article content (saves to "knowledgeBase" collection)
+export const uploadNursingEntranceExamKbArticle = async (
+  kbArticleId: string,
+  content: any
+) => {
+  try {
+    const pillarId = "nursing-entrance-exam";
+    const newSlug = content.slug?.trim() || kbArticleId;
+    const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedOldSlug = kbArticleId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find document by document ID first (since URL param is typically the document ID)
+    // Then try by slug field as fallback
+    let docId: string | null = null;
+    let currentSlug: string | null = null;
+
+    // First, try to find by document ID (most common case)
+    const lookupDocRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(lookupDocRef);
+    if (docSnap.exists()) {
+      docId = docSnap.id;
+      const docData = docSnap.data();
+      currentSlug = docData.slug
+        ? docData.slug.toLowerCase().replace(/\s+/g, "-")
+        : null;
+    } else {
+      // Fallback: try to find by slug field
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const slugQuery = query(
+        kbArticlesRef,
+        where("slug", "==", normalizedOldSlug)
+      );
+      const slugSnapshot = await getDocs(slugQuery);
+
+      if (!slugSnapshot.empty) {
+        docId = slugSnapshot.docs[0].id;
+        currentSlug = normalizedOldSlug;
+      }
+    }
+
+    if (!docId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      // Check if slug is available (not in route mappings or static routes)
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Remove unnecessary keys: content, hero, image
+      const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
+      // Prepare KB article data with all required fields
+      const kbArticleData = {
+        pageName: cleanContent.pageName || "",
+        slug: normalizedNewSlug,
+        status: cleanContent.status || "Published",
+        heading: cleanContent.heading || "",
+        description: cleanContent.description || "",
+        seoLabel: cleanContent.seoLabel || cleanContent.pageName || "",
+        seoSlug: normalizedNewSlug,
+        meta: cleanContent.meta || {
+          title: `${cleanContent.pageName || ""} | Nursing Entrance Exam`,
+          description: `KB Article: ${
+            cleanContent.pageName || ""
+          } under Nursing Entrance Exam.`,
+          keywords: `${
+            cleanContent.pageName || ""
+          }, nursing entrance exam, knowledge base`,
+          ogTitle: `${cleanContent.pageName || ""} | Nursing Entrance Exam`,
+          ogDescription: `KB Article: ${
+            cleanContent.pageName || ""
+          } under Nursing Entrance Exam.`,
+          ogImage: "/teas-gurus-logo.png",
+          canonicalUrl: `${getSiteUrl()}/${normalizedNewSlug}`,
+        },
+        schema: cleanContent.schema || "",
+        bodyContent: cleanContent.bodyContent || "",
+        type: "kb",
+        parentId: cleanContent.parentId || cleanContent.parentSubPageId || "",
+        pillarId: pillarId,
+        contentPath: "", // Will be set after document creation
+        lastUpdated: new Date().toISOString(),
+        version: cleanContent.version || "1.0",
+        tags: cleanContent.tags || [],
+        isFeatured: cleanContent.isFeatured || false,
+        isFaq: cleanContent.isFaq || false,
+        isStudentFacing: cleanContent.isStudentFacing || true,
+        readingTimeMinutes: cleanContent.readingTimeMinutes || 0,
+        difficultyLevel: cleanContent.difficultyLevel || "",
+        authorId: cleanContent.authorId || "",
+        authorName: cleanContent.authorName || "",
+        source: cleanContent.source || "",
+        relatedArticleIds: cleanContent.relatedArticleIds || [],
+        relatedQuizIds: cleanContent.relatedQuizIds || [],
+        viewsCount: cleanContent.viewsCount || 0,
+        helpfulVotes: cleanContent.helpfulVotes || 0,
+        notHelpfulVotes: cleanContent.notHelpfulVotes || 0,
+        publishedAt: cleanContent.publishedAt || new Date().toISOString(),
+        createdAt: cleanContent.createdAt || new Date().toISOString(),
+        skillId: cleanContent.skillId || "",
+      };
+
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const newDocRef = await addDoc(kbArticlesRef, kbArticleData);
+
+      // Update contentPath with the actual document ID
+      const contentPath = `knowledgeBase/${newDocRef.id}`;
+      const docRef = doc(db, "knowledgeBase", newDocRef.id);
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "sub", // Using "sub" type for KB articles for now, can be changed to "kb" if needed
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: newDocRef.id,
+        nestedPageId: null,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `KB Article created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it
+    // Check if the new slug is different and already exists (for another page)
+    const oldSlugForComparison = currentSlug || normalizedOldSlug;
+    if (normalizedNewSlug !== oldSlugForComparison) {
+      // First check if slug is in static routes
+      const slugCheck = await isSlugAvailable(normalizedNewSlug);
+      if (!slugCheck.available) {
+        return {
+          success: false,
+          message:
+            slugCheck.message ||
+            `The slug "${normalizedNewSlug}" is not available. Please choose a different slug.`,
+        };
+      }
+
+      // Then check route mappings
+      const routeMappingCheck = await getRouteMappingBySlugOnly(
+        normalizedNewSlug
+      );
+      if (routeMappingCheck.success && routeMappingCheck.data) {
+        // Check if it's the same page (same refPath) - if so, allow the update
+        const existingMapping = routeMappingCheck.data as any;
+        const currentRefPath = `knowledgeBase/${docId}`;
+        if (existingMapping.refPath !== currentRefPath) {
+          return {
+            success: false,
+            message: `A page with the slug "${normalizedNewSlug}" already exists. Please choose a different slug.`,
+          };
+        }
+      }
+    }
+
+    // Remove unnecessary keys: content, hero, image
+    const { content: _, hero: __, image: ___, ...cleanContent } = content;
+
+    const contentPath = `knowledgeBase/${docId}`;
+    const docRef = doc(db, "knowledgeBase", docId);
+
+    // Prepare updated KB article data
+    const updatedKbArticleData = {
+      ...cleanContent,
+      slug: normalizedNewSlug,
+      type: "kb",
+      parentId: cleanContent.parentId || cleanContent.parentSubPageId || "",
+      pillarId: pillarId,
+      contentPath: contentPath,
+      lastUpdated: new Date().toISOString(),
+      version: cleanContent.version || "1.0",
+    };
+
+    await setDoc(docRef, updatedKbArticleData, { merge: true });
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "sub", // Using "sub" type for KB articles for now
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: docId,
+      nestedPageId: null,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
+    });
+
+    return {
+      success: true,
+      message: `KB Article updated successfully!`,
+      data: { id: docId, slug: normalizedNewSlug },
+    };
+  } catch (error) {
+    console.error(`Error uploading KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all KB articles for nursing-entrance-exam pillar
+export const getNursingEntranceExamKbArticles = async () => {
+  try {
+    const pillarId = "nursing-entrance-exam";
+    const kbArticlesRef = collection(db, "knowledgeBase");
+
+    // Query KB articles where pillarId matches
+    const q = query(kbArticlesRef, where("pillarId", "==", pillarId));
+    const querySnapshot = await getDocs(q);
+
+    const kbArticles: any[] = [];
+    querySnapshot.forEach((doc) => {
+      kbArticles.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: kbArticles,
+      message: "KB articles retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting KB articles:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve KB articles: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a single KB article by ID for nursing-entrance-exam
+export const getNursingEntranceExamKbArticle = async (kbArticleId: string) => {
+  try {
+    const docRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Verify it belongs to the correct pillar
+      if (data.pillarId === "nursing-entrance-exam") {
+        return {
+          success: true,
+          data: {
+            id: docSnap.id,
+            ...data,
+          },
+          message: `KB article ${kbArticleId} retrieved successfully!`,
+        };
+      } else {
+        return {
+          success: false,
+          message: `KB article ${kbArticleId} does not belong to nursing-entrance-exam pillar`,
+        };
+      }
+    } else {
+      return {
+        success: false,
+        message: `KB article ${kbArticleId} not found`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete KB article
+export const deleteNursingEntranceExamKbArticle = async (
+  kbArticleId: string
+) => {
+  try {
+    const docRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return {
+        success: false,
+        message: `KB article ${kbArticleId} not found`,
+      };
+    }
+
+    const docData = docSnap.data();
+    const refPath = docData.contentPath || `knowledgeBase/${kbArticleId}`;
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+
+    // Delete the KB article document
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `KB article ${kbArticleId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING TEST BANK KB ARTICLES OPERATIONS ====================
+
+// Upload/update KB article content for nursing-test-bank (saves to "knowledgeBase" collection)
+export const uploadNursingTestBankKbArticle = async (
+  kbArticleId: string,
+  content: any
+) => {
+  try {
+    const pillarId = "nursing-test-bank";
+    const newSlug = content.slug?.trim() || kbArticleId;
+    const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedOldSlug = kbArticleId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find document by document ID first (since URL param is typically the document ID)
+    // Then try by slug field as fallback
+    let docId: string | null = null;
+    let currentSlug: string | null = null;
+
+    // First, try to find by document ID (most common case)
+    const lookupDocRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(lookupDocRef);
+    if (docSnap.exists()) {
+      docId = docSnap.id;
+      const docData = docSnap.data();
+      currentSlug = docData.slug
+        ? docData.slug.toLowerCase().replace(/\s+/g, "-")
+        : null;
+    } else {
+      // Fallback: try to find by slug field
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const slugQuery = query(
+        kbArticlesRef,
+        where("slug", "==", normalizedOldSlug),
+        where("pillarId", "==", pillarId)
+      );
+      const slugSnapshot = await getDocs(slugQuery);
+
+      if (!slugSnapshot.empty) {
+        docId = slugSnapshot.docs[0].id;
+        currentSlug = normalizedOldSlug;
+      }
+    }
+
+    if (!docId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      const cleanContent = { ...content };
+      delete cleanContent.id;
+      delete cleanContent.subPageId;
+
+      // Prepare KB article data with all required fields
+      const kbArticleData = {
+        pageName: cleanContent.pageName || "",
+        slug: normalizedNewSlug,
+        status: cleanContent.status || "published",
+        heading: cleanContent.heading || "",
+        description: cleanContent.description || "",
+        seoLabel: cleanContent.seoLabel || "",
+        seoSlug: cleanContent.seoSlug || "",
+        meta: {
+          title: cleanContent.meta?.title || "",
+          description: cleanContent.meta?.description || "",
+          keywords: cleanContent.meta?.keywords || "",
+          ogTitle: cleanContent.meta?.ogTitle || "",
+          ogDescription: cleanContent.meta?.ogDescription || "",
+          ogImage: cleanContent.meta?.ogImage || "",
+          canonicalUrl: cleanContent.meta?.canonicalUrl || "",
+        },
+        schema: cleanContent.schema || "",
+        bodyContent: cleanContent.bodyContent || "",
+        type: cleanContent.type || "kb-article",
+        parentId: cleanContent.parentId || "",
+        pillarId: pillarId,
+        contentPath: "", // Will be set after document creation
+        lastUpdated: new Date().toISOString(),
+        version: cleanContent.version || "1.0",
+        tags: cleanContent.tags || [],
+        isFeatured: cleanContent.isFeatured || false,
+        isFaq: cleanContent.isFaq || false,
+        isStudentFacing: cleanContent.isStudentFacing || true,
+        readingTimeMinutes: cleanContent.readingTimeMinutes || 0,
+        difficultyLevel: cleanContent.difficultyLevel || "",
+        authorId: cleanContent.authorId || "",
+        authorName: cleanContent.authorName || "",
+        source: cleanContent.source || "",
+        relatedArticleIds: cleanContent.relatedArticleIds || [],
+        relatedQuizIds: cleanContent.relatedQuizIds || [],
+        viewsCount: cleanContent.viewsCount || 0,
+        helpfulVotes: cleanContent.helpfulVotes || 0,
+        notHelpfulVotes: cleanContent.notHelpfulVotes || 0,
+        publishedAt: cleanContent.publishedAt || new Date().toISOString(),
+        createdAt: cleanContent.createdAt || new Date().toISOString(),
+        skillId: cleanContent.skillId || "",
+      };
+
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const newDocRef = await addDoc(kbArticlesRef, kbArticleData);
+
+      // Update contentPath with the actual document ID
+      const contentPath = `knowledgeBase/${newDocRef.id}`;
+      const docRef = doc(db, "knowledgeBase", newDocRef.id);
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "sub", // Using "sub" type for KB articles for now, can be changed to "kb" if needed
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: newDocRef.id,
+        nestedPageId: null,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `KB Article created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it
+    // Check if the new slug is different and already exists (for another page)
+    if (normalizedNewSlug !== currentSlug && currentSlug !== null) {
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const slugCheckQuery = query(
+        kbArticlesRef,
+        where("slug", "==", normalizedNewSlug),
+        where("pillarId", "==", pillarId)
+      );
+      const slugCheckSnapshot = await getDocs(slugCheckQuery);
+
+      if (!slugCheckSnapshot.empty) {
+        const existingDoc = slugCheckSnapshot.docs.find((d) => d.id !== docId);
+        if (existingDoc) {
+          return {
+            success: false,
+            message: `A KB article with slug "${normalizedNewSlug}" already exists.`,
+          };
+        }
+      }
+    }
+
+    const cleanContent = { ...content };
+    delete cleanContent.id;
+    delete cleanContent.subPageId;
+
+    const currentRefPath = `knowledgeBase/${docId}`;
+    const contentPath = currentRefPath;
+    const docRef = doc(db, "knowledgeBase", docId);
+
+    const updatedKbArticleData = {
+      ...cleanContent,
+      slug: normalizedNewSlug,
+      pillarId: pillarId,
+      contentPath: contentPath,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    await setDoc(docRef, updatedKbArticleData, { merge: true });
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "sub", // Using "sub" type for KB articles for now
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: docId,
+      nestedPageId: null,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
+    });
+
+    return {
+      success: true,
+      message: `KB Article updated successfully!`,
+      data: { id: docId, slug: normalizedNewSlug },
+    };
+  } catch (error) {
+    console.error(`Error uploading KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all KB articles for nursing-test-bank pillar
+export const getNursingTestBankKbArticles = async () => {
+  try {
+    const pillarId = "nursing-test-bank";
+    const kbArticlesRef = collection(db, "knowledgeBase");
+
+    // Query KB articles where pillarId matches
+    const q = query(kbArticlesRef, where("pillarId", "==", pillarId));
+    const querySnapshot = await getDocs(q);
+
+    const kbArticles: any[] = [];
+    querySnapshot.forEach((doc) => {
+      kbArticles.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: kbArticles,
+      message: "KB articles retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting KB articles:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve KB articles: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a single KB article by ID for nursing-test-bank
+export const getNursingTestBankKbArticle = async (kbArticleId: string) => {
+  try {
+    const docRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Verify it belongs to the correct pillar
+      if (data.pillarId === "nursing-test-bank") {
+        return {
+          success: true,
+          data: {
+            id: docSnap.id,
+            ...data,
+          },
+          message: `KB article ${kbArticleId} retrieved successfully!`,
+        };
+      } else {
+        return {
+          success: false,
+          message: `KB article ${kbArticleId} does not belong to nursing-test-bank pillar`,
+        };
+      }
+    } else {
+      return {
+        success: false,
+        message: `KB article ${kbArticleId} not found`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete KB article for nursing-test-bank
+export const deleteNursingTestBankKbArticle = async (kbArticleId: string) => {
+  try {
+    const docRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return {
+        success: false,
+        message: `KB article ${kbArticleId} not found`,
+      };
+    }
+
+    const docData = docSnap.data();
+    const refPath = docData.contentPath || `knowledgeBase/${kbArticleId}`;
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+
+    // Delete the KB article document
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `KB article ${kbArticleId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// ==================== NURSING EXIT EXAM KB ARTICLES OPERATIONS ====================
+
+// Upload/update KB article content for nursing-exit-exam (saves to "knowledgeBase" collection)
+export const uploadNursingExitExamKbArticle = async (
+  kbArticleId: string,
+  content: any
+) => {
+  try {
+    const pillarId = "nursing-exit-exam";
+    const newSlug = content.slug?.trim() || kbArticleId;
+    const normalizedNewSlug = newSlug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedOldSlug = kbArticleId.toLowerCase().replace(/\s+/g, "-");
+
+    // Find document by document ID first (since URL param is typically the document ID)
+    // Then try by slug field as fallback
+    let docId: string | null = null;
+    let currentSlug: string | null = null;
+
+    // First, try to find by document ID (most common case)
+    const lookupDocRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(lookupDocRef);
+    if (docSnap.exists()) {
+      docId = docSnap.id;
+      const docData = docSnap.data();
+      currentSlug = docData.slug
+        ? docData.slug.toLowerCase().replace(/\s+/g, "-")
+        : null;
+    } else {
+      // Fallback: try to find by slug field
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const slugQuery = query(
+        kbArticlesRef,
+        where("slug", "==", normalizedOldSlug),
+        where("pillarId", "==", pillarId)
+      );
+      const slugSnapshot = await getDocs(slugQuery);
+
+      if (!slugSnapshot.empty) {
+        docId = slugSnapshot.docs[0].id;
+        currentSlug = normalizedOldSlug;
+      }
+    }
+
+    if (!docId) {
+      // Document doesn't exist, create new one with auto-generated ID
+      const cleanContent = { ...content };
+      delete cleanContent.id;
+      delete cleanContent.subPageId;
+
+      // Prepare KB article data with all required fields
+      const kbArticleData = {
+        pageName: cleanContent.pageName || "",
+        slug: normalizedNewSlug,
+        status: cleanContent.status || "published",
+        heading: cleanContent.heading || "",
+        description: cleanContent.description || "",
+        seoLabel: cleanContent.seoLabel || "",
+        seoSlug: cleanContent.seoSlug || "",
+        meta: {
+          title: cleanContent.meta?.title || "",
+          description: cleanContent.meta?.description || "",
+          keywords: cleanContent.meta?.keywords || "",
+          ogTitle: cleanContent.meta?.ogTitle || "",
+          ogDescription: cleanContent.meta?.ogDescription || "",
+          ogImage: cleanContent.meta?.ogImage || "",
+          canonicalUrl: cleanContent.meta?.canonicalUrl || "",
+        },
+        schema: cleanContent.schema || "",
+        bodyContent: cleanContent.bodyContent || "",
+        type: cleanContent.type || "kb-article",
+        parentId: cleanContent.parentId || "",
+        pillarId: pillarId,
+        contentPath: "", // Will be set after document creation
+        lastUpdated: new Date().toISOString(),
+        version: cleanContent.version || "1.0",
+        tags: cleanContent.tags || [],
+        isFeatured: cleanContent.isFeatured || false,
+        isFaq: cleanContent.isFaq || false,
+        isStudentFacing: cleanContent.isStudentFacing || true,
+        readingTimeMinutes: cleanContent.readingTimeMinutes || 0,
+        difficultyLevel: cleanContent.difficultyLevel || "",
+        authorId: cleanContent.authorId || "",
+        authorName: cleanContent.authorName || "",
+        source: cleanContent.source || "",
+        relatedArticleIds: cleanContent.relatedArticleIds || [],
+        relatedQuizIds: cleanContent.relatedQuizIds || [],
+        viewsCount: cleanContent.viewsCount || 0,
+        helpfulVotes: cleanContent.helpfulVotes || 0,
+        notHelpfulVotes: cleanContent.notHelpfulVotes || 0,
+        publishedAt: cleanContent.publishedAt || new Date().toISOString(),
+        createdAt: cleanContent.createdAt || new Date().toISOString(),
+        skillId: cleanContent.skillId || "",
+      };
+
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const newDocRef = await addDoc(kbArticlesRef, kbArticleData);
+
+      // Update contentPath with the actual document ID
+      const contentPath = `knowledgeBase/${newDocRef.id}`;
+      const docRef = doc(db, "knowledgeBase", newDocRef.id);
+      await setDoc(
+        docRef,
+        {
+          contentPath: contentPath,
+        },
+        { merge: true }
+      );
+
+      // Create route mapping
+      await createRouteMapping({
+        type: "sub", // Using "sub" type for KB articles for now, can be changed to "kb" if needed
+        pillarId: pillarId,
+        slug: normalizedNewSlug,
+        subPageId: newDocRef.id,
+        nestedPageId: null,
+        topicId: null,
+        quizId: null,
+        refPath: contentPath,
+      });
+
+      return {
+        success: true,
+        message: `KB Article created successfully!`,
+        data: { id: newDocRef.id, slug: normalizedNewSlug },
+      };
+    }
+
+    // Document exists, update it
+    // Check if the new slug is different and already exists (for another page)
+    if (normalizedNewSlug !== currentSlug && currentSlug !== null) {
+      const kbArticlesRef = collection(db, "knowledgeBase");
+      const slugCheckQuery = query(
+        kbArticlesRef,
+        where("slug", "==", normalizedNewSlug),
+        where("pillarId", "==", pillarId)
+      );
+      const slugCheckSnapshot = await getDocs(slugCheckQuery);
+
+      if (!slugCheckSnapshot.empty) {
+        const existingDoc = slugCheckSnapshot.docs.find((d) => d.id !== docId);
+        if (existingDoc) {
+          return {
+            success: false,
+            message: `A KB article with slug "${normalizedNewSlug}" already exists.`,
+          };
+        }
+      }
+    }
+
+    const cleanContent = { ...content };
+    delete cleanContent.id;
+    delete cleanContent.subPageId;
+
+    const currentRefPath = `knowledgeBase/${docId}`;
+    const contentPath = currentRefPath;
+    const docRef = doc(db, "knowledgeBase", docId);
+
+    const updatedKbArticleData = {
+      ...cleanContent,
+      slug: normalizedNewSlug,
+      pillarId: pillarId,
+      contentPath: contentPath,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    await setDoc(docRef, updatedKbArticleData, { merge: true });
+
+    // Update route mapping
+    await createRouteMapping({
+      type: "sub", // Using "sub" type for KB articles for now
+      pillarId: pillarId,
+      slug: normalizedNewSlug,
+      subPageId: docId,
+      nestedPageId: null,
+      topicId: null,
+      quizId: null,
+      refPath: contentPath,
+    });
+
+    return {
+      success: true,
+      message: `KB Article updated successfully!`,
+      data: { id: docId, slug: normalizedNewSlug },
+    };
+  } catch (error) {
+    console.error(`Error uploading KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to upload KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get all KB articles for nursing-exit-exam pillar
+export const getNursingExitExamKbArticles = async () => {
+  try {
+    const pillarId = "nursing-exit-exam";
+    const kbArticlesRef = collection(db, "knowledgeBase");
+
+    // Query KB articles where pillarId matches
+    const q = query(kbArticlesRef, where("pillarId", "==", pillarId));
+    const querySnapshot = await getDocs(q);
+
+    const kbArticles: any[] = [];
+    querySnapshot.forEach((doc) => {
+      kbArticles.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: kbArticles,
+      message: "KB articles retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting KB articles:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve KB articles: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get a single KB article by ID for nursing-exit-exam
+export const getNursingExitExamKbArticle = async (kbArticleId: string) => {
+  try {
+    const docRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Verify it belongs to the correct pillar
+      if (data.pillarId === "nursing-exit-exam") {
+        return {
+          success: true,
+          data: {
+            id: docSnap.id,
+            ...data,
+          },
+          message: `KB article ${kbArticleId} retrieved successfully!`,
+        };
+      } else {
+        return {
+          success: false,
+          message: `KB article ${kbArticleId} does not belong to nursing-exit-exam pillar`,
+        };
+      }
+    } else {
+      return {
+        success: false,
+        message: `KB article ${kbArticleId} not found`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error getting KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve KB article ${kbArticleId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Delete KB article for nursing-exit-exam
+export const deleteNursingExitExamKbArticle = async (kbArticleId: string) => {
+  try {
+    const docRef = doc(db, "knowledgeBase", kbArticleId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return {
+        success: false,
+        message: `KB article ${kbArticleId} not found`,
+      };
+    }
+
+    const docData = docSnap.data();
+    const refPath = docData.contentPath || `knowledgeBase/${kbArticleId}`;
+
+    // Delete route mapping
+    await deleteRouteMappingByRefPath(refPath);
+
+    // Delete the KB article document
+    await deleteDoc(docRef);
+
+    return {
+      success: true,
+      message: `KB article ${kbArticleId} deleted successfully!`,
+    };
+  } catch (error) {
+    console.error(`Error deleting KB article ${kbArticleId}:`, error);
+    return {
+      success: false,
+      message: `Failed to delete KB article ${kbArticleId}: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };
@@ -7544,6 +8495,7 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
           originalId: question.id?.toString() || "",
           questionId:
             question.id?.toString() || question.questionId?.toString() || "",
+          isCopyRight: question.isCopyRight || false,
           // Meta fields (editable after upload)
           meta: {
             title: "",
@@ -10167,6 +11119,28 @@ export const getPageBySlug = async (slug: string) => {
 export const getPageByContentPath = async (contentPath: string) => {
   try {
     const pathParts = contentPath.split("/");
+    
+    // Handle knowledgeBase/{docId} paths (2 parts)
+    if (pathParts.length === 2 && pathParts[0] === "knowledgeBase") {
+      const docRef = doc(db, "knowledgeBase", pathParts[1]);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return {
+          success: true,
+          data: {
+            id: docSnap.id,
+            ...docSnap.data(),
+          },
+        };
+      } else {
+        return {
+          success: false,
+          message: `No KB article found at contentPath: ${contentPath}`,
+        };
+      }
+    }
+    
     if (pathParts.length < 4) {
       return {
         success: false,
@@ -10248,6 +11222,43 @@ export const getPageByContentPath = async (contentPath: string) => {
     return {
       success: false,
       message: `Failed to retrieve page by contentPath ${contentPath}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Get KB article by slug (fallback when route mapping doesn't exist)
+export const getKbArticleBySlug = async (slug: string) => {
+  try {
+    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-").trim();
+    const kbArticlesRef = collection(db, "knowledgeBase");
+    const slugQuery = query(
+      kbArticlesRef,
+      where("slug", "==", normalizedSlug)
+    );
+    const slugSnapshot = await getDocs(slugQuery);
+
+    if (!slugSnapshot.empty) {
+      const doc = slugSnapshot.docs[0];
+      return {
+        success: true,
+        data: {
+          id: doc.id,
+          ...doc.data(),
+        },
+      };
+    }
+
+    return {
+      success: false,
+      message: `No KB article found with slug: ${slug}`,
+    };
+  } catch (error) {
+    console.error(`Error getting KB article by slug ${slug}:`, error);
+    return {
+      success: false,
+      message: `Failed to retrieve KB article: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };
@@ -10404,7 +11415,7 @@ export const getRouteMappingBySlug = async (pillarId: string, slug: string) => {
 // Get route mapping by slug only (searches across all pillar pages)
 export const getRouteMappingBySlugOnly = async (slug: string) => {
   try {
-    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-");
+    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-").trim();
     const routeMappingsRef = collection(db, "routeMappings");
     const mappingQuery = query(
       routeMappingsRef,
@@ -10475,7 +11486,6 @@ export const isSlugAvailable = async (
       "faqs",
       "faq",
       "teas",
-      "hesi-a2",
       "nursing",
       "nursing-test-bank",
       "nursing-exit-exam",
@@ -10492,6 +11502,7 @@ export const isSlugAvailable = async (
       "robots",
       "sitemap",
       "favicon",
+      "knowledge-base",
     ];
 
     // Check if slug matches any static route
@@ -10504,10 +11515,100 @@ export const isSlugAvailable = async (
 
     // Check if slug exists in route mappings
     const routeMappingCheck = await getRouteMappingBySlugOnly(normalizedSlug);
-    if (routeMappingCheck.success && routeMappingCheck.data) {
+
+    // If no route mapping found, slug is available
+    if (!routeMappingCheck.success || !routeMappingCheck.data) {
+      return {
+        available: true,
+      };
+    }
+
+    // Route mapping exists - verify that the actual page document exists
+    const routeMapping = routeMappingCheck.data as any;
+    const refPath = routeMapping.refPath as string | undefined;
+
+    // If we don't have a refPath, treat as orphaned mapping and allow the slug
+    if (!refPath) {
+      console.warn(
+        `Found route mapping for slug "${normalizedSlug}" without refPath. Treating as orphaned.`
+      );
+      try {
+        await deleteRouteMapping(routeMapping.id as string);
+      } catch (deleteError) {
+        console.error(`Failed to delete orphaned route mapping:`, deleteError);
+      }
+      return {
+        available: true,
+      };
+    }
+
+    // Verify that the actual page document exists
+    try {
+      // Convert refPath to Firestore document reference
+      // refPath format: "pillarPages/{pillarId}/subPages/{subPageId}/..."
+      const pathSegments = refPath.split("/").filter((segment) => segment);
+
+      // Validate path segments
+      if (pathSegments.length < 2) {
+        console.warn(
+          `Invalid refPath "${refPath}" for slug "${normalizedSlug}". Treating as orphaned.`
+        );
+        try {
+          await deleteRouteMapping(routeMapping.id as string);
+        } catch (deleteError) {
+          console.error(
+            `Failed to delete orphaned route mapping:`,
+            deleteError
+          );
+        }
+        return {
+          available: true,
+        };
+      }
+
+      const docRef = doc(db, ...(pathSegments as [string, ...string[]]));
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        // Route mapping exists but page doesn't - this is an orphaned mapping
+        // Clean it up and consider the slug as available
+        console.warn(
+          `Found orphaned route mapping for slug "${normalizedSlug}" with refPath "${refPath}". Page does not exist. Cleaning up...`
+        );
+        try {
+          await deleteRouteMapping(routeMapping.id as string);
+        } catch (deleteError) {
+          console.error(
+            `Failed to delete orphaned route mapping:`,
+            deleteError
+          );
+        }
+        // Slug is available since the page doesn't exist
+        return {
+          available: true,
+        };
+      }
+
+      // Page exists, so slug is taken
       return {
         available: false,
         message: `A page with the slug "${normalizedSlug}" already exists. Please choose a different slug.`,
+      };
+    } catch (error) {
+      // If we can't verify the page exists due to an error, log it but allow the slug
+      // This prevents false positives from blocking legitimate slug creation
+      console.error(
+        `Error verifying page existence for slug "${normalizedSlug}" with refPath "${refPath}":`,
+        error
+      );
+      // Treat as orphaned mapping and allow the slug
+      try {
+        await deleteRouteMapping(routeMapping.id as string);
+      } catch (deleteError) {
+        console.error(`Failed to delete orphaned route mapping:`, deleteError);
+      }
+      return {
+        available: true,
       };
     }
 
