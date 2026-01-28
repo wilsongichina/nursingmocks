@@ -111,10 +111,6 @@ export default function KnowledgeBaseSubPage() {
                   </div>
 
                   <div className="flex flex-row gap-2.5 items-center mb-1.5">
-                    <a href="#search" className="flex items-center justify-center gap-2 py-2.5 px-5 rounded-full bg-gradient-to-br from-[#4f46e5] to-[#8b5cf6] text-white font-semibold text-sm border-none shadow-[0_18px_40px_rgba(79,70,229,0.55)] cursor-pointer no-underline whitespace-nowrap hover:brightness-[1.04]">
-                      <span className="w-[18px] h-[18px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center text-[11px]">🔍</span>
-                      <span>Search {pageName} Knowledge Base</span>
-                    </a>
                     <a href="#categories" className="flex items-center justify-center gap-2 py-[9px] px-[18px] rounded-full border border-[rgba(15,23,42,0.08)] bg-[rgba(255,255,255,0.96)] text-[13px] font-medium text-[#111827] no-underline shadow-[0_8px_20px_rgba(15,23,42,0.12)] whitespace-nowrap hover:bg-[#eef2ff]">
                       <span>Browse Article Categories</span>
                     </a>
@@ -181,48 +177,6 @@ export default function KnowledgeBaseSubPage() {
               <div className="text-[13px] mb-3">
                 ← <Link href="/knowledge-base" className="text-[#2563eb] no-underline hover:underline">Back to Knowledge Base Hub</Link>
               </div>
-
-              {/* SEARCH */}
-              <section className="rounded-3xl p-3.5 px-4 bg-[radial-gradient(circle_at_top_left,#ffffff_0,#eef2ff_40%,#f9fafb_100%)] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_32px_rgba(15,23,42,0.08)] flex items-center gap-3 mb-[26px] sm:items-start sm:gap-2.5" id="search">
-                <div className="w-[30px] h-[30px] rounded-full bg-[#eef2ff] flex items-center justify-center shadow-[0_10px_22px_rgba(79,70,229,0.35)] flex-shrink-0">
-                  <div className="search-icon-inner" />
-                </div>
-                <style jsx>{`
-                  .search-icon-inner {
-                    width: 14px;
-                    height: 14px;
-                    border-radius: 999px;
-                    border: 2px solid #60a5fa;
-                    position: relative;
-                  }
-                  .search-icon-inner::after {
-                    content: "";
-                    position: absolute;
-                    width: 8px;
-                    height: 2px;
-                    border-radius: 999px;
-                    background: #60a5fa;
-                    right: -4px;
-                    bottom: -1px;
-                    transform: rotate(42deg);
-                  }
-                `}</style>
-                <div className="flex-1 flex flex-col gap-1">
-                  <input
-                    className="border-none outline-none bg-transparent text-sm text-[#0f172a] p-0 placeholder:text-[#9ca3af]"
-                    placeholder={`Search ${pageName} articles (e.g. "What is a good score?")`}
-                  />
-                  <div className="flex items-center gap-2.5 text-[11px] text-[#6b7280]">
-                    <span>Search only {pageName} guides &amp; FAQs in this section.</span>
-                    <span className="rounded-md border border-[#d1d5db] py-0.5 px-1.5 text-[10px] bg-[#f9fafb] text-[#4b5563]">
-                      Press Enter
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs text-[#6b7280] whitespace-nowrap sm:hidden">
-                  Tip: try &quot;How long should I study?&quot;
-                </div>
-              </section>
 
               {/* ARTICLES */}
               {kbArticles.length > 0 && (

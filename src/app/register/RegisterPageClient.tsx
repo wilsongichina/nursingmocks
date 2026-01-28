@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Inter } from "next/font/google";
 import { useAuth } from "@/contexts/AuthContext";
+import Image from "next/image";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -498,7 +499,7 @@ export default function RegisterPageClient() {
                   <span>Loading...</span>
                 ) : (
                   <>
-                    <img
+                    <Image
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                       alt="Google"
                       className="w-[18px] h-[18px]"

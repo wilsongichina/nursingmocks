@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/layout/SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface SubPageContent {
   pageName?: string;
@@ -112,10 +113,10 @@ function EditSubPageContent({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.subPageId}`,
+              `${getSiteUrl()}/${resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -143,8 +144,8 @@ function EditSubPageContent({
             keywords: `${resolvedParams.subPageId}, nursing entrance exam`,
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
-            ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
+            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: `${getSiteUrl()}/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {

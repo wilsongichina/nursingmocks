@@ -7,6 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
+import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface ServiceContent {
   meta: {
@@ -100,8 +101,8 @@ export default function EditNursingExitExamPage() {
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
+            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: pageData.meta?.canonicalUrl || `${getSiteUrl()}/nursing-exit-exam`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -148,8 +149,8 @@ export default function EditNursingExitExamPage() {
             keywords: "nursing exit exam, nursing school, exam preparation",
             ogTitle: "Nursing Exit Exam | TeasGurus",
             ogDescription: "Comprehensive guide to nursing exit exams",
-            ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam`,
+            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: `${getSiteUrl()}/nursing-exit-exam`,
           },
           schema: "",
           hero: {

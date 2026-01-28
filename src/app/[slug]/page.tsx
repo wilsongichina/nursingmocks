@@ -5,9 +5,10 @@ import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
 import TiptapContentRenderer from "@/components/editor/TiptapContentRenderer";
 import QuestionCard from "@/components/quiz/QuestionCard";
-import QuestionSetsSection from "@/components/ui/QuestionSetsSection";
+import QuizCTACard from "@/components/quiz/QuizCTACard";
 import FAQAccordion from "@/components/ui/FAQAccordion";
 import KbArticleViewer from "@/components/knowledge-base/KbArticleViewer";
+import { getSiteUrl, getImageUrl } from "@/lib/config";
 import {
   getRouteMappingBySlugOnly,
   getPageByContentPath,
@@ -24,6 +25,7 @@ import {
   getNursingExitExamQuizzes,
   getAllQuestionTypes,
   getRouteMappingSlugsByIds,
+  getRouteMappingById,
   countNestedPageQuestions,
   countTopicQuestions,
   countSubPageQuestions,
@@ -469,12 +471,10 @@ export async function generateMetadata({
           description: data.meta.ogDescription || data.meta.description || "",
           url:
             data.meta.canonicalUrl ||
-            `${
-              process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
-            }/${slug}`,
+            `${getSiteUrl()}/${slug}`,
           images: [
             {
-              url: data.meta.ogImage || "/teas-gurus-logo.png",
+              url: data.meta.ogImage ? getImageUrl(data.meta.ogImage) : getImageUrl("/teas-gurus-logo.png"),
               width: 1200,
               height: 630,
               alt: data.meta.title || slug,
@@ -482,7 +482,7 @@ export async function generateMetadata({
           ],
         },
         alternates: {
-          canonical: data.meta.canonicalUrl || `/${slug}`,
+          canonical: data.meta.canonicalUrl || `${getSiteUrl()}/${slug}`,
         },
       };
     }
@@ -602,11 +602,29 @@ export default async function DynamicPage({
         ? questionsResult.data
         : [];
 
-    const questions = allQuestions.filter((question: any) => {
+    const filteredQuestions = allQuestions.filter((question: any) => {
       const questionTypeId =
         question.questionTypeId || question.question_type_id;
       return allowedQuestionTypes.includes(questionTypeId);
     });
+
+    // Only show the last 10 questions
+    const questions = filteredQuestions.slice(-10);
+
+    // Get nested page slug for back button
+    let nestedPageSlug = "";
+    if (mapping.nestedPageId) {
+      const nestedPageMappingResult = await getRouteMappingById({
+        pillarId,
+        type: "nested",
+        id: mapping.nestedPageId,
+        subPageId: mapping.subPageId,
+      });
+      if (nestedPageMappingResult.success && nestedPageMappingResult.data) {
+        const nestedPageData = nestedPageMappingResult.data as any;
+        nestedPageSlug = nestedPageData.slug || "";
+      }
+    }
 
     // Load related quizzes from the same parent
     let relatedQuizzes: any[] = [];
@@ -752,34 +770,17 @@ export default async function DynamicPage({
 
         {/* Hero Section */}
         <section className="mb-7">
-          <div className="max-w-[1220px] mx-auto px-4 py-6 md:py-10">
-            {/* Breadcrumbs */}
-            <div className="flex flex-wrap gap-1.5 text-xs mb-2.5 text-[#7a819c]">
-              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
-                ATI TEAS
-              </span>
-              <span className="text-[11px] text-[#a0a5bf]">›</span>
-              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
-                English
-              </span>
-              <span className="text-[11px] text-[#a0a5bf]">›</span>
-              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
-                Question Sets
-              </span>
-              <span className="text-[11px] text-[#a0a5bf]">›</span>
-              <span className="px-2.5 py-1 rounded-full bg-white/92 border border-dashed border-[rgba(187,192,234,0.95)] text-[11px]">
-                Set 1
-              </span>
-            </div>
-
+          <div className="px-5 py-6 md:px-5 md:py-10 sm:px-[14px] sm:py-[18px]">
             {/* Back Link */}
-            <a
-              href="#"
-              className="inline-flex items-center gap-1.5 text-[13px] text-[#4f46e5] no-underline mb-3 hover:underline"
-            >
-              <span className="text-base">←</span>
-              <span>Back to ATI TEAS English Questions</span>
-            </a>
+            {nestedPageSlug && (
+              <a
+                href={`/${nestedPageSlug}`}
+                className="inline-flex items-center gap-1.5 text-[13px] text-[#4f46e5] no-underline mb-3 hover:underline"
+              >
+                <span className="text-base">←</span>
+                <span>Back to ATI TEAS English Questions</span>
+              </a>
+            )}
 
             {/* Hero Card */}
             <div className="relative flex flex-col lg:flex-row items-stretch gap-5 lg:gap-5.5 p-6 md:p-7 lg:p-6 rounded-[26px] md:rounded-[20px] border border-[rgba(226,229,249,0.9)] shadow-[0_18px_45px_rgba(15,23,42,0.08)] bg-gradient-to-br from-[#f5f1ff] to-[#e5efff] overflow-hidden">
@@ -829,7 +830,7 @@ export default async function DynamicPage({
                   </a>
                   <a
                     href="#"
-                    className="text-[13px] text-[#e0ecff] no-underline inline-flex items-center gap-1 hover:underline"
+                    className="text-[13px] text-black no-underline inline-flex items-center gap-1 hover:underline"
                   >
                     <span>Browse all English sets</span>
                     <span className="text-[15px]">↗</span>
@@ -856,38 +857,35 @@ export default async function DynamicPage({
                 </div>
               </div>
 
-              {/* Side Banner */}
-              <aside className="relative z-10 w-full lg:w-auto lg:flex-[0_0_38%] lg:max-w-[38%] bg-white rounded-[26px] md:rounded-[20px] p-5 md:p-4.5 border border-[rgba(226,229,249,0.9)] shadow-[0_10px_30px_rgba(15,23,42,0.06)] flex flex-col justify-between gap-2.5">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <h2 className="m-0 text-[15px] font-bold">Set overview</h2>
-                    <span className="px-2.5 py-1 rounded-full bg-[#ecfdf3] border border-[#bbf7d0] text-[11px] text-[#16a34a]">
+              {/* Set Overview Card */}
+              <aside className="relative z-10 w-full lg:w-auto lg:flex-[0_0_38%] lg:max-w-[38%] sm:max-w-[420px] sm:mx-auto sm:mt-1">
+                <div className="max-w-[420px] w-full bg-white rounded-[22px] p-4 pb-[18px] shadow-[0_16px_40px_rgba(15,23,42,0.16)] border border-[rgba(148,163,184,0.45)]">
+                  <div className="mb-3">
+                    <div className="text-[13px] font-bold uppercase tracking-[0.13em] text-[#4b5563] mb-1">
+                      Set overview
+                    </div>
+                    <div className="text-[11px] text-[#6b7280]">
                       Student view
-                    </span>
+                    </div>
                   </div>
 
-                  <ul className="list-none m-0 pt-1 grid gap-2.5 text-[13px] text-[#7a819c] leading-relaxed">
-                    <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
-                      <span>{questions.length} TEAS-style English questions focused on ATI TEAS 7 exam skills.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
-                      <span>Targets punctuation, capitalization, sentence structure, and usage.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
-                      <span>Correct answers and full explanations stay blurred until you click <strong>Show</strong>.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[rgba(106,92,255,0.65)] mt-1.5 flex-shrink-0" />
-                      <span>Perfect warm-up before taking a full-length ATI TEAS English practice test.</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-1 pt-2 border-t border-dashed border-[rgba(222,225,248,0.9)] text-[11px] text-[#a0a5bf]">
-                  Tip: Answer each question on your own first, then reveal the explanation and note <strong>why</strong> the correct option works.
+                  <div className="space-y-2.5 text-[13px] text-[#4b5563] leading-relaxed">
+                    <p>
+                      {questions.length} TEAS-style English questions focused on ATI TEAS 7 exam skills.
+                    </p>
+                    <p>
+                      Targets punctuation, capitalization, sentence structure, and usage.
+                    </p>
+                    <p>
+                      Correct answers and full explanations stay blurred until you click Show.
+                    </p>
+                    <p>
+                      Perfect warm-up before taking a full-length ATI TEAS English practice test.
+                    </p>
+                    <p className="pt-1 border-t border-[#e5e7eb]">
+                      <strong className="text-[#4b5563]">Tip:</strong> Answer each question on your own first, then reveal the explanation and note why the correct option works.
+                    </p>
+                  </div>
                 </div>
               </aside>
             </div>
@@ -896,7 +894,7 @@ export default async function DynamicPage({
 
         {/* Progress / Info Bar */}
         {questions.length > 0 && (
-          <section className="mt-4.5 mb-3.5 px-3.5 py-2.5 rounded-2xl bg-white/96 border border-dashed border-[rgba(206,210,244,0.95)] flex flex-wrap items-center justify-between gap-2.5 max-w-[1220px] mx-auto">
+          <section className="mt-4.5 mb-3.5 py-2.5 rounded-2xl bg-white/96 border border-dashed border-[rgba(206,210,244,0.95)] flex flex-wrap items-center justify-between gap-2.5 px-5 sm:px-[14px]">
             <div className="text-[13px] text-[#7a819c] flex items-center gap-2">
               <span>Set 1 · {questions.length} Questions</span>
               <span className="px-2.5 py-1 rounded-full bg-[#eef0ff] border border-[rgba(187,192,234,0.9)] text-[11px] text-[#a0a5bf]">
@@ -916,7 +914,7 @@ export default async function DynamicPage({
         )}
 
         {/* Questions */}
-        <main id="questions-start" className="mt-2.5 max-w-[1220px] mx-auto px-4">
+        <main id="questions-start" className="mt-2.5 px-5 sm:px-[14px]">
           {questions.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -993,44 +991,7 @@ export default async function DynamicPage({
                       totalQuestions={questions.length}
                     />
                     {/* CTA Band after question 2 */}
-                    {index === 1 && questions.length > 2 && (
-                      <section className="my-5.5 px-4.5 py-4 rounded-[20px] bg-gradient-to-br from-[#fef3c7] to-[#e0ecff] border border-[rgba(250,204,21,0.4)] shadow-[0_10px_30px_rgba(15,23,42,0.06)] flex flex-wrap gap-3.5 items-center justify-between">
-                        <div className="max-w-[620px]">
-                          <div className="text-[11px] tracking-[0.12em] uppercase text-[#92400e] font-semibold mb-1">
-                            Boost your TEAS English score
-                          </div>
-                          <div className="text-[15px] font-bold mb-1 text-[#202437]">
-                            Unlock more English sets, score tracking & timed exams
-                          </div>
-                          <p className="text-[13px] text-[#7a819c] mb-0">
-                            Enjoying Set 1? Create a free NursingMocks account to unlock all ATI TEAS English question
-                            sets, track your accuracy over time, and switch between review and exam mode whenever you need.
-                          </p>
-                          <div className="text-[11px] text-[#a0a5bf] mt-1">
-                            No credit card required · Cancel anytime · Ideal for serious TEAS prep.
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1.5 min-w-[190px] items-end">
-                          <Link
-                            href="/signup"
-                            className="inline-flex items-center justify-center gap-1.5 px-5.5 py-2.75 rounded-full border-none text-sm font-semibold text-white bg-gradient-to-br from-[#6a5cff] to-[#4f46e5] no-underline shadow-[0_12px_26px_rgba(80,72,220,0.55)] transition-all hover:-translate-y-px hover:shadow-[0_16px_34px_rgba(80,72,220,0.6)]"
-                          >
-                            <span>Create free account</span>
-                            <span>›</span>
-                          </Link>
-                          <Link
-                            href="/pricing"
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full border border-dashed border-[rgba(251,191,36,0.9)] bg-white/85 text-xs text-[#92400e] no-underline"
-                          >
-                            <span>View premium English bundles</span>
-                            <span>↗</span>
-                          </Link>
-                          <div className="text-[11px] text-[#a0a5bf] text-right">
-                            Students who practice with multiple sets improve English scores significantly.
-                          </div>
-                        </div>
-                      </section>
-                    )}
+                    {index === 1 && questions.length > 2 && <QuizCTACard />}
                   </div>
                 );
               })}
@@ -1040,7 +1001,7 @@ export default async function DynamicPage({
 
         {/* Related Sets Section */}
         {relatedQuizzes.length > 0 && (
-          <section className="mt-6 px-4.5 py-4.5 rounded-[20px] bg-white border border-[#e0e3f5] shadow-[0_10px_30px_rgba(15,23,42,0.06)] max-w-[1220px] mx-auto">
+          <section className="mt-6 py-4.5 rounded-[20px] bg-white border border-[#e0e3f5] shadow-[0_10px_30px_rgba(15,23,42,0.06)] px-5 sm:px-[14px]">
             <div className="flex justify-between items-center gap-2.5 mb-2">
               <div className="text-[15px] font-bold">Next ATI TEAS English Question Sets</div>
               <span className="px-2.25 py-0.75 rounded-full bg-[#f3f4ff] border border-dashed border-[rgba(177,181,233,0.9)] text-[11px] text-[#4f46e5]">
@@ -1097,9 +1058,9 @@ export default async function DynamicPage({
   let nestedPages: any[] = [];
   let topics: any[] = [];
   let quizzes: any[] = [];
-  let nestedPageSlugMap: Record<string, string> = {};
-  let topicSlugMap: Record<string, string> = {};
-  let quizSlugMap: Record<string, string> = {};
+  let _nestedPageSlugMap: Record<string, string> = {};
+  let _topicSlugMap: Record<string, string> = {};
+  const _quizSlugMap: Record<string, string> = {};
 
   if (pageType === "nested") {
     // Fetch question count for the nested page
@@ -1132,7 +1093,7 @@ export default async function DynamicPage({
           nestedPageId: mapping.nestedPageId,
         });
         if (slugMapResult.success) {
-          quizSlugMap = slugMapResult.slugMap;
+          const _quizSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for quizzes
         quizzes = await Promise.all(
@@ -1168,7 +1129,7 @@ export default async function DynamicPage({
           nestedPageId: mapping.nestedPageId,
         });
         if (slugMapResult.success) {
-          quizSlugMap = slugMapResult.slugMap;
+          const _quizSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for quizzes
         quizzes = await Promise.all(
@@ -1220,7 +1181,7 @@ export default async function DynamicPage({
           nestedPageId: mapping.nestedPageId,
         });
         if (slugMapResult.success) {
-          topicSlugMap = slugMapResult.slugMap;
+          _topicSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for topics
         topics = await Promise.all(
@@ -1266,7 +1227,7 @@ export default async function DynamicPage({
         topicId: mapping.topicId,
       });
       if (slugMapResult.success) {
-        quizSlugMap = slugMapResult.slugMap;
+        const _quizSlugMap = slugMapResult.slugMap;
       }
       // Fetch question counts for quizzes
       quizzes = await Promise.all(
@@ -1306,7 +1267,7 @@ export default async function DynamicPage({
           subPageId: mapping.subPageId,
         });
         if (slugMapResult.success) {
-          nestedPageSlugMap = slugMapResult.slugMap;
+          _nestedPageSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for nested pages
         nestedPages = await Promise.all(
@@ -1339,7 +1300,7 @@ export default async function DynamicPage({
           subPageId: mapping.subPageId,
         });
         if (slugMapResult.success) {
-          nestedPageSlugMap = slugMapResult.slugMap;
+          _nestedPageSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for nested pages
         nestedPages = await Promise.all(
@@ -1372,7 +1333,7 @@ export default async function DynamicPage({
           subPageId: mapping.subPageId,
         });
         if (slugMapResult.success) {
-          nestedPageSlugMap = slugMapResult.slugMap;
+          _nestedPageSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for nested pages (test bank nested pages have topics, so count through topics)
         nestedPages = await Promise.all(
@@ -1415,10 +1376,8 @@ export default async function DynamicPage({
       keywords: `${slug}`,
       ogTitle: `${slug} | TeasGurus`,
       ogDescription: `Content for ${slug}`,
-      ogImage: "/teas-gurus-logo.png",
-      canonicalUrl: `${
-        process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
-      }/${slug}`,
+      ogImage: getImageUrl("/teas-gurus-logo.png"),
+      canonicalUrl: `${getSiteUrl()}/${slug}`,
     },
     schema: pageData.schema || "",
     hero: {
@@ -1473,7 +1432,7 @@ export default async function DynamicPage({
         />
       )}
 
-      <div className="max-w-[1220px] mx-auto px-16 pt-8 pb-12">
+      <div className="px-5 pt-8 pb-12 md:px-5 sm:px-[14px] sm:pt-6 sm:pb-10">
         {/* Hero Section */}
         <section className="mb-7">
           {/* Hero Wrapper */}
@@ -1552,354 +1511,60 @@ export default async function DynamicPage({
               </p>
             </div>
 
-            {/* Hero Right - Knowledge Base Card (desktop) */}
-            <div className="relative z-10 pl-3 mt-3 items-end hidden lg:flex">
-              <div className="max-w-[480px] w-full bg-white rounded-[22px] p-[16px_18px_18px] shadow-[0_22px_60px_rgba(15,23,42,0.35)] border border-[rgba(148,163,184,0.55)]">
-                <div className="flex items-center justify-between mb-4 gap-[10px]">
-                  <div>
-                    <div className="text-base font-semibold text-[#202437]">
-                      {content.pageName} Knowledge Base
-                    </div>
-                    <div className="text-xs text-[#9ca3af] mt-[2px]">
-                      Quick answers and guides to go with your{" "}
-                      {content.pageName} practice.
-                    </div>
+            {/* KB Articles Header Card */}
+            <div className="relative z-10 pl-3 mt-3 items-end hidden lg:flex sm:max-w-[420px] sm:mx-auto sm:mt-1">
+              <div className="max-w-[420px] w-full bg-white rounded-[22px] p-4 pb-[18px] shadow-[0_16px_40px_rgba(15,23,42,0.16)] border border-[rgba(148,163,184,0.45)]">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="text-[13px] font-bold uppercase tracking-[0.13em] text-[#4b5563]">
+                    {content.pageName || pageData?.pageName || pageData?.seoLabel || "Page"} KB Snapshot
                   </div>
-                  <span className="text-[11px] px-2 py-1 rounded-full bg-[#f1f0ff] text-[#5548e0] uppercase tracking-[0.08em] whitespace-nowrap">
-                    Articles
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-[14px_18px]">
-                  <div className="mb-1">
-                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
-                      1 · TEAS Basics & Foundations
-                    </div>
-                    <ul className="list-none text-xs text-[#4b5563] pl-0">
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/what-is-the-teas-test"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          What Is the TEAS Test?
-                        </Link>
-                      </li>
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/what-is-on-the-teas-test"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          What Is on the TEAS Test?
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mb-1">
-                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
-                      2 · Study Guides & Preparation
-                    </div>
-                    <ul className="list-none text-xs text-[#4b5563] pl-0">
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/how-to-study-for-the-teas"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          How to Study for the TEAS Test?
-                        </Link>
-                      </li>
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/how-long-should-i-study"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          How Long Should I Study for the TEAS?
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mb-1">
-                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
-                      3 · Registration, Cost & Policies
-                    </div>
-                    <ul className="list-none text-xs text-[#4b5563] pl-0">
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/how-to-register-for-the-teas"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          How to Register for the TEAS Test
-                        </Link>
-                      </li>
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/how-much-does-the-teas-cost"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          How Much Does the TEAS Test Cost?
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mb-1">
-                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
-                      4 · Scoring, Results & Interpretation
-                    </div>
-                    <ul className="list-none text-xs text-[#4b5563] pl-0">
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/what-is-a-good-teas-score"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          What Is a Good TEAS Score?
-                        </Link>
-                      </li>
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/what-is-passing-teas-score"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          What Is the Passing TEAS Score?
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mb-1">
-                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
-                      5 · Test Day & Experience
-                    </div>
-                    <ul className="list-none text-xs text-[#4b5563] pl-0">
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/test-day-tips"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          TEAS 7 Test Day Tips
-                        </Link>
-                      </li>
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/online-vs-in-person"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          Online vs In-Person TEAS Exam
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mb-1">
-                    <div className="text-[13px] font-semibold mb-1 text-[#202437]">
-                      6 · FAQs & Common Questions
-                    </div>
-                    <ul className="list-none text-xs text-[#4b5563] pl-0">
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/faq-calculators"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          Are Calculators Allowed on the TEAS?
-                        </Link>
-                      </li>
-                      <li className="mt-[2px]">
-                        <Link
-                          href="/kb/teas/faq-retake-policy"
-                          className="text-[#2563eb] no-underline hover:underline break-words"
-                        >
-                          How Many Times Can I Retake the TEAS?
-                        </Link>
-                      </li>
-                    </ul>
+                  <div className="text-[11px] py-1 px-2.5 rounded-full bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] whitespace-nowrap">
+                    Active Learning
                   </div>
                 </div>
 
-                <div className="mt-3 text-xs text-right w-full">
-                  <Link href="/kb/teas" className="text-[#6b21a8] font-medium">
-                    View all {content.pageName} Knowledge Base articles →
-                  </Link>
+                <div className="grid grid-cols-2 gap-2.5 gap-x-3 mb-3">
+                  <div className="rounded-[14px] border border-[#e5e7eb] p-2 pb-2.5 bg-[#f9fafb]">
+                    <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">
+                      Articles Read
+                    </div>
+                    <div className="text-base font-bold mb-0.5">7</div>
+                    <div className="text-[11.5px] text-[#6b7280]">Last 7 days</div>
+                  </div>
+                  <div className="rounded-[14px] border border-[#e5e7eb] p-2 pb-2.5 bg-[#f9fafb]">
+                    <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">
+                      Most Viewed
+                    </div>
+                    <div className="text-base font-bold mb-0.5">Basics</div>
+                    <div className="text-[11.5px] text-[#6b7280]">Getting Started</div>
+                  </div>
+                  <div className="rounded-[14px] border border-[#e5e7eb] p-2 pb-2.5 bg-[#f9fafb]">
+                    <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">
+                      Practice Started
+                    </div>
+                    <div className="text-base font-bold mb-0.5">5</div>
+                    <div className="text-[11.5px] text-[#6b7280]">From KB articles</div>
+                  </div>
+                  <div className="rounded-[14px] border border-[#e5e7eb] p-2 pb-2.5 bg-[#f9fafb]">
+                    <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">
+                      Your Focus
+                    </div>
+                    <div className="text-base font-bold mb-0.5">Study</div>
+                    <div className="text-[11.5px] text-[#6b7280]">Preparation guides</div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] uppercase tracking-[0.14em] text-[#9ca3af] mb-1">
+                  Knowledge Base coverage for your plan
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-[#e5e7eb] overflow-hidden relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-[72%] bg-gradient-to-r from-[#4f46e5] to-[#8b5cf6] rounded-full" />
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Question Sets Section */}
-        <section id="question-sets" className="mt-4">
-          <QuestionSetsSection
-            pageName={content.pageName || slug}
-            questionSets={[
-              ...nestedPages.map((nestedPage: any) => {
-                const nestedSlug =
-                  nestedPageSlugMap[nestedPage.id] ||
-                  nestedPage.slug ||
-                  nestedPage.id;
-                const nestedPageName =
-                  nestedPage.pageName || nestedPage.heading || nestedPage.id;
-                const nameLower = nestedPageName.toLowerCase();
-                const parentPageName = content.pageName || slug;
-
-                const getSubject = () => {
-                  if (nameLower.includes("math")) return "Math";
-                  if (nameLower.includes("reading")) return "Reading";
-                  if (nameLower.includes("science")) return "Science";
-                  if (nameLower.includes("english")) return "English";
-                  if (nameLower.includes("all")) return "All Subjects";
-                  return null;
-                };
-
-                const getTag = () => {
-                  if (nameLower.includes("math")) return "M1";
-                  if (nameLower.includes("reading")) return "R1";
-                  if (nameLower.includes("science")) return "S1";
-                  if (nameLower.includes("english")) return "E1";
-                  if (nameLower.includes("all")) return "A1";
-                  return undefined;
-                };
-
-                const getSubtitle = () => {
-                  if (nameLower.includes("math"))
-                    return "Numbers, ratios, percentages";
-                  if (nameLower.includes("reading"))
-                    return "Passages, inference, main idea";
-                  if (nameLower.includes("science"))
-                    return "A&P, biology, chemistry";
-                  if (nameLower.includes("english"))
-                    return "Grammar, spelling, punctuation";
-                  if (nameLower.includes("all"))
-                    return "Mixed-section practice";
-                  return "";
-                };
-
-                const subject = getSubject();
-                const title = subject
-                  ? `${parentPageName} ${subject} Questions`
-                  : nestedPageName;
-
-                return {
-                  id: nestedPage.id,
-                  title: title,
-                  subtitle: getSubtitle(),
-                  questionCount: nestedPage.questionCount || 0,
-                  tag: getTag(),
-                  slug: nestedSlug,
-                };
-              }),
-              ...topics.map((topic: any) => {
-                const topicSlug =
-                  topicSlugMap[topic.id] || topic.slug || topic.id;
-                const topicName = topic.pageName || topic.heading || topic.id;
-                const nameLower = topicName.toLowerCase();
-                const parentPageName = content.pageName || slug;
-
-                const getSubject = () => {
-                  if (nameLower.includes("math")) return "Math";
-                  if (nameLower.includes("reading")) return "Reading";
-                  if (nameLower.includes("science")) return "Science";
-                  if (nameLower.includes("english")) return "English";
-                  if (nameLower.includes("all")) return "All Subjects";
-                  return null;
-                };
-
-                const getTag = () => {
-                  if (nameLower.includes("math")) return "M1";
-                  if (nameLower.includes("reading")) return "R1";
-                  if (nameLower.includes("science")) return "S1";
-                  if (nameLower.includes("english")) return "E1";
-                  if (nameLower.includes("all")) return "A1";
-                  return undefined;
-                };
-
-                const getSubtitle = () => {
-                  if (nameLower.includes("math"))
-                    return "Numbers, ratios, percentages";
-                  if (nameLower.includes("reading"))
-                    return "Passages, inference, main idea";
-                  if (nameLower.includes("science"))
-                    return "A&P, biology, chemistry";
-                  if (nameLower.includes("english"))
-                    return "Grammar, spelling, punctuation";
-                  if (nameLower.includes("all"))
-                    return "Mixed-section practice";
-                  return "";
-                };
-
-                const subject = getSubject();
-                const title = subject
-                  ? `${parentPageName} ${subject} Questions`
-                  : topicName;
-
-                return {
-                  id: topic.id,
-                  title: title,
-                  subtitle: getSubtitle(),
-                  questionCount: topic.questionCount || 0,
-                  tag: getTag(),
-                  slug: topicSlug,
-                };
-              }),
-              ...quizzes.map((quiz: any) => {
-                const quizSlug = quizSlugMap[quiz.id] || quiz.slug || quiz.id;
-                const quizName =
-                  quiz.pageName ||
-                  quiz.heading ||
-                  quiz.title ||
-                  quiz.quizName ||
-                  quiz.id;
-                const nameLower = quizName.toLowerCase();
-                const parentPageName = content.pageName || slug;
-
-                const getSubject = () => {
-                  if (nameLower.includes("math")) return "Math";
-                  if (nameLower.includes("reading")) return "Reading";
-                  if (nameLower.includes("science")) return "Science";
-                  if (nameLower.includes("english")) return "English";
-                  if (nameLower.includes("all")) return "All Subjects";
-                  return null;
-                };
-
-                const getTag = () => {
-                  if (nameLower.includes("math")) return "M1";
-                  if (nameLower.includes("reading")) return "R1";
-                  if (nameLower.includes("science")) return "S1";
-                  if (nameLower.includes("english")) return "E1";
-                  if (nameLower.includes("all")) return "A1";
-                  return undefined;
-                };
-
-                const getSubtitle = () => {
-                  if (nameLower.includes("math"))
-                    return "Numbers, ratios, percentages";
-                  if (nameLower.includes("reading"))
-                    return "Passages, inference, main idea";
-                  if (nameLower.includes("science"))
-                    return "A&P, biology, chemistry";
-                  if (nameLower.includes("english"))
-                    return "Grammar, spelling, punctuation";
-                  if (nameLower.includes("all"))
-                    return "Mixed-section practice";
-                  return "";
-                };
-
-                const subject = getSubject();
-                const title = subject
-                  ? `${parentPageName} ${subject} Questions`
-                  : quizName;
-
-                return {
-                  id: quiz.id,
-                  title: title,
-                  subtitle: getSubtitle(),
-                  questionCount: quiz.questionCount || 0,
-                  tag: getTag(),
-                  slug: quizSlug,
-                };
-              }),
-            ]}
-          />
-        </section>
 
         {/* MOBILE-ONLY KB HERO CARD (shown after question sets) */}
         <section className="mt-[18px] lg:hidden">
@@ -2074,49 +1739,6 @@ export default async function DynamicPage({
 
         {/* CONTENT AREA */}
         <section className="mt-8">
-          {/* Summary widget */}
-          <div className="bg-gradient-to-br from-white to-[#edf3ff] rounded-[18px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[16px_18px_14px] max-w-[900px] mx-auto my-7 flex flex-col items-center text-center gap-4 w-full">
-            <div className="text-[13px] text-[#7a819c] max-w-[720px]">
-              <div className="text-[11px] uppercase tracking-[0.14em] text-[#7a819c] mb-1">
-                Article summary
-              </div>
-              <div className="text-base font-semibold mb-[6px] text-[#202437]">
-                Big-picture view of the {content.pageName} exam
-              </div>
-              <div>
-                This page gives you a clear snapshot of what the{" "}
-                {content.pageName}
-                looks like on test day and how to use our practice questions the
-                smart way. You'll see how many questions are on the exam, how
-                much time you get for each section, and how to blend skill
-                practice with full-length practice tests inside your dashboard.
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-[10px_24px] items-center justify-center text-xs text-[#7a819c] w-full">
-              <div className="min-w-[110px]">
-                <div className="text-[11px] uppercase tracking-[0.12em] text-[#7a819c] mb-[2px]">
-                  Total questions
-                </div>
-                <div className="text-[15px] font-semibold">170</div>
-              </div>
-              <div className="min-w-[110px]">
-                <div className="text-[11px] uppercase tracking-[0.12em] text-[#7a819c] mb-[2px]">
-                  Scored questions
-                </div>
-                <div className="text-[15px] font-semibold">150</div>
-              </div>
-              <div className="min-w-[110px]">
-                <div className="text-[11px] uppercase tracking-[0.12em] text-[#7a819c] mb-[2px]">
-                  Exam time
-                </div>
-                <div className="text-[15px] font-semibold">209 minutes</div>
-              </div>
-              <div className="inline-flex items-center px-[9px] py-[3px] rounded-full text-[11px] border border-[#d1d5db] bg-[#f9fafb] text-[#7a819c] gap-[6px] whitespace-nowrap">
-                <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
-                Version: {content.pageName}
-              </div>
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.1fr)_minmax(260px,1fr)] gap-5 items-start w-full">
             {/* LEFT COLUMN: Article + FAQ */}
@@ -2226,80 +1848,6 @@ export default async function DynamicPage({
                 </ul>
               </div>
 
-              <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
-                <div className="text-sm font-semibold mb-1 text-[#202437]">
-                  Quick {content.pageName} facts
-                </div>
-                <div className="text-xs text-[#6b7280] mb-2">
-                  Useful numbers you can memorize quickly.
-                </div>
-                <div className="grid grid-cols-[1.1fr_1fr] gap-[4px_12px] text-xs mt-1">
-                  <div className="text-[#7a819c]">Total questions</div>
-                  <div className="font-medium text-[#202437]">170</div>
-                  <div className="text-[#7a819c]">Scored questions</div>
-                  <div className="font-medium text-[#202437]">150</div>
-                  <div className="text-[#7a819c]">Total time</div>
-                  <div className="font-medium text-[#202437]">209 minutes</div>
-                  <div className="text-[#7a819c]">Sections</div>
-                  <div className="font-medium text-[#202437]">4</div>
-                </div>
-                <div className="mt-2">
-                  <span className="inline-flex items-center rounded-full px-[7px] py-[2px] text-[11px] border border-[#bbf7d0] bg-[#dcfce7] text-[#166534] gap-1">
-                    <span className="w-[7px] h-[7px] bg-[#22c55e] rounded-full" />
-                    Good to memorize before exam day
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
-                <div className="text-sm font-semibold mb-1 text-[#202437]">
-                  Related {content.pageName} articles
-                </div>
-                <div className="text-xs text-[#6b7280] mb-2">
-                  These guides build on what you just read about{" "}
-                  {content.pageName} structure.
-                </div>
-                <ul className="list-none p-0 m-0 text-[13px]">
-                  <li className="py-1 border-b border-[#e5e7eb]">
-                    <a
-                      href="#"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      {content.pageName} Reading section: question types and
-                      timing
-                    </a>
-                  </li>
-                  <li className="py-1 border-b border-[#e5e7eb]">
-                    <a
-                      href="#"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      {content.pageName} Math topics you should master first
-                    </a>
-                  </li>
-                  <li className="py-1 border-b border-[#e5e7eb]">
-                    <a
-                      href="#"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      How {content.pageName} scoring works (with example score
-                      reports)
-                    </a>
-                  </li>
-                  <li className="py-1 border-b-0">
-                    <a
-                      href="#"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      How to build a 4-week {content.pageName} study plan
-                    </a>
-                  </li>
-                </ul>
-                <button className="mt-2 rounded-full border border-[#6a5cff] bg-white text-[#5548e0] px-3 py-[7px] text-xs inline-flex items-center gap-[6px] cursor-pointer font-medium whitespace-nowrap">
-                  <span className="text-sm leading-none">▶</span>
-                  View all {content.pageName} articles
-                </button>
-              </div>
             </aside>
           </div>
         </section>

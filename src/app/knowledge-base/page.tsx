@@ -47,7 +47,6 @@ interface SubPage {
 export default function KnowledgeBaseHubPage() {
   const [subPages, setSubPages] = useState<SubPage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const loadSubPages = async () => {
@@ -194,17 +193,6 @@ export default function KnowledgeBaseHubPage() {
     }
   };
 
-  // Filter sub-pages based on search query
-  const filteredSubPages = subPages.filter((subPage) => {
-    if (!searchQuery.trim()) return true;
-    
-    const query = searchQuery.toLowerCase();
-    const pageName = (subPage.pageName || subPage.hero?.title || subPage.title || subPage.heading || subPage.id || "").toLowerCase();
-    const description = (subPage.description || subPage.hero?.description || "").toLowerCase();
-    const slug = (subPage.slug || subPage.id || "").toLowerCase();
-    
-    return pageName.includes(query) || description.includes(query) || slug.includes(query);
-  });
 
   return (
     <Layout>
@@ -250,10 +238,6 @@ export default function KnowledgeBaseHubPage() {
             </div>
 
             <div className="hero-actions">
-              <a href="#search" className="btn-primary">
-                <span className="btn-icon">🔍</span>
-                <span>Start With A Quick Search</span>
-              </a>
               <a href="#kb-hubs" className="btn-ghost">
                 <span>Browse Exam Knowledge Base Hubs</span>
               </a>
@@ -310,38 +294,6 @@ export default function KnowledgeBaseHubPage() {
           </div>
         </section>
 
-        {/* SEARCH */}
-        <section className="search-shell" id="search">
-          <div className="search-icon-bubble">
-            <div className="search-icon-inner"></div>
-          </div>
-          <div className="search-main">
-            <input
-              className="search-input"
-              placeholder='Search articles, guides, and FAQs (e.g. "How does TEAS Reading scoring work?")'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  // Scroll to results if there's a search query
-                  if (searchQuery.trim()) {
-                    document.getElementById("kb-hubs")?.scrollIntoView({ behavior: "smooth" });
-                  }
-                }
-              }}
-            />
-            <div className="search-hint-row">
-              <span>
-                Search across TEAS, HESI, nursing test banks, exit exams, and
-                account help in one place.
-              </span>
-              <span className="key-pill">Press Enter</span>
-            </div>
-          </div>
-          <div className="search-side-hint">Tip: try &quot;Review Mode vs Exam Mode&quot;</div>
-        </section>
-
         {/* HUB GRID */}
         <div className="section-label" id="kb-hubs">
           Exam &amp; Platform Knowledge Base Hubs
@@ -351,14 +303,14 @@ export default function KnowledgeBaseHubPage() {
             <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px" }}>
               <div style={{ fontSize: "14px", color: "#6b7280" }}>Loading sub-pages...</div>
             </div>
-          ) : filteredSubPages.length === 0 ? (
+          ) : subPages.length === 0 ? (
             <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px" }}>
               <div style={{ fontSize: "14px", color: "#6b7280" }}>
-                {searchQuery.trim() ? `No sub-pages found matching "${searchQuery}"` : "No sub-pages found."}
+                No sub-pages found.
               </div>
             </div>
           ) : (
-            filteredSubPages.map((subPage) => {
+            subPages.map((subPage) => {
               const pageName = subPage.pageName || subPage.hero?.title || subPage.title || subPage.heading || subPage.id;
               const dbDescription = subPage.description || subPage.hero?.description || "";
               const slug = subPage.slug || subPage.id;
@@ -437,48 +389,6 @@ export default function KnowledgeBaseHubPage() {
               );
             })
           )}
-        </section>
-
-        {/* POPULAR TOPICS */}
-        <section className="popular">
-          <div className="section-label">Quick Links</div>
-          <div className="popular-list">
-            <article className="popular-card">
-              <h3 className="popular-title">How Does Review Mode Work?</h3>
-              <p className="popular-desc">
-                Learn what happens in Review Mode, when answers and explanations
-                are shown, and how it differs from Exam Mode across TEAS, HESI,
-                test banks, and exit exams.{" "}
-                <a href="#" className="popular-link">
-                  Read the Review Mode guide →
-                </a>
-              </p>
-            </article>
-
-            <article className="popular-card">
-              <h3 className="popular-title">Understanding Your Mastery Score</h3>
-              <p className="popular-desc">
-                See how the Mastery Engine calculates your skill percentages
-                based on the questions you answer, not just your raw exam
-                scores.{" "}
-                <a href="#" className="popular-link">
-                  Learn how mastery is calculated →
-                </a>
-              </p>
-            </article>
-
-            <article className="popular-card">
-              <h3 className="popular-title">How Many Questions Per Day?</h3>
-              <p className="popular-desc">
-                Simple guidelines for setting a daily question goal that fits
-                around work, family, and clinicals without burning out before
-                exam day.{" "}
-                <a href="#" className="popular-link">
-                  See daily study recommendations →
-                </a>
-              </p>
-            </article>
-          </div>
         </section>
         </div>
       </div>
@@ -1229,7 +1139,6 @@ export default function KnowledgeBaseHubPage() {
           overflow: hidden;
           min-height: 78px;
         }
-
         .hub-links {
           font-size: 12px;
           color: #6b7280;
@@ -1444,4 +1353,5 @@ export default function KnowledgeBaseHubPage() {
     </Layout>
   );
 }
+
 

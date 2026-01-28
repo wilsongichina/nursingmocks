@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/layout/SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface KbArticleContent {
   pageName?: string;
@@ -114,10 +115,10 @@ function EditKbArticleContent({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.kbArticleId}`,
+              `${getSiteUrl()}/${resolvedParams.kbArticleId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -147,8 +148,8 @@ function EditKbArticleContent({
             keywords: `${resolvedParams.kbArticleId}, nursing test bank`,
             ogTitle: `${resolvedParams.kbArticleId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.kbArticleId}`,
-            ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.kbArticleId}`,
+            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: `${getSiteUrl()}/${resolvedParams.kbArticleId}`,
           },
           schema: "",
           hero: {

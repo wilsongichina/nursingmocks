@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import AuthProviderWrapper from "@/components/providers/AuthProviderWrapper";
-import { getSiteUrl, getSiteName } from "@/lib/config";
+import { getSiteUrl, getSiteName, getImageUrl } from "@/lib/config";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -11,7 +11,9 @@ const outfit = Outfit({
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
-const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "TEAS Gurus";
+const siteName = getSiteName();
+const siteUrl = getSiteUrl();
+const logoImageUrl = getImageUrl("/teas-gurus-logo.png");
 
 export const metadata: Metadata = {
   title: {
@@ -36,7 +38,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"),
+  metadataBase: new URL(siteUrl),
   alternates: {
     canonical: "/",
   },
@@ -51,14 +53,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com",
+    url: siteUrl,
     siteName: siteName,
     title: `${siteName} - Master the TEAS Exam with Expert Guidance`,
     description:
       "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
     images: [
       {
-        url: "/teas-gurus-logo.png",
+        url: logoImageUrl,
         width: 1200,
         height: 630,
         alt: `${siteName} - TEAS Exam Preparation`,
@@ -70,7 +72,7 @@ export const metadata: Metadata = {
     title: `${siteName} - Master the TEAS Exam with Expert Guidance`,
     description:
       "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
-    images: ["/teas-gurus-logo.png"],
+    images: [logoImageUrl],
   },
   robots: {
     index: true,
@@ -108,7 +110,7 @@ export default function RootLayout({
               description:
                 "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
               url: siteUrl,
-              logo: `${siteUrl}/teas-gurus-logo.png`,
+              logo: logoImageUrl,
               contactPoint: {
                 "@type": "ContactPoint",
                 telephone: "1-579-501-1983",

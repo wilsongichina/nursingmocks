@@ -50,7 +50,7 @@ export default function QuestionCard({
       {/* Question Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2.5 text-[13px] font-semibold">
-          <span>Question {index + 1} of {totalQuestions}</span>
+          <span className="text-black">Question {index + 1} of {totalQuestions}</span>
           <span className="px-2.5 py-1 rounded-full bg-[#eef0ff] border border-dashed border-[rgba(159,163,232,0.9)] text-[11px] text-[#a0a5bf]">
             {questionTypeName}
           </span>

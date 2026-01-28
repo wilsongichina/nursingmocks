@@ -1176,7 +1176,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
 
         {/* Main content with padding for mobile header */}
         <main className="md:pt-0 pt-16">{children}</main>
-        <NewFooter />
+        <NewFooter showSidebar={true} isCollapsed={isCollapsed} />
       </div>
       <FloatingWhatsAppButton />
       <TawkToChat />

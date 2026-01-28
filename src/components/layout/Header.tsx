@@ -203,9 +203,14 @@ export default function Header({
                 ></div>
               </button>
 
+              {/* Invisible bridge to prevent gap */}
+              {isCompanyDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 h-2" />
+              )}
+
               {/* Dropdown Menu */}
               {isCompanyDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div className="absolute top-full left-0 pt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   {companyItems.map((item) => {
                     const active = isActive(item.href);
                     return (
@@ -306,20 +311,12 @@ export default function Header({
                 )}
               </div>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
-                >
-                  Register
-                </Link>
-              </>
+              <Link
+                href="/register"
+                className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+              >
+                Get Started
+              </Link>
             )}
           </div>
           {/* Mobile menu button */}
@@ -514,18 +511,11 @@ export default function Header({
               ) : (
                 <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
                   <Link
-                    href="/login"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block w-full text-center px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border border-gray-300 rounded-lg transition-colors"
-                  >
-                    Login
-                  </Link>
-                  <Link
                     href="/register"
                     onClick={() => setIsMenuOpen(false)}
                     className="block w-full gradient-button text-white px-6 py-3 rounded-lg font-bold text-center"
                   >
-                    Register
+                    Get Started
                   </Link>
                 </div>
               )}

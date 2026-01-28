@@ -7,6 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
+import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface ServiceContent {
   meta: {
@@ -100,8 +101,8 @@ export default function EditNursingTestBankPage() {
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-test-bank`,
+            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: pageData.meta?.canonicalUrl || `${getSiteUrl()}/nursing-test-bank`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -148,8 +149,8 @@ export default function EditNursingTestBankPage() {
             keywords: "Nursing Test Bank, nursing school, exam preparation",
             ogTitle: "Nursing Test Bank | TeasGurus",
             ogDescription: "Comprehensive guide to Nursing Test Banks",
-            ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-test-bank`,
+            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: `${getSiteUrl()}/nursing-test-bank`,
           },
           schema: "",
           hero: {

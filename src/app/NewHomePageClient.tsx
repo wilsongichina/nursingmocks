@@ -1,12 +1,81 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
 import TawkToChat from "@/components/ui/TawkToChat";
 
+const QUIZ_QUESTIONS = [
+  {
+    id: 1,
+    question: "What are you preparing for first?",
+    options: [
+      "ATI TEAS entrance exam",
+      "HESI A2 entrance exam",
+      "ATI or HESI nursing test bank (class tests)",
+      "LPN or RN nursing exit exam"
+    ]
+  },
+  {
+    id: 2,
+    question: "How soon is your exam?",
+    options: [
+      "Less than 2 weeks",
+      "2–4 weeks",
+      "1–3 months",
+      "Just exploring"
+    ]
+  },
+  {
+    id: 3,
+    question: "What's your biggest challenge right now?",
+    options: [
+      "Understanding questions",
+      "Managing time",
+      "Weak subject areas",
+      "Test anxiety"
+    ]
+  },
+  {
+    id: 4,
+    question: "How do you prefer to study?",
+    options: [
+      "Full-length practice tests",
+      "Short skill-based quizzes",
+      "Review explanations only",
+      "A mix of everything"
+    ]
+  }
+];
+
 export default function NewHomePage() {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
+  const [_answers, setAnswers] = useState<Record<number, string>>({});
+  const [isQuizComplete, setIsQuizComplete] = useState(false);
+
+  const handleOptionSelect = (option: string) => {
+    const questionId = QUIZ_QUESTIONS[currentQuestionIndex].id;
+    setAnswers(prev => ({ ...prev, [questionId]: option }));
+
+    // Move to next question
+    if (currentQuestionIndex < QUIZ_QUESTIONS.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      // Quiz completed
+      setIsQuizComplete(true);
+    }
+  };
+
+  const handleResetQuiz = () => {
+    setIsQuizComplete(false);
+    setCurrentQuestionIndex(0);
+    setAnswers({});
+  };
+
+  const currentQuestion = QUIZ_QUESTIONS[currentQuestionIndex];
+  const totalQuestions = QUIZ_QUESTIONS.length;
   return (
     <div className="min-h-screen bg-[#f9fafb] font-[system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif]">
       <NewHeader />
@@ -52,43 +121,68 @@ export default function NewHomePage() {
                   Answer a few quick questions and we'll suggest where to start: TEAS, HESI A2, Nursing Test Banks, or Exit Exams.
                 </p>
 
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-[#9ca3af] mb-1">
-                    Question 1 Of 3
-                  </div>
-                  <div className="text-[14px] text-[#111827] mb-2" style={{ fontWeight: 500 }}>
-                    What Are You Preparing For First?
-                  </div>
-                  <div className="flex flex-col gap-1.5 mb-1.5">
-                    <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[7px] text-[13px] text-left cursor-pointer transition-all text-[#111827] hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      ATI TEAS entrance exam
-                    </button>
-                    <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[7px] text-[13px] text-left cursor-pointer transition-all text-[#111827] hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      HESI A2 entrance exam
-                    </button>
-                    <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[7px] text-[13px] text-left cursor-pointer transition-all text-[#111827] hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      ATI or HESI nursing test bank (class tests)
-                    </button>
-                    <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[7px] text-[13px] text-left cursor-pointer transition-all text-[#111827] hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      LPN or RN nursing exit exam
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-[#6b7280]">
-                    <div className="flex gap-1 items-center">
-                      <div className="w-3 h-[7px] rounded-full bg-[#4f46e5]"></div>
-                      <div className="w-[7px] h-[7px] rounded-full bg-[#e5e7eb]"></div>
-                      <div className="w-[7px] h-[7px] rounded-full bg-[#e5e7eb]"></div>
+                {!isQuizComplete && (
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-[#9ca3af] mb-1">
+                      Question {currentQuestionIndex + 1} Of {totalQuestions}
                     </div>
-                    <span>~3 minutes total</span>
+                    <div className="text-[14px] text-[#111827] mb-2" style={{ fontWeight: 500 }}>
+                      {currentQuestion.question}
+                    </div>
+                    <div className="flex flex-col gap-1.5 mb-1.5">
+                      {currentQuestion.options.map((option, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleOptionSelect(option)}
+                          className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[7px] text-[13px] text-left cursor-pointer transition-all text-[#111827] hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]"
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between mt-1 text-[11px] text-[#6b7280]">
+                      <div className="flex gap-1 items-center">
+                        {QUIZ_QUESTIONS.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`w-[7px] h-[7px] rounded-full ${
+                              index <= currentQuestionIndex
+                                ? "bg-[#4f46e5]"
+                                : "bg-[#e5e7eb]"
+                            }`}
+                          ></div>
+                        ))}
+                      </div>
+                      <span>~3 minutes total</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <button className="mt-2 w-full justify-center rounded-full px-4 py-[9px] text-[14px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
-                  Start The 3-Minute Study Path Quiz
-                </button>
-                <div className="text-[11px] text-[#9ca3af] mt-1 text-center">
-                  This is a sample UI. Hook up the button to your Next.js route or modal to run the full quiz.
-                </div>
+                {isQuizComplete && (
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-[#9ca3af] mb-1">
+                      Quiz Complete!
+                    </div>
+                    <div className="text-[14px] text-[#111827] mb-2" style={{ fontWeight: 500 }}>
+                      Thank you for completing the quiz!
+                    </div>
+                    <p className="text-[13px] text-[#6b7280] mb-3">
+                      Based on your answers, we recommend exploring our comprehensive study materials for your nursing journey.
+                    </p>
+                    <button
+                      onClick={handleResetQuiz}
+                      className="mt-2 w-full justify-center rounded-full px-4 py-[9px] text-[14px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center gap-1.5 whitespace-nowrap"
+                    >
+                      Take Quiz Again
+                    </button>
+                    <Link
+                      href="#exam-modules"
+                      className="mt-2 w-full justify-center rounded-full px-4 py-[9px] text-[14px] border border-[#6366f1] bg-[#6366f1] text-white hover:bg-[#4f46e5] hover:border-[#4f46e5] transition-all inline-flex items-center justify-center gap-1.5 whitespace-nowrap"
+                    >
+                      Explore Study Modules
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -170,11 +264,11 @@ export default function NewHomePage() {
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">LPN</div>
                     <div className="program-links">
-                      <Link href="/nursing-test-bank/lpn/ati" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">ATI – LPN test bank</strong>
                         <small className="text-[11px] text-[#6b7280]">Fundamentals, med-surg, pharm &amp; more</small>
                       </Link>
-                      <Link href="/nursing-test-bank/lpn/hesi" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">HESI – LPN test bank</strong>
                         <small className="text-[11px] text-[#6b7280]">Core modules &amp; practice sets</small>
                       </Link>
@@ -183,11 +277,11 @@ export default function NewHomePage() {
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">RN</div>
                     <div className="program-links">
-                      <Link href="/nursing-test-bank/rn/ati" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">ATI – RN test bank</strong>
                         <small className="text-[11px] text-[#6b7280]">Predictor-style question groups</small>
                       </Link>
-                      <Link href="/nursing-test-bank/rn/hesi" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">HESI – RN test bank</strong>
                         <small className="text-[11px] text-[#6b7280]">RN modules &amp; review sets</small>
                       </Link>
@@ -216,11 +310,11 @@ export default function NewHomePage() {
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">LPN</div>
                     <div className="program-links">
-                      <Link href="/nursing-exit-exams/ati-lpn" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">ATI – LPN exit exams</strong>
                         <small className="text-[11px] text-[#6b7280]">End-of-program blueprints</small>
                       </Link>
-                      <Link href="/nursing-exit-exams/hesi-lpn" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">HESI – LPN exit exams</strong>
                         <small className="text-[11px] text-[#6b7280]">Exit-style mock exams</small>
                       </Link>
@@ -229,11 +323,11 @@ export default function NewHomePage() {
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">RN</div>
                     <div className="program-links">
-                      <Link href="/nursing-exit-exams/ati-rn" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">ATI – RN exit exams</strong>
                         <small className="text-[11px] text-[#6b7280]">Comprehensive predictor-style sets</small>
                       </Link>
-                      <Link href="/nursing-exit-exams/hesi-rn" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="#" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">HESI – RN exit exams</strong>
                         <small className="text-[11px] text-[#6b7280]">Exit readiness practice</small>
                       </Link>
@@ -262,7 +356,7 @@ export default function NewHomePage() {
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">ATI</div>
                     <div className="program-links">
-                      <Link href="/ati-teas" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="/ati-teas-practice-test" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">ATI TEAS</strong>
                         <small className="text-[11px] text-[#6b7280]">Reading, math, science, English</small>
                       </Link>
@@ -271,7 +365,7 @@ export default function NewHomePage() {
                   <div>
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">HESI A2</div>
                     <div className="program-links">
-                      <Link href="/hesi-a2" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
+                      <Link href="/hesi-a2-practice-test" className="flex flex-col gap-0.5 p-1.5 mb-1.5 rounded-xl bg-[#f3f4ff] border border-[#e0e7ff] text-[13px] text-[#3730a3] hover:bg-[#eef2ff] hover:border-[#6366f1] hover:-translate-y-[1px] transition-all">
                         <strong className="font-semibold">HESI A2</strong>
                         <small className="text-[11px] text-[#6b7280]">Vocab, math, A&amp;P, grammar, biology</small>
                       </Link>

@@ -8,6 +8,7 @@ import {
   deleteNestedSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface ServiceContent {
   pageName?: string;
@@ -144,10 +145,10 @@ export default function ManageSubPage({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${resolvedParams.subPageId}`,
+              `${getSiteUrl()}/${resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -197,8 +198,8 @@ export default function ManageSubPage({
             keywords: `${resolvedParams.subPageId}, nursing entrance exam`,
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
-            ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
+            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: `${getSiteUrl()}/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {
@@ -341,10 +342,8 @@ export default function ManageSubPage({
           keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing entrance exam`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
-          ogImage: "/teas-gurus-logo.png",
-          canonicalUrl: `${
-            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
-          }/${normalizedNestedSubPageId}`,
+          ogImage: getImageUrl("/teas-gurus-logo.png"),
+          canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,
         },
         schema: "",
         hero: {

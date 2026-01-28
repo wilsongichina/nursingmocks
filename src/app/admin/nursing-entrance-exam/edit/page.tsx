@@ -7,6 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
+import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface ServiceContent {
   meta: {
@@ -100,8 +101,8 @@ export default function EditNursingEntranceExamPage() {
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-entrance-exam`,
+            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: pageData.meta?.canonicalUrl || `${getSiteUrl()}/nursing-entrance-exam`,
           },
           schema: pageData.schema || "",
           hero: {
@@ -148,8 +149,8 @@ export default function EditNursingEntranceExamPage() {
             keywords: "nursing entrance exam, nursing school, exam preparation",
             ogTitle: "Nursing Entrance Exam | TeasGurus",
             ogDescription: "Comprehensive guide to nursing entrance exams",
-            ogImage: "/teas-gurus-logo.png",
-            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-entrance-exam`,
+            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            canonicalUrl: `${getSiteUrl()}/nursing-entrance-exam`,
           },
           schema: "",
           hero: {

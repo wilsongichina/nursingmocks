@@ -20,3 +20,15 @@ export const getSiteDomain = (): string => {
 export const getSiteName = (): string => {
   return process.env.NEXT_PUBLIC_SITE_NAME || "TEAS Gurus";
 };
+
+/**
+ * Get full URL for an image path
+ * @param imagePath - Relative image path (e.g., "/teas-gurus-logo.png")
+ * @returns Full URL with site domain
+ */
+export const getImageUrl = (imagePath: string): string => {
+  const siteUrl = getSiteUrl();
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+  return `${siteUrl}${cleanPath}`;
+};
