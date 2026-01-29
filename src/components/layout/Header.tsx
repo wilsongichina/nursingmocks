@@ -210,7 +210,7 @@ export default function Header({
 
               {/* Dropdown Menu */}
               {isCompanyDropdownOpen && (
-                <div className="absolute top-full left-0 pt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div className="absolute top-full left-0 pt-2 w-48 sm:w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-[calc(100vh-100px)] overflow-y-auto">
                   {companyItems.map((item) => {
                     const active = isActive(item.href);
                     return (
@@ -292,7 +292,7 @@ export default function Header({
                 </button>
 
                 {isUserDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-[calc(100vh-100px)] overflow-y-auto">
                     <div className="px-4 py-2 border-b border-gray-200">
                       <p className="text-sm font-semibold text-gray-900">
                         {currentUser.displayName || "User"}

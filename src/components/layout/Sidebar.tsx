@@ -1544,7 +1544,7 @@ export default function Sidebar({
       {/* Modal for Nested Sub-Pages */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-2"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4"
           style={{
             background:
               "radial-gradient(circle at top, rgba(15, 23, 42, 0.26), rgba(15, 23, 42, 0.6))",
@@ -1552,8 +1552,9 @@ export default function Sidebar({
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-[20px] shadow-[0_20px_45px_rgba(15,23,42,0.22)] border border-[rgba(148,163,184,0.25)] w-full max-w-[840px] p-[14px] relative"
+            className="bg-white rounded-[20px] shadow-[0_20px_45px_rgba(15,23,42,0.22)] border border-[rgba(148,163,184,0.25)] w-full max-w-[840px] p-[14px] sm:p-4 relative max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: 'calc(100vh - 1rem)' }}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-2">

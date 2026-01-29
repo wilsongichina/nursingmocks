@@ -60,6 +60,8 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
               <Image
                 src="/teas-gurus-logo.png"
                 alt="TEAS Gurus Logo"
+                width={150}
+                height={40}
                 className="h-9 w-auto object-contain brightness-0 invert"
               />
             </Link>

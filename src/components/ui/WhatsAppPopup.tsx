@@ -66,15 +66,16 @@ export default function WhatsAppPopup() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
       onClick={handleBackdropClick}
     >
       {/* Popup */}
       <div
-        className={`bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 ${
+        className={`bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto ${
           isClosing ? "scale-95 opacity-0" : "scale-100 opacity-100"
         }`}
         onClick={handlePopupClick}
+        style={{ maxHeight: 'calc(100vh - 2rem)' }}
       >
         {/* Close Button */}
         <button
@@ -99,7 +100,7 @@ export default function WhatsAppPopup() {
         </button>
 
         {/* Gradient Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 p-6 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 p-4 sm:p-6 text-white relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
@@ -119,13 +120,13 @@ export default function WhatsAppPopup() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-center relative z-10">
+          <h2 className="text-xl sm:text-2xl font-bold text-center relative z-10">
             Need Help with Your TEAS Exam?
           </h2>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="space-y-4">
             <p className="text-gray-700 leading-relaxed">
               Ace your TEAS test from the comfort of home with our expert

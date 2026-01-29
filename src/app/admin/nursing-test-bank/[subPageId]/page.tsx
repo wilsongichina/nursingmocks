@@ -760,6 +760,30 @@ function EditSubPageContent({
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
                           className="text-xs font-medium text-[#3b3f57]"
+                          htmlFor="og-description"
+                        >
+                          OG description
+                        </label>
+                        <span className="text-[11px] text-[#a0a5bf]">
+                          Social preview
+                        </span>
+                      </div>
+                      <textarea
+                        id="og-description"
+                        value={content.meta.ogDescription}
+                        onChange={(e) =>
+                          updateContent("meta.ogDescription", e.target.value)
+                        }
+                        placeholder="Engaging description that will appear when this page is shared on social media."
+                        rows={3}
+                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[90px]"
+                      />
+                    </div>
+
+                    <div className="mb-3.5">
+                      <div className="flex justify-between items-baseline gap-3 mb-1">
+                        <label
+                          className="text-xs font-medium text-[#3b3f57]"
                           htmlFor="og-image"
                         >
                           OG image

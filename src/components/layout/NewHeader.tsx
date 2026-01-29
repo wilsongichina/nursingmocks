@@ -2,15 +2,27 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import UserProfileBadge from "./UserProfileBadge";
 
 export default function NewHeader() {
   const _pathname = usePathname();
+  const router = useRouter();
   const [hoveredDropdown, setHoveredDropdown] = useState<string | null>(null);
-  const { currentUser } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { currentUser, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsMobileMenuOpen(false);
+      router.push("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-b from-[rgba(248,250,252,0.9)] to-[rgba(248,250,252,0.7)] backdrop-blur-[24px] border-b border-[rgba(148,163,184,0.18)]">
@@ -553,26 +565,420 @@ export default function NewHeader() {
           <div className="lg:hidden">
             <button
               type="button"
-              className="text-[#111827] hover:text-[#4f46e5] focus:outline-none"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-[#111827] hover:text-[#4f46e5] focus:outline-none transition-colors"
               aria-label="Toggle mobile menu"
             >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              {isMobileMenuOpen ? (
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              )}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Mobile Menu */}
+          <div className="lg:hidden border-t border-[rgba(148,163,184,0.18)] bg-white fixed left-0 right-0 top-[57px] overflow-y-auto z-50" style={{ maxHeight: 'calc(100vh - 57px)', height: 'calc(100vh - 57px)' }}>
+            <div className="max-w-[1200px] mx-auto px-6 py-4">
+            <nav className="space-y-1">
+              {/* Mobile CTA / Profile Badge */}
+              <div className="border-b border-[rgba(148,163,184,0.1)] pb-3 mb-3">
+                {currentUser ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2 px-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        {currentUser.displayName
+                          ? currentUser.displayName.charAt(0).toUpperCase()
+                          : currentUser.email?.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#111827] truncate">
+                          {currentUser.displayName || "User"}
+                        </p>
+                        <p className="text-xs text-[#6b7280] truncate">
+                          {currentUser.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <button
+                        onClick={() => {
+                          router.push("/dashboard");
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Dashboard
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left block text-[#dc2626] no-underline rounded-[0.4rem] hover:bg-[#fef2f2] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <Link
+                    href="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block text-center rounded-full border-none bg-gradient-to-br from-[#4f46e5] to-[#a855f7] text-[#f9fafb] no-underline shadow-[0_15px_35px_rgba(79,70,229,0.45)] hover:brightness-105 transition-all py-2.5 px-4"
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Get Started
+                  </Link>
+                )}
+              </div>
+
+              {/* Nursing Entrance Exams */}
+              <div className="border-b border-[rgba(148,163,184,0.1)] pb-3 mb-3">
+                <div className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-[#111827] mb-2">
+                  Nursing Entrance Exams
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-2">
+                    ATI TEAS
+                  </div>
+                  <ul className="space-y-0.5">
+                    <li>
+                      <Link
+                        href="/ati-teas/reading"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Reading
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/ati-teas/math"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Math
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/ati-teas/science"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Science
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/ati-teas/english-and-language-usage"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        English and Language Usage
+                      </Link>
+                    </li>
+                  </ul>
+                  <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-3">
+                    HESI A2
+                  </div>
+                  <ul className="space-y-0.5">
+                    <li>
+                      <Link
+                        href="/hesi-a2/reading-comprehension"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Reading Comprehension
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/hesi-a2/vocabulary-and-general-knowledge"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Vocabulary & General Knowledge
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/hesi-a2/grammar"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Grammar
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/hesi-a2/basic-math-skills"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Basic Math Skills
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/hesi-a2/biology"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Biology
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/hesi-a2/anatomy-and-physiology"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Anatomy & Physiology
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/hesi-a2/chemistry"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        Chemistry
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Nursing Test Bank */}
+              <div className="border-b border-[rgba(148,163,184,0.1)] pb-3 mb-3">
+                <div className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-[#111827] mb-2">
+                  Nursing Test Bank
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-2">
+                    RN Test Banks
+                  </div>
+                  <ul className="space-y-0.5">
+                    <li>
+                      <Link
+                        href="/nursing-test-bank/rn/ati"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        ATI RN Test Bank
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/nursing-test-bank/rn/hesi"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        HESI RN Test Bank
+                      </Link>
+                    </li>
+                  </ul>
+                  <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-3">
+                    LPN Test Banks
+                  </div>
+                  <ul className="space-y-0.5">
+                    <li>
+                      <Link
+                        href="/nursing-test-bank/lpn/ati"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        ATI LPN Test Bank
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/nursing-test-bank/lpn/hesi"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        HESI LPN Test Bank
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Nursing Exit Exams */}
+              <div className="border-b border-[rgba(148,163,184,0.1)] pb-3 mb-3">
+                <div className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-[#111827] mb-2">
+                  Nursing Exit Exams
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-2">
+                    RN
+                  </div>
+                  <ul className="space-y-0.5">
+                    <li>
+                      <Link
+                        href="/nursing-exit-exams/ati-comprehensive-predictor"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        ATI Comprehensive Predictor
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/nursing-exit-exams/hesi-exit-exam"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        HESI Exit Exam
+                      </Link>
+                    </li>
+                  </ul>
+                  <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-3">
+                    LPN
+                  </div>
+                  <ul className="space-y-0.5">
+                    <li>
+                      <Link
+                        href="/nursing-exit-exams/ati-lpn"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        ATI Exit Exams
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/nursing-exit-exams/hesi-lpn"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                        style={{ fontSize: "0.83rem" }}
+                      >
+                        HESI Exit Exams
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Company */}
+              <div className="border-b border-[rgba(148,163,184,0.1)] pb-3 mb-3">
+                <div className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-[#111827] mb-2">
+                  Company
+                </div>
+                <ul className="space-y-0.5">
+                  <li>
+                    <Link
+                      href="/pricing"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                      style={{ fontSize: "0.83rem" }}
+                    >
+                      Pricing
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/contact"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                      style={{ fontSize: "0.83rem" }}
+                    >
+                      Contact Us
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/privacy-policy"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                      style={{ fontSize: "0.83rem" }}
+                    >
+                      Privacy policy
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/terms-and-conditions"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                      style={{ fontSize: "0.83rem" }}
+                    >
+                      Terms &amp; conditions
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/money-back-guarantee"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
+                      style={{ fontSize: "0.83rem" }}
+                    >
+                      Money-back guarantee
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </nav>
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 }
