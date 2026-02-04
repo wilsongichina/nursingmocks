@@ -105,7 +105,7 @@ export default function KbArticleViewer({
         `
       }}
     >
-      <div className="max-w-[1220px] mx-auto">
+      <div className="w-full">
         {/* HERO SECTION */}
         <section 
           className="relative rounded-[26px] md:rounded-[34px] overflow-hidden border border-[rgba(148,163,184,0.35)] shadow-[0_18px_40px_rgba(15,23,42,0.1)] p-4 md:p-[26px] pb-4 md:pb-[22px] mb-[18px] text-[#1a1a1a]"

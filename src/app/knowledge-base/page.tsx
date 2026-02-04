@@ -44,6 +44,23 @@ interface SubPage {
   kbArticlesCount?: number;
 }
 
+// Helper function to strip HTML tags and get plain text
+const stripHtmlTags = (html: string): string => {
+  if (!html) return "";
+  // Remove HTML tags using regex
+  let text = html.replace(/<[^>]*>/g, "");
+  // Decode HTML entities
+  text = text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+  // Clean up extra whitespace
+  return text.trim().replace(/\s+/g, " ");
+};
+
 export default function KnowledgeBaseHubPage() {
   const [subPages, setSubPages] = useState<SubPage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -329,8 +346,12 @@ export default function KnowledgeBaseHubPage() {
                 : "No subjects";
 
               // Generate description - use database description if available, otherwise use default
+              // Strip HTML tags to show only plain text
               const getDescription = () => {
-                return dbDescription || `Learn more about ${pageName} and how it works inside NursingMocks. Discover comprehensive guides, practice resources, and detailed explanations to help you master this subject. Our knowledge base provides in-depth articles, step-by-step tutorials, and expert insights to support your learning journey.`;
+                if (dbDescription) {
+                  return stripHtmlTags(dbDescription);
+                }
+                return `Learn more about ${pageName} and how it works inside NursingMocks. Discover comprehensive guides, practice resources, and detailed explanations to help you master this subject. Our knowledge base provides in-depth articles, step-by-step tutorials, and expert insights to support your learning journey.`;
               };
 
               return (
@@ -464,7 +485,7 @@ export default function KnowledgeBaseHubPage() {
         }
 
         .header-inner {
-          max-width: 1160px;
+          width: 100%;
           margin: 0 auto;
           padding: 10px 20px;
           display: flex;
@@ -625,7 +646,7 @@ export default function KnowledgeBaseHubPage() {
         /* ===== PAGE WRAPPER ===== */
 
         .page {
-          max-width: 1160px;
+          width: 100%;
           margin: 0 auto;
           padding: 24px 20px 40px;
           flex: 1 1 auto;

@@ -6,6 +6,23 @@ import Link from "next/link";
 import Layout from "@/components/layout/Layout";
 import { getPageBySlug, getNursingEntranceExamKbArticles, getNursingTestBankKbArticles, getNursingExitExamKbArticles } from "@/lib/firestore-operations";
 
+// Helper function to strip HTML tags and get plain text
+const stripHtmlTags = (html: string): string => {
+  if (!html) return "";
+  // Remove HTML tags using regex
+  let text = html.replace(/<[^>]*>/g, "");
+  // Decode HTML entities
+  text = text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+  // Clean up extra whitespace
+  return text.trim().replace(/\s+/g, " ");
+};
+
 export default function KnowledgeBaseSubPage() {
   const params = useParams();
   const subPageSlug = params?.subPage as string;
@@ -63,7 +80,7 @@ export default function KnowledgeBaseSubPage() {
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb]">
-        <div className="max-w-[1160px] mx-auto px-5 py-6 pb-10 md:px-5 md:py-6 md:pb-10 sm:px-[14px] sm:py-[18px] sm:pb-[30px]">
+        <div className="w-full px-5 py-6 pb-10 md:px-5 md:py-6 md:pb-10 sm:px-[14px] sm:py-[18px] sm:pb-[30px]">
           {loading ? (
             <div className="text-center py-10">
               <div className="text-sm text-[#6b7280]">Loading...</div>
@@ -92,7 +109,7 @@ export default function KnowledgeBaseSubPage() {
                   </h1>
 
                   <p className="text-sm leading-[1.7] text-[#0f172a] max-w-[580px] mb-4">
-                    {description || `Learn how ${pageName} works without guessing. This page focuses on the big-picture side: what's on the exam, how scoring works, how to register, and how to build a practical study plan.`}
+                    {description ? stripHtmlTags(description) : `Learn how ${pageName} works without guessing. This page focuses on the big-picture side: what's on the exam, how scoring works, how to register, and how to build a practical study plan.`}
                   </p>
 
                   <div className="flex flex-wrap gap-2 mb-[18px]">
@@ -204,7 +221,7 @@ export default function KnowledgeBaseSubPage() {
                           </h2>
                           {articleDescription && (
                             <p className="text-[13px] text-[#6b7280] mb-2 leading-[1.6]">
-                              {articleDescription}
+                              {stripHtmlTags(articleDescription)}
                             </p>
                           )}
                           <div className="mt-3">

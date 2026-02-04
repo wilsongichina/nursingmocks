@@ -16,7 +16,7 @@ export default function NursingExitExamPage() {
       <div className="min-h-screen bg-gradient-to-b from-blue-50 via-gray-50 to-gray-50">
         {/* Hero Section */}
         <section className="py-14 pb-10">
-          <div className="max-w-[1200px] mx-auto px-6">
+          <div className="w-full px-6">
             <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs text-indigo-700 mb-4">
@@ -156,7 +156,7 @@ export default function NursingExitExamPage() {
 
         {/* Choose Your Exit Exam Section */}
         <section className="py-9 pb-6">
-          <div className="max-w-[1200px] mx-auto px-6">
+          <div className="w-full px-6">
             <div className="text-center mb-7">
               <div className="text-xs uppercase tracking-widest text-gray-400 mb-2">
                 Choose Your Nursing Exit Exam
@@ -362,7 +362,7 @@ export default function NursingExitExamPage() {
 
         {/* What You Get Section */}
         <section className="py-9 pb-6">
-          <div className="max-w-[1200px] mx-auto px-6">
+          <div className="w-full px-6">
             <div className="text-center mb-7">
               <div className="text-xs uppercase tracking-widest text-gray-400 mb-2">
                 What You Get With NursingMocks
@@ -682,7 +682,7 @@ export default function NursingExitExamPage() {
 
         {/* Comparison Section */}
         <section className="py-9 pb-6">
-          <div className="max-w-[1200px] mx-auto px-6">
+          <div className="w-full px-6">
             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
               <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4 items-start sm:items-center">
                 <div className="max-w-[60%]">
@@ -787,7 +787,7 @@ export default function NursingExitExamPage() {
 
         {/* FAQ Section */}
         <section className="py-9 pb-6">
-          <div className="max-w-[1200px] mx-auto px-6">
+          <div className="w-full px-6">
             <div className="text-center mb-7">
               <div className="text-xs uppercase tracking-widest text-gray-400 mb-2">
                 Nursing Exit Exam Questions

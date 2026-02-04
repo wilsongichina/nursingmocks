@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
@@ -54,6 +56,15 @@ export default function NewHomePage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [_answers, setAnswers] = useState<Record<number, string>>({});
   const [isQuizComplete, setIsQuizComplete] = useState(false);
+  const router = useRouter();
+  const { currentUser } = useAuth();
+
+  // Redirect to signup if quiz is complete and user is not logged in
+  useEffect(() => {
+    if (isQuizComplete && !currentUser) {
+      router.push("/register");
+    }
+  }, [isQuizComplete, currentUser, router]);
 
   const handleOptionSelect = (option: string) => {
     const questionId = QUIZ_QUESTIONS[currentQuestionIndex].id;

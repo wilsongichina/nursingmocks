@@ -4,9 +4,9 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
-      disallow: "/private/",
+      allow: "/$",
+      disallow: "/",
     },
-    sitemap: "https://teasgurus.com/sitemap.xml",
+    sitemap: "https://nursingmocks.com/sitemap.xml",
   };
 }

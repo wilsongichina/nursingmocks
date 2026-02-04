@@ -1465,7 +1465,7 @@ export default async function DynamicPage({
               </h1>
 
               {/* Hero Description */}
-              <div className="text-sm leading-[1.7] text-[#202437] max-w-[540px] mb-4">
+              <div className="text-sm leading-[1.7] text-[#202437] max-w-[540px] mb-4 [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
                 <ContentRenderer content={pageDescription} />
               </div>
 

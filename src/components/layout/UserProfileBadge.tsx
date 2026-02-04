@@ -56,7 +56,7 @@ export default function UserProfileBadge() {
         <div className="flex items-center space-x-2">
           <button
             onClick={handleUsernameClick}
-            className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+            className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium transition-colors cursor-pointer"
           >
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
               {currentUser.displayName
@@ -69,7 +69,7 @@ export default function UserProfileBadge() {
           </button>
           <button
             onClick={handleChevronClick}
-            className="text-gray-700 hover:text-blue-600 transition-colors"
+            className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer"
             aria-label="Toggle user menu"
           >
             <svg

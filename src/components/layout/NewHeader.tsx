@@ -26,7 +26,7 @@ export default function NewHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-b from-[rgba(248,250,252,0.9)] to-[rgba(248,250,252,0.7)] backdrop-blur-[24px] border-b border-[rgba(148,163,184,0.18)]">
-      <div className="max-w-[1200px] mx-auto px-6">
+      <div className=" max-w-[1320px] mx-auto ">
         <div
           className="flex items-center justify-between py-[0.9rem] gap-4"
           style={{
