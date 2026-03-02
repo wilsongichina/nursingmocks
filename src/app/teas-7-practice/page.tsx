@@ -78,7 +78,7 @@ export default function Teas7PracticePage() {
 
                 <div className="flex flex-wrap gap-3 mb-4" id="buy">
                   <a
-                    href="https://stan.store/YOURSTORELINK"
+                    href="http://stan.store/NursingMocks"
                     className="rounded-full px-5.5 py-3 text-[0.9rem] border-none bg-gradient-to-br from-[#4f46e5] to-[#a855f7] text-[#f9fafb] font-semibold no-underline shadow-[0_18px_40px_rgba(79,70,229,0.5)] inline-flex items-center gap-1.5 whitespace-nowrap hover:brightness-105 transition-all"
                     data-cta="buy"
                   >
@@ -614,7 +614,7 @@ export default function Teas7PracticePage() {
               </div>
               <div className="flex gap-2.5 justify-start lg:justify-end flex-wrap relative z-10">
                 <a
-                  href="https://stan.store/YOURSTORELINK"
+                  href="http://stan.store/NursingMocks"
                   className="rounded-full px-5.5 py-3 text-[0.9rem] border-none bg-gradient-to-br from-[#4f46e5] to-[#a855f7] text-[#f9fafb] font-semibold no-underline shadow-[0_18px_40px_rgba(79,70,229,0.5)] inline-flex items-center gap-1.5 whitespace-nowrap hover:brightness-105 transition-all"
                   data-cta="buy"
                 >
@@ -640,7 +640,7 @@ export default function Teas7PracticePage() {
         <div className="w-full flex items-center justify-between gap-3">
           <div className="flex gap-2.5 flex-nowrap">
             <a
-              href="https://stan.store/YOURSTORELINK"
+              href="http://stan.store/NursingMocks"
               className="rounded-full px-4 py-2.75 text-[0.9rem] border-none bg-gradient-to-br from-[#4f46e5] to-[#a855f7] text-[#f9fafb] font-semibold no-underline shadow-[0_18px_40px_rgba(79,70,229,0.5)] inline-flex items-center gap-1.5 whitespace-nowrap hover:brightness-105 transition-all"
               data-cta="buy"
             >
