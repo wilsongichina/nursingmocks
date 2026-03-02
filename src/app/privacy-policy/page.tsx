@@ -48,7 +48,7 @@ export default function PrivacyPolicyPage() {
           <article className="bg-white rounded-[22px] border border-[#e5e7eb] pt-[18px] px-4 pb-4 md:pt-[22px] md:px-[22px] md:pb-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
             <p className="mt-1 text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
               NursingMocks (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) provides online practice tools for
-              nursing entrance exams (including ATI TEAS and HESI A2), nursing test banks, and nursing exit exams. This
+              nursing entrance exams (including ATI TEAS and HESI A2), Nursing Practice Tests, and nursing exit exams. This
               Privacy Policy describes how we handle personal information when you use our website, dashboards, and
               practice products (collectively, the &ldquo;Services&rdquo;).
             </p>

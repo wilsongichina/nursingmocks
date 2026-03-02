@@ -49,17 +49,17 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
   return (
     <footer className="bg-[#050b19] text-[#e5e7eb] pt-10 pb-[18px] relative">
       <div className="max-w-[1320px] mx-auto w-[94%]">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2.2fr_1.2fr_1.2fr] gap-10 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2.2fr_1.2fr_1.2fr_1.8fr] gap-10 items-start">
           {/* Brand Column */}
           <div className="flex flex-col gap-3">
             <Link
               href="/"
               className="flex items-center gap-2.5 no-underline"
-              aria-label="TEAS Gurus home"
+              aria-label="NursingMocks home"
             >
               <Image
                 src="/teas-gurus-logo.png"
-                alt="TEAS Gurus Logo"
+                alt="NursingMocks Logo"
                 width={150}
                 height={40}
                 className="h-9 w-auto object-contain brightness-0 invert"
@@ -67,7 +67,7 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
             </Link>
             <div className="text-[14px] text-[#9ca3af] max-w-[380px] leading-[1.5]">
               NursingMocks helps nursing students move from entrance exams to graduation with one organized prep hub:
-              ATI TEAS, HESI A2, ATI &amp; HESI nursing test banks, and nursing exit exams for LPN &amp; RN programs.
+              ATI TEAS, HESI A2, ATI &amp; HESI Nursing Practice Tests, and nursing exit exams for LPN &amp; RN programs.
             </div>
           </div>
 
@@ -92,7 +92,7 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
               href="/nursing-test-bank"
               className="block text-[13px] text-[#9ca3af] mb-1.5 no-underline hover:text-[#e5e7eb] hover:translate-x-[2px] transition-all"
             >
-              Nursing Test Banks (LPN &amp; RN)
+              Nursing Practice Tests (LPN &amp; RN)
             </Link>
             <Link
               href="/nursing-exit-exam"
@@ -137,6 +137,20 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
             >
               Money-back guarantee
             </Link>
+          </div>
+
+          {/* Registered Office Column */}
+          <div className="text-[14px]">
+            <div className="text-[15px] text-[#f9fafb] mb-2.5" style={{ fontWeight: 600 }}>
+              WILKAM AXIS LTD
+            </div>
+            <div className="text-[13px] text-[#9ca3af] leading-[1.6]">
+              <p>Registered Office:</p>
+              <p>Office 306BX, 182-184 High Street North</p>
+              <p>East Ham, London E6 2JA</p>
+              <p>United Kingdom</p>
+              <p className="mt-1">Phone: +44 7832 350707</p>
+            </div>
           </div>
         </div>
 

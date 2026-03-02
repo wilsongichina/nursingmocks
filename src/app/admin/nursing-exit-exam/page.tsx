@@ -2978,7 +2978,7 @@ function NursingExitExamAdminPageContent() {
                                           Add
                                         </span>
                                         <Link
-                                          href={`/admin/nursing-exit-exam/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}/manage`}
+                                          href={`/admin/nursing-exit-exam/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}`}
                                           style={{
                                             fontSize: "12px",
                                             color: "#4f46e5",

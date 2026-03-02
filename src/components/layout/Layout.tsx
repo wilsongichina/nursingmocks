@@ -657,12 +657,12 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
             {/* Logo on the left */}
             <Link
               href="/"
-              aria-label="TEAS Gurus Home"
+              aria-label="NursingMocks Home"
               className="flex-shrink-0 flex items-center h-full"
             >
               <Image
                 src="/teas-gurus-logo.png"
-                alt="TEAS Gurus Logo"
+                alt="NursingMocks Logo"
                 width={150}
                 height={40}
                 className="h-8 w-auto object-contain"

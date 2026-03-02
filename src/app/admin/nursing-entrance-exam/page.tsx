@@ -2921,7 +2921,7 @@ function NursingEntranceExamAdminPageContent() {
                                       Add
                                     </span>
                                     <Link
-                                      href={`/admin/nursing-entrance-exam/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}/manage`}
+                                      href={`/admin/nursing-entrance-exam/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}`}
                                       style={{
                                         fontSize: "12px",
                                         color: "#4f46e5",

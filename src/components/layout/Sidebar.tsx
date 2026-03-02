@@ -905,10 +905,10 @@ export default function Sidebar({
         style={{ overflow: "visible" }}
       >
         {!isCollapsed ? (
-          <Link href="/" aria-label="TEAS Gurus Home" className="flex-shrink-0">
+          <Link href="/" aria-label="NursingMocks Home" className="flex-shrink-0">
             <Image
               src="/teas-gurus-logo.png"
-              alt="TEAS Gurus Logo"
+              alt="NursingMocks Logo"
               width={150}
               height={40}
               className="h-8 w-auto"
@@ -918,12 +918,12 @@ export default function Sidebar({
         ) : (
           <Link
             href="/"
-            aria-label="TEAS Gurus Home"
+            aria-label="NursingMocks Home"
             className="flex-shrink-0 flex items-center justify-center"
           >
             <Image
               src="/favicon.png"
-              alt="TEAS Gurus Logo"
+              alt="NursingMocks Logo"
               width={40}
               height={40}
               className="h-10 w-auto max-w-10 rounded object-contain"

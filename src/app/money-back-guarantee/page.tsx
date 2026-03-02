@@ -6,16 +6,16 @@ import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
 import TawkToChat from "@/components/ui/TawkToChat";
 
 export const metadata: Metadata = {
-  title: "Money-Back Guarantee Policy - TEAS Gurus",
+  title: "Money-Back Guarantee Policy - Nursing Mocks",
   description:
-    "Read the TEAS Gurus money-back guarantee policy. Learn when you can request a refund for your TEAS, HESI, or nursing exam prep subscription and how the process works.",
+    "Read the Nursing Mocks money-back guarantee policy. Learn when you can request a refund for your TEAS, HESI, or nursing exam prep subscription and how the process works.",
   keywords:
     "money back guarantee, refund policy, TEAS exam guarantee, HESI exam guarantee, nursing exam prep refund",
   openGraph: {
-    title: "Money-Back Guarantee Policy - TEAS Gurus",
+    title: "Money-Back Guarantee Policy - Nursing Mocks",
     description:
       "Read our money-back guarantee policy to understand when and how you can request a refund.",
-    url: "https://teasgurus.com/money-back-guarantee",
+    url: "https://nursingmocks.com/money-back-guarantee",
   },
   alternates: {
     canonical: "/money-back-guarantee",
@@ -53,7 +53,7 @@ export default function MoneyBackGuaranteePage() {
             >
               Refunds &amp; Guarantees
             </span>
-            <span>What happens if TEAS Gurus is not the right fit for you</span>
+            <span>What happens if Nursing Mocks is not the right fit for you</span>
           </div>
 
           <h1
@@ -76,7 +76,7 @@ export default function MoneyBackGuaranteePage() {
               margin: "0 0 14px",
             }}
           >
-            We built TEAS Gurus to be genuinely useful for nursing students, not
+            We built Nursing Mocks to be genuinely useful for nursing students, not
             a subscription you forget about. This page explains when you can
             request a refund, how the process works, and what we consider fair
             use of the platform.
@@ -131,7 +131,7 @@ export default function MoneyBackGuaranteePage() {
               }}
             >
               We know that money is tight for most nursing students. If you sign
-              up for TEAS Gurus and realise very quickly that it is not what you
+              up for Nursing Mocks and realise very quickly that it is not what you
               expected, we do not want you to feel stuck. At the same time, we
               have to protect the platform from being used heavily and then
               refunded as if nothing was used at all.
@@ -147,7 +147,7 @@ export default function MoneyBackGuaranteePage() {
               }}
             >
               This policy is designed to be fair on both sides: you get a safety
-              net, and we keep TEAS Gurus sustainable for the long term.
+              net, and we keep Nursing Mocks sustainable for the long term.
             </div>
 
             <h2
@@ -169,8 +169,8 @@ export default function MoneyBackGuaranteePage() {
               }}
             >
               This money-back guarantee applies to individual students who
-              purchase TEAS Gurus subscriptions directly through our website. If
-              you access TEAS Gurus through a school, bundle, or third-party
+              purchase Nursing Mocks subscriptions directly through our website. If
+              you access Nursing Mocks through a school, bundle, or third-party
               program, your refund options may be handled by that partner
               instead.
             </p>
@@ -205,7 +205,7 @@ export default function MoneyBackGuaranteePage() {
                 margin: "0 0 10px",
               }}
             >
-              In simple terms: if you give TEAS Gurus a fair trial, decide it is
+              In simple terms: if you give Nursing Mocks a fair trial, decide it is
               not for you, and have not consumed a large portion of the content,
               you can usually request a refund within the timeframe below.
             </p>
@@ -282,7 +282,7 @@ export default function MoneyBackGuaranteePage() {
                 margin: "0 0 10px",
               }}
             >
-              Because TEAS Gurus is digital and instantly accessible, heavy
+              Because Nursing Mocks is digital and instantly accessible, heavy
               usage followed by a refund request is not sustainable. As a
               general guide, refund requests are more likely to be approved if:
             </p>
@@ -448,12 +448,12 @@ export default function MoneyBackGuaranteePage() {
               }}
             >
               <li style={{ marginTop: "4px" }}>
-                Write to <strong>support@teasgurus.com</strong> from the email
+                Write to <strong>support@nursingmocks.com</strong> from the email
                 address linked to your account.
               </li>
               <li style={{ marginTop: "4px" }}>
                 Use a clear subject line such as{" "}
-                <strong>&ldquo;Refund request – TEAS Gurus&rdquo;</strong>.
+                <strong>&ldquo;Refund request – Nursing Mocks&rdquo;</strong>.
               </li>
               <li style={{ marginTop: "4px" }}>
                 In the message, include:
@@ -531,7 +531,7 @@ export default function MoneyBackGuaranteePage() {
                 business days for the funds to appear on your statement.
               </li>
               <li style={{ marginTop: "4px" }}>
-                Your access to the relevant TEAS Gurus content may be reduced or
+                Your access to the relevant Nursing Mocks content may be reduced or
                 removed, especially for plans that were fully refunded.
               </li>
             </ul>
@@ -681,7 +681,7 @@ export default function MoneyBackGuaranteePage() {
                 margin: "0 0 10px",
               }}
             >
-              If you are not sure whether TEAS Gurus is right for your specific
+              If you are not sure whether Nursing Mocks is right for your specific
               situation or exam, you are welcome to reach out before
               subscribing. Tell us which exam you are preparing for, how much
               time you have left, and what you are struggling with—we can give
@@ -697,7 +697,7 @@ export default function MoneyBackGuaranteePage() {
               }}
             >
               <li style={{ marginTop: "4px" }}>
-                Email: <strong>support@teasgurus.com</strong>
+                Email: <strong>support@nursingmocks.com</strong>
               </li>
             </ul>
             <p

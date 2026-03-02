@@ -266,7 +266,7 @@ export default function ManageQuizzes({
             </div>
             <div className="flex items-center space-x-3">
               <Link
-                href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
+                href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}`}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
               >
                 <svg

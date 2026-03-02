@@ -1,33 +1,36 @@
 import { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/config";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = getSiteUrl();
+
   return [
     {
-      url: "https://teasgurus.com",
+      url: baseUrl,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: "https://teasgurus.com/services",
+      url: `${baseUrl}/services`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: "https://teasgurus.com/about",
+      url: `${baseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
-      url: "https://teasgurus.com/contact",
+      url: `${baseUrl}/contact`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: "https://teasgurus.com/testimonials",
+      url: `${baseUrl}/testimonials`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.6,

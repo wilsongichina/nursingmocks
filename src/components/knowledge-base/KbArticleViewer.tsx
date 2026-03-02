@@ -19,8 +19,8 @@ export default function KbArticleViewer({
   const version = article?.version || "ATI TEAS 7";
   const bodyContent = article?.bodyContent || "";
   
-  // Extract title for display - use pageName or hero title
-  const displayTitle = article?.pageName || article?.hero?.title || article?.heading || pageName;
+  // Extract title for display - prioritize heading (Display title H1) over pageName
+  const displayTitle = article?.heading || article?.hero?.title || article?.pageName || pageName;
 
   // Generate table of contents from headings in bodyContent
   const toc = useMemo(() => {
@@ -229,6 +229,33 @@ export default function KbArticleViewer({
           </div>
         </section>
 
+        {/* MOBILE ONLY: On this page card */}
+        {toc.length > 0 && (
+          <div className="sm:hidden bg-white rounded-2xl border border-[rgba(148,163,184,0.5)] shadow-[0_18px_40px_rgba(15,23,42,0.1)] p-3 px-[14px] text-[13px] mb-5">
+            <div className="text-sm font-extrabold mb-1 text-[#1a1a1a]">On this page</div>
+            <div className="text-xs text-[#7a819c] mb-2">Jump to any section of the article.</div>
+            <ul className="list-none p-0 m-0 text-[13px]">
+              {toc.map((item, index) => (
+                <li key={item.id} className="py-1" style={{ paddingLeft: `${(item.level - 1) * 8}px` }}>
+                  <a 
+                    className="text-[#3b35b6] no-underline text-[13px] hover:underline" 
+                    href={`#${item.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const element = document.getElementById(item.id);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }}
+                  >
+                    {index + 1}. {item.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* LAYOUT: article + sidebar */}
         <div className="grid grid-cols-[minmax(0,2.1fr)_minmax(300px,1fr)] gap-5 items-start max-md:grid-cols-1">
           {/* ARTICLE BODY */}
@@ -255,9 +282,9 @@ export default function KbArticleViewer({
 
           {/* SIDEBAR */}
           <aside className="flex flex-col gap-3 max-md:static" style={{ position: 'sticky', top: '22px', alignSelf: 'flex-start', height: 'fit-content' }}>
-            {/* TOC - Generate from headings in bodyContent */}
+            {/* TOC - Generate from headings in bodyContent (hidden on mobile, shown above content instead) */}
             {toc.length > 0 && (
-              <div className="bg-white rounded-2xl border border-[rgba(148,163,184,0.5)] shadow-[0_18px_40px_rgba(15,23,42,0.1)] p-3 px-[14px] text-[13px]">
+              <div className="hidden sm:block bg-white rounded-2xl border border-[rgba(148,163,184,0.5)] shadow-[0_18px_40px_rgba(15,23,42,0.1)] p-3 px-[14px] text-[13px]">
                 <div className="text-sm font-extrabold mb-1 text-[#1a1a1a]">On this page</div>
                 <div className="text-xs text-[#7a819c] mb-2">Jump to any section of the article.</div>
                 <ul className="list-none p-0 m-0 text-[13px]">

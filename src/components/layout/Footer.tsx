@@ -14,7 +14,7 @@ export default function Footer() {
               <div className="mb-4">
                 <Image
                   src="/teas-gurus-logo.png"
-                  alt="TEAS Gurus Logo"
+                  alt="NursingMocks Logo"
                   width={150}
                   height={40}
                   className="h-10 w-auto invert"

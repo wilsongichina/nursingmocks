@@ -95,43 +95,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteUrl = getSiteUrl();
-  const siteName = getSiteName();
   return (
     <html lang="en">
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "EducationalOrganization",
-              name: siteName,
-              description:
-                "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
-              url: siteUrl,
-              logo: logoImageUrl,
-              contactPoint: {
-                "@type": "ContactPoint",
-                telephone: "1-579-501-1983",
-                contactType: "customer service",
-                availableLanguage: "English",
-              },
-              address: {
-                "@type": "PostalAddress",
-                addressCountry: "US",
-              },
-              sameAs: [
-                "https://instagram.com/teasgurus",
-                "https://www.linkedin.com/company/teasgurus",
-                "https://tiktok.com/@teas.gurus",
-                "https://www.youtube.com/@teasgurus",
-              ],
-            }),
-          }}
-        />
-      </head>
-      <body 
+      <head></head>
+      <body
         className={`${outfit.variable} font-sans antialiased`}
         suppressHydrationWarning
       >

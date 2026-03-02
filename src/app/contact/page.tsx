@@ -228,7 +228,7 @@ export default function ContactPage() {
               <div className="flex items-center gap-[8px] rounded-[12px] bg-[#f9fafb] border border-[#e5e7eb]" style={{ padding: "7px 9px" }}>
                 <FaWhatsapp className="text-[14px] text-[#4f46e5]" />
                 <div>
-                  <span className="text-[13px] text-[#111827]">WhatsApp: +254 7xx xxx xxx</span>
+                  <span className="text-[13px] text-[#111827]">Phone: +44 7832 350707</span>
                   <small className="block text-[11px] text-[#6b7280] mt-0.5">
                     Quick questions only. We cannot change billing details over chat, but we can point you in the right direction.
                   </small>

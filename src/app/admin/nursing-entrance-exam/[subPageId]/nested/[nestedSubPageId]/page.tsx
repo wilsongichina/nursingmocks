@@ -317,7 +317,7 @@ function EditNestedSubPageContent({
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Link
-                  href={`/admin/nursing-entrance-exam/${resolvedParams?.subPageId}/manage`}
+                  href="/admin/nursing-entrance-exam"
                   className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
                 >
                   ← Back to Admin

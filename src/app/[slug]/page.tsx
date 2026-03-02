@@ -1566,179 +1566,64 @@ export default async function DynamicPage({
         </section>
 
 
-        {/* MOBILE-ONLY KB HERO CARD (shown after question sets) */}
-        <section className="mt-[18px] lg:hidden">
-          <div className="max-w-[480px] w-full bg-white rounded-[22px] p-[16px_18px_18px] shadow-[0_22px_60px_rgba(15,23,42,0.35)] border border-[rgba(148,163,184,0.55)]">
-            <div className="flex items-center justify-between mb-4 gap-[10px]">
-              <div>
-                <div className="text-base font-semibold">
-                  TEAS Knowledge Base
-                </div>
-                <div className="text-xs text-[#9ca3af] mt-[2px]">
-                  Quick answers and guides to go with your TEAS practice.
-                </div>
-              </div>
-              <span className="text-[11px] px-2 py-1 rounded-full bg-[#f1f0ff] text-[#5548e0] uppercase tracking-[0.08em] whitespace-nowrap">
-                Articles
-              </span>
+        {/* MOBILE-ONLY KB HERO CARD - removed from mobile view */}
+
+        {/* MOBILE ONLY: On this page card */}
+        <div className="mt-8 sm:hidden">
+          <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
+            <div className="text-sm font-semibold mb-1 text-[#202437]">
+              On this page
             </div>
-
-            <div className="grid grid-cols-2 gap-[14px_18px]">
-              <div className="mb-1">
-                <div className="text-[13px] font-semibold mb-1">
-                  1 · TEAS Basics & Foundations
-                </div>
-                <ul className="list-none text-xs text-[#4b5563] pl-0">
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/what-is-the-teas-test"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      What Is the TEAS Test?
-                    </Link>
-                  </li>
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/what-is-on-the-teas-test"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      What Is on the TEAS Test?
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mb-1">
-                <div className="text-[13px] font-semibold mb-1">
-                  2 · Study Guides & Preparation
-                </div>
-                <ul className="list-none text-xs text-[#4b5563] pl-0">
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/how-to-study-for-the-teas"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      How to Study for the TEAS Test?
-                    </Link>
-                  </li>
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/how-long-should-i-study"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      How Long Should I Study for the TEAS?
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mb-1">
-                <div className="text-[13px] font-semibold mb-1">
-                  3 · Registration, Cost & Policies
-                </div>
-                <ul className="list-none text-xs text-[#4b5563] pl-0">
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/how-to-register-for-the-teas"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      How to Register for the TEAS Test
-                    </Link>
-                  </li>
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/how-much-does-the-teas-cost"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      How Much Does the TEAS Test Cost?
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mb-1">
-                <div className="text-[13px] font-semibold mb-1">
-                  4 · Scoring, Results & Interpretation
-                </div>
-                <ul className="list-none text-xs text-[#4b5563] pl-0">
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/what-is-a-good-teas-score"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      What Is a Good TEAS Score?
-                    </Link>
-                  </li>
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/what-is-passing-teas-score"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      What Is the Passing TEAS Score?
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mb-1">
-                <div className="text-[13px] font-semibold mb-1">
-                  5 · Test Day & Experience
-                </div>
-                <ul className="list-none text-xs text-[#4b5563] pl-0">
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/test-day-tips"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      TEAS 7 Test Day Tips
-                    </Link>
-                  </li>
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/online-vs-in-person"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      Online vs In-Person TEAS Exam
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mb-1">
-                <div className="text-[13px] font-semibold mb-1">
-                  6 · FAQs & Common Questions
-                </div>
-                <ul className="list-none text-xs text-[#4b5563] pl-0">
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/faq-calculators"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      Are Calculators Allowed on the TEAS?
-                    </Link>
-                  </li>
-                  <li className="mt-[2px]">
-                    <Link
-                      href="/kb/teas/faq-retake-policy"
-                      className="text-[#2563eb] no-underline hover:underline break-words"
-                    >
-                      How Many Times Can I Retake the TEAS?
-                    </Link>
-                  </li>
-                </ul>
-              </div>
+            <div className="text-xs text-[#6b7280] mb-2">
+              Jump to any section of the article.
             </div>
-
-            <div className="mt-3 text-xs text-right w-full">
-              <Link href="/kb/teas" className="text-[#6b21a8] font-medium">
-                View all TEAS Knowledge Base articles →
-              </Link>
-            </div>
+            <ul className="list-none p-0 m-0 text-[13px]">
+              <li className="py-1">
+                <a
+                  href="#what-is-teas-7"
+                  className="text-[#5548e0] no-underline hover:underline break-words"
+                >
+                  1. Quick Overview – {content.pageName} Practice at a Glance
+                </a>
+              </li>
+              <li className="py-1">
+                <a
+                  href="#section-breakdown"
+                  className="text-[#5548e0] no-underline hover:underline break-words"
+                >
+                  2. {content.pageName} Practice Questions by Subject
+                </a>
+              </li>
+              <li className="py-1">
+                <a
+                  href="#how-to-use-this-page"
+                  className="text-[#5548e0] no-underline hover:underline break-words"
+                >
+                  3. How to Use This {content.pageName} Practice Page
+                </a>
+              </li>
+              <li className="py-1">
+                <a
+                  href="#weekly-plan"
+                  className="text-[#5548e0] no-underline hover:underline break-words"
+                >
+                  4. Sample 1–2 Week {content.pageName} Practice Plan
+                </a>
+              </li>
+              <li className="py-1">
+                <a
+                  href="#review-vs-exam-mode"
+                  className="text-[#5548e0] no-underline hover:underline break-words"
+                >
+                  5. Review Mode vs Exam Mode
+                </a>
+              </li>
+            </ul>
           </div>
-        </section>
+        </div>
 
         {/* CONTENT AREA */}
-        <section className="mt-8">
+        <section className="mt-5 sm:mt-8">
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.1fr)_minmax(260px,1fr)] gap-5 items-start w-full">
             {/* LEFT COLUMN: Article + FAQ */}
@@ -1794,8 +1679,8 @@ export default async function DynamicPage({
               </section>
             </div>
 
-            {/* RIGHT COLUMN: sidebar */}
-            <aside className="flex flex-col gap-3 w-full">
+            {/* RIGHT COLUMN: sidebar (hidden on mobile) */}
+            <aside className="hidden sm:flex flex-col gap-3 w-full">
               <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
                 <div className="text-sm font-semibold mb-1 text-[#202437]">
                   On this page

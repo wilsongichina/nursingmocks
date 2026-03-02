@@ -4,7 +4,7 @@
  */
 
 export const getSiteUrl = (): string => {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com";
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://nursingmocks.com";
 };
 
 export const getSiteDomain = (): string => {
@@ -13,17 +13,17 @@ export const getSiteDomain = (): string => {
     const urlObj = new URL(url);
     return urlObj.hostname;
   } catch {
-    return "teasgurus.com";
+    return "nursingmocks.com";
   }
 };
 
 export const getSiteName = (): string => {
-  return process.env.NEXT_PUBLIC_SITE_NAME || "TEAS Gurus";
+  return process.env.NEXT_PUBLIC_SITE_NAME || "NursingMocks";
 };
 
 /**
  * Get full URL for an image path
- * @param imagePath - Relative image path (e.g., "/teas-gurus-logo.png")
+ * @param imagePath - Relative image path (e.g., "/nursing-mocks-logo.png")
  * @returns Full URL with site domain
  */
 export const getImageUrl = (imagePath: string): string => {

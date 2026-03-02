@@ -39,7 +39,7 @@ export default function NewHeader() {
             <Link href="/" className="flex items-center gap-2.5">
               <Image
                 src="/teas-gurus-logo.png"
-                alt="TEAS Gurus Logo"
+                alt="NursingMocks Logo"
                 width={150}
                 height={40}
                 className="h-9 w-auto object-contain"
@@ -249,7 +249,7 @@ export default function NewHeader() {
                 )}
               </li>
 
-              {/* Nursing Test Bank */}
+              {/* Nursing Practice Tests */}
               <li
                 className="relative"
                 onMouseEnter={() => setHoveredDropdown("testbank")}
@@ -264,7 +264,7 @@ export default function NewHeader() {
                     fontWeight: 500,
                   }}
                 >
-                  Nursing Test Bank{" "}
+                  Nursing Practice Tests{" "}
                   <span
                     className="opacity-60 translate-y-[1px]"
                     style={{ fontSize: "0.7rem" }}
@@ -280,7 +280,7 @@ export default function NewHeader() {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="p-[0.4rem] pb-[0.15rem]">
                           <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-[0.2rem]">
-                            RN Test Banks
+                            RN Practice Tests
                           </div>
                           <ul className="list-none">
                             <li>
@@ -292,7 +292,7 @@ export default function NewHeader() {
                                   fontSize: "0.83rem",
                                 }}
                               >
-                                ATI RN Test Bank
+                                ATI RN Practice Tests
                               </Link>
                             </li>
                             <li>
@@ -304,14 +304,14 @@ export default function NewHeader() {
                                   fontSize: "0.83rem",
                                 }}
                               >
-                                HESI RN Test Bank
+                                HESI RN Practice Tests
                               </Link>
                             </li>
                           </ul>
                         </div>
                         <div className="p-[0.4rem] pb-[0.15rem]">
                           <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-[0.2rem]">
-                            LPN Test Banks
+                            LPN Practice Tests
                           </div>
                           <ul className="list-none">
                             <li>
@@ -323,7 +323,7 @@ export default function NewHeader() {
                                   fontSize: "0.83rem",
                                 }}
                               >
-                                ATI LPN Test Bank
+                                ATI LPN Practice Tests
                               </Link>
                             </li>
                             <li>
@@ -335,7 +335,7 @@ export default function NewHeader() {
                                   fontSize: "0.83rem",
                                 }}
                               >
-                                HESI LPN Test Bank
+                                HESI LPN Practice Tests
                               </Link>
                             </li>
                           </ul>
@@ -798,14 +798,14 @@ export default function NewHeader() {
                 </div>
               </div>
 
-              {/* Nursing Test Bank */}
+              {/* Nursing Practice Tests */}
               <div className="border-b border-[rgba(148,163,184,0.1)] pb-3 mb-3">
                 <div className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-[#111827] mb-2">
-                  Nursing Test Bank
+                  Nursing Practice Tests
                 </div>
                 <div className="space-y-1">
                   <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-2">
-                    RN Test Banks
+                    RN Practice Tests
                   </div>
                   <ul className="space-y-0.5">
                     <li>
@@ -815,7 +815,7 @@ export default function NewHeader() {
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
                       >
-                        ATI RN Test Bank
+                        ATI RN Practice Tests
                       </Link>
                     </li>
                     <li>
@@ -825,12 +825,12 @@ export default function NewHeader() {
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
                       >
-                        HESI RN Test Bank
+                        HESI RN Practice Tests
                       </Link>
                     </li>
                   </ul>
                   <div className="text-[0.75rem] font-bold uppercase tracking-[0.09em] text-[#9ca3af] mb-1 mt-3">
-                    LPN Test Banks
+                    LPN Practice Tests
                   </div>
                   <ul className="space-y-0.5">
                     <li>
@@ -840,7 +840,7 @@ export default function NewHeader() {
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
                       >
-                        ATI LPN Test Bank
+                        ATI LPN Practice Tests
                       </Link>
                     </li>
                     <li>
@@ -850,7 +850,7 @@ export default function NewHeader() {
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
                       >
-                        HESI LPN Test Bank
+                        HESI LPN Practice Tests
                       </Link>
                     </li>
                   </ul>

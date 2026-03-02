@@ -83,10 +83,10 @@ export default function Header({
         <div className="flex items-center justify-between h-16">
           {showLogo ? (
             <div className="flex items-center h-full">
-              <Link href="/" aria-label="TEAS Gurus Home" className="flex items-center h-full">
+              <Link href="/" aria-label="NursingMocks Home" className="flex items-center h-full">
                 <Image
                   src="/teas-gurus-logo.png"
-                  alt="TEAS Gurus Logo"
+                  alt="NursingMocks Logo"
                   width={150}
                   height={40}
                   className="h-10 w-auto object-contain"

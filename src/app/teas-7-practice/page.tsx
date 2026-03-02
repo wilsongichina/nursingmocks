@@ -34,10 +34,10 @@ export default function Teas7PracticePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e0f2fe] via-[#f3f4f6] to-[#f9fafb]">
-      <main className="pb-16 sm:pb-28">
+      <main className="pb-16 sm:pb-28 max-w-7xl mx-auto px-5 sm:px-6">
         {/* 1) HERO SECTION */}
         <section className="pt-14 pb-10 sm:pt-14 sm:pb-10">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
               {/* Hero Left */}
               <div>
@@ -61,7 +61,7 @@ export default function Teas7PracticePage() {
                   Access is provided online via link access.
                 </p>
 
-                <div className="flex flex-wrap gap-2.5 mb-6 text-[0.8rem]">
+                <div className="flex flex-wrap gap-2.5 mb-6 text-[0.8rem] text-black">
                   <div className="px-2.75 py-1 rounded-full bg-white border border-[rgba(148,163,184,0.65)] inline-flex items-center gap-1.25">
                     <div className="w-[7px] h-[7px] rounded-full bg-[#22c55e]"></div>
                     Built for focused TEAS 7 prep
@@ -176,7 +176,7 @@ export default function Teas7PracticePage() {
 
         {/* 2) PREVIEW SECTION */}
         <section className="py-8.75 sm:py-9" id="preview">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="text-center mb-7">
               <div className="text-[0.78rem] uppercase tracking-[0.16em] text-[#9ca3af] mb-1.5">
                 Preview
@@ -265,7 +265,7 @@ export default function Teas7PracticePage() {
 
         {/* 3) HOW IT WORKS */}
         <section className="py-8.75 sm:py-9" id="how">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="text-center mb-7">
               <div className="text-[0.78rem] uppercase tracking-[0.16em] text-[#9ca3af] mb-1.5">
                 Checkout Flow
@@ -321,7 +321,7 @@ export default function Teas7PracticePage() {
 
         {/* 4) WHY CHOOSE */}
         <section className="py-8.75 sm:py-9">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="text-center mb-7">
               <div className="text-[0.78rem] uppercase tracking-[0.16em] text-[#9ca3af] mb-1.5">
                 Why This Bundle
@@ -392,7 +392,7 @@ export default function Teas7PracticePage() {
 
         {/* 5) PREPARE WITH CONFIDENCE */}
         <section className="py-8.75 sm:py-9">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="bg-[#f9fafb] rounded-[1.5rem] p-5.5 sm:p-6 border border-[rgba(209,213,219,0.8)]">
               <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4 items-start sm:items-center">
                 <div className="max-w-full sm:max-w-[60%]">
@@ -446,7 +446,7 @@ export default function Teas7PracticePage() {
 
         {/* 6) UPDATED FOR TEAS 7 */}
         <section className="py-8.75 sm:py-9">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="text-center mb-7">
               <div className="text-[0.78rem] uppercase tracking-[0.16em] text-[#9ca3af] mb-1.5">
                 Bundle Details
@@ -539,7 +539,7 @@ export default function Teas7PracticePage() {
 
         {/* 7) FAQ */}
         <section className="py-8.75 sm:py-9" id="faq">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="text-center mb-7">
               <div className="text-[0.78rem] uppercase tracking-[0.16em] text-[#9ca3af] mb-1.5">
                 FAQ
@@ -598,7 +598,7 @@ export default function Teas7PracticePage() {
 
         {/* 8) FINAL CTA */}
         <section className="py-8.75 sm:py-9">
-          <div className="w-full px-6">
+          <div className="w-full">
             <div className="bg-gradient-to-br from-[#eef2ff] via-white to-[#f9fafb] rounded-[2rem] border border-[rgba(209,213,219,0.9)] shadow-[0_16px_40px_rgba(15,23,42,0.06)] p-5.5 sm:p-6 grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4 items-center overflow-hidden relative">
               {/* Decorative cloud */}
               <div className="absolute top-auto bottom-[-40px] right-[-30px] w-[180px] h-[180px] rounded-full bg-[radial-gradient(circle_at_30%_30%,#c7d2fe,#a855f7,#4f46e5)] opacity-18 blur-[0.5px]"></div>

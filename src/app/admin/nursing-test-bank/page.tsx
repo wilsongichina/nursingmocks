@@ -3531,7 +3531,7 @@ function NursingTestBankAdminPageContent() {
                                       Add
                                     </span>
                                     <Link
-                                      href={`/admin/nursing-test-bank/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}/manage`}
+                                      href={`/admin/nursing-test-bank/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}`}
                                       style={{
                                         fontSize: "12px",
                                         color: "#4f46e5",

@@ -492,7 +492,7 @@ export default function ManageQuizQuestions({
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <Link
-                  href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
+                  href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}`}
                   className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
                 >
                   ← Back to Admin

@@ -7,11 +7,11 @@ const siteUrl = getSiteUrl();
 const logoImageUrl = getImageUrl("/teas-gurus-logo.png");
 
 export const metadata: Metadata = {
-  title: "NursingMocks – ATI TEAS, HESI A2, Nursing Test Banks & Exit Exams",
+  title: "NursingMocks – ATI TEAS, HESI A2, Nursing Practice Tests & Exit Exams",
   description:
-    "NursingMocks offers ATI TEAS practice tests, HESI A2 practice, RN & LPN nursing test banks, and nursing exit exam prep so you can move through nursing school with one organized hub.",
+    "NursingMocks offers ATI TEAS practice tests, HESI A2 practice, RN & LPN Nursing Practice Tests, and nursing exit exam prep so you can move through nursing school with one organized hub.",
   keywords:
-    "ATI TEAS, HESI A2, nursing test bank, nursing exit exams, TEAS practice, HESI practice, RN test bank, LPN test bank",
+    "ATI TEAS, HESI A2, Nursing Practice Tests, nursing exit exams, TEAS practice, HESI practice, RN Nursing Practice Tests, LPN Nursing Practice Tests",
   authors: [{ name: siteName }],
   creator: siteName,
   publisher: siteName,
@@ -25,9 +25,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "NursingMocks – ATI TEAS, HESI A2, Nursing Test Banks & Exit Exams",
+    title: "NursingMocks – ATI TEAS, HESI A2, Nursing Practice Tests & Exit Exams",
     description:
-      "NursingMocks offers ATI TEAS practice tests, HESI A2 practice, RN & LPN nursing test banks, and nursing exit exam prep so you can move through nursing school with one organized hub.",
+      "NursingMocks offers ATI TEAS practice tests, HESI A2 practice, RN & LPN Nursing Practice Tests, and nursing exit exam prep so you can move through nursing school with one organized hub.",
     url: siteUrl,
     siteName: siteName,
     images: [
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
         url: logoImageUrl,
         width: 1200,
         height: 630,
-        alt: "TEAS Gurus - Nursing Exam Preparation",
+        alt: "NursingMocks - Nursing Exam Preparation",
       },
     ],
     locale: "en_US",
@@ -43,9 +43,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NursingMocks – ATI TEAS, HESI A2, Nursing Test Banks & Exit Exams",
+    title: "NursingMocks – ATI TEAS, HESI A2, Nursing Practice Tests & Exit Exams",
     description:
-      "NursingMocks offers ATI TEAS practice tests, HESI A2 practice, RN & LPN nursing test banks, and nursing exit exam prep.",
+      "NursingMocks offers ATI TEAS practice tests, HESI A2 practice, RN & LPN Nursing Practice Tests, and nursing exit exam prep.",
     images: [logoImageUrl],
   },
   robots: {

@@ -59,7 +59,7 @@ export default function TermsAndConditionsPage() {
               NursingMocks (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or
               &ldquo;our&rdquo;) is an online platform that provides practice
               questions, explanations, and study tools for nursing entrance
-              exams (including ATI TEAS and HESI A2), nursing test banks, and
+              exams (including ATI TEAS and HESI A2), Nursing Practice Tests, and
               nursing exit exams. When you create an account, start a free
               trial, or purchase a plan, you are entering into an agreement with
               us based on the terms below.
