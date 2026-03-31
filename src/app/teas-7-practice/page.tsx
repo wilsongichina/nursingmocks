@@ -9,6 +9,11 @@ export default function Teas7PracticePage() {
         src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"
         strategy="afterInteractive"
       />
+      <Script
+        src="https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.min.mjs"
+        type="module"
+        strategy="afterInteractive"
+      />
       <Script src="/teas-7-practice/library.js" strategy="afterInteractive" />
 
       <div className="page-inner">
@@ -190,6 +195,27 @@ export default function Teas7PracticePage() {
             </div>
 
             <iframe id="previewFrame" className="viewer-frame" title="PDF preview" />
+
+            <div id="mobilePdfViewer" className="mobile-pdf-viewer">
+              <div className="mobile-pdf-toolbar">
+                <button id="mobilePdfPrevBtn" className="btn-ghost" type="button">
+                  Prev
+                </button>
+                <span id="mobilePdfPageInfo" className="mobile-pdf-page-info">
+                  Page 1 of 1
+                </span>
+                <button id="mobilePdfNextBtn" className="btn-ghost" type="button">
+                  Next
+                </button>
+                <button id="mobilePdfZoomOutBtn" className="btn-ghost" type="button">
+                  -
+                </button>
+                <button id="mobilePdfZoomInBtn" className="btn-ghost" type="button">
+                  +
+                </button>
+              </div>
+              <div id="mobilePdfCanvasWrap" className="mobile-pdf-canvas-wrap" />
+            </div>
 
             <div id="docxViewer" className="docx-viewer">
               <div id="docxPaper" className="docx-paper" />
@@ -874,6 +900,59 @@ export default function Teas7PracticePage() {
           border:0;
           background:#fff;
           display:none;
+        }
+
+        .mobile-pdf-viewer{
+          display:none;
+          height:100%;
+          overflow:auto;
+          padding:14px;
+          background:#fff;
+        }
+
+        .mobile-pdf-viewer.show{
+          display:block;
+        }
+
+        .mobile-pdf-canvas-wrap{
+          display:flex;
+          flex-direction:column;
+          gap:12px;
+          max-width:820px;
+          margin:0 auto;
+        }
+
+        .mobile-pdf-toolbar{
+          position:sticky;
+          top:0;
+          z-index:2;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+          flex-wrap:wrap;
+          padding:10px;
+          margin-bottom:10px;
+          border:1px solid #e8ebf6;
+          border-radius:12px;
+          background:rgba(255,255,255,.94);
+          backdrop-filter:blur(4px);
+        }
+
+        .mobile-pdf-page-info{
+          font-size:12px;
+          font-weight:800;
+          color:var(--text-main);
+          min-width:96px;
+          text-align:center;
+        }
+
+        .mobile-pdf-page{
+          width:100%;
+          border:1px solid #e8ebf6;
+          border-radius:10px;
+          box-shadow:0 8px 20px rgba(23,35,79,.08);
+          background:#fff;
         }
 
         .docx-viewer{

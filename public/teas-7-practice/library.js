@@ -16,6 +16,13 @@
   const BOOKMARK_KEY = "nursingmocks-teas-library-bookmark-v7";
   let activeSetId = sets[0].id;
   let currentModalFile = null;
+  let mobilePdfRenderToken = 0;
+  let mobilePdfState = {
+    doc: null,
+    page: 1,
+    pages: 1,
+    scale: 1,
+  };
 
   const els = {};
 
@@ -112,12 +119,22 @@
   }
 
   function hideAllViewers() {
+    mobilePdfRenderToken += 1;
     els.previewFrame.style.display = "none";
     els.previewFrame.src = "about:blank";
+    els.mobilePdfViewer.classList.remove("show");
+    els.mobilePdfCanvasWrap.innerHTML = "";
+    mobilePdfState = { doc: null, page: 1, pages: 1, scale: 1 };
+    updateMobilePdfUiState();
     els.docxViewer.classList.remove("show");
     els.docxPaper.innerHTML = "";
     els.fallback.classList.remove("show");
     els.docxLoading.classList.remove("show");
+  }
+
+  function isMobileDevice() {
+    const ua = navigator.userAgent || "";
+    return /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(ua);
   }
 
   function setModalIcon(type) {
@@ -192,8 +209,102 @@
 
   function openPdfPreview(url) {
     hideAllViewers();
+    if (isMobileDevice()) {
+      renderMobilePdfPreview(url);
+      return;
+    }
     els.previewFrame.style.display = "block";
     els.previewFrame.src = url;
+  }
+
+  async function loadPdfJs() {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    try {
+      const pdfModule = await import("https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.min.mjs");
+      if (!window.pdfjsLib) {
+        window.pdfjsLib = pdfModule;
+      }
+    } catch (_err) {
+      return null;
+    }
+    return window.pdfjsLib || null;
+  }
+
+  function updateMobilePdfUiState() {
+    if (!els.mobilePdfPageInfo || !els.mobilePdfPrevBtn || !els.mobilePdfNextBtn) return;
+    const { doc, page, pages } = mobilePdfState;
+    els.mobilePdfPageInfo.textContent = `Page ${page} of ${pages}`;
+    const disabled = !doc;
+    els.mobilePdfPrevBtn.disabled = disabled || page <= 1;
+    els.mobilePdfNextBtn.disabled = disabled || page >= pages;
+    if (els.mobilePdfZoomOutBtn) els.mobilePdfZoomOutBtn.disabled = disabled;
+    if (els.mobilePdfZoomInBtn) els.mobilePdfZoomInBtn.disabled = disabled;
+  }
+
+  async function renderMobilePdfCurrentPage() {
+    const token = mobilePdfRenderToken;
+    const { doc, page, scale } = mobilePdfState;
+    if (!doc) return;
+
+    els.docxLoading.classList.add("show");
+    try {
+      const pdfPage = await doc.getPage(page);
+      if (token !== mobilePdfRenderToken) return;
+      const viewport = pdfPage.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("canvas unavailable");
+      canvas.className = "mobile-pdf-page";
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      els.mobilePdfCanvasWrap.innerHTML = "";
+      els.mobilePdfCanvasWrap.appendChild(canvas);
+      await pdfPage.render({ canvasContext: context, viewport }).promise;
+    } finally {
+      if (token === mobilePdfRenderToken) {
+        els.docxLoading.classList.remove("show");
+      }
+    }
+  }
+
+  async function renderMobilePdfPreview(url) {
+    const token = mobilePdfRenderToken;
+    els.docxLoading.classList.add("show");
+    els.mobilePdfViewer.classList.add("show");
+
+    try {
+      const pdfjs = await loadPdfJs();
+      if (!pdfjs) throw new Error("pdfjs unavailable");
+
+      // Required for PDF.js worker support when loaded from CDN.
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
+
+      const loadingTask = pdfjs.getDocument(url);
+      const pdfDoc = await loadingTask.promise;
+      if (token !== mobilePdfRenderToken) return;
+      const firstPage = await pdfDoc.getPage(1);
+      const initialViewport = firstPage.getViewport({ scale: 1 });
+      const containerWidth = Math.max(280, els.mobilePdfCanvasWrap.clientWidth || 320);
+      const fitScale = containerWidth / initialViewport.width;
+      mobilePdfState = {
+        doc: pdfDoc,
+        page: 1,
+        pages: pdfDoc.numPages,
+        scale: fitScale,
+      };
+      updateMobilePdfUiState();
+      await renderMobilePdfCurrentPage();
+    } catch (_err) {
+      els.mobilePdfViewer.classList.remove("show");
+      els.fallback.classList.add("show");
+      els.fallbackText.textContent = "Mobile PDF preview is unavailable right now. Use Open in New Tab or download the file.";
+      mobilePdfState = { doc: null, page: 1, pages: 1, scale: 1 };
+      updateMobilePdfUiState();
+    } finally {
+      if (token === mobilePdfRenderToken) {
+        els.docxLoading.classList.remove("show");
+      }
+    }
   }
 
   async function openPreview({ title, fileName, type }) {
@@ -285,6 +396,13 @@
     els.shareModalBtn = byId("shareModalBtn");
     els.closeModal = byId("closeModal");
     els.previewFrame = byId("previewFrame");
+    els.mobilePdfViewer = byId("mobilePdfViewer");
+    els.mobilePdfCanvasWrap = byId("mobilePdfCanvasWrap");
+    els.mobilePdfPrevBtn = byId("mobilePdfPrevBtn");
+    els.mobilePdfNextBtn = byId("mobilePdfNextBtn");
+    els.mobilePdfZoomOutBtn = byId("mobilePdfZoomOutBtn");
+    els.mobilePdfZoomInBtn = byId("mobilePdfZoomInBtn");
+    els.mobilePdfPageInfo = byId("mobilePdfPageInfo");
     els.docxViewer = byId("docxViewer");
     els.docxPaper = byId("docxPaper");
     els.docxLoading = byId("docxLoading");
@@ -305,11 +423,42 @@
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && els.previewModal.classList.contains("show")) closePreview();
     });
+    if (els.mobilePdfPrevBtn) {
+      els.mobilePdfPrevBtn.addEventListener("click", async () => {
+        if (!mobilePdfState.doc || mobilePdfState.page <= 1) return;
+        mobilePdfState.page -= 1;
+        updateMobilePdfUiState();
+        await renderMobilePdfCurrentPage();
+      });
+    }
+    if (els.mobilePdfNextBtn) {
+      els.mobilePdfNextBtn.addEventListener("click", async () => {
+        if (!mobilePdfState.doc || mobilePdfState.page >= mobilePdfState.pages) return;
+        mobilePdfState.page += 1;
+        updateMobilePdfUiState();
+        await renderMobilePdfCurrentPage();
+      });
+    }
+    if (els.mobilePdfZoomOutBtn) {
+      els.mobilePdfZoomOutBtn.addEventListener("click", async () => {
+        if (!mobilePdfState.doc) return;
+        mobilePdfState.scale = Math.max(0.5, mobilePdfState.scale - 0.1);
+        await renderMobilePdfCurrentPage();
+      });
+    }
+    if (els.mobilePdfZoomInBtn) {
+      els.mobilePdfZoomInBtn.addEventListener("click", async () => {
+        if (!mobilePdfState.doc) return;
+        mobilePdfState.scale = Math.min(3, mobilePdfState.scale + 0.1);
+        await renderMobilePdfCurrentPage();
+      });
+    }
 
     renderSets();
     renderRightPanel();
     setModalIcon("pdf");
     initBookmark();
+    updateMobilePdfUiState();
   }
 
   if (document.readyState === "loading") {
