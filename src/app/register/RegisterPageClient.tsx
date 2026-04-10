@@ -111,7 +111,12 @@ export default function RegisterPageClient() {
         return;
       }
 
-      await register(formData.email, formData.password, formData.name);
+      await register(
+        formData.email,
+        formData.password,
+        formData.name,
+        formData.program
+      );
 
       try {
         const emailResponse = await fetch("/api/send-welcome-email", {
@@ -502,6 +507,8 @@ export default function RegisterPageClient() {
                     <Image
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                       alt="Google"
+                      width={18}
+                      height={18}
                       className="w-[18px] h-[18px]"
                     />
                     <span>Sign up with Google</span>

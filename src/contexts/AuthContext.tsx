@@ -17,12 +17,18 @@ import {
   GoogleAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { ensureUserDocumentOnRegister } from "@/lib/user-document-firestore";
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    programType?: string
+  ) => Promise<void>;
   loginWithGoogle: () => Promise<UserCredential>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -42,12 +48,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  function register(email: string, password: string, name: string) {
+  function register(
+    email: string,
+    password: string,
+    name: string,
+    programType?: string
+  ) {
     return createUserWithEmailAndPassword(auth, email, password).then(
       async (userCredential) => {
-        // Update user profile with display name
         await updateProfile(userCredential.user, {
           displayName: name,
+        });
+        const normalizedProgram = programType?.trim();
+        await ensureUserDocumentOnRegister(userCredential.user, {
+          fullName: name,
+          focusAreas: normalizedProgram ? [normalizedProgram] : [],
         });
       }
     );
@@ -72,7 +87,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   function loginWithGoogle() {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    return signInWithPopup(auth, provider).then(async (credential) => {
+      const u = credential.user;
+      const fullName =
+        u.displayName?.trim() || u.email?.split("@")[0] || "";
+      await ensureUserDocumentOnRegister(u, {
+        fullName,
+        providerOverride: "google",
+      });
+      return credential;
+    });
   }
 
   function resetPassword(email: string) {

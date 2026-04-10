@@ -371,7 +371,9 @@ export default function LoginPageClient() {
                   <Image
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
-                    className="w-[18px]"
+                    width={18}
+                    height={18}
+                    className="w-[18px] h-[18px]"
                   />
                   <span>Sign in with Google</span>
                 </>
