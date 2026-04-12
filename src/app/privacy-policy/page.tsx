@@ -4,7 +4,6 @@ import Link from "next/link";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
-import TawkToChat from "@/components/ui/TawkToChat";
 
 export default function PrivacyPolicyPage() {
   return (
@@ -299,7 +298,6 @@ export default function PrivacyPolicyPage() {
 
       {/* Floating buttons */}
       <FloatingWhatsAppButton />
-      <TawkToChat />
-        </div>
+    </div>
   );
 }

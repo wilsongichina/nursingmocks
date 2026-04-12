@@ -4,7 +4,6 @@ import { useState } from "react";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
-import TawkToChat from "@/components/ui/TawkToChat";
 
 export default function PricingPage() {
   const [billingMode, setBillingMode] = useState<"monthly" | "yearly">("monthly");
@@ -443,7 +442,6 @@ export default function PricingPage() {
 
       {/* Floating buttons */}
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }

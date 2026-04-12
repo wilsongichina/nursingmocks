@@ -4,7 +4,6 @@ import Link from "next/link";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
-import TawkToChat from "@/components/ui/TawkToChat";
 
 export default function TermsAndConditionsPage() {
   return (
@@ -523,7 +522,6 @@ export default function TermsAndConditionsPage() {
 
       {/* Floating buttons */}
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }

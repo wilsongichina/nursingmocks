@@ -7,7 +7,7 @@ const TawkToChat = () => {
     const script = document.createElement("script");
     script.type = "text/javascript";
     script.async = true;
-    script.src = "https://embed.tawk.to/66ed50184cbc4814f7dbe959/1i87g1oj8";
+    script.src = "https://embed.tawk.to/69da63faa5ae3e1c3b562ef3/1jluhd3ht";
     script.charset = "UTF-8";
     script.setAttribute("crossorigin", "*");
     document.body.appendChild(script);

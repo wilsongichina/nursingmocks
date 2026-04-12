@@ -1,15 +1,15 @@
 (function () {
   const sets = [
-    { id: 6, display: "2026 - TEAS Version 7 Set 6", files: [{ type: "pdf", name: "2026 - ATI TEAS Version 7 Set 6_updated.pdf" }, { type: "word", name: "2026 - ATI TEAS Version 7 Set 6_updated.docx" }] },
-    { id: 7, display: "2026 - TEAS Version 7 Set 7", files: [{ type: "pdf", name: "2026 - ATI TEAS Version 7 Set 7_updated.pdf" }, { type: "word", name: "2026 - ATI TEAS Version 7 Set 7_updated.docx" }] },
-    { id: 8, display: "2026 - TEAS Version 7 Set 8", files: [{ type: "pdf", name: "2026 - ATI TEAS Version 7 Set 8_updated.pdf" }, { type: "word", name: "2026 - ATI TEAS Version 7 Set 8_updated.docx" }] },
-    { id: 9, display: "2026 - TEAS Version 7 Set 9", files: [{ type: "pdf", name: "2026 - ATI TEAS Version 7 Set 9_updated.pdf" }, { type: "word", name: "2026 - ATI TEAS Version 7 Set 9_updated.docx" }] },
-    { id: 10, display: "2026 - TEAS Version 7 Set 10", files: [{ type: "pdf", name: "2026 - ATI TEAS Version 7 Set 10_updated.pdf" }, { type: "word", name: "2026 - ATI TEAS Version 7 Set 10_updated.docx" }] },
-    { id: 1, display: "2025 - TEAS Version 7 Set 1", files: [{ type: "pdf", name: "2025 - ATI TEAS Version 7 Set 1_updated.pdf" }, { type: "word", name: "2025 - ATI TEAS Version 7 Set 1_updated.docx" }] },
-    { id: 2, display: "2025 - TEAS Version 7 Set 2", files: [{ type: "pdf", name: "2025 - ATI TEAS Version 7 Set 2_updated.pdf" }, { type: "word", name: "2025 - ATI TEAS Version 7 Set 2_updated.docx" }] },
-    { id: 3, display: "2025 - TEAS Version 7 Set 3", files: [{ type: "pdf", name: "2025 - ATI TEAS Version 7 Set 3_updated.pdf" }, { type: "word", name: "2025 - ATI TEAS Version 7 Set 3_updated.docx" }] },
-    { id: 4, display: "2025 - TEAS Version 7 Set 4", files: [{ type: "pdf", name: "2025 - ATI TEAS Version 7 Set 4_updated.pdf" }, { type: "word", name: "2025 - ATI TEAS Version 7 Set 4_updated.docx" }] },
-    { id: 5, display: "2025 - TEAS Version 7 Set 5", files: [{ type: "pdf", name: "2025 - ATI TEAS Version 7 Set 5_updated.pdf" }, { type: "word", name: "2025 - ATI TEAS Version 7 Set 5_updated.docx" }] },
+    { id: 6, display: "2026 - TEAS Version 7 Set 6", files: [{ type: "word", name: "2026 - ATI TEAS Version 7 Set 6_updated.docx" }, { type: "pdf", name: "2026 - ATI TEAS Version 7 Set 6_updated.pdf" }] },
+    { id: 7, display: "2026 - TEAS Version 7 Set 7", files: [{ type: "word", name: "2026 - ATI TEAS Version 7 Set 7_updated.docx" }, { type: "pdf", name: "2026 - ATI TEAS Version 7 Set 7_updated.pdf" }] },
+    { id: 8, display: "2026 - TEAS Version 7 Set 8", files: [{ type: "word", name: "2026 - ATI TEAS Version 7 Set 8_updated.docx" }, { type: "pdf", name: "2026 - ATI TEAS Version 7 Set 8_updated.pdf" }] },
+    { id: 9, display: "2026 - TEAS Version 7 Set 9", files: [{ type: "word", name: "2026 - ATI TEAS Version 7 Set 9_updated.docx" }, { type: "pdf", name: "2026 - ATI TEAS Version 7 Set 9_updated.pdf" }] },
+    { id: 10, display: "2026 - TEAS Version 7 Set 10", files: [{ type: "word", name: "2026 - ATI TEAS Version 7 Set 10_updated.docx" }, { type: "pdf", name: "2026 - ATI TEAS Version 7 Set 10_updated.pdf" }] },
+    { id: 1, display: "2025 - TEAS Version 7 Set 1", files: [{ type: "word", name: "2025 - ATI TEAS Version 7 Set 1_updated.docx" }, { type: "pdf", name: "2025 - ATI TEAS Version 7 Set 1_updated.pdf" }] },
+    { id: 2, display: "2025 - TEAS Version 7 Set 2", files: [{ type: "word", name: "2025 - ATI TEAS Version 7 Set 2_updated.docx" }, { type: "pdf", name: "2025 - ATI TEAS Version 7 Set 2_updated.pdf" }] },
+    { id: 3, display: "2025 - TEAS Version 7 Set 3", files: [{ type: "word", name: "2025 - ATI TEAS Version 7 Set 3_updated.docx" }, { type: "pdf", name: "2025 - ATI TEAS Version 7 Set 3_updated.pdf" }] },
+    { id: 4, display: "2025 - TEAS Version 7 Set 4", files: [{ type: "word", name: "2025 - ATI TEAS Version 7 Set 4_updated.docx" }, { type: "pdf", name: "2025 - ATI TEAS Version 7 Set 4_updated.pdf" }] },
+    { id: 5, display: "2025 - TEAS Version 7 Set 5", files: [{ type: "word", name: "2025 - ATI TEAS Version 7 Set 5_updated.docx" }, { type: "pdf", name: "2025 - ATI TEAS Version 7 Set 5_updated.pdf" }] },
   ];
 
   const SUBJECT_TEXT = "20 preview questions • 5 questions from each subject";

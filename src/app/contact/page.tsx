@@ -4,7 +4,6 @@ import SupportContactForm from "@/components/ui/SupportContactForm";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
-import TawkToChat from "@/components/ui/TawkToChat";
 import { FaCircleCheck, FaMagnifyingGlass, FaKey, FaCreditCard, FaCircleExclamation, FaRepeat, FaEnvelope, FaWhatsapp, FaCommentDots } from "react-icons/fa6";
 
 export const metadata: Metadata = {
@@ -327,7 +326,6 @@ export default function ContactPage() {
 
       {/* Floating buttons */}
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }

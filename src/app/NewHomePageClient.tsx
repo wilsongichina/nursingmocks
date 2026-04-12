@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
-import TawkToChat from "@/components/ui/TawkToChat";
 
 const QUIZ_QUESTIONS = [
   {
@@ -846,7 +845,6 @@ export default function NewHomePage() {
 
       {/* Floating buttons */}
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }

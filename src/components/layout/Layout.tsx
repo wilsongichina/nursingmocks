@@ -11,7 +11,6 @@ import { SidebarProvider, useSidebar } from "./SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
 import UserProfileBadge from "./UserProfileBadge";
 import FloatingWhatsAppButton from "../ui/FloatingWhatsAppButton";
-import TawkToChat from "../ui/TawkToChat";
 import MobileBreadcrumb from "../ui/MobileBreadcrumb";
 
 interface LayoutProps {
@@ -1179,7 +1178,6 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
         <NewFooter showSidebar={true} isCollapsed={isCollapsed} />
       </div>
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }
@@ -1265,7 +1263,6 @@ function LayoutWithoutSidebar({ children }: { children: ReactNode }) {
       <main>{children}</main>
       <NewFooter />
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }

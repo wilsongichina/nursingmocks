@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
-import TawkToChat from "@/components/ui/TawkToChat";
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import TiptapContentRenderer from "@/components/editor/TiptapContentRenderer";
 import SectionHeadingsList from "@/components/editor/SectionHeadingsList";
@@ -228,7 +227,6 @@ export default function TipTapEditorPage() {
 
       {/* Floating buttons */}
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }

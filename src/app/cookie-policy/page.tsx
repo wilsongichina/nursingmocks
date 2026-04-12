@@ -3,7 +3,6 @@ import Link from "next/link";
 import NewHeader from "@/components/layout/NewHeader";
 import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
-import TawkToChat from "@/components/ui/TawkToChat";
 
 export const metadata: Metadata = {
   title: "Cookie & Tracking Notice - TEAS Gurus",
@@ -795,7 +794,6 @@ export default function CookiePolicyPage() {
 
       {/* Floating buttons */}
       <FloatingWhatsAppButton />
-      <TawkToChat />
     </div>
   );
 }

@@ -1,6 +1,33 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import Script from "next/script";
+
+function startCheckout(event: MouseEvent<HTMLAnchorElement>, url: string) {
+  event.preventDefault();
+
+  const eventId = "checkout_" + Date.now();
+
+  const ttq = (window as Window & { ttq?: { track: (...args: unknown[]) => void } })
+    .ttq;
+  ttq?.track(
+    "InitiateCheckout",
+    {
+      content_type: "product",
+      content_ids: ["teas_7_bundle"],
+      content_name: "ATI TEAS 7 Practice Sets",
+      value: 99,
+      currency: "USD",
+    },
+    {
+      event_id: eventId,
+    },
+  );
+
+  setTimeout(() => {
+    window.location.href = url;
+  }, 150);
+}
 
 export default function Teas7PracticePage() {
   return (
@@ -44,6 +71,7 @@ export default function Teas7PracticePage() {
                 href="https://stan.store/NursingMocks/p/ati-teas-guide--nursingmocks"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => startCheckout(e, e.currentTarget.href)}
                 data-event="buy_all_10_sets"
                 data-content_name="Buy All 10 Sets"
                 data-content_type="product"
@@ -101,6 +129,7 @@ export default function Teas7PracticePage() {
                     href="https://stan.store/NursingMocks/p/ati-teas-guide--nursingmocks"
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => startCheckout(e, e.currentTarget.href)}
                     data-event="buy_all_10_sets"
                     data-content_name="Buy All 10 Sets"
                     data-content_type="product"
@@ -129,6 +158,7 @@ export default function Teas7PracticePage() {
           href="https://stan.store/NursingMocks/p/ati-teas-guide--nursingmocks"
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => startCheckout(e, e.currentTarget.href)}
           data-event="buy_all_10_sets"
           data-content_name="Buy All 10 Sets"
           data-content_type="product"
@@ -1170,6 +1200,23 @@ export default function Teas7PracticePage() {
           .docx-paper{padding:20px}
         }
       `}</style>
+
+      <Script
+        id="tiktok-teas7-viewcontent"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `ttq.track('ViewContent', {
+  contents: [
+    {
+      content_id: 'teas_7_sets',
+      content_name: 'ATI TEAS 7 Practice Sets'
+    }
+  ],
+  value: 99,
+  currency: 'USD'
+});`,
+        }}
+      />
     </>
   );
 }
