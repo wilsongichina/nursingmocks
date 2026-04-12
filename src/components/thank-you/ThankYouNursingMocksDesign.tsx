@@ -11,8 +11,8 @@ const btnGhostClass =
 
 export function ThankYouNursingMocksDesign() {
   return (
-    <div className="w-full min-h-[calc(100vh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.06),transparent_55%),#f5f6fb] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] text-[#202437] antialiased">
-      <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+    <div className="w-full min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.06),transparent_55%),#f5f6fb] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] text-[#202437] antialiased">
+      <div className="flex min-h-screen flex-col">
         <div className="mx-auto flex w-full max-w-[1220px] flex-1 flex-col justify-center px-4 pb-[70px] pt-[18px] max-md:px-3 max-md:pb-[95px] max-md:pt-4">
           <header
             className="py-2.5 max-md:py-2 max-md:pb-3"

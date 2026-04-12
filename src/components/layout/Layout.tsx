@@ -16,6 +16,8 @@ import MobileBreadcrumb from "../ui/MobileBreadcrumb";
 interface LayoutProps {
   children: ReactNode;
   showSidebar?: boolean;
+  /** When false, omits the global Header (and mobile breadcrumb below it). */
+  showHeader?: boolean;
 }
 
 // Helper function to format breadcrumb labels (convert slugs to readable text)
@@ -1182,7 +1184,13 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
   );
 }
 
-function LayoutWithoutSidebar({ children }: { children: ReactNode }) {
+function LayoutWithoutSidebar({
+  children,
+  showHeader = true,
+}: {
+  children: ReactNode;
+  showHeader?: boolean;
+}) {
   const pathname = usePathname();
 
   // Generate breadcrumb items for static pages
@@ -1252,9 +1260,8 @@ function LayoutWithoutSidebar({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header showLogo={true} />
-      {/* Mobile Breadcrumb */}
-      {mobileBreadcrumbItems.length > 0 && (
+      {showHeader && <Header showLogo={true} />}
+      {showHeader && mobileBreadcrumbItems.length > 0 && (
         <MobileBreadcrumb
           items={mobileBreadcrumbItems}
           className="sticky top-16 z-40"
@@ -1267,7 +1274,11 @@ function LayoutWithoutSidebar({ children }: { children: ReactNode }) {
   );
 }
 
-export default function Layout({ children, showSidebar }: LayoutProps) {
+export default function Layout({
+  children,
+  showSidebar,
+  showHeader = true,
+}: LayoutProps) {
   const pathname = usePathname();
   const [sidebarEnabled, setSidebarEnabled] = useState<boolean | null>(() =>
     showSidebar !== undefined ? showSidebar : null
@@ -1330,5 +1341,9 @@ export default function Layout({ children, showSidebar }: LayoutProps) {
     );
   }
 
-  return <LayoutWithoutSidebar>{children}</LayoutWithoutSidebar>;
+  return (
+    <LayoutWithoutSidebar showHeader={showHeader}>
+      {children}
+    </LayoutWithoutSidebar>
+  );
 }

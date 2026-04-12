@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function ThankYouPage() {
   return (
-    <Layout showSidebar={false}>
+    <Layout showSidebar={false} showHeader={false}>
       <ThankYouNursingMocksDesign />
       <TikTokThankYouPurchaseScript />
     </Layout>
