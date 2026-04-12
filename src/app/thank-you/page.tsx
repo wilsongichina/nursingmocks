@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Layout from "@/components/layout/Layout";
+import { TikTokThankYouPurchaseScript } from "@/components/analytics/TikTokThankYouPurchaseScript";
 import { ThankYouNursingMocksDesign } from "@/components/thank-you/ThankYouNursingMocksDesign";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function ThankYouPage() {
   return (
     <Layout showSidebar={false}>
       <ThankYouNursingMocksDesign />
+      <TikTokThankYouPurchaseScript />
     </Layout>
   );
 }

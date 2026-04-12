@@ -1269,7 +1269,9 @@ function LayoutWithoutSidebar({ children }: { children: ReactNode }) {
 
 export default function Layout({ children, showSidebar }: LayoutProps) {
   const pathname = usePathname();
-  const [sidebarEnabled, setSidebarEnabled] = useState<boolean | null>(null);
+  const [sidebarEnabled, setSidebarEnabled] = useState<boolean | null>(() =>
+    showSidebar !== undefined ? showSidebar : null
+  );
 
   // Determine if sidebar should be shown based on pathname
   useEffect(() => {
