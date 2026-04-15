@@ -274,16 +274,29 @@ export async function updateUserProfileContact(
     display_name: string;
     phone_e164: string | null;
     timezone: string | null;
+    country?: string | null;
+    locale?: string | null;
+    bio?: string | null;
   }
 ): Promise<void> {
   const ref = doc(db, USERS_COLLECTION, uid);
-  await updateDoc(ref, {
+  const updates: DocumentData = {
     full_name: data.full_name,
     phone_e164: data.phone_e164,
     "profile.display_name": data.display_name,
     "profile.timezone": data.timezone,
     updated_at: serverTimestamp(),
-  });
+  };
+  if (data.country !== undefined) {
+    updates["profile.country"] = data.country;
+  }
+  if (data.locale !== undefined) {
+    updates["profile.locale"] = data.locale;
+  }
+  if (data.bio !== undefined) {
+    updates["profile.bio"] = data.bio;
+  }
+  await updateDoc(ref, updates);
 }
 
 export async function updateUserPreferenceFields(
@@ -295,6 +308,7 @@ export async function updateUserPreferenceFields(
     notif_push?: boolean;
     notif_sms?: boolean;
     show_explanations?: boolean;
+    quiz_mode?: "timed" | "tutor";
   }
 ): Promise<void> {
   const ref = doc(db, USERS_COLLECTION, uid);
@@ -316,6 +330,9 @@ export async function updateUserPreferenceFields(
   }
   if (patch.show_explanations !== undefined) {
     updates["preferences.defaults.show_explanations"] = patch.show_explanations;
+  }
+  if (patch.quiz_mode !== undefined) {
+    updates["preferences.defaults.quiz_mode"] = patch.quiz_mode;
   }
   await updateDoc(ref, updates);
 }
