@@ -1,27 +1,14 @@
 import type { Timestamp } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import type { UserDocument } from "@/types/user-document";
+import {
+  inferPrimaryExamIdFromProgramType,
+  PROGRAM_TYPE_LABELS,
+} from "@/lib/program-type";
 
 const PRIMARY_EXAM_LABELS: Record<string, string> = {
   ati_teas_7: "ATI TEAS 7",
   hesi_a2: "HESI A2",
-};
-
-const PROGRAM_TYPE_LABELS: Record<string, string> = {
-  teas: "Pre-Nursing · TEAS Entrance",
-  hesi: "Pre-Nursing · HESI A2 Entrance",
-  "rn-testbank": "RN Program · Nursing Test Bank",
-  "lpn-testbank": "LPN / LVN Program · Nursing Test Bank",
-  "exit-ati": "RN / LPN · ATI Exit / Predictor Prep",
-  "exit-hesi": "RN / LPN · HESI Exit Exam Prep",
-  other: "Other",
-};
-
-const PRIMARY_EXAM_BY_PROGRAM: Record<string, string> = {
-  teas: "ati_teas_7",
-  "exit-ati": "ati_teas_7",
-  hesi: "hesi_a2",
-  "exit-hesi": "hesi_a2",
 };
 
 const SUBSCRIPTION_LABELS: Record<string, string> = {
@@ -125,7 +112,7 @@ export function buildProfileView(
   timezone: string;
   locale: string;
   country: string;
-  focusAreaLabel: string;
+  programTypeLabel: string;
   primaryExamLabel: string;
   subscriptionStatusLabel: string;
   accountStatusLabel: string;
@@ -176,14 +163,12 @@ export function buildProfileView(
   const referralLink = code ? `${origin}/ref/${encodeURIComponent(code)}` : "";
 
   const firstFocusArea = doc?.profile?.focus_areas?.[0]?.trim() ?? "";
-  const inferredPrimaryId = firstFocusArea
-    ? PRIMARY_EXAM_BY_PROGRAM[firstFocusArea]
-    : undefined;
+  const inferredPrimaryId = inferPrimaryExamIdFromProgramType(firstFocusArea);
   const primaryId = doc?.profile?.primary_exam_id ?? inferredPrimaryId;
   const primaryExamLabel = primaryId
     ? PRIMARY_EXAM_LABELS[primaryId] ?? primaryId
     : "Not set";
-  const focusAreaLabel = firstFocusArea
+  const programTypeLabel = firstFocusArea
     ? PROGRAM_TYPE_LABELS[firstFocusArea] ?? firstFocusArea
     : "Not set";
 
@@ -258,7 +243,7 @@ export function buildProfileView(
     timezone: doc?.profile?.timezone ?? "—",
     locale: doc?.profile?.locale ?? "—",
     country: doc?.profile?.country ?? "—",
-    focusAreaLabel,
+    programTypeLabel,
     primaryExamLabel,
     subscriptionStatusLabel,
     accountStatusLabel,

@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { updateProfile } from "firebase/auth";
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+  updateProfile,
+} from "firebase/auth";
 import ct from "countries-and-timezones";
 import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +22,11 @@ import {
   updateUserPreferenceFields,
   updateUserProfileContact,
 } from "@/lib/user-document-firestore";
+import {
+  isValidProgramType,
+  normalizeProgramTypeFromProfile,
+  PROGRAM_TYPE_OPTIONS,
+} from "@/lib/program-type";
 
 type TabKey = "overview" | "account" | "access" | "referrals" | "security";
 
@@ -117,6 +127,7 @@ export default function ProfilePage() {
   const [accountCountry, setAccountCountry] = useState("");
   const [accountLocale, setAccountLocale] = useState("");
   const [accountBio, setAccountBio] = useState("");
+  const [accountProgramType, setAccountProgramType] = useState("");
   const [accountSaving, setAccountSaving] = useState(false);
   const [accountSaveMessage, setAccountSaveMessage] = useState<string | null>(null);
   const [prefDarkMode, setPrefDarkMode] = useState(false);
@@ -133,7 +144,15 @@ export default function ProfilePage() {
   const [securityNewPassword, setSecurityNewPassword] = useState("");
   const [securityConfirmPassword, setSecurityConfirmPassword] = useState("");
   const [securityMessage, setSecurityMessage] = useState<string | null>(null);
+  const [securityPasswordSaving, setSecurityPasswordSaving] = useState(false);
+  const [referralCopyNotice, setReferralCopyNotice] = useState<{
+    text: string;
+    error: boolean;
+  } | null>(null);
   const ensureAttemptedRef = useRef(false);
+  const referralNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const countryOptions = useMemo(() => {
     const displayNames =
       typeof Intl !== "undefined" && "DisplayNames" in Intl
@@ -190,6 +209,8 @@ export default function ProfilePage() {
     setAccountCountry(normalizeCountryCode(userDoc.profile?.country));
     setAccountLocale(userDoc.profile?.locale ?? "");
     setAccountBio(userDoc.profile?.bio ?? "");
+    const rawProgram = userDoc.profile?.focus_areas?.[0]?.trim() ?? "";
+    setAccountProgramType(normalizeProgramTypeFromProfile(rawProgram));
     setPrefDarkMode(!!userDoc.preferences?.dark_mode);
     setPrefEmailUpdates(!!userDoc.preferences?.email_marketing_opt_in);
     setPrefNotifEmail(!!userDoc.preferences?.notifications?.email);
@@ -250,6 +271,11 @@ export default function ProfilePage() {
     setAccountSaveMessage(null);
     setAccountSaving(true);
     try {
+      if (!isValidProgramType(accountProgramType)) {
+        setAccountSaveMessage("Please select a program type.");
+        setAccountSaving(false);
+        return;
+      }
       await updateUserProfileContact(currentUser.uid, {
         full_name: accountFullName.trim(),
         display_name: accountDisplayName.trim(),
@@ -258,6 +284,7 @@ export default function ProfilePage() {
         country: accountCountry.trim() || null,
         locale: accountLocale.trim() || null,
         bio: accountBio.trim() || null,
+        program_type: accountProgramType,
       });
       const u = auth.currentUser;
       if (u) {
@@ -281,6 +308,7 @@ export default function ProfilePage() {
     accountCountry,
     accountLocale,
     accountBio,
+    accountProgramType,
   ]);
 
   const resetAccountForm = useCallback(() => {
@@ -292,6 +320,8 @@ export default function ProfilePage() {
     setAccountCountry(normalizeCountryCode(userDoc.profile?.country));
     setAccountLocale(userDoc.profile?.locale ?? "");
     setAccountBio(userDoc.profile?.bio ?? "");
+    const rawProgram = userDoc.profile?.focus_areas?.[0]?.trim() ?? "";
+    setAccountProgramType(normalizeProgramTypeFromProfile(rawProgram));
     setAccountSaveMessage(null);
   }, [userDoc]);
 
@@ -361,7 +391,7 @@ export default function ProfilePage() {
 
   const canChangePassword = userDoc?.auth?.provider === "password";
 
-  const handleUpdatePassword = useCallback(() => {
+  const handleUpdatePassword = useCallback(async () => {
     setSecurityMessage(null);
     if (
       !securityCurrentPassword.trim() ||
@@ -379,11 +409,98 @@ export default function ProfilePage() {
       setSecurityMessage("New password and confirmation must match.");
       return;
     }
-    setSecurityCurrentPassword("");
-    setSecurityNewPassword("");
-    setSecurityConfirmPassword("");
-    setSecurityMessage("Password updated.");
-  }, [securityConfirmPassword, securityCurrentPassword, securityNewPassword]);
+
+    const u = auth.currentUser;
+    const email = u?.email ?? currentUser?.email ?? null;
+    if (!u || !email) {
+      setSecurityMessage("You must be signed in with an email account to change your password.");
+      return;
+    }
+
+    setSecurityPasswordSaving(true);
+    try {
+      const credential = EmailAuthProvider.credential(
+        email,
+        securityCurrentPassword
+      );
+      await reauthenticateWithCredential(u, credential);
+      await updatePassword(u, securityNewPassword.trim());
+      setSecurityCurrentPassword("");
+      setSecurityNewPassword("");
+      setSecurityConfirmPassword("");
+      setSecurityMessage("Password updated.");
+    } catch (err: unknown) {
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code?: string }).code)
+          : "";
+      let msg = "Could not update password. Please try again.";
+      if (
+        code === "auth/wrong-password" ||
+        code === "auth/invalid-credential" ||
+        code === "auth/invalid-login-credentials"
+      ) {
+        msg = "Current password is incorrect.";
+      } else if (code === "auth/weak-password") {
+        msg = "New password is too weak. Choose a stronger password.";
+      } else if (code === "auth/requires-recent-login") {
+        msg = "Please sign out and sign in again, then try changing your password.";
+      } else if (code === "auth/too-many-requests") {
+        msg = "Too many attempts. Try again later.";
+      } else if (code === "auth/network-request-failed") {
+        msg = "Network error. Check your connection and try again.";
+      }
+      setSecurityMessage(msg);
+    } finally {
+      setSecurityPasswordSaving(false);
+    }
+  }, [
+    currentUser,
+    securityConfirmPassword,
+    securityCurrentPassword,
+    securityNewPassword,
+  ]);
+
+  const showReferralNotice = useCallback((text: string, error: boolean) => {
+    if (referralNoticeTimeoutRef.current) {
+      clearTimeout(referralNoticeTimeoutRef.current);
+    }
+    setReferralCopyNotice({ text, error });
+    referralNoticeTimeoutRef.current = setTimeout(() => {
+      setReferralCopyNotice(null);
+      referralNoticeTimeoutRef.current = null;
+    }, 3200);
+  }, []);
+
+  const copyReferralCode = useCallback(async () => {
+    const code = userDoc?.referral_summary?.referral_code?.trim();
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      showReferralNotice("Referral code copied", false);
+    } catch {
+      showReferralNotice("Could not copy referral code.", true);
+    }
+  }, [userDoc, showReferralNotice]);
+
+  const copyReferralLink = useCallback(async () => {
+    const link = view?.referralLink;
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      showReferralNotice("Referral link copied", false);
+    } catch {
+      showReferralNotice("Could not copy link.", true);
+    }
+  }, [view, showReferralNotice]);
+
+  useEffect(() => {
+    return () => {
+      if (referralNoticeTimeoutRef.current) {
+        clearTimeout(referralNoticeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!loading && !currentUser) {
@@ -426,7 +543,10 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.08),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(79,70,229,0.05),transparent_55%),#f5f6fb]">
         <div className="mx-auto max-w-[1220px] px-4 pb-14 pt-[18px] text-[#202437] max-[560px]:px-[14px] max-[560px]:pb-[46px] max-[560px]:pt-[14px]">
           {docError ? (
-            <p className="mb-3 text-sm text-[#b91c1c]" role="alert">
+            <p
+              className="mb-3 rounded-xl border border-[rgba(239,68,68,0.45)] bg-[#fee2e2] px-3 py-2.5 text-sm font-medium text-[#991b1b]"
+              role="alert"
+            >
               Profile data: {docError}
             </p>
           ) : null}
@@ -504,6 +624,9 @@ export default function ProfilePage() {
                       <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,0.08)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
                         Primary exam: {view.primaryExamLabel}
                       </span>
+                      <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,0.08)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
+                        Program: {view.programTypeLabel}
+                      </span>
                       <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#2baa60]">
                         Subscription: {view.subscriptionStatusLabel}
                       </span>
@@ -547,15 +670,14 @@ export default function ProfilePage() {
                         Share to invite friends
                       </span>
                     </div>
-                    {view.referralLink ? (
-                      <a
-                        href={view.referralLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-semibold text-[#6a5cff]"
+                    {userDoc?.referral_summary?.referral_code?.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() => void copyReferralCode()}
+                        className="font-semibold text-[#6a5cff] underline-offset-2 hover:underline"
                       >
                         {view.referralCode}
-                      </a>
+                      </button>
                     ) : (
                       <div>{view.referralCode}</div>
                     )}
@@ -946,6 +1068,30 @@ export default function ProfilePage() {
                         </div>
                           <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
                           <label className="text-[11px] font-semibold text-[#a0a5bf]">
+                            Program type
+                          </label>
+                          <select
+                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
+                            value={accountProgramType}
+                            onChange={(e) => setAccountProgramType(e.target.value)}
+                            disabled={!userDoc}
+                            required
+                          >
+                            <option value="" disabled>
+                              Select program type
+                            </option>
+                            {PROGRAM_TYPE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="mt-2 text-xs text-[#7a819c]">
+                            Same as at sign-up; you can update it here anytime.
+                          </div>
+                        </div>
+                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
+                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
                             Locale
                           </label>
                           <input
@@ -975,7 +1121,14 @@ export default function ProfilePage() {
                         </div>
 
                         {accountSaveMessage ? (
-                          <div className="mt-3 text-[13px] text-[#7a819c]">
+                          <div
+                            className={`mt-3 rounded-xl border px-3 py-2.5 text-[13px] font-medium ${
+                              accountSaveMessage === "Saved."
+                                ? "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
+                                : "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
+                            }`}
+                            role="alert"
+                          >
                             {accountSaveMessage}
                           </div>
                         ) : null}
@@ -1013,7 +1166,10 @@ export default function ProfilePage() {
                         </div>
 
                         {prefError ? (
-                          <p className="mt-3 text-sm text-[#b91c1c]" role="alert">
+                          <p
+                            className="mt-3 rounded-xl border border-[rgba(239,68,68,0.45)] bg-[#fee2e2] px-3 py-2.5 text-sm font-medium text-[#991b1b]"
+                            role="alert"
+                          >
                             {prefError}
                           </p>
                         ) : null}
@@ -1134,7 +1290,10 @@ export default function ProfilePage() {
                         </div>
 
                         {prefSaveMessage ? (
-                          <div className="mt-3 text-[13px] text-[#7a819c]">
+                          <div
+                            className="mt-3 rounded-xl border border-[rgba(34,197,94,0.45)] bg-[#dcfce7] px-3 py-2.5 text-[13px] font-medium text-[#166534]"
+                            role="status"
+                          >
                             {prefSaveMessage}
                           </div>
                         ) : null}
@@ -1198,10 +1357,7 @@ export default function ProfilePage() {
                           <button
                             type="button"
                             className="inline-flex h-[34px] items-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-3 text-xs font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]"
-                            onClick={() => {
-                              if (!view.referralLink) return;
-                              void navigator.clipboard?.writeText(view.referralLink);
-                            }}
+                            onClick={() => void copyReferralLink()}
                           >
                             Copy referral link
                           </button>
@@ -1213,15 +1369,14 @@ export default function ProfilePage() {
                               Your referral link
                             </div>
                             <div className="mt-3 flex items-center justify-between gap-3 rounded-[14px] border border-dashed border-[rgba(106,92,255,.28)] bg-gradient-to-b from-[rgba(106,92,255,.06)] to-[rgba(106,92,255,.02)] px-4 py-3">
-                              {view.referralLink ? (
-                                <a
-                                  href={view.referralLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="min-w-0 break-all text-base font-semibold text-[#6a5cff]"
+                              {userDoc?.referral_summary?.referral_code?.trim() ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void copyReferralCode()}
+                                  className="min-w-0 break-all text-left text-base font-semibold text-[#6a5cff] underline-offset-2 hover:underline"
                                 >
                                   {view.referralCode}
-                                </a>
+                                </button>
                               ) : (
                                 <span className="text-base font-semibold text-[#6a5cff]">
                                   {view.referralCode}
@@ -1232,8 +1387,8 @@ export default function ProfilePage() {
                               </span>
                             </div>
                             <div className="mt-[10px] rounded-[14px] border border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] px-3 py-[10px] text-xs font-normal text-[#2baa60]">
-                              Referral codes are shown as links so users can share
-                              them directly.
+                              Click your code to copy it. Use &quot;Copy referral
+                              link&quot; for the full invite URL.
                             </div>
                           </div>
 
@@ -1378,10 +1533,11 @@ export default function ProfilePage() {
                             <div className="flex flex-wrap items-center gap-2">
                               <button
                                 type="button"
-                                onClick={handleUpdatePassword}
-                                className="inline-flex h-[34px] items-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-3 text-xs font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px"
+                                disabled={securityPasswordSaving}
+                                onClick={() => void handleUpdatePassword()}
+                                className="inline-flex h-[34px] items-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-3 text-xs font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                Update password
+                                {securityPasswordSaving ? "Updating…" : "Update password"}
                               </button>
                               <button
                                 type="button"
@@ -1431,7 +1587,14 @@ export default function ProfilePage() {
                             </div>
                           </div>
                           {securityMessage ? (
-                            <div className="mt-3 text-[13px] text-[#7a819c]">
+                            <div
+                              className={`mt-3 rounded-xl border px-3 py-2.5 text-[13px] font-medium ${
+                                securityMessage === "Password updated."
+                                  ? "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
+                                  : "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
+                              }`}
+                              role="alert"
+                            >
                               {securityMessage}
                             </div>
                           ) : null}
@@ -1446,6 +1609,19 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {referralCopyNotice ? (
+        <div
+          className={`fixed bottom-6 left-1/2 z-[100] max-w-[min(92vw,400px)] -translate-x-1/2 rounded-xl border px-4 py-3 text-center text-sm font-medium shadow-[0_12px_40px_rgba(15,23,42,0.18)] ${
+            referralCopyNotice.error
+              ? "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
+              : "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
+          }`}
+          role="status"
+        >
+          {referralCopyNotice.text}
+        </div>
+      ) : null}
     </Layout>
   );
 }

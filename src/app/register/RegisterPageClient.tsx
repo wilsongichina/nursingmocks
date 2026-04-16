@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
+import { PROGRAM_TYPE_OPTIONS } from "@/lib/program-type";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -80,8 +81,14 @@ export default function RegisterPageClient() {
     setIsSubmitting(true);
 
     try {
-      if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-        setError("Please fill in all required fields");
+      if (
+        !formData.name ||
+        !formData.email ||
+        !formData.password ||
+        !formData.confirmPassword ||
+        !formData.program
+      ) {
+        setError("Please fill in all required fields, including program type");
         setIsSubmitting(false);
         return;
       }
@@ -168,10 +175,18 @@ export default function RegisterPageClient() {
 
   const handleGoogleSignUp = async () => {
     setError("");
+    if (!formData.program) {
+      setError("Please select your program type before continuing with Google");
+      return;
+    }
+    if (!formData.terms) {
+      setError("Please agree to the Terms & Conditions and Privacy Policy");
+      return;
+    }
     setIsGoogleLoading(true);
 
     try {
-      const userCredential = await loginWithGoogle();
+      const userCredential = await loginWithGoogle({ programType: formData.program });
       const user = userCredential.user;
 
       if (user) {
@@ -440,7 +455,7 @@ export default function RegisterPageClient() {
 
               <div className="mb-4">
                 <label htmlFor="program" className="block text-[13px] font-semibold mb-1.5 text-[#111827]">
-                  Program Type (Optional)
+                  Program type <span className="text-red-600">*</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-[14px] top-1/2 -translate-y-1/2 text-[#9ca3af] text-[14px]">
@@ -451,17 +466,18 @@ export default function RegisterPageClient() {
                     name="program"
                     value={formData.program}
                     onChange={handleChange}
+                    required
                     className="w-full py-[11px] px-[14px] pl-[38px] pr-8 rounded-full border border-[#e5e7eb] bg-[#f5f7ff] text-[14px] text-[#0f172a] outline-none focus:bg-white focus:border-[#2563eb] focus:shadow-[0_0_0_1px_rgba(37,99,235,0.2)]"
                     style={{ color: '#0f172a' }}
                   >
-                    <option value="">Select your program</option>
-                    <option value="teas">Pre-Nursing · TEAS Entrance</option>
-                    <option value="hesi">Pre-Nursing · HESI A2 Entrance</option>
-                    <option value="rn-testbank">RN Program · Nursing Test Bank</option>
-                    <option value="lpn-testbank">LPN / LVN Program · Nursing Test Bank</option>
-                    <option value="exit-ati">RN / LPN · ATI Exit / Predictor Prep</option>
-                    <option value="exit-hesi">RN / LPN · HESI Exit Exam Prep</option>
-                    <option value="other">Other</option>
+                    <option value="" disabled>
+                      Select program type
+                    </option>
+                    {PROGRAM_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

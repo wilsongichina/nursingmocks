@@ -24,6 +24,7 @@ import type {
   UserDocument,
   UserDocumentAuthProvider,
 } from "@/types/user-document";
+import { inferPrimaryExamIdFromProgramType } from "@/lib/program-type";
 
 const USERS_COLLECTION = "users";
 
@@ -35,11 +36,7 @@ function mapAuthProvider(user: User): UserDocumentAuthProvider {
 }
 
 function inferPrimaryExamId(focusAreas: string[] | undefined): string | null {
-  const first = focusAreas?.[0];
-  if (!first) return null;
-  if (first === "teas" || first === "exit-ati") return "ati_teas_7";
-  if (first === "hesi" || first === "exit-hesi") return "hesi_a2";
-  return null;
+  return inferPrimaryExamIdFromProgramType(focusAreas?.[0]);
 }
 
 function buildInitialUserPayload(
@@ -277,6 +274,8 @@ export async function updateUserProfileContact(
     country?: string | null;
     locale?: string | null;
     bio?: string | null;
+    /** Stored as `profile.focus_areas` (single entry) */
+    program_type?: string;
   }
 ): Promise<void> {
   const ref = doc(db, USERS_COLLECTION, uid);
@@ -295,6 +294,9 @@ export async function updateUserProfileContact(
   }
   if (data.bio !== undefined) {
     updates["profile.bio"] = data.bio;
+  }
+  if (data.program_type !== undefined) {
+    updates["profile.focus_areas"] = [data.program_type];
   }
   await updateDoc(ref, updates);
 }

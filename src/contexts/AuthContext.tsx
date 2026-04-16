@@ -27,9 +27,9 @@ interface AuthContextType {
     email: string,
     password: string,
     name: string,
-    programType?: string
+    programType: string
   ) => Promise<void>;
-  loginWithGoogle: () => Promise<UserCredential>;
+  loginWithGoogle: (options?: { programType?: string }) => Promise<UserCredential>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -52,17 +52,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     name: string,
-    programType?: string
+    programType: string
   ) {
     return createUserWithEmailAndPassword(auth, email, password).then(
       async (userCredential) => {
         await updateProfile(userCredential.user, {
           displayName: name,
         });
-        const normalizedProgram = programType?.trim();
+        const normalizedProgram = programType.trim();
         await ensureUserDocumentOnRegister(userCredential.user, {
           fullName: name,
-          focusAreas: normalizedProgram ? [normalizedProgram] : [],
+          focusAreas: [normalizedProgram],
         });
       }
     );
@@ -85,15 +85,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return signOut(auth);
   }
 
-  function loginWithGoogle() {
+  function loginWithGoogle(options?: { programType?: string }) {
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider).then(async (credential) => {
       const u = credential.user;
       const fullName =
         u.displayName?.trim() || u.email?.split("@")[0] || "";
+      const normalizedProgram = options?.programType?.trim();
       await ensureUserDocumentOnRegister(u, {
         fullName,
         providerOverride: "google",
+        focusAreas: normalizedProgram ? [normalizedProgram] : undefined,
       });
       return credential;
     });

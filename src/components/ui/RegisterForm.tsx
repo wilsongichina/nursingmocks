@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { PROGRAM_TYPE_OPTIONS } from "@/lib/program-type";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -13,13 +14,14 @@ export default function RegisterForm() {
     email: "",
     password: "",
     confirmPassword: "",
+    program: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -39,9 +41,10 @@ export default function RegisterForm() {
         !formData.name ||
         !formData.email ||
         !formData.password ||
-        !formData.confirmPassword
+        !formData.confirmPassword ||
+        !formData.program
       ) {
-        setError("Please fill in all fields");
+        setError("Please fill in all fields, including program type");
         setIsSubmitting(false);
         return;
       }
@@ -69,7 +72,7 @@ export default function RegisterForm() {
       }
 
       // Firebase authentication
-      await register(formData.email, formData.password, formData.name);
+      await register(formData.email, formData.password, formData.name, formData.program);
 
       // Send welcome email (don't block on failure)
       try {
@@ -127,10 +130,19 @@ export default function RegisterForm() {
 
   const handleGoogleSignUp = async () => {
     setError("");
+    if (!formData.program) {
+      setError("Please select your program type before continuing with Google");
+      return;
+    }
+    const termsEl = document.getElementById("terms") as HTMLInputElement | null;
+    if (!termsEl?.checked) {
+      setError("Please agree to the Terms and Conditions and Privacy Policy");
+      return;
+    }
     setIsGoogleLoading(true);
 
     try {
-      const userCredential = await loginWithGoogle();
+      const userCredential = await loginWithGoogle({ programType: formData.program });
       const user = userCredential.user;
 
       // Send welcome email for Google sign-up (don't block on failure)
@@ -374,6 +386,32 @@ export default function RegisterForm() {
             placeholder="Confirm your password"
           />
         </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="program"
+          className="block text-sm font-semibold text-gray-700 mb-2"
+        >
+          Program type <span className="text-red-600">*</span>
+        </label>
+        <select
+          id="program"
+          name="program"
+          value={formData.program}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
+        >
+          <option value="" disabled>
+            Select program type
+          </option>
+          {PROGRAM_TYPE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex items-center">
