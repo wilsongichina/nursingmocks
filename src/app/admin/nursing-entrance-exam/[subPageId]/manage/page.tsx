@@ -145,7 +145,7 @@ export default function ManageSubPage({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
+            ogImage: pageData.meta?.ogImage || getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `${getSiteUrl()}/${resolvedParams.subPageId}`,
@@ -198,7 +198,7 @@ export default function ManageSubPage({
             keywords: `${resolvedParams.subPageId}, nursing entrance exam`,
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
-            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/${resolvedParams.subPageId}`,
           },
           schema: "",
@@ -342,7 +342,7 @@ export default function ManageSubPage({
           keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing entrance exam`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
-          ogImage: getImageUrl("/teas-gurus-logo.png"),
+          ogImage: getImageUrl("/nursing-mocks-logo.png"),
           canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,
         },
         schema: "",

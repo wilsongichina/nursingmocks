@@ -39,6 +39,7 @@ export default function ManageQuizzes({
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
   const [newQuizId, setNewQuizId] = useState("");
   const [newQuizName, setNewQuizName] = useState("");
+  const [newQuizSetNumber, setNewQuizSetNumber] = useState("");
   const [validationError, setValidationError] = useState("");
   const [saving, setSaving] = useState(false);
   const [parentSubPageName, setParentSubPageName] = useState("");
@@ -172,6 +173,7 @@ export default function ManageQuizzes({
       const defaultQuizContent = {
         pageName: newQuizName,
         slug: normalizedQuizId, // User-entered slug (no prefix)
+        setNumber: newQuizSetNumber ? Number(newQuizSetNumber) : undefined,
         meta: {
           title: `${newQuizName} | TeasGurus`,
           description: `Content for ${newQuizName} under ${
@@ -180,7 +182,7 @@ export default function ManageQuizzes({
           keywords: `${newQuizName}, ${nestedSubPageName}, ${parentSubPageName}, nursing exit exam`,
           ogTitle: `${newQuizName} | TeasGurus`,
           ogDescription: `Content for ${newQuizName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `https://teasgurus.com/${finalSlug}`,
         },
         hero: {
@@ -201,6 +203,7 @@ export default function ManageQuizzes({
         setShowCreateQuizModal(false);
         setNewQuizId("");
         setNewQuizName("");
+        setNewQuizSetNumber("");
         setValidationError("");
         loadQuizzes();
         setTimeout(() => setSuccess(""), 3000);
@@ -732,6 +735,19 @@ export default function ManageQuizzes({
                   This will create a quiz at /{newQuizId || "quiz-id"}
                 </p>
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Set Number
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newQuizSetNumber}
+                  onChange={(e) => setNewQuizSetNumber(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="e.g., 1"
+                />
+              </div>
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
@@ -746,6 +762,7 @@ export default function ManageQuizzes({
                     setShowCreateQuizModal(false);
                     setNewQuizId("");
                     setNewQuizName("");
+                    setNewQuizSetNumber("");
                     setValidationError("");
                   }}
                   className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"

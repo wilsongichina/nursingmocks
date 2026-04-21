@@ -49,7 +49,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               "@id": `${siteUrl}/#organization`,
               name: siteName,
               url: `${siteUrl}/`,
-              logo: `${siteUrl}/teas-gurus-logo.png`,
+              logo: `${siteUrl}/nursing-mocks-logo.png`,
               sameAs: [
                 "https://instagram.com/teasgurus",
                 "https://www.linkedin.com/company/teasgurus",

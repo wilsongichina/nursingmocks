@@ -85,7 +85,7 @@ export default function Header({
             <div className="flex items-center h-full">
               <Link href="/" aria-label="NursingMocks Home" className="flex items-center h-full">
                 <Image
-                  src="/teas-gurus-logo.png"
+                  src="/nursing-mocks-logo.png"
                   alt="NursingMocks Logo"
                   width={150}
                   height={40}

@@ -7,6 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import TiptapEditor from "@/components/editor/TiptapEditor";
+import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
 import Link from "next/link";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
@@ -38,6 +39,7 @@ interface NestedPageContent {
     description: string;
   };
   bodyContent: string; // Tiptap editor content
+  faqs?: FaqItem[];
 }
 
 function EditNestedSubPageContent({
@@ -115,7 +117,7 @@ function EditNestedSubPageContent({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            ogImage: pageData.meta?.ogImage || "/nursing-mocks-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `${
@@ -133,6 +135,7 @@ function EditNestedSubPageContent({
               pageData.hero?.description || pageData.description || "",
           },
           bodyContent: pageData.bodyContent || "",
+          faqs: Array.isArray(pageData.faqs) ? pageData.faqs : [],
         };
 
         setContent(initializedContent);
@@ -153,7 +156,7 @@ function EditNestedSubPageContent({
             keywords: `${resolvedParams.nestedSubPageId}, ${resolvedParams.subPageId}, nursing exit exam`,
             ogTitle: `${resolvedParams.nestedSubPageId} | NursingMocks`,
             ogDescription: `Content for ${resolvedParams.nestedSubPageId}`,
-            ogImage: "/teas-gurus-logo.png",
+            ogImage: "/nursing-mocks-logo.png",
             canonicalUrl: `${
               process.env.NEXT_PUBLIC_SITE_URL || "https://nursingmocks.com"
             }/${defaultSlug}`,
@@ -164,6 +167,7 @@ function EditNestedSubPageContent({
             description: "",
           },
           bodyContent: "",
+          faqs: [],
         };
         setContent(defaultContent);
         setSlug(defaultSlug);
@@ -202,6 +206,7 @@ function EditNestedSubPageContent({
         schema: content.schema,
         hero: content.hero,
         bodyContent: content.bodyContent || "",
+        faqs: Array.isArray(content.faqs) ? content.faqs : [],
       };
 
       const result = await uploadNursingExitExamNestedSubPage(
@@ -837,6 +842,12 @@ function EditNestedSubPageContent({
                   editable={true}
                 />
               </div>
+
+              <FaqEditor
+                label="FAQs (shown on the live page)"
+                value={content.faqs}
+                onChange={(faqs) => setContent({ ...content, faqs })}
+              />
             </section>
           </div>
         </div>

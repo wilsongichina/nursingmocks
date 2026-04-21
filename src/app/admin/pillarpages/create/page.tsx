@@ -53,7 +53,7 @@ export default function CreatePillarPage() {
       keywords: "",
       ogTitle: "",
       ogDescription: "",
-      ogImage: "/teas-gurus-logo.png",
+      ogImage: "/nursing-mocks-logo.png",
       canonicalUrl: "",
     },
     hero: {
@@ -524,7 +524,7 @@ export default function CreatePillarPage() {
                     value={content.meta.ogImage}
                     onChange={(e) => handleMetaChange("ogImage", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                    placeholder="/teas-gurus-logo.png"
+                    placeholder="/nursing-mocks-logo.png"
                   />
                 </div>
                 <div>

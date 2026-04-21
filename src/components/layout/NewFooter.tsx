@@ -58,7 +58,7 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
               aria-label="NursingMocks home"
             >
               <Image
-                src="/teas-gurus-logo.png"
+                src="/nursing-mocks-logo.png"
                 alt="NursingMocks Logo"
                 width={150}
                 height={40}

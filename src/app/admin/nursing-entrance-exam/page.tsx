@@ -162,6 +162,7 @@ function NursingEntranceExamAdminPageContent() {
     useState<any | null>(null);
   const [newQuizId, setNewQuizId] = useState("");
   const [newQuizName, setNewQuizName] = useState("");
+  const [newQuizSetNumber, setNewQuizSetNumber] = useState("");
   const [quizValidationError, setQuizValidationError] = useState("");
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -711,13 +712,14 @@ function NursingEntranceExamAdminPageContent() {
       const defaultQuizContent = {
         pageName: newQuizName,
         slug: normalizedQuizId,
+        setNumber: newQuizSetNumber ? Number(newQuizSetNumber) : undefined,
         meta: {
           title: `${newQuizName} | TeasGurus`,
           description: `Content for ${newQuizName} under ${nestedSubPageName}.`,
           keywords: `${newQuizName}, ${nestedSubPageName}, nursing entrance exam`,
           ogTitle: `${newQuizName} | TeasGurus`,
           ogDescription: `Content for ${newQuizName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedQuizId}`,
         },
         hero: {
@@ -739,6 +741,7 @@ function NursingEntranceExamAdminPageContent() {
         setSelectedNestedSubPageForQuiz(null);
         setNewQuizId("");
         setNewQuizName("");
+        setNewQuizSetNumber("");
         setQuizValidationError("");
         loadSubPages(); // Reload to refresh quizzes
         setTimeout(() => setSuccess(""), 3000);
@@ -809,7 +812,7 @@ function NursingEntranceExamAdminPageContent() {
           keywords: `${newNestedSubPageName}, ${parentSubPageId}, nursing entrance exam`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,
         },
         schema: "",
@@ -898,7 +901,7 @@ function NursingEntranceExamAdminPageContent() {
           keywords: `${newKbArticleName}, nursing entrance exam, knowledge base`,
           ogTitle: `${newKbArticleName} | Nursing Entrance Exam`,
           ogDescription: `KB Article: ${newKbArticleName} under Nursing Entrance Exam.`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedKbArticleId}`,
         },
         schema: "",
@@ -985,7 +988,7 @@ function NursingEntranceExamAdminPageContent() {
           keywords: `${newSubPageName}, nursing entrance exam`,
           ogTitle: `${newSubPageName} | Nursing Entrance Exam`,
           ogDescription: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedSubPageId}`,
         },
         schema: "",
@@ -1982,7 +1985,11 @@ function NursingEntranceExamAdminPageContent() {
                         e.currentTarget.style.borderColor = "#e5e7eb";
                       }}
                     >
-                      + New Sub Page
+                      {activeTab === "nested"
+                        ? "+ New Nested Sub-page"
+                        : activeTab === "quizzes"
+                        ? "+ New Quiz"
+                        : "+ New Sub Page"}
                     </button>
                   )}
                 </div>
@@ -5795,6 +5802,45 @@ function NursingEntranceExamAdminPageContent() {
                             color: "#111827",
                           }}
                         >
+                          Set Number
+                        </label>
+                      </div>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newQuizSetNumber}
+                        onChange={(e) => setNewQuizSetNumber(e.target.value)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                        }}
+                        placeholder="e.g., 1"
+                      />
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
                           Slug URL
                           <span style={{ color: "#ef4444", marginLeft: "2px" }}>
                             *
@@ -5884,6 +5930,7 @@ function NursingEntranceExamAdminPageContent() {
                         setSelectedNestedSubPageForQuiz(null);
                         setNewQuizId("");
                         setNewQuizName("");
+                        setNewQuizSetNumber("");
                         setQuizValidationError("");
                       }}
                       style={{

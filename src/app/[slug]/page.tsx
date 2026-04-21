@@ -225,6 +225,63 @@ interface ServiceContent {
   };
 }
 
+interface TocItem {
+  id: string;
+  title: string;
+  level: number;
+}
+
+const createHeadingId = (text: string, index: number) => {
+  const slug = text
+    .toLowerCase()
+    .replace(/<[^>]*>/g, "")
+    .replace(/&[a-z0-9#]+;/gi, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || `section-${index + 1}`;
+};
+
+const buildTocAndBodyContent = (
+  htmlContent: string
+): { tocItems: TocItem[]; contentWithHeadingIds: string } => {
+  if (!htmlContent) {
+    return { tocItems: [], contentWithHeadingIds: htmlContent };
+  }
+
+  const tocItems: TocItem[] = [];
+  let headingIndex = 0;
+
+  const contentWithHeadingIds = htmlContent.replace(
+    /<h([1-6])([^>]*)>([\s\S]*?)<\/h\1>/gi,
+    (fullMatch, level, attrs, innerHtml) => {
+      const title = innerHtml.replace(/<[^>]*>/g, "").trim();
+      if (!title) {
+        return fullMatch;
+      }
+
+      const existingIdMatch = attrs.match(/\sid=(["'])(.*?)\1/i);
+      const id = existingIdMatch?.[2] || createHeadingId(title, headingIndex);
+
+      tocItems.push({
+        id,
+        title,
+        level: parseInt(level, 10),
+      });
+
+      headingIndex += 1;
+
+      if (existingIdMatch) {
+        return fullMatch;
+      }
+
+      return `<h${level}${attrs} id="${id}">${innerHtml}</h${level}>`;
+    }
+  );
+
+  return { tocItems, contentWithHeadingIds };
+};
+
 const _getIconComponent = (iconName: string) => {
   const iconMap: { [key: string]: React.ReactNode } = {
     check: (
@@ -474,7 +531,7 @@ export async function generateMetadata({
             `${getSiteUrl()}/${slug}`,
           images: [
             {
-              url: data.meta.ogImage ? getImageUrl(data.meta.ogImage) : getImageUrl("/teas-gurus-logo.png"),
+              url: data.meta.ogImage ? getImageUrl(data.meta.ogImage) : getImageUrl("/nursing-mocks-logo.png"),
               width: 1200,
               height: 630,
               alt: data.meta.title || slug,
@@ -1376,7 +1433,7 @@ export default async function DynamicPage({
       keywords: `${slug}`,
       ogTitle: `${slug} | TeasGurus`,
       ogDescription: `Content for ${slug}`,
-      ogImage: getImageUrl("/teas-gurus-logo.png"),
+      ogImage: getImageUrl("/nursing-mocks-logo.png"),
       canonicalUrl: `${getSiteUrl()}/${slug}`,
     },
     schema: pageData.schema || "",
@@ -1418,6 +1475,7 @@ export default async function DynamicPage({
   const pageHeading = pageData.heading || pageData.pageName || slug;
   const pageDescription = pageData.description || pageData.content || "";
   const bodyContent = pageData.bodyContent || "";
+  const { tocItems, contentWithHeadingIds } = buildTocAndBodyContent(bodyContent);
 
   // Render content page (sub, nested, or topic)
   return (
@@ -1569,58 +1627,34 @@ export default async function DynamicPage({
         {/* MOBILE-ONLY KB HERO CARD - removed from mobile view */}
 
         {/* MOBILE ONLY: On this page card */}
-        <div className="mt-8 sm:hidden">
-          <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
-            <div className="text-sm font-semibold mb-1 text-[#202437]">
-              On this page
+        {tocItems.length > 0 && (
+          <div className="mt-8 sm:hidden">
+            <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
+              <div className="text-sm font-semibold mb-1 text-[#202437]">
+                On this page
+              </div>
+              <div className="text-xs text-[#6b7280] mb-2">
+                Jump to any section of the article.
+              </div>
+              <ul className="list-none p-0 m-0 text-[13px]">
+                {tocItems.map((item, index) => (
+                  <li
+                    key={item.id}
+                    className="py-1"
+                    style={{ paddingLeft: `${Math.max(0, item.level - 1) * 8}px` }}
+                  >
+                    <a
+                      href={`#${item.id}`}
+                      className="text-[#5548e0] no-underline hover:underline break-words"
+                    >
+                      {index + 1}. {item.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="text-xs text-[#6b7280] mb-2">
-              Jump to any section of the article.
-            </div>
-            <ul className="list-none p-0 m-0 text-[13px]">
-              <li className="py-1">
-                <a
-                  href="#what-is-teas-7"
-                  className="text-[#5548e0] no-underline hover:underline break-words"
-                >
-                  1. Quick Overview – {content.pageName} Practice at a Glance
-                </a>
-              </li>
-              <li className="py-1">
-                <a
-                  href="#section-breakdown"
-                  className="text-[#5548e0] no-underline hover:underline break-words"
-                >
-                  2. {content.pageName} Practice Questions by Subject
-                </a>
-              </li>
-              <li className="py-1">
-                <a
-                  href="#how-to-use-this-page"
-                  className="text-[#5548e0] no-underline hover:underline break-words"
-                >
-                  3. How to Use This {content.pageName} Practice Page
-                </a>
-              </li>
-              <li className="py-1">
-                <a
-                  href="#weekly-plan"
-                  className="text-[#5548e0] no-underline hover:underline break-words"
-                >
-                  4. Sample 1–2 Week {content.pageName} Practice Plan
-                </a>
-              </li>
-              <li className="py-1">
-                <a
-                  href="#review-vs-exam-mode"
-                  className="text-[#5548e0] no-underline hover:underline break-words"
-                >
-                  5. Review Mode vs Exam Mode
-                </a>
-              </li>
-            </ul>
           </div>
-        </div>
+        )}
 
         {/* CONTENT AREA */}
         <section className="mt-5 sm:mt-8">
@@ -1629,109 +1663,76 @@ export default async function DynamicPage({
             {/* LEFT COLUMN: Article + FAQ */}
             <div className="flex flex-col gap-8 w-full">
               <article className="bg-white rounded-[18px] border border-[rgba(148,163,184,0.55)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[16px_18px_18px] w-full">
-                <h2
-                  id="what-is-teas-7"
-                  className="text-center text-xl font-bold my-[22px_18px] pb-[10px] relative after:content-[''] after:block after:h-[1px] after:border-t after:border-dotted after:border-[#d4d7f0] after:w-full after:mt-[10px] text-[#202437]"
-                >
-                  Quick Overview – {content.pageName} Practice at a Glance
-                </h2>
-
                 {bodyContent && (
                   <div className="text-sm leading-[1.7] text-[#202437]">
-                    <TiptapContentRenderer content={bodyContent} />
+                    <TiptapContentRenderer content={contentWithHeadingIds} />
                   </div>
                 )}
               </article>
 
               {/* FAQ */}
-              <section className="text-left">
-                <div className="text-center mb-10">
-                  <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">
-                    {content.pageName} Questions
+              {Array.isArray(pageData.faqs) && pageData.faqs.length > 0 && (
+                <section className="text-left">
+                  <div className="text-center mb-10">
+                    <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">
+                      {content.pageName} Questions
+                    </div>
+                    <h2 className="text-2xl font-semibold mb-3 text-slate-900">
+                      {content.pageName} Practice Test FAQ
+                    </h2>
+                    <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+                      Frequently asked questions for this page.
+                    </p>
                   </div>
-                  <h2 className="text-2xl font-semibold mb-3 text-slate-900">
-                    {content.pageName} Practice Test FAQ
-                  </h2>
-                  <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-                    These short answers cover how the {content.pageName}{" "}
-                    practice questions work and how to use them effectively for
-                    exam preparation.
-                  </p>
-                </div>
 
-                <div className="max-w-[800px] mx-auto">
-                  <div className="space-y-3">
-                    <FAQAccordion
-                      question={`How many questions are in each ${content.pageName} practice test?`}
-                      answer={`Our ${content.pageName} practice sets are built to feel like mini-exams. Each set usually ranges from 20–40 questions, and full-length practice tests mirror the real ${content.pageName} structure as closely as possible. You'll see separate sets for Reading, Math, Science, and English, as well as mixed "all subjects" practice for realistic exam days.`}
-                      defaultOpen={true}
-                    />
-                    <FAQAccordion
-                      question={`Are your ${content.pageName} practice questions similar to the real exam?`}
-                      answer={`Yes. Every question is written to match the current ${content.pageName} blueprint in both difficulty and style. We focus on the same skills you'll see on test day—passage reading, applied math, core science concepts, and English grammar—so your practice time directly prepares you for the real exam, not just a generic quiz.`}
-                    />
-                    <FAQAccordion
-                      question={`How often should I take a full-length ${content.pageName} practice test?`}
-                      answer={`If your exam is more than a month away, taking a full-length practice test every 1–2 weeks is usually enough. In the final two weeks, many students like to add an extra full test to check timing and stamina. Between those full runs, use shorter, focused sessions in Review Mode to fix your weak spots.`}
-                    />
+                  <div className="max-w-[800px] mx-auto">
+                    <div className="space-y-3">
+                      {pageData.faqs.map(
+                        (faq: any, idx: number) =>
+                          faq?.question &&
+                          faq?.answer && (
+                            <FAQAccordion
+                              key={`${idx}-${faq.question}`}
+                              question={String(faq.question)}
+                              answer={String(faq.answer)}
+                              defaultOpen={idx === 0}
+                            />
+                          )
+                      )}
+                    </div>
                   </div>
-                </div>
-              </section>
+                </section>
+              )}
             </div>
 
             {/* RIGHT COLUMN: sidebar (hidden on mobile) */}
             <aside className="hidden sm:flex flex-col gap-3 w-full">
-              <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
-                <div className="text-sm font-semibold mb-1 text-[#202437]">
-                  On this page
+              {tocItems.length > 0 && (
+                <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
+                  <div className="text-sm font-semibold mb-1 text-[#202437]">
+                    On this page
+                  </div>
+                  <div className="text-xs text-[#6b7280] mb-2">
+                    Jump to any section of the article.
+                  </div>
+                  <ul className="list-none p-0 m-0 text-[13px]">
+                    {tocItems.map((item, index) => (
+                      <li
+                        key={item.id}
+                        className="py-1"
+                        style={{ paddingLeft: `${Math.max(0, item.level - 1) * 8}px` }}
+                      >
+                        <a
+                          href={`#${item.id}`}
+                          className="text-[#5548e0] no-underline hover:underline break-words"
+                        >
+                          {index + 1}. {item.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="text-xs text-[#6b7280] mb-2">
-                  Jump to any section of the article.
-                </div>
-                <ul className="list-none p-0 m-0 text-[13px]">
-                  <li className="py-1">
-                    <a
-                      href="#what-is-teas-7"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      1. Quick Overview – {content.pageName} Practice at a
-                      Glance
-                    </a>
-                  </li>
-                  <li className="py-1">
-                    <a
-                      href="#section-breakdown"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      2. {content.pageName} Practice Questions by Subject
-                    </a>
-                  </li>
-                  <li className="py-1">
-                    <a
-                      href="#how-to-use-this-page"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      3. How to Use This {content.pageName} Practice Page
-                    </a>
-                  </li>
-                  <li className="py-1">
-                    <a
-                      href="#weekly-plan"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      4. Sample 1–2 Week {content.pageName} Practice Plan
-                    </a>
-                  </li>
-                  <li className="py-1">
-                    <a
-                      href="#review-vs-exam-mode"
-                      className="text-[#5548e0] no-underline hover:underline break-words"
-                    >
-                      5. Review Mode vs Exam Mode
-                    </a>
-                  </li>
-                </ul>
-              </div>
+              )}
 
             </aside>
           </div>

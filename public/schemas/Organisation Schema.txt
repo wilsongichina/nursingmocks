@@ -5,7 +5,7 @@
   "name": "TEAS Gurus",
   "description": "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
   "url": "https://teasgurus.com/",
-  "logo": "https://teasgurus.com/teas-gurus-logo.png",
+  "logo": "https://teasgurus.com/nursing-mocks-logo.png",
   "sameAs": [
     "https://instagram.com/teasgurus",
     "https://www.linkedin.com/company/teasgurus",

@@ -7,6 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import TiptapEditor from "@/components/editor/TiptapEditor";
+import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
 import Link from "next/link";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
@@ -38,6 +39,7 @@ interface TopicPageContent {
     description: string;
   };
   bodyContent: string; // Tiptap editor content
+  faqs?: FaqItem[];
 }
 
 function EditTopicContent({
@@ -117,7 +119,7 @@ function EditTopicContent({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            ogImage: pageData.meta?.ogImage || "/nursing-mocks-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `${
@@ -135,6 +137,7 @@ function EditTopicContent({
               pageData.hero?.description || pageData.description || "",
           },
           bodyContent: pageData.bodyContent || "",
+          faqs: Array.isArray(pageData.faqs) ? pageData.faqs : [],
         };
 
         setContent(initializedContent);
@@ -155,7 +158,7 @@ function EditTopicContent({
             keywords: `${resolvedParams.topicId}, ${resolvedParams.nestedSubPageId}, ${resolvedParams.subPageId}, nursing test bank`,
             ogTitle: `${resolvedParams.topicId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.topicId}`,
-            ogImage: "/teas-gurus-logo.png",
+            ogImage: "/nursing-mocks-logo.png",
             canonicalUrl: `${
               process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
             }/${defaultSlug}`,
@@ -166,6 +169,7 @@ function EditTopicContent({
             description: "",
           },
           bodyContent: "",
+          faqs: [],
         };
         setContent(defaultContent);
       }
@@ -201,6 +205,7 @@ function EditTopicContent({
         schema: content.schema,
         hero: content.hero,
         bodyContent: content.bodyContent || "",
+        faqs: Array.isArray(content.faqs) ? content.faqs : [],
       };
 
       const result = await uploadNursingTestBankTopic(
@@ -852,6 +857,12 @@ function EditTopicContent({
                   editable={true}
                 />
               </div>
+
+              <FaqEditor
+                label="FAQs (shown on the live page)"
+                value={content.faqs}
+                onChange={(faqs) => setContent({ ...content, faqs })}
+              />
             </section>
           </div>
         </div>

@@ -629,7 +629,7 @@ function NursingEntranceExamAdminPageContent() {
           keywords: `${newQuizName}, ${nestedSubPageName}, nursing entrance exam`,
           ogTitle: `${newQuizName} | TeasGurus`,
           ogDescription: `Content for ${newQuizName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedQuizId}`,
         },
         hero: {
@@ -714,7 +714,7 @@ function NursingEntranceExamAdminPageContent() {
           keywords: `${newNestedSubPageName}, ${parentSubPageId}, nursing entrance exam`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,
         },
         hero: {
@@ -815,7 +815,7 @@ function NursingEntranceExamAdminPageContent() {
           keywords: `${newSubPageName}, nursing entrance exam`,
           ogTitle: `${newSubPageName} | Nursing Entrance Exam`,
           ogDescription: `Content for ${newSubPageName} under Nursing Entrance Exam.`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedSubPageId}`,
         },
         hero: {

@@ -176,7 +176,7 @@ export default function ManageTopics({
           keywords: `${newTopicName}, ${nestedSubPageName}, ${parentSubPageName}, nursing test bank`,
           ogTitle: `${newTopicName} | TeasGurus`,
           ogDescription: `Content for ${newTopicName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${
             process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
           }/${finalSlug}`,

@@ -115,7 +115,7 @@ function EditKbArticleContent({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
+            ogImage: pageData.meta?.ogImage || getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `${getSiteUrl()}/${resolvedParams.kbArticleId}`,
@@ -148,7 +148,7 @@ function EditKbArticleContent({
             keywords: `${resolvedParams.kbArticleId}, nursing entrance exam`,
             ogTitle: `${resolvedParams.kbArticleId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.kbArticleId}`,
-            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/${resolvedParams.kbArticleId}`,
           },
           schema: "",

@@ -489,7 +489,7 @@ export const initializeNursingExitExamContent = async () => {
         ogTitle: "Nursing Exit Exam | TeasGurus",
         ogDescription:
           "Comprehensive guide to nursing exit exams. Prepare for your nursing exit exam with expert resources, practice questions, and study guides.",
-        ogImage: "/teas-gurus-logo.png",
+        ogImage: "/nursing-mocks-logo.png",
         canonicalUrl: `${
           process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
         }/nursing-exit-exam`,
@@ -1194,7 +1194,7 @@ export const uploadNursingEntranceExamKbArticle = async (
           ogDescription: `KB Article: ${
             cleanContent.pageName || ""
           } under Nursing Entrance Exam.`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedNewSlug}`,
         },
         schema: cleanContent.schema || "",

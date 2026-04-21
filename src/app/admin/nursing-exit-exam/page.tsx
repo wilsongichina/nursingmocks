@@ -87,6 +87,7 @@ function NursingExitExamAdminPageContent() {
     useState<any | null>(null);
   const [newQuizId, setNewQuizId] = useState("");
   const [newQuizName, setNewQuizName] = useState("");
+  const [newQuizSetNumber, setNewQuizSetNumber] = useState("");
   const [quizValidationError, setQuizValidationError] = useState("");
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -803,13 +804,14 @@ function NursingExitExamAdminPageContent() {
       const defaultQuizContent = {
         pageName: newQuizName,
         slug: normalizedQuizId,
+        setNumber: newQuizSetNumber ? Number(newQuizSetNumber) : undefined,
         meta: {
           title: `${newQuizName} | TeasGurus`,
           description: `Content for ${newQuizName} under ${nestedSubPageName}.`,
           keywords: `${newQuizName}, ${nestedSubPageName}, nursing exit exam`,
           ogTitle: `${newQuizName} | TeasGurus`,
           ogDescription: `Content for ${newQuizName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedQuizId}`,
         },
         hero: {
@@ -831,6 +833,7 @@ function NursingExitExamAdminPageContent() {
         setSelectedNestedSubPageForQuiz(null);
         setNewQuizId("");
         setNewQuizName("");
+        setNewQuizSetNumber("");
         setQuizValidationError("");
         loadSubPages(); // Reload to refresh quizzes
         setTimeout(() => setSuccess(""), 3000);
@@ -901,7 +904,7 @@ function NursingExitExamAdminPageContent() {
           keywords: `${newNestedSubPageName}, ${parentSubPageId}, nursing exit exam`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,
         },
         schema: "",
@@ -982,7 +985,7 @@ function NursingExitExamAdminPageContent() {
           keywords: `${newSubPageName}, nursing exit exam`,
           ogTitle: `${newSubPageName} | Nursing Exit Exam`,
           ogDescription: `Content for ${newSubPageName} under Nursing Exit Exam.`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedSubPageId}`,
         },
         trustIndicators: [],
@@ -2008,7 +2011,11 @@ function NursingExitExamAdminPageContent() {
                           e.currentTarget.style.borderColor = "#e5e7eb";
                         }}
                       >
-                        + New Sub Page
+                        {activeTab === "nested"
+                          ? "+ New Nested Sub-page"
+                          : activeTab === "quizzes"
+                          ? "+ New Quiz"
+                          : "+ New Sub Page"}
                       </button>
                     )}
                   </div>
@@ -4947,6 +4954,45 @@ function NursingExitExamAdminPageContent() {
                             color: "#111827",
                           }}
                         >
+                          Set Number
+                        </label>
+                      </div>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newQuizSetNumber}
+                        onChange={(e) => setNewQuizSetNumber(e.target.value)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+                        }}
+                        placeholder="e.g., 1"
+                      />
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#111827",
+                          }}
+                        >
                           Slug URL
                           <span style={{ color: "#ef4444", marginLeft: "2px" }}>
                             *
@@ -5036,6 +5082,7 @@ function NursingExitExamAdminPageContent() {
                         setSelectedNestedSubPageForQuiz(null);
                         setNewQuizId("");
                         setNewQuizName("");
+                        setNewQuizSetNumber("");
                         setQuizValidationError("");
                       }}
                       style={{

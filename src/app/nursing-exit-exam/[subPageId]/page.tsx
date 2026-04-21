@@ -467,7 +467,7 @@ export async function generateMetadata({
           url: data.meta.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${subPageId}`,
           images: [
             {
-              url: data.meta.ogImage || "/teas-gurus-logo.png",
+              url: data.meta.ogImage || "/nursing-mocks-logo.png",
               width: 1200,
               height: 630,
               alt: data.meta.title || subPageId,
@@ -697,7 +697,7 @@ export default async function SubPage({
       keywords: `${subPageId}, nursing exit exam`,
       ogTitle: `${subPageId} | TeasGurus`,
       ogDescription: `Content for ${subPageId}`,
-      ogImage: "/teas-gurus-logo.png",
+      ogImage: "/nursing-mocks-logo.png",
       canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${subPageId}`,
     },
     schema: pageData.schema || "",

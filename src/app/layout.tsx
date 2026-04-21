@@ -14,7 +14,7 @@ const outfit = Outfit({
 
 const siteName = getSiteName();
 const siteUrl = getSiteUrl();
-const logoImageUrl = getImageUrl("/teas-gurus-logo.png");
+const logoImageUrl = getImageUrl("/nursing-mocks-logo.png");
 
 export const metadata: Metadata = {
   title: {

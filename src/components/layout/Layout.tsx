@@ -662,7 +662,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
               className="flex-shrink-0 flex items-center h-full"
             >
               <Image
-                src="/teas-gurus-logo.png"
+                src="/nursing-mocks-logo.png"
                 alt="NursingMocks Logo"
                 width={150}
                 height={40}

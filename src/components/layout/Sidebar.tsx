@@ -907,7 +907,7 @@ export default function Sidebar({
         {!isCollapsed ? (
           <Link href="/" aria-label="NursingMocks Home" className="flex-shrink-0">
             <Image
-              src="/teas-gurus-logo.png"
+              src="/nursing-mocks-logo.png"
               alt="NursingMocks Logo"
               width={150}
               height={40}

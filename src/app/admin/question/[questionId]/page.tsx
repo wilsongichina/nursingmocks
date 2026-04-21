@@ -125,7 +125,7 @@ export default function EditQuestionPage() {
                 url: "https://www.teasgurus.com",
                 logo: {
                   "@type": "ImageObject",
-                  url: "https://teasgurus.com/teas-gurus-logo.png",
+                  url: "https://teasgurus.com/nursing-mocks-logo.png",
                 },
               },
               {

@@ -142,7 +142,7 @@ export default function ManageSubPage({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            ogImage: pageData.meta?.ogImage || "/nursing-mocks-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `${
@@ -197,7 +197,7 @@ export default function ManageSubPage({
             keywords: `${resolvedParams.subPageId}, nursing exit exam`,
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
-            ogImage: "/teas-gurus-logo.png",
+            ogImage: "/nursing-mocks-logo.png",
             canonicalUrl: `${
               process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
             }/${resolvedParams.subPageId}`,
@@ -345,7 +345,7 @@ export default function ManageSubPage({
           keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing exit exam`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${
             process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
           }/${normalizedNestedSubPageId}`,

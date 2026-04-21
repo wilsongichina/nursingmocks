@@ -77,7 +77,7 @@ export default function PillarServicePagesPage() {
           keywords: `${pillarPageId} ${newServicePageTitle}, ${pillarPageId} ${newServicePageTitle} questions, ${pillarPageId} ${newServicePageTitle} practice test`,
           ogTitle: `${newServicePageTitle} - ${pillarPageId.toUpperCase()}`,
           ogDescription: `Get expert help with ${newServicePageTitle} for ${pillarPageId.toUpperCase()}.`,
-          ogImage: `/teas-gurus-logo.png`,
+          ogImage: `/nursing-mocks-logo.png`,
           canonicalUrl: `https://teasgurus.com/${pillarPageId}/${newServicePageId}`,
         },
         hero: {

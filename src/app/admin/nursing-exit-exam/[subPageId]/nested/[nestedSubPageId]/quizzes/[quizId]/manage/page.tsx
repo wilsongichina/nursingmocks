@@ -62,6 +62,7 @@ export default function ManageQuizQuestions({
   const [validationError, setValidationError] = useState("");
   const [saving, setSaving] = useState(false);
   const [quizName, setQuizName] = useState("");
+  const [quizSetNumber, setQuizSetNumber] = useState<string | number>("");
   const [_parentSlug, setParentSlug] = useState("");
   // const [nestedSlug, setNestedSlug] = useState("");
   const [quizSlug, setQuizSlug] = useState("");
@@ -160,6 +161,7 @@ export default function ManageQuizQuestions({
         const quizData = quizResult.data as any;
         setQuizName(quizData.pageName || resolvedParams.quizId);
         setQuizSlug(quizData.slug || resolvedParams.quizId);
+        setQuizSetNumber(quizData.setNumber ?? "");
       }
 
       // Load parent and nested sub-page content
@@ -527,13 +529,13 @@ export default function ManageQuizQuestions({
               </div>
             </div>
             <Link
-              href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}`}
+              href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
               className="rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
               Edit Quiz Info
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
             <div>
               <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
                 Exam
@@ -552,6 +554,14 @@ export default function ManageQuizQuestions({
               </div>
               <div className="text-slate-900 font-medium">
                 {questions.length}
+              </div>
+            </div>
+            <div>
+              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+                Set Number
+              </div>
+              <div className="text-slate-900 font-medium">
+                {quizSetNumber !== "" ? quizSetNumber : "—"}
               </div>
             </div>
             <div>

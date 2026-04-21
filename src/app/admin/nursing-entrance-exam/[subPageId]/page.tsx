@@ -7,6 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/layout/AdminSidebar";
@@ -40,6 +41,7 @@ interface SubPageContent {
     description: string;
   };
   bodyContent: string; // Tiptap editor content
+  faqs?: FaqItem[];
 }
 
 function EditSubPageContent({
@@ -113,7 +115,7 @@ function EditSubPageContent({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || getImageUrl("/teas-gurus-logo.png"),
+            ogImage: pageData.meta?.ogImage || getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `${getSiteUrl()}/${resolvedParams.subPageId}`,
@@ -127,6 +129,7 @@ function EditSubPageContent({
             description: pageData.hero?.description || "",
           },
           bodyContent: pageData.bodyContent || "",
+          faqs: Array.isArray(pageData.faqs) ? pageData.faqs : [],
         };
 
         setContent(initializedContent);
@@ -144,7 +147,7 @@ function EditSubPageContent({
             keywords: `${resolvedParams.subPageId}, nursing entrance exam`,
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
-            ogImage: getImageUrl("/teas-gurus-logo.png"),
+            ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/${resolvedParams.subPageId}`,
           },
           schema: "",
@@ -153,6 +156,7 @@ function EditSubPageContent({
             description: "",
           },
           bodyContent: "",
+          faqs: [],
         };
         setContent(defaultContent);
         setSlug(resolvedParams.subPageId);
@@ -190,6 +194,7 @@ function EditSubPageContent({
         schema: content.schema,
         hero: content.hero,
         bodyContent: content.bodyContent || "",
+        faqs: Array.isArray(content.faqs) ? content.faqs : [],
       };
 
       const result = await uploadNursingEntranceExamSubPage(
@@ -863,6 +868,12 @@ function EditSubPageContent({
                   editable={true}
                 />
               </div>
+
+              <FaqEditor
+                label="FAQs (shown on the live page)"
+                value={content.faqs}
+                onChange={(faqs) => setContent({ ...content, faqs })}
+              />
             </section>
           </div>
         </div>

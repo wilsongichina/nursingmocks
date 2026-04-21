@@ -82,7 +82,7 @@ export default function EditPillarPage({
             keywords: `${resolvedParams.pillarPageId} services, ${resolvedParams.pillarPageId} practice tests`,
             ogTitle: `${resolvedParams.pillarPageId} Services - TeasGurus`,
             ogDescription: `Get guaranteed ${resolvedParams.pillarPageId} exam support with real questions and expert help.`,
-            ogImage: `/teas-gurus-logo.png`,
+            ogImage: `/nursing-mocks-logo.png`,
             canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${resolvedParams.pillarPageId}`,
           },
           hero: pageData.hero || {
@@ -213,7 +213,7 @@ export default function EditPillarPage({
           keywords: "",
           ogTitle: "",
           ogDescription: "",
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: "",
         }),
         [field]: value,
@@ -594,7 +594,7 @@ export default function EditPillarPage({
                   value={content.meta?.ogImage || ""}
                   onChange={(e) => handleMetaChange("ogImage", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                  placeholder="/teas-gurus-logo.png"
+                  placeholder="/nursing-mocks-logo.png"
                 />
               </div>
               <div>

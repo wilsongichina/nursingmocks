@@ -142,7 +142,7 @@ export default function ManageSubPage({
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
-            ogImage: pageData.meta?.ogImage || "/teas-gurus-logo.png",
+            ogImage: pageData.meta?.ogImage || "/nursing-mocks-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `https://teasgurus.com/${
@@ -197,7 +197,7 @@ export default function ManageSubPage({
             keywords: `${resolvedParams.subPageId}, nursing test bank`,
             ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
-            ogImage: "/teas-gurus-logo.png",
+            ogImage: "/nursing-mocks-logo.png",
             canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
           },
           schema: "",
@@ -343,7 +343,7 @@ export default function ManageSubPage({
           keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing test bank`,
           ogTitle: `${newNestedSubPageName} | TeasGurus`,
           ogDescription: `Content for ${newNestedSubPageName}`,
-          ogImage: "/teas-gurus-logo.png",
+          ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${
             process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
           }/${normalizedNestedSubPageId}`,
