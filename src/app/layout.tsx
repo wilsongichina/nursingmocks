@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import AuthProviderWrapper from "@/components/providers/AuthProviderWrapper";
@@ -110,18 +111,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        {tiktokPixelScript && (
-          <script
-            id="tiktok-pixel"
-            dangerouslySetInnerHTML={{ __html: tiktokPixelScript }}
-          />
-        )}
-      </head>
       <body
         className={`${outfit.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
+        {tiktokPixelScript && (
+          <Script
+            id="tiktok-pixel"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{ __html: tiktokPixelScript }}
+          />
+        )}
         <AuthProviderWrapper>
           {children}
           <TawkToChat />
