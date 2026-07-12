@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const firebaseStorageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+
 const nextConfig: NextConfig = {
   /* config options here */
   serverExternalPackages: ["firebase"],
@@ -23,12 +25,16 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/v0/b/**",
       },
-      {
-        protocol: "https",
-        hostname: "teas-gurus.firebasestorage.app",
-        port: "",
-        pathname: "/**",
-      },
+      ...(firebaseStorageBucket
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: firebaseStorageBucket,
+              port: "",
+              pathname: "/**",
+            },
+          ]
+        : []),
     ],
     unoptimized: false, // Keep optimization enabled but allow fallback
     dangerouslyAllowSVG: true,

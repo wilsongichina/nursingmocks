@@ -15,21 +15,23 @@ const outfit = Outfit({
 const siteName = getSiteName();
 const siteUrl = getSiteUrl();
 const logoImageUrl = getImageUrl("/nursing-mocks-logo.png");
+const tiktokPixelId = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
 
 export const metadata: Metadata = {
   title: {
-    default: `${siteName} - Master the TEAS Exam with Expert Guidance`,
+    default: `${siteName} - Nursing Exam Practice Tests and Study Support`,
     template: `%s | ${siteName}`,
   },
   description:
-    "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring. Join thousands of successful students who achieved their nursing school dreams.",
+    "NursingMocks provides TEAS, HESI A2, nursing test bank, and nursing exit exam practice resources for nursing students.",
   keywords: [
+    "NursingMocks",
+    "nursing exam practice",
     "TEAS exam",
-    "TEAS test preparation",
+    "HESI A2",
+    "nursing test bank",
+    "nursing exit exam",
     "nursing school",
-    "TEAS practice tests",
-    "TEAS study materials",
-    "TEAS tutoring",
   ],
   authors: [{ name: siteName }],
   creator: siteName,
@@ -56,23 +58,23 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: siteName,
-    title: `${siteName} - Master the TEAS Exam with Expert Guidance`,
+    title: `${siteName} - Nursing Exam Practice Tests and Study Support`,
     description:
-      "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
+      "TEAS, HESI A2, nursing test bank, and nursing exit exam practice resources for nursing students.",
     images: [
       {
         url: logoImageUrl,
         width: 1200,
         height: 630,
-        alt: `${siteName} - TEAS Exam Preparation`,
+        alt: `${siteName} - Nursing Exam Preparation`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteName} - Master the TEAS Exam with Expert Guidance`,
+    title: `${siteName} - Nursing Exam Practice Tests and Study Support`,
     description:
-      "Comprehensive TEAS exam preparation with personalized study plans, practice tests, and expert tutoring.",
+      "TEAS, HESI A2, nursing test bank, and nursing exit exam practice resources for nursing students.",
     images: [logoImageUrl],
   },
   robots: {
@@ -91,15 +93,15 @@ export const metadata: Metadata = {
   },
 };
 
-const tiktokPixelScript = `!function (w, d, t) {
+const tiktokPixelScript = tiktokPixelId ? `!function (w, d, t) {
   w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
 var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
 ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
 
 
-  ttq.load('D6PV3SJC77U1CBCKK130');
+  ttq.load('${tiktokPixelId}');
   ttq.page();
-}(window, document, 'ttq');`;
+}(window, document, 'ttq');` : "";
 
 export default function RootLayout({
   children,
@@ -109,12 +111,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* TikTok Pixel Code Start */}
-        <script
-          id="tiktok-pixel"
-          dangerouslySetInnerHTML={{ __html: tiktokPixelScript }}
-        />
-        {/* TikTok Pixel Code End */}
+        {tiktokPixelScript && (
+          <script
+            id="tiktok-pixel"
+            dangerouslySetInnerHTML={{ __html: tiktokPixelScript }}
+          />
+        )}
       </head>
       <body
         className={`${outfit.variable} font-sans antialiased`}
