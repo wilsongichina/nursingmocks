@@ -15,6 +15,19 @@ const inter = Inter({
   style: ["normal"],
 });
 
+function getSafeReturnPath() {
+  if (typeof window === "undefined") {
+    return "/dashboard";
+  }
+
+  const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+  if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return returnTo;
+}
+
 export default function LoginPageClient() {
   const router = useRouter();
   const { currentUser, loading, login, loginWithGoogle } = useAuth();
@@ -37,7 +50,7 @@ export default function LoginPageClient() {
       !sessionStorage.getItem("showingLoginSuccess")
     ) {
       const timer = setTimeout(() => {
-        router.push("/dashboard");
+        router.push(getSafeReturnPath());
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -99,7 +112,7 @@ export default function LoginPageClient() {
 
       setTimeout(() => {
         sessionStorage.removeItem("showingLoginSuccess");
-        router.push("/dashboard");
+        router.push(getSafeReturnPath());
       }, 2000);
     } catch (err: any) {
       let errorMessage = "An error occurred. Please try again.";
@@ -137,7 +150,7 @@ export default function LoginPageClient() {
       setSuccess(true);
       setTimeout(() => {
         sessionStorage.removeItem("showingLoginSuccess");
-        router.push("/dashboard");
+        router.push(getSafeReturnPath());
       }, 2000);
     } catch (err: any) {
       let errorMessage = "An error occurred with Google sign-in. Please try again.";

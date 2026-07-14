@@ -1,129 +1,246 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Link from "next/link";
+import { FirebaseError } from "firebase/app";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAdminAuthorization } from "@/hooks/useAdminAuthorization";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const ADMIN_PASSWORD = "teasgurus2024"; // In production, this should be in environment variables
+function getAdminLoginError(error: unknown) {
+  if (error instanceof FirebaseError) {
+    if (
+      error.code === "auth/invalid-credential" ||
+      error.code === "auth/wrong-password" ||
+      error.code === "auth/user-not-found"
+    ) {
+      return "Invalid email or password.";
+    }
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      setError("");
+    if (error.code === "auth/invalid-email") {
+      return "Enter a valid email address.";
+    }
+
+    if (error.code === "auth/user-disabled") {
+      return "This account has been disabled.";
+    }
+
+    if (error.code === "auth/too-many-requests") {
+      return "Too many failed attempts. Please try again later.";
+    }
+  }
+
+  return "Admin sign-in failed. Please try again.";
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  const { login, logout } = useAuth();
+  const { status, error, refresh } = useAdminAuthorization();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAdminLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError("");
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setLoginError("Enter your admin email and password.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setLoginError("Enter a valid email address.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await login(trimmedEmail, password, true);
       setPassword("");
-      // Store authentication in sessionStorage
-      sessionStorage.setItem("adminAuthenticated", "true");
-    } else {
-      setError("Invalid password");
-      setPassword("");
+      await refresh();
+    } catch (adminLoginError) {
+      setLoginError(getAdminLoginError(adminLoginError));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    // Check if already authenticated
-    const authenticated = sessionStorage.getItem("adminAuthenticated");
-    if (authenticated === "true") {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  if (!isAuthenticated) {
+  if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white/95 backdrop-blur-sm p-8 rounded-2xl shadow-2xl max-w-md w-full border border-white/20">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200 text-center">
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Checking admin access
+          </h1>
+          <p className="text-gray-600">
+            Verifying your Firebase authentication and admin claim.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
+            <div className="w-14 h-14 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-blue-700 text-2xl font-bold">A</span>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Admin Panel
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Admin Sign In
             </h1>
             <p className="text-gray-600">
-              Enter your credentials to access the admin dashboard
+              Sign in with your Firebase admin email and password.
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleAdminLogin} className="space-y-5">
             <div>
               <label
-                htmlFor="password"
+                htmlFor="admin-email"
                 className="block text-sm font-semibold text-gray-700 mb-2"
               >
-                Admin Password
+                Email Address
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                </div>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                  placeholder="Enter admin password"
-                  required
-                />
-              </div>
+              <input
+                id="admin-email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setLoginError("");
+                }}
+                autoComplete="email"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                placeholder="admin@example.com"
+                disabled={isSubmitting}
+                required
+              />
             </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center">
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                {error}
+            <div>
+              <label
+                htmlFor="admin-password"
+                className="block text-sm font-semibold text-gray-700 mb-2"
+              >
+                Password
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setLoginError("");
+                }}
+                autoComplete="current-password"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                placeholder="Enter your password"
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+
+            {loginError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {loginError}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              disabled={isSubmitting}
+              className="w-full rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign In to Admin Panel
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
           </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "not-admin") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200">
+          <div className="text-center">
+            <div className="w-14 h-14 bg-red-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-red-600 text-2xl font-bold">!</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Access Denied
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Your account is signed in, but it does not have the Firebase
+              admin claim required to access this area.
+            </p>
+            <Link
+              href="/dashboard"
+              className="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Go to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "invalid-provider") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200">
+          <div className="text-center">
+            <div className="w-14 h-14 bg-amber-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-amber-700 text-2xl font-bold">!</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Email Login Required
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Admin access requires Firebase email and password sign-in. Sign
+              out, then sign in again from this admin page.
+            </p>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Could Not Verify Access
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {error || "Admin authorization could not be verified."}
+          </p>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
