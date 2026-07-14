@@ -12,15 +12,86 @@ const {
 const fs = require("fs");
 const path = require("path");
 
-// Firebase configuration - matches src/lib/firebase.ts
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBiOzwO78kUWMbqHxaCPJXECLMt_EPOUmM",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "teas-gurus.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "teas-gurus",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "teas-gurus.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "412483199536",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:412483199536:web:877940027db1dff26243f5",
-};
+const REQUIRED_FIREBASE_ENV = [
+  "NEXT_PUBLIC_FIREBASE_API_KEY",
+  "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+  "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+  "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+  "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+  "NEXT_PUBLIC_FIREBASE_APP_ID",
+];
+
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+
+  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf("=");
+    const key = trimmed.slice(0, separatorIndex).trim();
+    let value = trimmed.slice(separatorIndex + 1).trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (key && process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+function loadLocalEnvironment() {
+  const root = process.cwd();
+  loadEnvFile(path.join(root, ".env"));
+  loadEnvFile(path.join(root, ".env.local"));
+}
+
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value || !value.trim()) {
+    throw new Error(`Missing required Firebase environment variable: ${name}`);
+  }
+  return value;
+}
+
+function validateFirebaseEnvironment() {
+  const missingFirebaseEnv = REQUIRED_FIREBASE_ENV.filter(
+    (key) => !process.env[key] || !process.env[key].trim()
+  );
+  if (missingFirebaseEnv.length > 0) {
+    throw new Error(
+      `Missing required Firebase environment variables: ${missingFirebaseEnv.join(", ")}`
+    );
+  }
+}
+
+loadLocalEnvironment();
+
+// Firebase configuration - matches src/lib/firebase.ts.
+// Values must come from the NursingMocks environment. Do not add
+// project-specific fallbacks here; stale defaults can connect builds to the
+// wrong Firebase project.
+function getFirebaseConfig() {
+  validateFirebaseEnvironment();
+  return {
+    apiKey: requireEnv("NEXT_PUBLIC_FIREBASE_API_KEY"),
+    authDomain: requireEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
+    projectId: requireEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
+    storageBucket: requireEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
+    messagingSenderId: requireEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
+    appId: requireEnv("NEXT_PUBLIC_FIREBASE_APP_ID"),
+  };
+}
 
 async function getAllPillarPages(db) {
   try {
@@ -190,7 +261,8 @@ async function getNursingTestBankSubPages(db) {
 
 async function generateSidebarData() {
   try {
-    console.log("🚀 Starting sidebar data generation...");
+    const firebaseConfig = getFirebaseConfig();
+    console.log("Starting sidebar data generation.");
 
     // Initialize Firebase
     let app, db;
@@ -198,9 +270,9 @@ async function generateSidebarData() {
       app = initializeApp(firebaseConfig);
       db = getFirestore(app);
     } catch (firebaseError) {
-      console.error("❌ Failed to initialize Firebase:", firebaseError);
-      console.log("⚠️  Skipping sidebar data generation. Sidebar will use Firestore fallback.");
-      return null;
+      console.error("Failed to initialize Firebase for sidebar generation.");
+      console.error(firebaseError?.message || firebaseError);
+      throw firebaseError;
     }
 
     // Fetch all pillar pages and all pages (categories)
@@ -359,10 +431,9 @@ export type SidebarData = typeof sidebarData;
 
     return sidebarData;
   } catch (error) {
-    console.error("❌ Error generating sidebar data:", error);
-    console.log("⚠️  Sidebar will use Firestore fallback at runtime.");
-    // Don't exit with error - allow build to continue with fallback
-    return null;
+    console.error("Error generating sidebar data.");
+    console.error(error?.message || error);
+    throw error;
   }
 }
 
@@ -370,14 +441,13 @@ export type SidebarData = typeof sidebarData;
 if (require.main === module) {
   generateSidebarData()
     .then(() => {
-      console.log("✨ Done!");
+      console.log("Done.");
       process.exit(0);
     })
     .catch((error) => {
-      console.error("❌ Fatal error:", error);
-      console.log("⚠️  Build will continue, but sidebar will use Firestore fallback.");
-      // Exit with 0 to allow build to continue
-      process.exit(0);
+      console.error("Fatal sidebar generation error.");
+      console.error(error?.message || error);
+      process.exit(1);
     });
 }
 
