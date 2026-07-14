@@ -50,6 +50,13 @@ This claim must be assigned from a trusted server environment using the Firebase
 
 Do not commit service-account keys or private credentials to the repository.
 
+## Manual Firebase setup completed
+
+- Set the Firebase Auth custom claim `admin: true` for `info@nursingmocks.com` in the NursingMocks Firebase project.
+- Confirmed the account uses the Firebase `password` sign-in provider.
+- Used a local service-account key from outside the repository.
+- Did not add or commit any service-account key, private credential, or claim-setting script.
+
 ## Firebase rules review
 
 Firestore and Storage rules already require `request.auth.token.admin == true` for writes outside owner-scoped user paths. No rule changes were made in this phase.
@@ -68,5 +75,5 @@ Firestore and Storage rules already require `request.auth.token.admin == true` f
 
 ## Remaining risks
 
-- Admin access cannot be fully tested until at least one Firebase Authentication user has the `admin: true` custom claim in the NursingMocks Firebase project.
+- Admin access now depends on keeping the `admin: true` Firebase Auth custom claim assigned only to trusted accounts.
 - The frontend admin gate improves interface access control, but Firestore and Storage rules remain the authoritative protection for data writes.
