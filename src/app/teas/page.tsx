@@ -3,6 +3,7 @@ import Layout from "@/components/layout/Layout";
 import FAQSection from "@/components/sections/FAQSection";
 import Link from "next/link";
 import GifSlider from "@/components/ui/GifSlider";
+import GetStartedButton from "@/components/ui/GetStartedButton";
 
 export const metadata: Metadata = {
   title: "TEAS 7 Exam Questions & Preparation | TeasGurus",
@@ -47,14 +48,11 @@ export default function TEASPage() {
               >
                 Get a Free Quote
               </Link>
-              <Link
-                href={`https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas/thank-you&cancel_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas`}
+              <GetStartedButton
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
               >
                 Buy Now - $99
-              </Link>
+              </GetStartedButton>
             </div>
           </div>
         </div>
@@ -345,14 +343,11 @@ export default function TEASPage() {
                 >
                   Get a Free Quote
                 </Link>
-                <Link
-                  href={`https://buy.stripe.com/4gw5mn0nm0mTfUk3e9?success_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas/thank-you&cancel_url=${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas`}
+                <GetStartedButton
                   className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  target="_blank"
-                  rel="noopener noreferrer"
                 >
                   Buy Now - $99
-                </Link>
+                </GetStartedButton>
               </div>
             </div>
           </div>

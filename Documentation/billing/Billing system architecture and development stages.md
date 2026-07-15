@@ -956,6 +956,68 @@ Stage 15 slice document:
 Documentation/billing/Billing stage 15 live readiness approval controls.md
 ```
 
+### Stage 16: Legacy Payment Link Cleanup Audit
+
+Goals:
+
+- audit customer-facing purchase paths before adding more billing behavior
+- identify direct provider checkout links that bypass server-side billing controls
+- identify external checkout services that are not yet admin-managed gateways
+- confirm that `/payments` remains the preferred server-side checkout boundary
+- document a small follow-up migration path
+
+Exit criteria:
+
+- direct Stripe Payment Links are documented
+- external Stan Store purchase links are documented
+- `/payments` checkout and portal redirects are reviewed
+- no runtime behavior is changed
+- the next cleanup step is scoped before implementation
+
+Stage 16 legacy payment link cleanup audit completed:
+
+- found direct Stripe Payment Links in TEAS content
+- found external Stan Store purchase links in TEAS 7 practice content
+- confirmed `/payments` uses `POST /api/billing/checkout/session` for checkout
+- confirmed `/payments` uses `POST /api/billing/portal/session` for portal access
+- documented why legacy links must move behind admin-managed plans, gateways, provider mappings, and webhook state writers
+
+Stage 16 slice document:
+
+```text
+Documentation/billing/Billing stage 16 legacy payment link cleanup audit.md
+```
+
+### Stage 17: Legacy Stripe Button Migration
+
+Goals:
+
+- remove direct Stripe Payment Links from active TEAS purchase buttons
+- route TEAS purchase intent through the internal billing entry point
+- preserve the existing customer-facing button text and visual treatment
+- leave non-Stripe external checkout links documented but unchanged until gateway strategy is decided
+
+Exit criteria:
+
+- TEAS purchase buttons no longer link directly to `buy.stripe.com`
+- signed-in users are routed to `/payments`
+- signed-out users are routed to registration before billing
+- Stan Store links remain marked as deferred external checkout
+- TypeScript passes
+
+Stage 17 legacy Stripe button migration completed:
+
+- replaced TEAS page direct Stripe purchase links with `GetStartedButton`
+- replaced How It Works direct Stripe purchase link with `GetStartedButton`
+- kept the existing button labels and styling
+- marked Stan Store links as deferred in the Stage 16 audit document
+
+Stage 17 slice document:
+
+```text
+Documentation/billing/Billing stage 17 legacy Stripe button migration.md
+```
+
 ## Important Constraints
 
 Preserve:
