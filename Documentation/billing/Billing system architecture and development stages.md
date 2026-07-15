@@ -1047,6 +1047,36 @@ Stage 18 slice document:
 Documentation/billing/Billing stage 18 payment state visibility review.md
 ```
 
+### Stage 19: Admin Record Table Management
+
+Goals:
+
+- make billing operational records easier to scan in admin
+- add search to record-heavy billing tables
+- show matching record counts
+- display newest records first where timestamps are available
+- avoid changing billing state or Firestore schemas
+
+Exit criteria:
+
+- Transactions, Subscriptions, Entitlements, Webhook Events, Checkout Attempts, Operation Reviews, and Audit Logs tables support search
+- matching counts are visible
+- empty search results are explained
+- TypeScript passes
+
+Stage 19 admin record table management completed:
+
+- added reusable search to admin billing operation tables
+- added visible result counts
+- sorted records newest-first using available timestamp fields
+- kept the change display-only
+
+Stage 19 slice document:
+
+```text
+Documentation/billing/Billing stage 19 admin record table management.md
+```
+
 ## Important Constraints
 
 Preserve:

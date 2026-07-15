@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
@@ -349,6 +349,17 @@ function displayValue(value: unknown) {
   return String(value);
 }
 
+function recordTimestamp(record: Record<string, unknown>) {
+  const candidates = ["createdAt", "updatedAt", "currentPeriodEnd", "accessEndsAt"];
+  for (const key of candidates) {
+    const value = record[key];
+    if (typeof value !== "string") continue;
+    const timestamp = Date.parse(value);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return 0;
+}
+
 function OperationsTable({
   records,
   columns,
@@ -358,34 +369,69 @@ function OperationsTable({
   columns: { key: string; label: string }[];
   emptyMessage: string;
 }) {
+  const [search, setSearch] = useState("");
+  const normalizedSearch = search.trim().toLowerCase();
+  const sortedRecords = useMemo(
+    () => [...records].sort((left, right) => recordTimestamp(right) - recordTimestamp(left)),
+    [records]
+  );
+  const visibleRecords = useMemo(() => {
+    if (!normalizedSearch) return sortedRecords;
+
+    return sortedRecords.filter((record) =>
+      columns.some((column) => displayValue(recordValue(record, column.key)).toLowerCase().includes(normalizedSearch))
+    );
+  }, [columns, normalizedSearch, sortedRecords]);
+
   if (records.length === 0) {
     return <p className="p-4 text-sm text-gray-500">{emptyMessage}</p>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            {columns.map((column) => (
-              <th key={column.key} className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                {column.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100 bg-white">
-          {records.map((record, index) => (
-            <tr key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? record.auditLogId ?? record.webhookEventRecordId ?? record.attemptId ?? index)}>
-              {columns.map((column) => (
-                <td key={column.key} className="max-w-xs px-4 py-4 align-top text-gray-700">
-                  <span className="break-words text-xs">{displayValue(recordValue(record, column.key))}</span>
-                </td>
+    <div>
+      <div className="flex flex-col gap-3 border-b border-gray-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-950">Records</p>
+          <p className="mt-1 text-xs text-gray-500">
+            Showing {visibleRecords.length} of {records.length}. Newest records appear first.
+          </p>
+        </div>
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search records"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 sm:max-w-xs"
+        />
+      </div>
+      {visibleRecords.length === 0 ? (
+        <p className="p-4 text-sm text-gray-500">No records match this search.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                {columns.map((column) => (
+                  <th key={column.key} className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
+                    {column.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {visibleRecords.map((record, index) => (
+                <tr key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? record.auditLogId ?? record.webhookEventRecordId ?? record.attemptId ?? index)}>
+                  {columns.map((column) => (
+                    <td key={column.key} className="max-w-xs px-4 py-4 align-top text-gray-700">
+                      <span className="break-words text-xs">{displayValue(recordValue(record, column.key))}</span>
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
