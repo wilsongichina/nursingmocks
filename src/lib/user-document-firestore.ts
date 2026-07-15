@@ -274,7 +274,7 @@ export async function updateUserProfileContact(
     country?: string | null;
     locale?: string | null;
     bio?: string | null;
-    /** Stored as `profile.focus_areas` (single entry) */
+    /** Stored as `profile.focus_areas` (single entry) and derives `profile.primary_exam_id` */
     program_type?: string;
   }
 ): Promise<void> {
@@ -297,6 +297,7 @@ export async function updateUserProfileContact(
   }
   if (data.program_type !== undefined) {
     updates["profile.focus_areas"] = [data.program_type];
+    updates["profile.primary_exam_id"] = inferPrimaryExamIdFromProgramType(data.program_type);
   }
   await updateDoc(ref, updates);
 }

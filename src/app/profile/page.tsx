@@ -26,9 +26,14 @@ import {
   isValidProgramType,
   normalizeProgramTypeFromProfile,
   PROGRAM_TYPE_OPTIONS,
+  recommendedFocusLabelFromProgramType,
 } from "@/lib/program-type";
 
 type TabKey = "overview" | "account" | "access" | "referrals" | "security";
+
+function isTabKey(value: string | null): value is TabKey {
+  return value === "overview" || value === "account" || value === "access" || value === "referrals" || value === "security";
+}
 
 function normalizeCountryCode(value: string | null | undefined): string {
   if (!value) return "";
@@ -153,6 +158,14 @@ export default function ProfilePage() {
   const referralNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (isTabKey(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
+
   const countryOptions = useMemo(() => {
     const displayNames =
       typeof Intl !== "undefined" && "DisplayNames" in Intl
@@ -238,6 +251,9 @@ export default function ProfilePage() {
       return "eg +15551234567";
     }
   }, [accountCountry]);
+  const accountPrimaryExamPreview = useMemo(() => {
+    return recommendedFocusLabelFromProgramType(accountProgramType);
+  }, [accountProgramType]);
   const timezoneOptions = useMemo(() => {
     const merged = new Set<string>(TIMEZONE_OPTIONS);
     if (accountTimezone) merged.add(accountTimezone);
@@ -1055,15 +1071,15 @@ export default function ProfilePage() {
                         </div>
                           <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
                           <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Primary exam
+                            Recommended focus
                           </label>
                           <input
                             className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-[rgba(106,92,255,.03)] px-3 py-[10px] text-[13px]"
-                            value={view.primaryExamLabel}
+                            value={accountPrimaryExamPreview}
                             readOnly
                           />
                           <div className="mt-2 text-xs text-[#7a819c]">
-                            Derived from the subscribed exam.
+                            Updates from the selected program type.
                           </div>
                         </div>
                           <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">

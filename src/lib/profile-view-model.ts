@@ -3,13 +3,9 @@ import type { User } from "firebase/auth";
 import type { UserDocument } from "@/types/user-document";
 import {
   inferPrimaryExamIdFromProgramType,
+  PRIMARY_EXAM_LABELS,
   PROGRAM_TYPE_LABELS,
 } from "@/lib/program-type";
-
-const PRIMARY_EXAM_LABELS: Record<string, string> = {
-  ati_teas_7: "ATI TEAS 7",
-  hesi_a2: "HESI A2",
-};
 
 const SUBSCRIPTION_LABELS: Record<string, string> = {
   active: "Active",

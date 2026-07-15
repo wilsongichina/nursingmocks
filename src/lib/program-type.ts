@@ -30,6 +30,11 @@ export const PROGRAM_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+export const PRIMARY_EXAM_LABELS: Record<string, string> = {
+  ati_teas_7: "ATI TEAS 7",
+  hesi_a2: "HESI A2",
+};
+
 export function inferPrimaryExamIdFromProgramType(
   programType: string | undefined
 ): string | null {
@@ -41,6 +46,15 @@ export function inferPrimaryExamIdFromProgramType(
     return "hesi_a2";
   }
   return null;
+}
+
+export function recommendedFocusLabelFromProgramType(programType: string | undefined): string {
+  if (!programType?.trim()) return "Not set";
+  const primaryExamId = inferPrimaryExamIdFromProgramType(programType);
+  if (primaryExamId) {
+    return PRIMARY_EXAM_LABELS[primaryExamId] ?? primaryExamId;
+  }
+  return PROGRAM_TYPE_LABELS[programType] ?? programType;
 }
 
 /** Map legacy focus area keys to current program type values for forms */

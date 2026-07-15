@@ -31,14 +31,29 @@ import type { UserDocument } from "@/types/user-document";
 
 function badgeClasses(tone: "green" | "purple" | "amber" | "red" | "gray") {
   const tones = {
-    green: "border-green-200 bg-green-50 text-green-700",
-    purple: "border-[#d8d3ff] bg-[#f2f0ff] text-[#5948e8]",
-    amber: "border-amber-200 bg-amber-50 text-amber-700",
-    red: "border-red-200 bg-red-50 text-red-700",
-    gray: "border-gray-200 bg-gray-50 text-gray-700",
+    green: "border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]",
+    purple: "border-dashed border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,.08)] text-[#4f46e5]",
+    amber: "border-dashed border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] text-[#b45309]",
+    red: "border-dashed border-[rgba(239,68,68,.45)] bg-[rgba(239,68,68,.11)] text-[#b91c1c]",
+    gray: "border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] text-[#7a819c]",
   };
-  return `inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone]}`;
+  return `inline-flex min-h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-[10px] text-[11px] font-semibold leading-none ${tones[tone]}`;
 }
+
+const primaryActionClass =
+  "inline-flex min-h-[38px] items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-[14px] text-sm font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px hover:shadow-[0_18px_42px_rgba(79,70,229,.33)]";
+
+const secondaryActionClass =
+  "inline-flex min-h-[38px] items-center justify-center gap-2 rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-[14px] text-sm font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]";
+
+const textActionClass =
+  "inline-flex items-center gap-2 text-sm font-semibold text-[#6a5cff] underline-offset-2 hover:underline";
+
+const supportLinkClass =
+  "flex min-h-[38px] items-center gap-2 rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-[14px] font-semibold text-[#202437] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]";
+
+const detailRowClass =
+  "rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3";
 
 function packageTone(status: DashboardPackageStatus) {
   if (status === "active" || status === "lifetime") return "green";
@@ -69,7 +84,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <section className={`rounded-xl border border-gray-200 bg-white shadow-sm ${className}`}>
+    <section className={`overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)] ${className}`}>
       {children}
     </section>
   );
@@ -84,8 +99,8 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-4">
-      <h2 className="text-base font-bold text-gray-950">{title}</h2>
-      {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+      <h2 className="text-[18px] font-semibold tracking-[-0.02em] text-[#202437]">{title}</h2>
+      {subtitle && <p className="mt-2 max-w-[88ch] text-[13px] text-[#7a819c]">{subtitle}</p>}
     </div>
   );
 }
@@ -102,16 +117,50 @@ function MetricCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-gray-950">{value}</p>
-          {helper && <p className="mt-1 text-xs text-gray-500">{helper}</p>}
-        </div>
-        <div className="rounded-lg bg-[#f2f0ff] p-2 text-[#6a5cff]">{icon}</div>
+    <div className="flex min-h-24 items-center gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
+      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#a0a5bf]">{label}</p>
+        <p className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#202437]">{value}</p>
+        {helper && <p className="mt-1 text-xs leading-5 text-[#7a819c]">{helper}</p>}
       </div>
     </div>
+  );
+}
+
+function InfoRow({
+  label,
+  helper,
+  value,
+}: {
+  label: string;
+  helper?: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className={`flex items-start justify-between gap-3 ${detailRowClass}`}>
+      <div className="min-w-0">
+        <b className="block text-[13px] font-semibold text-[#202437]">{label}</b>
+        {helper && <span className="mt-[6px] block text-xs leading-[1.35] text-[#7a819c]">{helper}</span>}
+      </div>
+      <div className="shrink-0 text-right text-sm font-semibold text-[#202437]">{value}</div>
+    </div>
+  );
+}
+
+function ListLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link href={href} className={`block transition hover:-translate-y-px hover:bg-[rgba(106,92,255,.08)] ${detailRowClass}`}>
+      {children}
+    </Link>
   );
 }
 
@@ -119,46 +168,67 @@ function PackageCard({ pkg }: { pkg: DashboardPackage }) {
   const isStrong = ["active", "cancelling", "lifetime"].includes(pkg.status);
   return (
     <div
-      className={`rounded-xl border p-4 transition ${
+      className={`flex min-h-[248px] flex-col rounded-xl border border-dashed p-3 transition ${
         isStrong
-          ? "border-[#c9c2ff] bg-[#faf9ff] shadow-sm"
-          : "border-gray-200 bg-white"
+          ? "border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,.045)]"
+          : "border-[#e0e3f0] bg-[rgba(245,246,251,.65)]"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{pkg.family}</p>
-          <h3 className="mt-1 text-sm font-bold text-gray-950">{pkg.name}</h3>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#a0a5bf]">Package</p>
+          <h3 className="mt-1 text-sm font-semibold text-[#202437]">{pkg.name}</h3>
         </div>
         <span className={badgeClasses(packageTone(pkg.status))}>
           {packageStatusLabel(pkg.status)}
         </span>
       </div>
-      <p className="mt-3 text-sm leading-6 text-gray-600">{pkg.description}</p>
+      <p className="mt-3 text-sm leading-6 text-[#7a819c]">{pkg.description}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {pkg.modes.map((mode) => (
-          <span key={mode} className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+          <span key={mode} className="rounded-full border border-dashed border-[#e0e3f0] bg-white px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
             {mode}
           </span>
         ))}
       </div>
       {pkg.accessEndsAt && (
-        <p className="mt-3 text-xs text-gray-500">Access through {formatDashboardDate(pkg.accessEndsAt)}</p>
+        <p className="mt-3 text-xs text-[#7a819c]">Access through {formatDashboardDate(pkg.accessEndsAt)}</p>
       )}
-      <div className="mt-4">
+      <div className="mt-auto pt-4">
         <Link
           href={pkg.status === "locked" || pkg.status === "expired" || pkg.status === "payment_issue" ? "/pricing" : pkg.href}
-          className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${
-            isStrong
-              ? "bg-[#6a5cff] text-white hover:bg-[#5848e8]"
-              : "border border-gray-300 bg-white text-gray-800 hover:bg-gray-50"
-          }`}
+          className={isStrong ? primaryActionClass : secondaryActionClass}
         >
           {pkg.actionLabel}
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </div>
+  );
+}
+
+function PackageGroup({
+  title,
+  packages,
+}: {
+  title: DashboardPackage["family"];
+  packages: DashboardPackage[];
+}) {
+  return (
+    <section className={detailRowClass}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-[#202437]">{title}</h3>
+          <p className="mt-1 text-xs text-[#7a819c]">Two package cards from the left panel structure.</p>
+        </div>
+        <span className={badgeClasses("gray")}>{packages.length} packages</span>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {packages.map((pkg) => (
+          <PackageCard key={pkg.id} pkg={pkg} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -172,27 +242,31 @@ function EmptyState({
   text: string;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-5 text-center">
-      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-white text-gray-500">
+    <div className="rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-5 text-center">
+      <div className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
         {icon}
       </div>
-      <h3 className="mt-3 text-sm font-bold text-gray-950">{title}</h3>
-      <p className="mt-1 text-sm leading-6 text-gray-600">{text}</p>
+      <h3 className="mt-3 text-sm font-semibold text-[#202437]">{title}</h3>
+      <p className="mt-1 text-sm leading-6 text-[#7a819c]">{text}</p>
     </div>
   );
 }
 
 function DashboardContent({ view }: { view: DashboardViewModel }) {
-  const activePackages = view.packages.filter((pkg) => ["active", "cancelling", "lifetime"].includes(pkg.status));
-  const previewPackages = view.packages.filter((pkg) => pkg.status === "free").slice(0, 3);
-  const lockedPackages = view.packages.filter((pkg) => !["active", "cancelling", "lifetime", "free"].includes(pkg.status)).slice(0, 6);
-  const packagesToShow = [...activePackages, ...previewPackages, ...lockedPackages].slice(0, 9);
+  const packageFamilies: DashboardPackage["family"][] = [
+    "Nursing Entrance Exams",
+    "Nursing Test Bank",
+    "Nursing Exit Exams",
+  ];
+  const focusLabel = view.user.primaryExamName || view.user.focusAreaLabel || "Not selected";
+  const focusHref = "/profile?tab=account";
 
   return (
     <Layout>
-      <main className="min-h-screen bg-gray-50">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.08),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(79,70,229,0.05),transparent_55%),#f5f6fb]">
+        <div className="mx-auto max-w-[1220px] px-4 pb-14 pt-[18px] text-[#202437] max-[560px]:px-[14px] max-[560px]:pb-[46px] max-[560px]:pt-[14px]">
+          <header className="pb-[14px] pt-[18px]">
+            <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className={badgeClasses(view.access.status === "past_due" ? "amber" : view.access.status === "expired" ? "red" : view.access.status === "free" ? "purple" : "green")}>
@@ -208,10 +282,10 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
                   </span>
                 )}
               </div>
-              <h1 className="mt-3 text-2xl font-bold text-gray-950 sm:text-3xl">
+              <h1 className="mt-3 text-[30px] font-extrabold tracking-[-0.03em] text-[#202437] max-[560px]:text-2xl">
                 Welcome back, {view.user.firstName}
               </h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 max-w-[96ch] text-sm font-medium text-[#7a819c]">
                 {view.user.primaryExamName
                   ? `Primary focus: ${view.user.primaryExamName}`
                   : view.user.focusAreaLabel
@@ -219,44 +293,45 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
                     : "Choose a study focus to make your dashboard more personal."}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/profile" className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+            <div className="mt-1 flex flex-wrap items-center justify-end gap-[10px] max-[720px]:items-start max-[720px]:justify-start">
+              <Link href="/profile" className={secondaryActionClass}>
                 <Settings className="h-4 w-4" />
                 Account settings
               </Link>
-              <Link href="/contact" className="inline-flex items-center gap-2 rounded-lg bg-[#6a5cff] px-3 py-2 text-sm font-semibold text-white hover:bg-[#5848e8]">
+              <Link href="/contact" className={primaryActionClass}>
                 Contact support
               </Link>
             </div>
-          </div>
+            </div>
+          </header>
 
           {!view.user.userDocumentExists && (
-            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="mb-4 rounded-xl border border-dashed border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] p-4 text-sm font-medium text-[#b45309]">
               Your profile document is not available yet. The dashboard is showing Firebase account data and safe empty states until your profile is created.
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.8fr)]">
-            <div className="space-y-6">
-              <Card className="p-5">
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-[18px] max-[980px]:grid-cols-1">
+            <div className="space-y-[18px]">
+              <Card className="p-4">
                 <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f2f0ff] text-[#6a5cff]">
+                    <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
                       <Target className="h-6 w-6" />
                     </div>
-                    <h2 className="mt-4 text-xl font-bold text-gray-950">Continue studying</h2>
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+                    <h2 className="mt-4 text-[18px] font-semibold tracking-[-0.02em] text-[#202437]">Continue studying</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-[#7a819c]">
                       {view.continueAction.description}
                     </p>
                     {view.continueAction.lastActivityAt && (
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-[#7a819c]">
                         Last activity {formatDashboardDate(view.continueAction.lastActivityAt)}
                       </p>
                     )}
                   </div>
                   <Link
                     href={view.continueAction.href}
-                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#6a5cff] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#5848e8]"
+                    className={`${primaryActionClass} shrink-0`}
                   >
                     {view.continueAction.title}
                     <ArrowRight className="h-4 w-4" />
@@ -264,7 +339,7 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
                 </div>
               </Card>
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <section className="grid grid-cols-4 gap-3 max-[1100px]:grid-cols-2 max-[560px]:grid-cols-1">
                 <MetricCard
                   label="Completed attempts"
                   value={String(view.performance.completedExams)}
@@ -289,7 +364,7 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
                   helper={`Last practice: ${formatDashboardDate(view.performance.lastAttemptAt)}`}
                   icon={<Sparkles className="h-5 w-5" />}
                 />
-              </div>
+              </section>
 
               {!view.performance.hasStats && (
                 <EmptyState
@@ -299,28 +374,32 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
                 />
               )}
 
-              <Card className="p-5">
+              <Card className="p-4">
                 <SectionHeader
                   title="My Packages"
-                  subtitle="Active packages are shown first. Free users can preview the first 10 questions per set where previews are available."
+                  subtitle="Packages are grouped by the three exam types from the left panel. Each group has two package cards."
                 />
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {packagesToShow.map((pkg) => (
-                    <PackageCard key={pkg.id} pkg={pkg} />
+                <div className="space-y-4">
+                  {packageFamilies.map((family) => (
+                    <PackageGroup
+                      key={family}
+                      title={family}
+                      packages={view.packages.filter((pkg) => pkg.family === family)}
+                    />
                   ))}
                 </div>
               </Card>
 
-              <div className="grid gap-6 xl:grid-cols-2">
-                <Card className="p-5">
+              <div className="grid gap-[18px] xl:grid-cols-2">
+                <Card className="p-4">
                   <SectionHeader title="Recent activity" subtitle="Owner-scoped attempt history will appear here when reliable attempt data exists." />
                   {view.recentActivity.length ? (
                     <div className="space-y-3">
                       {view.recentActivity.map((item) => (
-                        <Link key={item.id} href={item.href} className="block rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
-                          <p className="text-sm font-semibold text-gray-950">{item.title}</p>
-                          <p className="text-xs text-gray-500">{item.category}</p>
-                        </Link>
+                        <ListLink key={item.id} href={item.href}>
+                          <p className="text-sm font-semibold text-[#202437]">{item.title}</p>
+                          <p className="mt-1 text-xs text-[#7a819c]">{item.category}</p>
+                        </ListLink>
                       ))}
                     </div>
                   ) : (
@@ -332,15 +411,15 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
                   )}
                 </Card>
 
-                <Card className="p-5">
+                <Card className="p-4">
                   <SectionHeader title="Completed Exams" subtitle="Recent completed exams will appear here when result records are available." />
                   {view.completedExams.length ? (
                     <div className="space-y-3">
                       {view.completedExams.map((exam) => (
-                        <Link key={exam.id} href={exam.href} className="block rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
-                          <p className="text-sm font-semibold text-gray-950">{exam.title}</p>
-                          <p className="text-xs text-gray-500">{formatDashboardDate(exam.completedAt)}</p>
-                        </Link>
+                        <ListLink key={exam.id} href={exam.href}>
+                          <p className="text-sm font-semibold text-[#202437]">{exam.title}</p>
+                          <p className="mt-1 text-xs text-[#7a819c]">{formatDashboardDate(exam.completedAt)}</p>
+                        </ListLink>
                       ))}
                     </div>
                   ) : (
@@ -354,58 +433,61 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
               </div>
             </div>
 
-            <aside className="space-y-6">
-              <Card className="p-5">
+            <aside className="space-y-[18px]">
+              <Card className="p-4">
                 <SectionHeader title="Account and subscription" />
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-600">Status</span>
-                    <span className="font-semibold text-gray-950">{view.access.label}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-600">Plan</span>
-                    <span className="text-right font-semibold text-gray-950">{view.access.planName || "No active paid plan"}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-600">Access end</span>
-                    <span className="text-right font-semibold text-gray-950">{formatDashboardDate(view.access.accessEndsAt)}</span>
-                  </div>
+                <div className="space-y-3">
+                  <InfoRow
+                    label="Recommended focus"
+                    helper="Change this from Profile > Account"
+                    value={
+                      <Link href={focusHref} className={textActionClass}>
+                        {focusLabel}
+                      </Link>
+                    }
+                  />
+                  <InfoRow label="Status" helper="Current access state" value={view.access.label} />
+                  <InfoRow label="Plan" helper="Active subscription snapshot" value={view.access.planName || "No active paid plan"} />
+                  <InfoRow label="Access end" helper="Renew before access expires" value={formatDashboardDate(view.access.accessEndsAt)} />
                 </div>
                 <div className="mt-4 grid gap-2">
-                  <Link href="/payments" className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                  <Link href={focusHref} className={secondaryActionClass}>
+                    Change focus
+                  </Link>
+                  <Link href="/payments" className={secondaryActionClass}>
                     Manage subscription
                   </Link>
-                  <Link href="/pricing" className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6a5cff] px-3 py-2 text-sm font-semibold text-white hover:bg-[#5848e8]">
+                  <Link href="/pricing" className={primaryActionClass}>
                     View plans
                   </Link>
                 </div>
               </Card>
 
               {view.recommendations.length > 0 && (
-                <Card className="p-5">
+                <Card className="p-4">
                   <SectionHeader title="Recommended for you" />
                   <div className="space-y-3">
                     {view.recommendations.map((item) => (
-                      <Link key={item.id} href={item.href} className="block rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
-                        <p className="text-sm font-semibold text-gray-950">{item.title}</p>
-                        <p className="mt-1 text-xs leading-5 text-gray-600">{item.description}</p>
-                        <p className="mt-2 text-xs font-bold text-[#6a5cff]">{item.actionLabel}</p>
-                      </Link>
+                      <ListLink key={item.id} href={item.href}>
+                        <p className="text-sm font-semibold text-[#202437]">{item.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-[#7a819c]">{item.description}</p>
+                        <p className="mt-2 text-xs font-semibold text-[#6a5cff]">{item.actionLabel}</p>
+                      </ListLink>
                     ))}
                   </div>
                 </Card>
               )}
 
               {view.profileTasks.length > 0 && (
-                <Card className="p-5">
+                <Card className="p-4">
                   <SectionHeader title="Profile tasks" />
                   <div className="space-y-3">
                     {view.profileTasks.map((task) => (
-                      <Link key={task.id} href={task.href} className="flex gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
-                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                      <Link key={task.id} href={task.href} className={`flex gap-3 transition hover:-translate-y-px hover:bg-[rgba(106,92,255,.08)] ${detailRowClass}`}>
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#b45309]" />
                         <span>
-                          <span className="block text-sm font-semibold text-gray-950">{task.title}</span>
-                          <span className="mt-1 block text-xs leading-5 text-gray-600">{task.description}</span>
+                          <span className="block text-sm font-semibold text-[#202437]">{task.title}</span>
+                          <span className="mt-1 block text-xs leading-5 text-[#7a819c]">{task.description}</span>
                         </span>
                       </Link>
                     ))}
@@ -414,45 +496,45 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
               )}
 
               {view.referral.shouldShow && (
-                <Card className="p-5">
+                <Card className="p-4">
                   <SectionHeader title="Referral summary" />
-                  <div className="rounded-lg bg-gray-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Referral code</p>
-                    <p className="mt-1 font-mono text-sm font-bold text-gray-950">{view.referral.code}</p>
+                  <div className={detailRowClass}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#a0a5bf]">Referral code</p>
+                    <p className="mt-1 font-mono text-sm font-semibold text-[#202437]">{view.referral.code}</p>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-lg border border-gray-200 p-3">
-                      <p className="text-xs text-gray-500">Referrals</p>
-                      <p className="mt-1 font-bold text-gray-950">{view.referral.totalReferrals}</p>
+                    <div className={detailRowClass}>
+                      <p className="text-xs text-[#7a819c]">Referrals</p>
+                      <p className="mt-1 font-semibold text-[#202437]">{view.referral.totalReferrals}</p>
                     </div>
-                    <div className="rounded-lg border border-gray-200 p-3">
-                      <p className="text-xs text-gray-500">Converted</p>
-                      <p className="mt-1 font-bold text-gray-950">{view.referral.convertedReferrals}</p>
+                    <div className={detailRowClass}>
+                      <p className="text-xs text-[#7a819c]">Converted</p>
+                      <p className="mt-1 font-semibold text-[#202437]">{view.referral.convertedReferrals}</p>
                     </div>
                   </div>
-                  <Link href="/referrals" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#6a5cff]">
+                  <Link href="/referrals" className={`mt-4 ${textActionClass}`}>
                     Open referrals
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Card>
               )}
 
-              <Card className="p-5">
+              <Card className="p-4">
                 <SectionHeader title="Support links" />
                 <div className="grid gap-2 text-sm">
-                  <Link href="/contact" className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50">
+                  <Link href="/contact" className={supportLinkClass}>
                     <HelpCircle className="h-4 w-4 text-[#6a5cff]" />
                     Contact support
                   </Link>
-                  <Link href="/knowledge-base" className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50">
+                  <Link href="/knowledge-base" className={supportLinkClass}>
                     <BookOpen className="h-4 w-4 text-[#6a5cff]" />
                     Knowledge Base
                   </Link>
-                  <Link href="/terms-and-conditions" className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50">
+                  <Link href="/terms-and-conditions" className={supportLinkClass}>
                     <ShieldCheck className="h-4 w-4 text-[#6a5cff]" />
                     Terms
                   </Link>
-                  <Link href="/privacy-policy" className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 font-semibold text-gray-800 hover:bg-gray-50">
+                  <Link href="/privacy-policy" className={supportLinkClass}>
                     <Lock className="h-4 w-4 text-[#6a5cff]" />
                     Privacy
                   </Link>

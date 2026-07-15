@@ -140,7 +140,46 @@ describe("buildDashboardViewModel", () => {
     expect(view.access.status).toBe("active");
     expect(view.access.planName).toBe("All Access Monthly");
     expect(view.packages[0].status).toBe("active");
-    expect(view.packages[0].name).toBe("ATI TEAS 7");
+    expect(view.packages[0].family).toBe("Nursing Entrance Exams");
+    expect(view.packages[0].name).toBe("ATI TEAS");
+  });
+
+  it("uses the approved package families and sidebar package names", () => {
+    const view = buildDashboardViewModel(userDoc(), authUser());
+
+    expect(view.packages.map((pkg) => `${pkg.family}: ${pkg.name}`)).toEqual([
+      "Nursing Entrance Exams: ATI TEAS",
+      "Nursing Entrance Exams: HESI A2",
+      "Nursing Exit Exams: LPN Exam",
+      "Nursing Exit Exams: RN Exams",
+      "Nursing Test Bank: LPN Exams",
+      "Nursing Test Bank: RN Exams",
+    ]);
+  });
+
+  it("offers free preview across all package families for non-subscribed users", () => {
+    const view = buildDashboardViewModel(
+      userDoc({
+        billing: {
+          ...userDoc().billing,
+          subscription_status: null,
+          plan_id: null,
+          current_period_end: null,
+        },
+        entitlements: {
+          "exam:ati_teas_7": false,
+          "exam:hesi_a2": false,
+          "bundle:all_access": false,
+        },
+      }),
+      authUser()
+    );
+
+    expect(new Set(view.packages.map((pkg) => pkg.family))).toEqual(
+      new Set(["Nursing Entrance Exams", "Nursing Test Bank", "Nursing Exit Exams"])
+    );
+    expect(view.packages.every((pkg) => pkg.status === "free")).toBe(true);
+    expect(view.packages.every((pkg) => pkg.actionLabel === "Start")).toBe(true);
   });
 
   it("shows honest empty attempt sections when no attempt collection is connected", () => {
@@ -155,8 +194,10 @@ describe("buildDashboardViewModel", () => {
 
     expect(view.user.firstName).toBe("ada");
     expect(view.user.userDocumentExists).toBe(false);
-    expect(view.profileTasks.map((task) => task.id)).toContain("verify-email");
-    expect(view.profileTasks.map((task) => task.id)).toContain("exam-focus");
+    const tasksById = new Map(view.profileTasks.map((task) => [task.id, task]));
+    expect(tasksById.has("verify-email")).toBe(true);
+    expect(tasksById.get("exam-focus")?.href).toBe("/profile?tab=account");
+    expect(view.recommendations.find((item) => item.id === "choose-focus")?.href).toBe("/profile?tab=account");
   });
 
   it("handles cancelling subscriptions with future access", () => {

@@ -3,6 +3,7 @@ import type { Timestamp } from "firebase/firestore";
 import type { UserDocument } from "@/types/user-document";
 import {
   inferPrimaryExamIdFromProgramType,
+  PRIMARY_EXAM_LABELS,
   PROGRAM_TYPE_LABELS,
 } from "@/lib/program-type";
 
@@ -26,7 +27,7 @@ export type DashboardPackageStatus =
 
 export type DashboardPackage = {
   id: string;
-  family: "Entrance Exams" | "Test Banks" | "Exit Exams";
+  family: "Nursing Entrance Exams" | "Nursing Test Bank" | "Nursing Exit Exams";
   name: string;
   description: string;
   href: string;
@@ -121,11 +122,6 @@ export interface DashboardViewModel {
   };
 }
 
-const PRIMARY_EXAM_LABELS: Record<string, string> = {
-  ati_teas_7: "ATI TEAS 7",
-  hesi_a2: "HESI A2",
-};
-
 const ACCOUNT_STATUS_LABELS: Record<string, string> = {
   active: "Active",
   locked: "Locked",
@@ -134,122 +130,102 @@ const ACCOUNT_STATUS_LABELS: Record<string, string> = {
 };
 
 const ENTITLEMENT_PACKAGE_MAP: Record<string, string[]> = {
-  "exam:ati_teas_7": ["ati_teas_7"],
   "exam:hesi_a2": ["hesi_a2"],
+  "exam:ati_teas_7": ["ati_teas"],
+  "test_bank:rn": ["nursing_test_bank_rn"],
+  "test_bank:lpn": ["nursing_test_bank_lpn"],
+  "exit_exam:rn": ["nursing_exit_exam_rn"],
+  "exit_exam:lpn": ["nursing_exit_exam_lpn"],
+  "ati_fundamentals": ["nursing_test_bank_rn"],
+  "ati_pharmacology": ["nursing_test_bank_rn"],
+  "ati_med_surg": ["nursing_test_bank_rn"],
+  "hesi_fundamentals": ["nursing_test_bank_rn"],
+  "hesi_pharmacology": ["nursing_test_bank_rn"],
+  "hesi_med_surg": ["nursing_test_bank_rn"],
+  "hesi_lpn_exit": ["nursing_exit_exam_lpn"],
+  "hesi_rn_exit": ["nursing_exit_exam_rn"],
+  "ati_lpn_predictor": ["nursing_exit_exam_lpn"],
+  "ati_rn_predictor": ["nursing_exit_exam_rn"],
   "bundle:all_access": [
-    "ati_teas_7",
     "hesi_a2",
-    "ati_fundamentals",
-    "ati_pharmacology",
-    "ati_med_surg",
-    "hesi_fundamentals",
-    "hesi_pharmacology",
-    "hesi_med_surg",
-    "hesi_lpn_exit",
-    "hesi_rn_exit",
-    "ati_lpn_predictor",
-    "ati_rn_predictor",
+    "ati_teas",
+    "nursing_test_bank_rn",
+    "nursing_test_bank_lpn",
+    "nursing_exit_exam_rn",
+    "nursing_exit_exam_lpn",
   ],
 };
 
 const PACKAGE_CATALOG: Omit<DashboardPackage, "status" | "actionLabel" | "accessEndsAt" | "progressPercent">[] = [
   {
-    id: "ati_teas_7",
-    family: "Entrance Exams",
-    name: "ATI TEAS 7",
-    description: "Entrance exam practice for TEAS-style reading, math, science, and English.",
-    href: "/teas-7-practice",
-    modes: ["Timed mode", "Review mode"],
-  },
-  {
     id: "hesi_a2",
-    family: "Entrance Exams",
+    family: "Nursing Entrance Exams",
     name: "HESI A2",
-    description: "HESI A2 entrance exam practice and review.",
+    description: "Entrance exam practice for HESI A2 reading, vocabulary, grammar, math, and science.",
     href: "/hesi-a2-practice-test",
     modes: ["Timed mode", "Review mode"],
   },
   {
-    id: "ati_fundamentals",
-    family: "Test Banks",
-    name: "ATI Fundamentals",
-    description: "Fundamentals-style nursing test bank practice.",
+    id: "ati_teas",
+    family: "Nursing Entrance Exams",
+    name: "ATI TEAS",
+    description: "Entrance exam practice for ATI TEAS reading, math, science, and English.",
+    href: "/teas-7-practice",
+    modes: ["Timed mode", "Review mode"],
+  },
+  {
+    id: "nursing_test_bank_rn",
+    family: "Nursing Test Bank",
+    name: "RN Exams",
+    description: "RN nursing test bank practice across core nursing school subjects.",
     href: "/nursing-test-bank",
     modes: ["Practice sets"],
   },
   {
-    id: "ati_pharmacology",
-    family: "Test Banks",
-    name: "ATI Pharmacology",
-    description: "Medication safety and pharmacology practice.",
+    id: "nursing_test_bank_lpn",
+    family: "Nursing Test Bank",
+    name: "LPN Exams",
+    description: "LPN nursing test bank practice across core practical nursing subjects.",
     href: "/nursing-test-bank",
     modes: ["Practice sets"],
   },
   {
-    id: "ati_med_surg",
-    family: "Test Banks",
-    name: "ATI Medical-Surgical",
-    description: "Medical-surgical nursing practice questions.",
-    href: "/nursing-test-bank",
-    modes: ["Practice sets"],
-  },
-  {
-    id: "hesi_fundamentals",
-    family: "Test Banks",
-    name: "HESI Fundamentals",
-    description: "HESI-style fundamentals practice.",
-    href: "/nursing-test-bank",
-    modes: ["Practice sets"],
-  },
-  {
-    id: "hesi_pharmacology",
-    family: "Test Banks",
-    name: "HESI Pharmacology",
-    description: "HESI-style pharmacology practice.",
-    href: "/nursing-test-bank",
-    modes: ["Practice sets"],
-  },
-  {
-    id: "hesi_med_surg",
-    family: "Test Banks",
-    name: "HESI Medical-Surgical",
-    description: "HESI-style medical-surgical practice.",
-    href: "/nursing-test-bank",
-    modes: ["Practice sets"],
-  },
-  {
-    id: "hesi_lpn_exit",
-    family: "Exit Exams",
-    name: "HESI LPN Exit",
-    description: "LPN exit exam preparation.",
+    id: "nursing_exit_exam_rn",
+    family: "Nursing Exit Exams",
+    name: "RN Exams",
+    description: "RN nursing exit exam preparation and predictor-style practice.",
     href: "/nursing-exit-exam",
     modes: ["Predictor practice"],
   },
   {
-    id: "hesi_rn_exit",
-    family: "Exit Exams",
-    name: "HESI RN Exit",
-    description: "RN exit exam preparation.",
-    href: "/nursing-exit-exam",
-    modes: ["Predictor practice"],
-  },
-  {
-    id: "ati_lpn_predictor",
-    family: "Exit Exams",
-    name: "ATI LPN Comprehensive Predictor",
-    description: "LPN comprehensive predictor practice.",
-    href: "/nursing-exit-exam",
-    modes: ["Predictor practice"],
-  },
-  {
-    id: "ati_rn_predictor",
-    family: "Exit Exams",
-    name: "ATI RN Comprehensive Predictor",
-    description: "RN comprehensive predictor practice.",
+    id: "nursing_exit_exam_lpn",
+    family: "Nursing Exit Exams",
+    name: "LPN Exam",
+    description: "LPN nursing exit exam preparation and predictor-style practice.",
     href: "/nursing-exit-exam",
     modes: ["Predictor practice"],
   },
 ];
+
+const PROFILE_FOCUS_HREF = "/profile?tab=account";
+
+const PRIMARY_FOCUS_RECOMMENDATIONS: Record<
+  string,
+  Pick<DashboardRecommendation, "id" | "title" | "href" | "actionLabel">
+> = {
+  ati_teas_7: {
+    id: "primary-ati-teas",
+    title: "ATI TEAS practice",
+    href: "/teas-7-practice",
+    actionLabel: "Start practice",
+  },
+  hesi_a2: {
+    id: "primary-hesi-a2",
+    title: "HESI A2 practice",
+    href: "/hesi-a2-practice-test",
+    actionLabel: "Start practice",
+  },
+};
 
 function isTimestamp(value: unknown): value is Timestamp {
   return (
@@ -384,9 +360,9 @@ function buildPackages(doc: UserDocument | null, access: DashboardViewModel["acc
         : access.status === "lifetime"
           ? "lifetime"
           : "active"
-      : pkg.family === "Entrance Exams"
-        ? "free"
-        : defaultStatus;
+      : access.status === "past_due" || access.status === "expired"
+        ? defaultStatus
+        : "free";
     const actionLabel: DashboardPackage["actionLabel"] =
       status === "active" || status === "cancelling" || status === "lifetime"
         ? "Continue"
@@ -480,21 +456,11 @@ function buildRecommendations(
     });
   }
 
-  if (primaryExamId === "ati_teas_7") {
+  const primaryFocus = primaryExamId ? PRIMARY_FOCUS_RECOMMENDATIONS[primaryExamId] : null;
+  if (primaryFocus) {
     recommendations.push({
-      id: "primary-ati-teas",
-      title: "ATI TEAS 7 practice",
+      ...primaryFocus,
       description: "Matches your selected primary exam focus.",
-      href: "/teas-7-practice",
-      actionLabel: "Start practice",
-    });
-  } else if (primaryExamId === "hesi_a2") {
-    recommendations.push({
-      id: "primary-hesi-a2",
-      title: "HESI A2 practice",
-      description: "Matches your selected primary exam focus.",
-      href: "/hesi-a2-practice-test",
-      actionLabel: "Start practice",
     });
   }
 
@@ -503,7 +469,7 @@ function buildRecommendations(
       id: "choose-focus",
       title: "Choose an exam focus",
       description: "Set your primary focus so NursingMocks can put the right practice areas first.",
-      href: "/profile",
+      href: PROFILE_FOCUS_HREF,
       actionLabel: "Update profile",
     });
   }
@@ -542,7 +508,7 @@ function buildProfileTasks(doc: UserDocument | null, authUser: User): DashboardP
       id: "exam-focus",
       title: "Select your exam focus",
       description: "Help the dashboard recommend the right practice area.",
-      href: "/profile",
+      href: PROFILE_FOCUS_HREF,
     });
   }
   if (!doc?.profile?.timezone?.trim()) {

@@ -855,3 +855,256 @@ Build note:
 7. Add topic-level recommendations only after question-level performance data exists.
 
 Do not add fake stats or placeholder attempts.
+
+## Follow-up: profile-style dashboard uniformity
+
+Updated after comparing `/dashboard` with `/profile`.
+
+Files changed:
+
+```text
+src/app/dashboard/page.tsx
+Project Change Log/User dashboard.md
+```
+
+Visual system changes:
+
+- matched the dashboard page background to the profile radial background and page container rhythm
+- replaced the dashboard card shell with profile-style rounded white panels and soft shadows
+- converted status pills to profile-style dashed pills with compact centered labels
+- fixed `Free preview` badge alignment with fixed minimum height, no wrapping, and centered content
+- updated primary and secondary dashboard actions to profile-style rounded pill buttons
+- changed dashboard metric cards to profile-style dashed stat tiles with circular icon/value treatment
+- changed package cards to use dashed violet-tinted rows and compact mode pills
+- changed account, referral, recommendation, task, recent activity, and completed-exam rows to shared dashed detail rows
+- changed support links to profile-style rounded pill rows
+- kept dashboard data behavior unchanged
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- TypeScript passed.
+
+## Follow-up: My Packages taxonomy cleanup
+
+Updated the dashboard package model after confirming the left/sidebar package groups.
+
+Allowed package families:
+
+- Nursing Entrance Exams
+- Nursing Test Bank
+- Nursing Exit Exams
+
+Dashboard package names now shown under `My Packages`:
+
+- Nursing Entrance Exams: HESI A2
+- Nursing Entrance Exams: ATI TEAS
+- Nursing Test Bank: RN Exams
+- Nursing Test Bank: LPN Exams
+- Nursing Exit Exams: RN Exams
+- Nursing Exit Exams: LPN Exam
+
+Implementation notes:
+
+- Removed granular package cards such as ATI Fundamentals, ATI Pharmacology, HESI Fundamentals, HESI RN Exit, and ATI RN Predictor from the dashboard package catalog.
+- Preserved legacy entitlement mapping by rolling older granular entitlement keys into the matching RN/LPN Test Bank or Exit Exam dashboard package.
+- Kept free preview behavior limited to Nursing Entrance Exams.
+- Updated dashboard view-model tests to assert the approved package families and names.
+
+Validation run:
+
+```text
+npm test -- src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- Dashboard view-model tests passed.
+- TypeScript passed.
+
+## Follow-up: My Packages section grouping
+
+Updated the dashboard `My Packages` UI so the package taxonomy is easier to scan.
+
+Layout changes:
+
+- replaced the single flat package grid with three grouped sections
+- each section now represents one package family:
+  - Nursing Entrance Exams
+  - Nursing Test Bank
+  - Nursing Exit Exams
+- each family section displays exactly two package cards
+- package cards now use a stable minimum height so the two-card rows align cleanly
+- package actions stay pinned to the bottom of each card for visual consistency
+- package cards no longer repeat the family name inside every card because the family is now shown as the section heading
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- TypeScript passed.
+
+## Follow-up: easier recommended focus changes
+
+Updated the dashboard and profile flow so users can change the recommended focus with fewer clicks.
+
+Changes:
+
+- added a `Recommended focus` row to the dashboard account/subscription panel
+- added a direct `Change focus` dashboard button
+- changed focus-related dashboard recommendations and profile tasks to link to `/profile?tab=account`
+- updated the profile page so `?tab=account` opens the editable Account tab automatically
+- centralized primary-focus recommendation metadata in the dashboard view model
+- kept the actual focus edit control in the profile `Program type` selector
+
+Validation run:
+
+```text
+npm test -- src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- Dashboard view-model tests passed.
+- TypeScript passed.
+
+## Follow-up: shared recommended focus labels
+
+Cleaned up the recommended-focus display logic so it is not locally hardcoded in the profile page.
+
+Changes:
+
+- moved primary exam labels into `src/lib/program-type.ts`
+- added `recommendedFocusLabelFromProgramType(programType)` as the shared focus preview helper
+- updated the profile Account tab to use the shared helper
+- updated profile and dashboard view models to import the shared primary exam labels
+- removed duplicate primary exam label maps from feature files
+
+Behavior:
+
+- ATI TEAS previews as ATI TEAS 7
+- HESI A2 previews as HESI A2
+- Nursing Test Bank previews as Nursing Test Bank
+- Nursing Exit Exam previews as Nursing Exit Exam
+
+Validation run:
+
+```text
+npm test -- src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- Dashboard view-model tests passed.
+- TypeScript passed.
+
+## Follow-up: persist recommended focus primary exam
+
+Fixed the profile save path so changing `Program type` updates the database fields the dashboard uses.
+
+Change:
+
+- `updateUserProfileContact` now writes both:
+  - `profile.focus_areas`
+  - `profile.primary_exam_id`
+- `profile.primary_exam_id` is derived from the selected program type via the shared `inferPrimaryExamIdFromProgramType` helper.
+
+Behavior:
+
+- choosing ATI TEAS saves `primary_exam_id: "ati_teas_7"`
+- choosing HESI A2 saves `primary_exam_id: "hesi_a2"`
+- choosing Nursing Test Bank saves `primary_exam_id: null`
+- choosing Nursing Exit Exam saves `primary_exam_id: null`
+- the dashboard live subscription then reads the updated user document and uses the updated focus.
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- TypeScript passed.
+
+Additional validation added:
+
+- added `src/lib/__tests__/program-type.test.ts`
+- verifies each current program type maps to the correct stored `primary_exam_id`
+- verifies each current program type maps to the correct recommended-focus display label
+
+Validation run:
+
+```text
+npm test -- src/lib/__tests__/program-type.test.ts src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- Program type mapping tests passed.
+- Dashboard view-model tests passed.
+- TypeScript passed.
+
+## Follow-up: free preview for all exam packages
+
+Updated package access behavior so every exam package supports free preview when the user does not have full access.
+
+Behavior:
+
+- unsubscribed users see `Free preview` for:
+  - Nursing Entrance Exams
+  - Nursing Test Bank
+  - Nursing Exit Exams
+- subscribed or entitled users see full-access states such as `Active`, `Cancelling`, or `Lifetime`
+- expired or past-due accounts still show restricted/payment states instead of free preview
+
+Validation added:
+
+- dashboard view-model test now verifies free preview across all three package families for a non-subscribed user
+
+Validation run:
+
+```text
+npm test -- src/lib/__tests__/program-type.test.ts src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- Program type mapping tests passed.
+- Dashboard view-model tests passed.
+- TypeScript passed.
+
+## Follow-up: dashboard focus/package documentation
+
+Added dedicated documentation for the dashboard focus and package behavior.
+
+Documentation file:
+
+```text
+Project Change Log/User dashboard focus and package documentation.md
+```
+
+Documented:
+
+- approved dashboard package families and two-card grouping
+- free preview behavior across all package families
+- subscribed/full-access behavior
+- recommended focus edit flow through `/profile?tab=account`
+- Firestore fields updated on profile save
+- shared focus helper exports
+- dashboard live read flow
+- validation commands
