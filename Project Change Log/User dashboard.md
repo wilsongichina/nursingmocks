@@ -890,6 +890,29 @@ Result:
 
 - TypeScript passed.
 
+## Follow-up: standard user sidebar width
+
+Expanded the shared user sidebar width so longer section labels fit cleanly.
+
+Changes:
+
+- increased the expanded desktop user sidebar from `w-64` to `w-72`
+- updated the shared user layout offset from `md:ml-64` to `md:ml-72`
+- increased the mobile user sidebar panel to `w-72` with a viewport max width guard
+- left the collapsed user sidebar width unchanged at `w-20`
+- left the admin sidebar width unchanged
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- TypeScript passed.
+- static source check confirmed the shared user sidebar and shared user layout offset now use matching widths.
+
 ## Follow-up: My Packages taxonomy cleanup
 
 Updated the dashboard package model after confirming the left/sidebar package groups.
@@ -1108,3 +1131,194 @@ Documented:
 - shared focus helper exports
 - dashboard live read flow
 - validation commands
+
+## Follow-up: dashboard sidebar structure
+
+Updated the user dashboard sidebar grouping to match the requested structure while keeping the exam catalog data-driven.
+
+Final sidebar structure:
+
+```text
+Main
+- Dashboard
+- My Exams
+- Results & Progress
+
+Nursing Entrance Exams
+- generated from the existing Nursing Entrance Exam catalog data
+
+Nursing Test Bank
+- generated from the existing Nursing Test Bank catalog data
+
+Nursing Exit Exams
+- generated from the existing Nursing Exit Exam catalog data
+
+Account
+- Profile
+- Billing & Subscription
+- Referrals
+- Help & Support
+```
+
+Changes:
+
+- added the `Main` sidebar section with `Dashboard`, `My Exams`, and `Results & Progress`
+- moved profile-related links into the `Account` section with `Profile`, `Billing & Subscription`, `Referrals`, and `Help & Support`
+- removed the old expandable dashboard account grouping and the separate progress item
+- added a dashboard anchor target so `My Exams` links to the existing dashboard packages area
+- normalized only the dynamic exam section headings to `Nursing Entrance Exams`, `Nursing Test Bank`, and `Nursing Exit Exams`
+- confirmed `Browse Exams` is not present in the dashboard sidebar
+
+Preserved:
+
+- dynamic exam catalog rendering from `pillarPages` and `pillarCategories`
+- static sidebar data loading from `/data/sidebar-data.json`
+- Firestore fallback loading through the existing pillar/category helpers
+- existing category item routes, icons, expand/collapse state, active-link handling, and mobile sidebar behavior
+- the build-time sidebar data generation script, `scripts/generate-sidebar-data.js`
+- the existing catalog source of truth; generated exam child entries were not manually rewritten in JSX
+
+Files changed:
+
+- `src/components/layout/Sidebar.tsx`
+- `src/app/dashboard/page.tsx`
+- `Project Change Log/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- TypeScript passed.
+- static source checks confirmed `Browse Exams` is absent and the exam sections still use `validPillarPages.map(...)` and `categories.map(...)`
+
+## Follow-up: repository Codex instructions
+
+Added a root Codex instruction file for project-wide defaults.
+
+File added:
+
+- `AGENTS.md`
+
+Documented defaults:
+
+- inspect existing implementation before editing
+- make the smallest safe change
+- preserve routes, dynamic data sources, permissions, loading states, and build-time generation logic
+- update the relevant project change log after user-facing or behavior changes
+- run TypeScript validation after TypeScript or React changes
+- use useful code comments for non-obvious business rules, data-source assumptions, persistence, permissions, and complex UI state
+- avoid comments that only restate obvious code
+- do not commit unless requested
+
+## Follow-up: billing architecture planning
+
+Added a dedicated billing architecture and staged development document.
+
+Documentation file:
+
+```text
+Project Change Log/Billing system architecture and development stages.md
+```
+
+Documented:
+
+- provider-agnostic billing architecture
+- Stripe as the first trusted server-side provider adapter
+- future provider support through adapters rather than arbitrary admin-defined code
+- separation of plans, packages, entitlements, gateways, provider price mappings, billing records, transactions, subscriptions, and audit logs
+- admin billing routes and customer `/payments` requirements
+- dynamic plans and gateway configuration rules
+- checkout and webhook security requirements
+- price versioning and provider price mapping design
+- secret management requirements
+- admin authorization and audit logging requirements
+- staged development plan from discovery through live-readiness review
+
+## Follow-up: billing Stage 1 audit
+
+Completed the first billing implementation stage: existing-state audit.
+
+Documentation file:
+
+```text
+Project Change Log/Billing stage 1 existing-state audit.md
+```
+
+Documented:
+
+- current user billing fields
+- current provider billing references
+- current flat entitlement model
+- current dashboard access logic
+- current profile billing display
+- current `/payments`, `/prices`, and `/pricing` state
+- direct legacy Stripe checkout coupling
+- current admin billing visibility
+- current API route coverage
+- current Firestore rule risk for user billing fields
+- reusable pieces for Stage 2
+- gaps that must be closed before live billing
+
+No production billing behavior was changed.
+
+## Follow-up: billing Stage 2 internal models
+
+Completed the second billing implementation stage: internal billing models and validation helpers.
+
+Documentation file:
+
+```text
+Project Change Log/Billing stage 2 internal models.md
+```
+
+Files added:
+
+- `src/lib/billing/models.ts`
+- `src/lib/billing/validation.ts`
+- `src/lib/billing/__tests__/validation.test.ts`
+
+Implemented:
+
+- provider-agnostic billing model contracts
+- plan, price version, provider mapping, gateway, transaction, subscription, entitlement, and audit log types
+- pure validation helpers for billing plans and gateway eligibility
+- tests for core plan and gateway validation rules
+
+Validation run:
+
+```text
+npm test -- src/lib/billing/__tests__/validation.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- billing validation tests passed
+- TypeScript passed
+
+No checkout, webhook, provider connection, credential storage, Firestore writes, or live payment behavior was enabled.
+
+## Follow-up: exam sidebar accordion behavior
+
+Updated the exam catalog sidebar expansion behavior.
+
+Changes:
+
+- `Nursing Entrance Exams` is the only exam catalog dropdown open by default
+- `Nursing Test Bank` and `Nursing Exit Exams` start closed
+- opening any one exam catalog dropdown closes the other two exam catalog dropdowns
+- preserved the existing dynamic exam catalog rendering and item click handlers
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- TypeScript passed.

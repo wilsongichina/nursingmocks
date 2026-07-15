@@ -158,6 +158,12 @@ interface Category {
   [key: string]: any;
 }
 
+const examPillarIds = [
+  "nursing-entrance-exam",
+  "nursing-test-bank",
+  "nursing-exit-exam",
+];
+
 export default function Sidebar({
   className = "",
   initialData = null,
@@ -183,18 +189,10 @@ export default function Sidebar({
         )
       : {}
   );
-  // Initialize expandedItems with all pillar pages expanded by default
+  // Keep Nursing Entrance Exams open by default; other exam pillars start closed.
   const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
     const initialSet = new Set<string>();
-    // Add nursing-exit-exam and nursing-test-bank to expanded items by default
-    initialSet.add("nursing-exit-exam");
-    initialSet.add("nursing-test-bank");
-    // Add all pillar page IDs to the set if initial data is available
-    if (initialData?.pillarPages) {
-      initialData.pillarPages.forEach((page: PillarPage) => {
-        initialSet.add(page.id);
-      });
-    }
+    initialSet.add("nursing-entrance-exam");
     return initialSet;
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -214,14 +212,12 @@ export default function Sidebar({
     setExpandedItems((prev) => {
       const newSet = new Set(prev);
 
-      // Expand nursing-exit-exam and nursing-test-bank by default
-      newSet.add("nursing-exit-exam");
-      newSet.add("nursing-test-bank");
-
-      // Expand all pillar pages by default
-      pillarPages.forEach((pillarPage) => {
-        newSet.add(pillarPage.id);
+      examPillarIds.forEach((pillarId) => {
+        if (pillarId !== "nursing-entrance-exam") {
+          newSet.delete(pillarId);
+        }
       });
+      newSet.add("nursing-entrance-exam");
 
       // Check if we're on dashboard or any dashboard sub-page
       if (
@@ -242,8 +238,25 @@ export default function Sidebar({
     });
   }, [pathname, pillarPages, pillarCategories]);
 
-  const dashboardItems = [
+  const mainItems = [
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard", color: "blue" },
+    { label: "My Exams", href: "/dashboard#my-exams", icon: "test-bank", color: "indigo" },
+    {
+      label: "Results & Progress",
+      href: "/progress-reports",
+      icon: "progress",
+      color: "orange",
+    },
+  ];
+
+  const accountItems = [
     { label: "Profile", href: "/profile", icon: "profile", color: "purple" },
+    {
+      label: "Billing & Subscription",
+      href: "/payments",
+      icon: "payments",
+      color: "blue",
+    },
     {
       label: "Referrals",
       href: "/referrals",
@@ -251,10 +264,10 @@ export default function Sidebar({
       color: "green",
     },
     {
-      label: "Payments & Subscription",
-      href: "/payments",
-      icon: "payments",
-      color: "blue",
+      label: "Help & Support",
+      href: "/contact",
+      icon: "support",
+      color: "teal",
     },
   ];
 
@@ -392,6 +405,22 @@ export default function Sidebar({
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              />
+            </svg>
+          );
+        case "support":
+          return (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8.228 9c.549-1.165 1.72-2 3.272-2 1.933 0 3.5 1.343 3.5 3 0 1.307-.973 2.418-2.333 2.83-.724.219-1.167.853-1.167 1.503V15m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           );
@@ -620,6 +649,9 @@ export default function Sidebar({
       if (newSet.has(itemId)) {
         newSet.delete(itemId);
       } else {
+        if (examPillarIds.includes(itemId)) {
+          examPillarIds.forEach((pillarId) => newSet.delete(pillarId));
+        }
         newSet.add(itemId);
       }
       return newSet;
@@ -634,6 +666,14 @@ export default function Sidebar({
   };
 
   const getPillarPageName = (pillarPage: PillarPage) => {
+    const sectionLabels: Record<string, string> = {
+      "nursing-entrance-exam": "Nursing Entrance Exams",
+      "nursing-test-bank": "Nursing Test Bank",
+      "nursing-exit-exam": "Nursing Exit Exams",
+    };
+    if (sectionLabels[pillarPage.id]) {
+      return sectionLabels[pillarPage.id];
+    }
     return (
       pillarPage.pageName ||
       pillarPage.id
@@ -984,128 +1024,53 @@ export default function Sidebar({
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className={`space-y-1 ${isCollapsed ? "px-2" : "px-2"}`}>
-          {/* Dashboard Section - Only show if logged in */}
+          {/* Main Section - Only show if logged in */}
           {currentUser && (
-            <li>
-              {isCollapsed ? (
-                <Link
-                  href="/dashboard"
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/dashboard") ||
-                    isActive("/profile") ||
-                    isActive("/referrals") ||
-                    isActive("/payments")
-                      ? "bg-blue-50"
-                      : "text-gray-900 hover:bg-gray-100"
-                  }`}
-                  title="Dashboard"
-                >
-                  <IconWithBackground
-                    icon="dashboard"
-                    color="blue"
-                    size="w-8 h-8"
-                  />
-                </Link>
-              ) : (
-                <div>
-                  <div
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                      isActive("/dashboard") ||
-                      isActive("/profile") ||
-                      isActive("/referrals") ||
-                      isActive("/payments")
-                        ? "bg-blue-50"
-                        : "text-gray-900 hover:bg-gray-100"
-                    }`}
-                  >
+            <>
+              {!isCollapsed && (
+                <li className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Main
+                </li>
+              )}
+              {mainItems.map((item) => {
+                const itemActive = item.href.includes("#")
+                  ? false
+                  : isActive(item.href);
+                return (
+                  <li key={item.href}>
                     <Link
-                      href="/dashboard"
-                      className="flex items-center gap-3 flex-1"
+                      href={item.href}
+                      className={`flex items-center ${
+                        isCollapsed ? "justify-center px-3" : "gap-3 px-3"
+                      } py-2.5 rounded-lg transition-all duration-200 ${
+                        itemActive
+                          ? "bg-blue-50"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                      title={item.label}
                     >
                       <IconWithBackground
-                        icon="dashboard"
-                        color="blue"
+                        icon={item.icon}
+                        color={item.color}
                         size="w-8 h-8"
                       />
-                      <span
-                        className={`text-sm font-medium ${
-                          isActive("/dashboard") ||
-                          isActive("/profile") ||
-                          isActive("/referrals") ||
-                          isActive("/payments")
-                            ? "text-blue-600"
-                            : "text-gray-900"
-                        }`}
-                      >
-                        Dashboard
-                      </span>
+                      {!isCollapsed && (
+                        <span
+                          className={`text-sm font-medium ${
+                            itemActive ? "text-blue-600" : "text-gray-700"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      )}
                     </Link>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleExpand("dashboard");
-                      }}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors"
-                      aria-label="Toggle dashboard menu"
-                    >
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-200 ${
-                          expandedItems.has("dashboard") ? "rotate-90" : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  {expandedItems.has("dashboard") && (
-                    <ul className="ml-4 mt-1 space-y-1 pl-2">
-                      {dashboardItems.map((item) => {
-                        const itemActive = isActive(item.href);
-                        return (
-                          <li key={item.href}>
-                            <Link
-                              href={item.href}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                itemActive
-                                  ? "bg-blue-50"
-                                  : "text-gray-900 hover:bg-gray-50"
-                              }`}
-                            >
-                              <span
-                                className={
-                                  itemActive ? "text-blue-600" : "text-gray-900"
-                                }
-                              >
-                                •
-                              </span>
-                              <span
-                                className={`font-medium ${
-                                  itemActive ? "text-blue-600" : "text-gray-900"
-                                }`}
-                              >
-                                {item.label}
-                              </span>
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </li>
+                  </li>
+                );
+              })}
+            </>
           )}
 
-          {/* Separator after Dashboard */}
+          {/* Separator after Main */}
           {currentUser && !isCollapsed && (
             <li className="px-3 py-2">
               <div className="border-t border-gray-200"></div>
@@ -1252,7 +1217,7 @@ export default function Sidebar({
                             </button>
                           </div>
                           {isExpanded && (
-                            <ul className="ml-4 mt-1 space-y-1 pl-2">
+                            <ul className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
                               {categories.map((category) => {
                                 // Get category ID and slug
                                 const categoryId =
@@ -1303,14 +1268,14 @@ export default function Sidebar({
                                   <li key={categoryId}>
                                     <button
                                       onClick={handleClick}
-                                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left cursor-pointer ${
+                                      className={`w-full flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left cursor-pointer ${
                                         categoryActive
                                           ? activeBgColor
                                           : "text-gray-900 hover:bg-gray-50"
                                       }`}
                                     >
                                       <span
-                                        className={`cursor-pointer ${
+                                        className={`hidden cursor-pointer ${
                                           categoryActive
                                             ? activeTextColor
                                             : "text-gray-900"
@@ -1358,61 +1323,59 @@ export default function Sidebar({
             </li>
           )}
 
-          {/* Loading State - Removed: Data is now available immediately from static build */}
-
-          {/* Progress Reports - Only show if logged in */}
+          {/* Account Section - Only show if logged in */}
           {currentUser && (
-            <li>
-              {isCollapsed ? (
-                <Link
-                  href="/progress-reports"
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/progress-reports")
-                      ? "bg-orange-50"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                  title="Progress Reports"
-                >
-                  <IconWithBackground
-                    icon="progress"
-                    color="orange"
-                    size="w-8 h-8"
-                  />
-                </Link>
-              ) : (
-                <Link
-                  href="/progress-reports"
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/progress-reports")
-                      ? "bg-orange-50"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <IconWithBackground
-                    icon="progress"
-                    color="orange"
-                    size="w-8 h-8"
-                  />
-                  <span
-                    className={`text-sm font-medium ${
-                      isActive("/progress-reports")
-                        ? "text-orange-600"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    Progress Reports
-                  </span>
-                </Link>
+            <>
+              {!isCollapsed && (
+                <li className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Account
+                </li>
               )}
-            </li>
+              {accountItems.map((item) => {
+                const itemActive = isActive(item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center ${
+                        isCollapsed ? "justify-center px-3" : "gap-3 px-3"
+                      } py-2.5 rounded-lg transition-all duration-200 ${
+                        itemActive
+                          ? "bg-blue-50"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                      title={item.label}
+                    >
+                      <IconWithBackground
+                        icon={item.icon}
+                        color={item.color}
+                        size="w-8 h-8"
+                      />
+                      {!isCollapsed && (
+                        <span
+                          className={`text-sm font-medium ${
+                            itemActive ? "text-blue-600" : "text-gray-700"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </>
           )}
 
-          {/* Separator after Progress Reports */}
+          {/* Separator after Account */}
           {currentUser && !isCollapsed && (
             <li className="px-3 py-2">
               <div className="border-t border-gray-200"></div>
             </li>
           )}
+
+          {/* Loading State - Removed: Data is now available immediately from static build */}
+
         </ul>
       </nav>
 
@@ -1491,7 +1454,7 @@ export default function Sidebar({
       {/* Desktop Sidebar */}
       <aside
         className={`hidden md:flex fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out z-[60] flex-col ${className} ${
-          isCollapsed ? "w-20" : "w-64"
+          isCollapsed ? "w-20" : "w-72"
         }`}
         style={{ overflow: "visible" }}
       >
@@ -1510,7 +1473,7 @@ export default function Sidebar({
       {/* Mobile Sidebar - reuse same content but always full width */}
       <aside
         ref={mobileSidebarRef}
-        className={`md:hidden fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-lg transition-transform duration-300 ease-in-out z-[80] flex-col w-64 ${
+        className={`md:hidden fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-lg transition-transform duration-300 ease-in-out z-[80] flex-col w-72 max-w-[85vw] ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } ${className}`}
         style={{ overflow: "visible" }}

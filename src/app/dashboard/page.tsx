@@ -79,12 +79,14 @@ function packageStatusLabel(status: DashboardPackageStatus) {
 function Card({
   children,
   className = "",
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
-    <section className={`overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)] ${className}`}>
+    <section id={id} className={`overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)] ${className}`}>
       {children}
     </section>
   );
@@ -313,7 +315,7 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
 
           <div className="mt-2 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-[18px] max-[980px]:grid-cols-1">
             <div className="space-y-[18px]">
-              <Card className="p-4">
+              <Card id="my-exams" className="p-4">
                 <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">

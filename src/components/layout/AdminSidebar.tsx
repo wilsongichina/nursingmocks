@@ -78,6 +78,21 @@ export default function AdminSidebar() {
     },
   ];
 
+  const adminItems = [
+    {
+      label: "User Management",
+      href: "/admin/users",
+      icon: "users",
+      color: "purple",
+    },
+    {
+      label: "Billing Configuration",
+      href: "/admin/billing",
+      icon: "payments",
+      color: "blue",
+    },
+  ];
+
   // Icon component with rounded square background
   const IconWithBackground = ({
     icon,
@@ -691,54 +706,59 @@ export default function AdminSidebar() {
             </li>
           )}
 
-          {/* User Management */}
+          {/* Admin Tools */}
           {currentUser && (
-            <li>
-              {isCollapsed ? (
-                <Link
-                  href="/admin/users"
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/admin/users")
-                      ? "bg-purple-50"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                  title="User Management"
-                >
-                  <IconWithBackground
-                    icon="users"
-                    color="purple"
-                    size="w-8 h-8"
-                  />
-                </Link>
-              ) : (
-                <Link
-                  href="/admin/users"
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/admin/users")
-                      ? "bg-purple-50"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <IconWithBackground
-                    icon="users"
-                    color="purple"
-                    size="w-8 h-8"
-                  />
-                  <span
-                    className={`text-sm font-medium ${
-                      isActive("/admin/users")
-                        ? "text-purple-600"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    User Management
-                  </span>
-                </Link>
-              )}
-            </li>
+            <>
+              {adminItems.map((item) => {
+                const itemActive = isActive(item.href);
+                return (
+                  <li key={item.href}>
+                    {isCollapsed ? (
+                      <Link
+                        href={item.href}
+                        className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                          itemActive
+                            ? "bg-purple-50"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                        title={item.label}
+                      >
+                        <IconWithBackground
+                          icon={item.icon}
+                          color={item.color}
+                          size="w-8 h-8"
+                        />
+                      </Link>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                          itemActive
+                            ? "bg-purple-50"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <IconWithBackground
+                          icon={item.icon}
+                          color={item.color}
+                          size="w-8 h-8"
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            itemActive ? "text-purple-600" : "text-gray-700"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </>
           )}
 
-          {/* Separator after User Management */}
+          {/* Separator after Admin Tools */}
           {currentUser && !isCollapsed && (
             <li className="px-3 py-2">
               <div className="border-t border-gray-200"></div>

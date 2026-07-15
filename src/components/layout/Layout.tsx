@@ -649,7 +649,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
       <Sidebar initialData={sidebarData} />
       <div
         className={`transition-all duration-300 ${
-          isCollapsed ? "md:ml-20" : "md:ml-64"
+          isCollapsed ? "md:ml-20" : "md:ml-72"
         }`}
       >
         {/* Mobile Header - Only show on mobile devices */}
