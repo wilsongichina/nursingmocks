@@ -130,7 +130,7 @@ Tests cover:
 ### Documentation
 
 ```text
-Project Change Log/User dashboard.md
+Documentation/User dashboard.md
 ```
 
 This file documents the dashboard implementation and future work.
@@ -400,7 +400,7 @@ Responsibilities:
 - tests profile task creation
 - tests cancelling subscription interpretation
 
-### `Project Change Log/User dashboard.md`
+### `Documentation/User dashboard.md`
 
 Responsibilities:
 
@@ -864,7 +864,7 @@ Files changed:
 
 ```text
 src/app/dashboard/page.tsx
-Project Change Log/User dashboard.md
+Documentation/User dashboard.md
 ```
 
 Visual system changes:
@@ -1118,7 +1118,7 @@ Added dedicated documentation for the dashboard focus and package behavior.
 Documentation file:
 
 ```text
-Project Change Log/User dashboard focus and package documentation.md
+Documentation/User dashboard focus and package documentation.md
 ```
 
 Documented:
@@ -1182,7 +1182,7 @@ Files changed:
 
 - `src/components/layout/Sidebar.tsx`
 - `src/app/dashboard/page.tsx`
-- `Project Change Log/User dashboard.md`
+- `Documentation/User dashboard.md`
 
 Validation run:
 
@@ -1208,7 +1208,7 @@ Documented defaults:
 - inspect existing implementation before editing
 - make the smallest safe change
 - preserve routes, dynamic data sources, permissions, loading states, and build-time generation logic
-- update the relevant project change log after user-facing or behavior changes
+- update the relevant Documentation after user-facing or behavior changes
 - run TypeScript validation after TypeScript or React changes
 - use useful code comments for non-obvious business rules, data-source assumptions, persistence, permissions, and complex UI state
 - avoid comments that only restate obvious code
@@ -1221,7 +1221,7 @@ Added a dedicated billing architecture and staged development document.
 Documentation file:
 
 ```text
-Project Change Log/Billing system architecture and development stages.md
+Documentation/Billing system architecture and development stages.md
 ```
 
 Documented:
@@ -1245,7 +1245,7 @@ Completed the first billing implementation stage: existing-state audit.
 Documentation file:
 
 ```text
-Project Change Log/Billing stage 1 existing-state audit.md
+Documentation/Billing stage 1 existing-state audit.md
 ```
 
 Documented:
@@ -1272,7 +1272,7 @@ Completed the second billing implementation stage: internal billing models and v
 Documentation file:
 
 ```text
-Project Change Log/Billing stage 2 internal models.md
+Documentation/Billing stage 2 internal models.md
 ```
 
 Files added:

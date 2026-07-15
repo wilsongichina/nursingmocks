@@ -9,7 +9,7 @@ These instructions apply to all Codex work in this repository.
 - Preserve existing routes, data sources, permissions, loading states, and dynamic generation logic unless the task explicitly asks to change them.
 - Do not redesign unrelated UI or refactor unrelated code.
 - Do not hardcode data that already has a project source of truth.
-- Update the relevant file in `Project Change Log/` when behavior, UI structure, data flow, or user-facing functionality changes.
+- Update the relevant file in `Documentation/` when behavior, UI structure, data flow, or user-facing functionality changes.
 - Run `.\node_modules\.bin\tsc.cmd --noEmit` after TypeScript or React changes.
 
 ## Code Comments
@@ -80,7 +80,7 @@ Use `/admin/users` as the default admin aesthetic reference.
 
 ## Documentation
 
-- Record completed changes in the relevant project change log.
+- Record completed changes in the relevant documentation file.
 - Include files changed, behavior updated, validation run, and any assumptions.
 - If a change touches shared behavior, mention the affected scope.
 

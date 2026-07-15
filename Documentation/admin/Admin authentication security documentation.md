@@ -764,8 +764,8 @@ Related Firebase Admin server helper:
 
 Change tracking:
 
-- `Project Change Log/Phase 2 of the NursingMocks migration.md`
-- `Project Change Log/Admin authentication security documentation.md`
+- `Documentation/Phase 2 of the NursingMocks migration.md`
+- `Documentation/Admin authentication security documentation.md`
 
 ## Final operational summary
 

@@ -191,7 +191,7 @@ Main UI features:
 ### Change-log entry
 
 ```text
-Project Change Log/Admin user management.md
+Documentation/Admin user management.md
 ```
 
 Purpose:

@@ -658,10 +658,10 @@ Documentation and tracking:
 
 - `EMAIL_SETUP.md`
 - `README.md`
-- `Project Change Log/Transactional email system implementation.md`
-- `Project Change Log/Transactional email system documentation.md`
-- `Project Change Log/Email provider migration to Resend.md`
-- `Project Change Log/Project change log webpage.md`
+- `Documentation/Transactional email system implementation.md`
+- `Documentation/Transactional email system documentation.md`
+- `Documentation/Email provider migration to Resend.md`
+- `Documentation/Documentation webpage.md`
 
 Deleted:
 

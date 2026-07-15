@@ -405,7 +405,7 @@ Exit criteria:
 Stage 1 document:
 
 ```text
-Project Change Log/Billing stage 1 existing-state audit.md
+Documentation/Billing stage 1 existing-state audit.md
 ```
 
 ### Stage 2: Internal Billing Models
@@ -424,7 +424,7 @@ Exit criteria:
 Stage 2 document:
 
 ```text
-Project Change Log/Billing stage 2 internal models.md
+Documentation/Billing stage 2 internal models.md
 ```
 
 ### Stage 3: Gateway Registry And Stripe Adapter Skeleton
@@ -489,8 +489,8 @@ Additional Stage 4 admin gateway capability completed:
 Stage 4 slice document:
 
 ```text
-Project Change Log/Billing stage 4 admin gateway configuration.md
-Project Change Log/Billing stage 4 admin plan configuration.md
+Documentation/Billing stage 4 admin gateway configuration.md
+Documentation/Billing stage 4 admin plan configuration.md
 ```
 
 Exit criteria:
@@ -529,7 +529,7 @@ Stage 5 completed:
 Stage 5 slice document:
 
 ```text
-Project Change Log/Billing stage 5 checkout readiness.md
+Documentation/Billing stage 5 checkout readiness.md
 ```
 
 Customer billing page note:
@@ -566,7 +566,7 @@ Stage 6 draft completed:
 Stage 6 slice document:
 
 ```text
-Project Change Log/Billing stage 6 server-side checkout draft.md
+Documentation/Billing stage 6 server-side checkout draft.md
 ```
 
 ### Stage 7: Verified Webhooks And Billing Synchronization
@@ -600,7 +600,7 @@ Stage 7A intake foundation completed:
 Stage 7A slice document:
 
 ```text
-Project Change Log/Billing stage 7A webhook intake foundation.md
+Documentation/Billing stage 7A webhook intake foundation.md
 ```
 
 Stage 7B event classification completed:
@@ -614,7 +614,7 @@ Stage 7B event classification completed:
 Stage 7B slice document:
 
 ```text
-Project Change Log/Billing stage 7B webhook event classification.md
+Documentation/Billing stage 7B webhook event classification.md
 ```
 
 Stage 7C effect planning completed:
@@ -627,7 +627,7 @@ Stage 7C effect planning completed:
 Stage 7C slice document:
 
 ```text
-Project Change Log/Billing stage 7C webhook effect planning.md
+Documentation/Billing stage 7C webhook effect planning.md
 ```
 
 Stage 7D processing guardrails completed:
@@ -642,7 +642,7 @@ Stage 7D processing guardrails completed:
 Stage 7D slice document:
 
 ```text
-Project Change Log/Billing stage 7D webhook processing guardrails.md
+Documentation/Billing stage 7D webhook processing guardrails.md
 ```
 
 Stage 7E verified Stripe webhook adapter completed:
@@ -656,7 +656,7 @@ Stage 7E verified Stripe webhook adapter completed:
 Stage 7E slice document:
 
 ```text
-Project Change Log/Billing stage 7E verified Stripe webhook adapter.md
+Documentation/Billing stage 7E verified Stripe webhook adapter.md
 ```
 
 Stage 7F billing state writer gate completed:
@@ -670,7 +670,7 @@ Stage 7F billing state writer gate completed:
 Stage 7F slice document:
 
 ```text
-Project Change Log/Billing stage 7F billing state writer gate.md
+Documentation/Billing stage 7F billing state writer gate.md
 ```
 
 Stage 7G controlled processing enablement review completed:
@@ -684,7 +684,7 @@ Stage 7G controlled processing enablement review completed:
 Stage 7G slice document:
 
 ```text
-Project Change Log/Billing stage 7G controlled processing enablement review.md
+Documentation/Billing stage 7G controlled processing enablement review.md
 ```
 
 ### Stage 8: Customer Billing Control Center
@@ -717,7 +717,7 @@ Stage 8 completed:
 Stage 8 slice document:
 
 ```text
-Project Change Log/Billing stage 8 customer billing control center.md
+Documentation/Billing stage 8 customer billing control center.md
 ```
 
 Stripe Customer Portal note:
@@ -749,7 +749,7 @@ Stage 9 read-only operations views completed:
 Stage 9 slice document:
 
 ```text
-Project Change Log/Billing stage 9 admin operations views.md
+Documentation/Billing stage 9 admin operations views.md
 ```
 
 ### Stage 10: Test Coverage And Live-Readiness Review
@@ -778,7 +778,7 @@ Stage 10 live-readiness dashboard completed:
 Stage 10 slice document:
 
 ```text
-Project Change Log/Billing stage 10 live readiness dashboard.md
+Documentation/Billing stage 10 live readiness dashboard.md
 ```
 
 ## Important Constraints
