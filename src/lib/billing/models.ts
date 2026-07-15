@@ -1,5 +1,6 @@
 export const BILLING_PACKAGE_IDS = [
-  "nursing_entrance_exams",
+  "ati_teas_7",
+  "hesi_a2",
   "nursing_test_bank",
   "nursing_exit_exams",
   "all_access",
@@ -127,6 +128,9 @@ export interface PaymentGatewayConfig {
   maximumAmount: number | null;
   priority: number;
   isDefault: boolean;
+  publishableKeyRef: string | null;
+  secretKeyRef: string | null;
+  webhookSecretRef: string | null;
   planIds: string[];
   configurationStatus: "incomplete" | "ready" | "invalid";
   lastConnectionTestAt: Date | null;

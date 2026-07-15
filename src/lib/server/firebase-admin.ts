@@ -58,3 +58,8 @@ export async function requireAdminFromAuthorizationHeader(authorization: string 
   }
   return decoded;
 }
+
+export async function requireUserFromAuthorizationHeader(authorization: string | null) {
+  const token = authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : "";
+  return verifyFirebaseIdToken(token);
+}

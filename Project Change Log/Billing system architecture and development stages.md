@@ -38,7 +38,8 @@ Use existing package/catalog source of truth where available.
 
 Suggested package IDs:
 
-- `nursing_entrance_exams`
+- `ati_teas_7`
+- `hesi_a2`
 - `nursing_test_bank`
 - `nursing_exit_exams`
 - `all_access`
@@ -49,14 +50,16 @@ Do not alter the existing dynamically generated exam catalog or sidebar generati
 
 Suggested initial plans:
 
-- `Nursing Entrance Exams`
-  - packages: `nursing_entrance_exams`
+- `ATI TEAS`
+  - packages: `ati_teas_7`
+- `HESI A2`
+  - packages: `hesi_a2`
 - `Nursing Test Bank`
   - packages: `nursing_test_bank`
 - `Nursing Exit Exams`
   - packages: `nursing_exit_exams`
 - `All Access`
-  - packages: `nursing_entrance_exams`, `nursing_test_bank`, `nursing_exit_exams`
+  - packages: `ati_teas_7`, `hesi_a2`, `nursing_test_bank`, `nursing_exit_exams`
 
 Plans must be stored dynamically and managed from admin pages. Do not hardcode pricing cards or package access in React components.
 
@@ -467,10 +470,27 @@ Initial Stage 4 slice completed:
 - added audit logging for gateway creation
 - left gateway secrets, checkout, provider price sync, and webhook handling disabled
 
+Second Stage 4 slice completed:
+
+- added admin plan creation through `/admin/billing`
+- added server-side plan validation and normalization
+- added package and gateway assignment fields
+- added billing plan Firestore writes
+- added audit logging for plan creation
+- left provider price mapping management and checkout disabled
+
+Additional Stage 4 admin gateway capability completed:
+
+- added payment gateway key reference fields in admin
+- references include publishable key ref, secret key ref, and webhook secret ref
+- Firestore stores secret reference names only, not raw provider secret values
+- Stripe webhook verification can resolve `webhookSecretRef` server-side
+
 Stage 4 slice document:
 
 ```text
 Project Change Log/Billing stage 4 admin gateway configuration.md
+Project Change Log/Billing stage 4 admin plan configuration.md
 ```
 
 Exit criteria:
@@ -479,18 +499,42 @@ Exit criteria:
 - credentials are not exposed to the browser
 - admin authorization enforced server-side
 
-### Stage 5: Customer Billing Page
+### Stage 5: Checkout Readiness
 
 Goals:
 
-- replace `/payments` placeholder with the customer billing control center
-- display current plan, status, renewal/access end, package access, payment issue state, and payment history
-- show provider portal actions only where supported
+- add a public active billing catalog reader
+- add checkout readiness validation before provider checkout is enabled
+- validate active/public plan availability
+- validate enabled assigned gateway availability
+- validate active provider price mapping availability
+- return detailed readiness issues without creating checkout sessions or charging users
 
 Exit criteria:
 
-- free, active, cancelling, past-due, expired, and no-plan states render correctly
-- page reads Firestore, not client checkout state
+- inactive, private, archived, or missing plans are rejected
+- disabled, unready, unsupported, or unassigned gateways are rejected
+- missing or mismatched provider mappings are rejected
+- responses keep `checkoutEnabled: false`
+- live checkout remains disabled
+
+Stage 5 completed:
+
+- added `GET /api/billing/catalog`
+- added `POST /api/billing/checkout-readiness`
+- added `src/lib/billing/checkout-readiness.ts`
+- added Firestore-backed public catalog/readiness helpers
+- added checkout readiness tests
+
+Stage 5 slice document:
+
+```text
+Project Change Log/Billing stage 5 checkout readiness.md
+```
+
+Customer billing page note:
+
+- the customer billing control center should be built after checkout/webhook/subscription records exist so it can read real transaction, subscription, and entitlement state instead of placeholder data
 
 ### Stage 6: Server-Side Checkout
 
@@ -499,13 +543,31 @@ Goals:
 - add authenticated checkout route
 - accept only `planId` and `gatewayId` from the browser
 - server resolves plan, gateway, provider mapping, amount, currency, package IDs, and provider price ID
-- create Stripe Checkout through the adapter
+- call the provider adapter through the gateway abstraction while checkout remains disabled
 
 Exit criteria:
 
 - invalid/inactive/archived plans are rejected
 - disabled or unassigned gateways are rejected
 - client cannot override amount, currency, package IDs, or provider price IDs
+- checkout attempt is logged without creating transactions, subscriptions, or entitlements
+- provider checkout still returns unavailable until live checkout is explicitly enabled
+
+Stage 6 draft completed:
+
+- added `POST /api/billing/checkout/session`
+- added authenticated user bearer-token helper
+- added checkout session draft request validation
+- rejected client-controlled payment and entitlement fields
+- added server-side checkout draft resolution and adapter call
+- added checkout attempt logging to `billing_checkout_attempts`
+- kept `checkoutEnabled: false`
+
+Stage 6 slice document:
+
+```text
+Project Change Log/Billing stage 6 server-side checkout draft.md
+```
 
 ### Stage 7: Verified Webhooks And Billing Synchronization
 
@@ -523,37 +585,179 @@ Exit criteria:
 - invalid signatures are rejected
 - access is granted only after verified payment/subscription events
 
-### Stage 8: Stripe Customer Portal
+Stage 7A intake foundation completed:
+
+- added `POST /api/webhooks/stripe?gatewayId={gatewayId}`
+- added raw request body handling
+- added required Stripe signature header boundary
+- added provider/gateway validation
+- added adapter verification call
+- added `billing_webhook_events`
+- added provider event ID idempotency support when verification supplies an event ID
+- kept `processed: false`
+- did not write transactions, subscriptions, entitlements, or user billing state
+
+Stage 7A slice document:
+
+```text
+Project Change Log/Billing stage 7A webhook intake foundation.md
+```
+
+Stage 7B event classification completed:
+
+- added normalized billing webhook event types
+- mapped supported Stripe event types to internal event names
+- added `normalizedEventType` and `eventSupported` to webhook intake records
+- recorded unsupported provider event types without processing them
+- continued to avoid transaction, subscription, entitlement, and user billing writes
+
+Stage 7B slice document:
+
+```text
+Project Change Log/Billing stage 7B webhook event classification.md
+```
+
+Stage 7C effect planning completed:
+
+- added planned billing webhook effects
+- stored `plannedEffects` and `effectsEnabled` on webhook intake records
+- kept `effectsEnabled: false`
+- continued to avoid transaction, subscription, entitlement, and user billing writes
+
+Stage 7C slice document:
+
+```text
+Project Change Log/Billing stage 7C webhook effect planning.md
+```
+
+Stage 7D processing guardrails completed:
+
+- added webhook processing statuses
+- added processing decision helper
+- added processing disabled effect gate
+- added processor skeleton with Firestore status updates
+- added processing lock handling
+- continued to avoid transaction, subscription, entitlement, and user billing writes
+
+Stage 7D slice document:
+
+```text
+Project Change Log/Billing stage 7D webhook processing guardrails.md
+```
+
+Stage 7E verified Stripe webhook adapter completed:
+
+- added Stripe signature verification in the adapter
+- added gateway-specific and fallback webhook secret environment variable resolution
+- extracted provider event ID and provider event type from verified Stripe payloads
+- returned only a safe event summary from verification
+- kept all billing effects disabled
+
+Stage 7E slice document:
+
+```text
+Project Change Log/Billing stage 7E verified Stripe webhook adapter.md
+```
+
+Stage 7F billing state writer gate completed:
+
+- added write target mapping for planned webhook effects
+- added effect execution gate
+- recorded blocked write targets during webhook processing
+- kept actual state writers disabled and not implemented pending controlled approval
+- continued to avoid transaction, subscription, entitlement, and user billing writes
+
+Stage 7F slice document:
+
+```text
+Project Change Log/Billing stage 7F billing state writer gate.md
+```
+
+Stage 7G controlled processing enablement review completed:
+
+- added explicit enablement review helper
+- encoded required checks before webhook effects can be enabled
+- kept `effectsEnabled: false`
+- kept `canEnable: false`
+- continued to avoid transaction, subscription, entitlement, and user billing writes
+
+Stage 7G slice document:
+
+```text
+Project Change Log/Billing stage 7G controlled processing enablement review.md
+```
+
+### Stage 8: Customer Billing Control Center
 
 Goals:
 
-- create provider-backed billing management sessions
-- use Stripe Customer Portal for payment method updates, invoices, billing details, cancellation, and subscription management where configured
+- replace `/payments` placeholder with a customer billing control center
+- show current billing snapshot and active entitlements
+- show public active billing plans from the admin catalog
+- show readiness-style labels while checkout remains disabled
+- keep all checkout CTAs disabled
 
 Exit criteria:
 
-- portal links are generated server-side
-- unsupported actions are hidden or disabled safely
+- unauthenticated users are redirected to login
+- billing profile loading has safe loading and error states
+- page reads user billing state from Firestore
+- page reads plan catalog from `GET /api/billing/catalog`
+- no checkout session is created
+- no payment provider is contacted
+
+Stage 8 completed:
+
+- replaced `/payments` placeholder
+- added current billing summary
+- added active entitlement display
+- added public plan catalog display
+- added disabled checkout CTAs
+
+Stage 8 slice document:
+
+```text
+Project Change Log/Billing stage 8 customer billing control center.md
+```
+
+Stripe Customer Portal note:
+
+- portal work should happen after real checkout/webhook/subscription records exist and provider customer IDs are available
 
 ### Stage 9: Admin Transactions, Subscriptions, Entitlements, And Audit Views
 
 Goals:
 
 - build admin views for transactions, subscriptions, entitlements, and audit logs
-- add manual entitlement grant/revoke with required reason
-- link entitlements to transactions/subscriptions where applicable
+- build admin views for webhook events and checkout attempts
+- keep manual entitlement grant/revoke deferred until a separate audited mutation slice
+- link entitlements to transactions/subscriptions where applicable once writers are enabled
 
 Exit criteria:
 
-- every manual entitlement change is audited
+- operations tables are read-only until mutation workflows are explicitly approved
 - paid entitlement history is not overwritten
 - provider secrets remain hidden
+
+Stage 9 read-only operations views completed:
+
+- added admin read-only operations tabs inside `/admin/billing`
+- added transactions, subscriptions, entitlements, webhook events, checkout attempts, and audit logs views
+- added operations view documentation to the billing modal
+- kept manual entitlement changes disabled
+
+Stage 9 slice document:
+
+```text
+Project Change Log/Billing stage 9 admin operations views.md
+```
 
 ### Stage 10: Test Coverage And Live-Readiness Review
 
 Goals:
 
 - add automated tests for plans, gateways, checkout, webhooks, entitlements, security, and state handling
+- add admin live-readiness dashboard
 - verify desktop and mobile layouts
 - verify no raw secrets are stored or returned
 - verify no client-controlled payment data is trusted
@@ -563,6 +767,19 @@ Exit criteria:
 - TypeScript passes
 - critical tests pass
 - live payments remain disabled until explicit approval
+
+Stage 10 live-readiness dashboard completed:
+
+- added `Readiness` as the default `/admin/billing` tab
+- added checks for checkout disabled, webhook effects disabled, gateway secret references, active plan mappings, and gateway readiness
+- added modal documentation for the readiness view
+- kept live payments disabled
+
+Stage 10 slice document:
+
+```text
+Project Change Log/Billing stage 10 live readiness dashboard.md
+```
 
 ## Important Constraints
 
