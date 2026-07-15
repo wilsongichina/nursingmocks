@@ -781,6 +781,41 @@ Stage 10 slice document:
 Documentation/Billing stage 10 live readiness dashboard.md
 ```
 
+### Stage 11: Sandbox Checkout Activation
+
+Goals:
+
+- create real provider checkout sessions for test gateways only
+- keep live gateway checkout disabled until explicit approval
+- use admin-managed plans, gateways, and provider price mappings
+- resolve provider secrets from environment references, not Firestore raw secrets
+- allow the customer billing page to start checkout only for ready test-gateway plans
+- keep entitlement grants dependent on verified webhook processing
+
+Exit criteria:
+
+- Stripe test checkout sessions can be created through the server-side gateway adapter
+- client-supplied amount, currency, package access, provider price IDs, and metadata remain rejected
+- live gateways return unavailable
+- checkout attempts are logged
+- checkout success redirects do not grant access
+- TypeScript and targeted billing tests pass
+
+Stage 11 sandbox checkout activation completed:
+
+- added Stripe test checkout session creation
+- added Stripe secret key reference resolution
+- kept live Stripe checkout blocked
+- returned checkout URLs only when the provider creates a test session
+- enabled `/payments` checkout buttons for ready test-gateway plans
+- updated admin readiness copy for the live-checkout guardrail
+
+Stage 11 slice document:
+
+```text
+Documentation/Billing stage 11 sandbox checkout activation.md
+```
+
 ## Important Constraints
 
 Preserve:

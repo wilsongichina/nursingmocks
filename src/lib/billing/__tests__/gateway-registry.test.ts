@@ -115,17 +115,17 @@ describe("billing gateway registry", () => {
     ]);
   });
 
-  it("keeps the Stripe adapter unavailable until live checkout stages are implemented", async () => {
+  it("keeps the Stripe adapter unavailable for live gateways", async () => {
     const result = await stripeGatewayAdapter.createCheckoutSession({
       uid: "user_1",
       plan: plan(),
-      gateway: gateway(),
+      gateway: gateway({ environment: "live" }),
       providerPriceMapping: {
         mappingId: "stripe_all_access_monthly",
         planId: "all_access_monthly",
         provider: "stripe",
         gatewayId: "stripe_us",
-        environment: "test",
+        environment: "live",
         externalProductId: "prod_test",
         externalPriceId: "price_test",
         externalPlanId: null,
@@ -145,5 +145,6 @@ describe("billing gateway registry", () => {
 
     expect(result.status).toBe("unavailable");
     expect(result.checkoutUrl).toBeUndefined();
+    expect(result.message).toBe("Live Stripe checkout is disabled. Stage 11 only allows test gateway checkout sessions.");
   });
 });

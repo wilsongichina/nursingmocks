@@ -760,9 +760,9 @@ function AdminBillingContent() {
   const incompleteGateways = config.gateways.filter((gateway) => gateway.configurationStatus !== "ready");
   const readinessChecks = [
     {
-      label: "Checkout remains disabled",
+      label: "Live checkout remains disabled",
       passed: true,
-      detail: "Checkout session draft responses keep checkoutEnabled false.",
+      detail: "Stage 11 allows Stripe test checkout sessions only; live gateway checkout remains blocked.",
     },
     {
       label: "Webhook effects remain disabled",

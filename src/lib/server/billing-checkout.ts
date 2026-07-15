@@ -9,8 +9,8 @@ import { resolveCheckoutReadiness } from "@/lib/billing/checkout-readiness";
 const BILLING_CHECKOUT_ATTEMPTS_COLLECTION = "billing_checkout_attempts";
 
 export type CreateCheckoutSessionDraftResult = {
-  status: "blocked" | "unavailable";
-  checkoutEnabled: false;
+  status: "created" | "blocked" | "unavailable";
+  checkoutEnabled: boolean;
   message: string;
   attemptId: string;
   checkoutUrl?: string;
@@ -127,13 +127,14 @@ export async function createCheckoutSessionDraft(
     message: providerResult.message,
     providerResult,
   });
+  const created = providerResult.status === "ready" && Boolean(providerResult.checkoutUrl);
 
   return {
-    status: providerResult.status === "unavailable" ? "unavailable" : "blocked",
-    checkoutEnabled: false,
+    status: created ? "created" : providerResult.status === "unavailable" ? "unavailable" : "blocked",
+    checkoutEnabled: created,
     message: providerResult.message,
     attemptId,
-    checkoutUrl: undefined,
+    checkoutUrl: created ? providerResult.checkoutUrl : undefined,
     providerSessionId: providerResult.providerSessionId,
   };
 }

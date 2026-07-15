@@ -16,7 +16,7 @@ type BillingCatalogResponse = {
   plans: Serialized<BillingPlan>[];
   gateways: Serialized<PaymentGatewayConfig>[];
   providerPriceMappings: Serialized<ProviderPriceMapping>[];
-  checkoutEnabled: false;
+  checkoutEnabled: boolean;
 };
 
 function formatDate(value: unknown) {
@@ -66,6 +66,7 @@ export default function PaymentsPage() {
   const [catalog, setCatalog] = useState<BillingCatalogResponse | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !currentUser) {
@@ -119,6 +120,53 @@ export default function PaymentsPage() {
     [userDoc]
   );
   const billing = userDoc?.billing;
+  const testCheckoutAvailable = Boolean(
+    catalog?.plans.some((plan) => {
+      const assignedGateways = catalog.gateways.filter(
+        (gateway) => plan.gatewayIds.includes(gateway.gatewayId) && gateway.environment === "test"
+      );
+      const mappings = catalog.providerPriceMappings.filter((mapping) =>
+        assignedGateways.some((gateway) => mapping.planId === plan.planId && mapping.gatewayId === gateway.gatewayId)
+      );
+      return assignedGateways.length > 0 && mappings.length > 0;
+    })
+  );
+
+  async function startCheckout(plan: Serialized<BillingPlan>, gatewayId: string | null) {
+    if (!currentUser) return;
+
+    setError(null);
+    setCheckoutPlanId(plan.planId);
+
+    try {
+      const token = await currentUser.getIdToken();
+      const origin = window.location.origin;
+      const response = await fetch("/api/billing/checkout/session", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          planId: plan.planId,
+          gatewayId,
+          successUrl: `${origin}/payments?checkout=success`,
+          cancelUrl: `${origin}/payments?checkout=cancelled`,
+          customerEmail: currentUser.email,
+        }),
+      });
+      const result = (await response.json()) as { checkoutUrl?: string; message?: string; error?: string };
+
+      if (!response.ok || !result.checkoutUrl) {
+        throw new Error(result.error || result.message || "Checkout is not available for this plan yet.");
+      }
+
+      window.location.assign(result.checkoutUrl);
+    } catch (checkoutError) {
+      setError(checkoutError instanceof Error ? checkoutError.message : "Could not start checkout.");
+      setCheckoutPlanId(null);
+    }
+  }
 
   if (loading || (currentUser && docLoading)) {
     return (
@@ -144,10 +192,12 @@ export default function PaymentsPage() {
               <p className="text-sm font-semibold text-purple-700">Billing</p>
               <h1 className="mt-1 text-3xl font-bold text-gray-950">Payments & Subscription</h1>
               <p className="mt-2 max-w-3xl text-sm text-gray-600">
-                Review your current access and preview available NursingMocks plans. Checkout is not enabled yet.
+                Review your current access and start test checkout for ready NursingMocks plans.
               </p>
             </div>
-            <StatusPill tone="amber">Checkout disabled</StatusPill>
+            <StatusPill tone={testCheckoutAvailable ? "green" : "amber"}>
+              {testCheckoutAvailable ? "Test checkout available" : "Checkout unavailable"}
+            </StatusPill>
           </div>
 
           {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
@@ -190,7 +240,7 @@ export default function PaymentsPage() {
           <section className="rounded-xl border border-gray-200 bg-white">
             <div className="border-b border-gray-200 px-5 py-4">
               <h2 className="text-lg font-semibold text-gray-950">Available Plans</h2>
-              <p className="mt-1 text-sm text-gray-600">These plans come from the admin billing catalog. Checkout actions are disabled in this stage.</p>
+              <p className="mt-1 text-sm text-gray-600">These plans come from the admin billing catalog. Only ready test-gateway checkout is enabled in this stage.</p>
             </div>
 
             {catalogLoading ? (
@@ -202,7 +252,12 @@ export default function PaymentsPage() {
                 {catalog.plans.map((plan) => {
                   const mappings = catalog.providerPriceMappings.filter((mapping) => mapping.planId === plan.planId);
                   const assignedGateways = catalog.gateways.filter((gateway) => plan.gatewayIds.includes(gateway.gatewayId));
-                  const ready = mappings.length > 0 && assignedGateways.length > 0;
+                  const testGateway = assignedGateways.find((gateway) =>
+                    gateway.environment === "test" &&
+                    mappings.some((mapping) => mapping.gatewayId === gateway.gatewayId)
+                  );
+                  const ready = Boolean(testGateway);
+                  const checkingOut = checkoutPlanId === plan.planId;
 
                   return (
                     <article key={plan.planId} className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -229,12 +284,21 @@ export default function PaymentsPage() {
 
                       <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
                         {ready
-                          ? "Configuration is ready, but checkout is disabled for this billing stage."
-                          : "This plan is missing an enabled gateway or active provider price mapping."}
+                          ? "This plan can start a test checkout session. Access is granted only after verified webhook processing."
+                          : "This plan is missing an enabled test gateway or active provider price mapping."}
                       </div>
 
-                      <button disabled className="mt-4 rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-500">
-                        {ready ? "Checkout not enabled" : "Configuration incomplete"}
+                      <button
+                        type="button"
+                        disabled={!ready || checkingOut}
+                        onClick={() => void startCheckout(plan, testGateway?.gatewayId ?? null)}
+                        className={`mt-4 rounded-lg px-4 py-2 text-sm font-semibold ${
+                          ready && !checkingOut
+                            ? "bg-purple-600 text-white hover:bg-purple-700"
+                            : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {checkingOut ? "Starting checkout..." : ready ? "Start test checkout" : "Configuration incomplete"}
                       </button>
                     </article>
                   );
