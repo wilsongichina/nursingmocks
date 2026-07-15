@@ -41,6 +41,18 @@ export type CheckoutSessionResult = GatewayOperationResult & {
   providerSessionId?: string;
 };
 
+export type BillingPortalSessionRequest = {
+  uid: string;
+  gateway: PaymentGatewayConfig;
+  providerCustomerId: string;
+  returnUrl: string;
+};
+
+export type BillingPortalSessionResult = GatewayOperationResult & {
+  portalUrl?: string;
+  providerSessionId?: string;
+};
+
 export type ProviderPriceSyncRequest = {
   plan: BillingPlan;
   priceVersion: BillingPlanPriceVersion;
@@ -71,6 +83,7 @@ export type GatewayConnectionTestRequest = {
 export interface PaymentGatewayAdapter {
   provider: BillingProvider;
   createCheckoutSession(request: CheckoutSessionRequest): Promise<CheckoutSessionResult>;
+  createBillingPortalSession(request: BillingPortalSessionRequest): Promise<BillingPortalSessionResult>;
   syncProviderPrice(request: ProviderPriceSyncRequest): Promise<ProviderPriceSyncResult>;
   verifyWebhook(request: WebhookVerificationRequest): Promise<WebhookVerificationResult>;
   testConnection(request: GatewayConnectionTestRequest): Promise<GatewayOperationResult>;

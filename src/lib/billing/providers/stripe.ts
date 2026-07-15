@@ -8,10 +8,13 @@ import type {
   ProviderPriceSyncResult,
   WebhookVerificationRequest,
   WebhookVerificationResult,
+  BillingPortalSessionRequest,
+  BillingPortalSessionResult,
 } from "@/lib/billing/gateway-adapter";
 import { createHmac, timingSafeEqual } from "crypto";
 
 const STRIPE_CHECKOUT_SESSIONS_URL = "https://api.stripe.com/v1/checkout/sessions";
+const STRIPE_BILLING_PORTAL_SESSIONS_URL = "https://api.stripe.com/v1/billing_portal/sessions";
 
 function unavailable(operation: string): GatewayOperationResult {
   return {
@@ -125,6 +128,77 @@ export const stripeGatewayAdapter: PaymentGatewayAdapter = {
       return {
         status: "failed",
         message: "Stripe checkout session request failed.",
+      };
+    }
+  },
+
+  async createBillingPortalSession(request: BillingPortalSessionRequest): Promise<BillingPortalSessionResult> {
+    if (request.gateway.provider !== "stripe") {
+      return {
+        status: "failed",
+        message: "Stripe adapter can only create portal sessions for Stripe gateways.",
+      };
+    }
+
+    if (request.gateway.environment !== "test") {
+      return {
+        status: "unavailable",
+        message: "Live Stripe billing portal is disabled. Stage 13 only allows test gateway portal sessions.",
+      };
+    }
+
+    const secretKey = resolveStripeSecretKey(request.gateway);
+    if (!secretKey) {
+      return unavailable("Stripe billing portal session creation");
+    }
+
+    const params = new URLSearchParams({
+      customer: request.providerCustomerId,
+      return_url: request.returnUrl,
+    });
+
+    try {
+      const response = await fetch(STRIPE_BILLING_PORTAL_SESSIONS_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params,
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        id?: unknown;
+        url?: unknown;
+        error?: { message?: unknown };
+      };
+
+      if (!response.ok) {
+        return {
+          status: "failed",
+          message:
+            typeof payload.error?.message === "string"
+              ? payload.error.message
+              : "Stripe billing portal session creation failed.",
+        };
+      }
+
+      if (typeof payload.id !== "string" || typeof payload.url !== "string") {
+        return {
+          status: "failed",
+          message: "Stripe billing portal response did not include a session ID and URL.",
+        };
+      }
+
+      return {
+        status: "ready",
+        message: "Stripe test billing portal session created.",
+        providerSessionId: payload.id,
+        portalUrl: payload.url,
+      };
+    } catch {
+      return {
+        status: "failed",
+        message: "Stripe billing portal session request failed.",
       };
     }
   },

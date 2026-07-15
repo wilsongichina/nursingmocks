@@ -67,6 +67,7 @@ export default function PaymentsPage() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !currentUser) {
@@ -120,6 +121,23 @@ export default function PaymentsPage() {
     [userDoc]
   );
   const billing = userDoc?.billing;
+  const activeProvider = billing?.active_provider ?? "stripe";
+  const providerCustomerId =
+    activeProvider === "stripe"
+      ? userDoc?.billing_providers?.stripe?.customer_id
+      : activeProvider === "paypal"
+        ? userDoc?.billing_providers?.paypal?.payer_id
+        : userDoc?.billing_providers?.authorize_net?.customer_profile_id;
+  const portalGateway = catalog?.gateways
+    .filter(
+      (gateway) =>
+        gateway.provider === activeProvider &&
+        gateway.environment === "test" &&
+        gateway.enabled &&
+        gateway.configurationStatus === "ready"
+    )
+    .sort((a, b) => a.priority - b.priority || a.gatewayId.localeCompare(b.gatewayId))[0];
+  const portalReady = Boolean(providerCustomerId && portalGateway);
   const testCheckoutAvailable = Boolean(
     catalog?.plans.some((plan) => {
       const assignedGateways = catalog.gateways.filter(
@@ -165,6 +183,38 @@ export default function PaymentsPage() {
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : "Could not start checkout.");
       setCheckoutPlanId(null);
+    }
+  }
+
+  async function openBillingPortal() {
+    if (!currentUser) return;
+
+    setError(null);
+    setPortalLoading(true);
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch("/api/billing/portal/session", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          gatewayId: portalGateway?.gatewayId ?? null,
+          returnUrl: `${window.location.origin}/payments`,
+        }),
+      });
+      const result = (await response.json()) as { portalUrl?: string; message?: string; error?: string };
+
+      if (!response.ok || !result.portalUrl) {
+        throw new Error(result.error || result.message || "Billing portal is not available yet.");
+      }
+
+      window.location.assign(result.portalUrl);
+    } catch (portalError) {
+      setError(portalError instanceof Error ? portalError.message : "Could not open billing portal.");
+      setPortalLoading(false);
     }
   }
 
@@ -219,6 +269,34 @@ export default function PaymentsPage() {
                 <InfoCard label="Billing Interval" value={billing?.interval ?? "Not set"} />
                 <InfoCard label="Provider" value={billing?.active_provider ?? "Not set"} />
                 <InfoCard label="Renewal / Access End" value={formatDate(billing?.current_period_end)} />
+              </div>
+
+              <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-950">Billing Management</h3>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Manage payment method and subscription details through the provider test portal.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!portalReady || portalLoading}
+                    onClick={() => void openBillingPortal()}
+                    className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+                      portalReady && !portalLoading
+                        ? "bg-purple-600 text-white hover:bg-purple-700"
+                        : "bg-gray-200 text-gray-500"
+                    }`}
+                  >
+                    {portalLoading ? "Opening portal..." : portalReady ? "Manage billing" : "Portal unavailable"}
+                  </button>
+                </div>
+                {!portalReady && (
+                  <p className="mt-3 text-xs text-gray-500">
+                    The portal appears after a verified test webhook saves your provider customer record.
+                  </p>
+                )}
               </div>
             </div>
 

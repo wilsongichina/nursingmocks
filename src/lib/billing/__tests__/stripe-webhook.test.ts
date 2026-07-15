@@ -254,3 +254,65 @@ describe("Stripe sandbox checkout sessions", () => {
     });
   });
 });
+
+describe("Stripe sandbox billing portal sessions", () => {
+  afterEach(() => {
+    delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.STRIPE_SECRET_KEY_STRIPE_DEFAULT;
+    delete process.env.CUSTOM_STRIPE_SECRET_KEY;
+    vi.unstubAllGlobals();
+  });
+
+  it("creates a Stripe test billing portal session for the provider customer", async () => {
+    process.env.CUSTOM_STRIPE_SECRET_KEY = "sk_test_custom";
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "bps_test_123", url: "https://billing.stripe.com/p/session" }), {
+        status: 200,
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await stripeGatewayAdapter.createBillingPortalSession({
+      uid: "user_1",
+      gateway: gateway({ secretKeyRef: "CUSTOM_STRIPE_SECRET_KEY" }),
+      providerCustomerId: "cus_test",
+      returnUrl: "https://nursingmocks.com/payments",
+    });
+
+    expect(result).toEqual({
+      status: "ready",
+      message: "Stripe test billing portal session created.",
+      providerSessionId: "bps_test_123",
+      portalUrl: "https://billing.stripe.com/p/session",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.stripe.com/v1/billing_portal/sessions",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer sk_test_custom",
+          "Content-Type": "application/x-www-form-urlencoded",
+        }),
+      })
+    );
+    const body = fetchMock.mock.calls[0][1].body as URLSearchParams;
+    expect(body.get("customer")).toBe("cus_test");
+    expect(body.get("return_url")).toBe("https://nursingmocks.com/payments");
+  });
+
+  it("blocks live Stripe billing portal sessions during test portal activation", async () => {
+    process.env.STRIPE_SECRET_KEY = "sk_live_blocked";
+
+    const result = await stripeGatewayAdapter.createBillingPortalSession({
+      uid: "user_1",
+      gateway: gateway({ environment: "live" }),
+      providerCustomerId: "cus_live",
+      returnUrl: "https://nursingmocks.com/payments",
+    });
+
+    expect(result).toEqual({
+      status: "unavailable",
+      message: "Live Stripe billing portal is disabled. Stage 13 only allows test gateway portal sessions.",
+    });
+  });
+});

@@ -852,6 +852,40 @@ Stage 12 slice document:
 Documentation/billing/Billing stage 12 verified webhook state writers.md
 ```
 
+### Stage 13: Customer Billing Portal
+
+Goals:
+
+- add customer billing management through provider-hosted portal sessions
+- resolve provider customer IDs server-side from verified webhook state
+- prevent the browser from supplying provider customer IDs, subscription IDs, provider, or environment
+- keep live billing portal sessions disabled until explicit approval
+- audit portal session requests
+- show a customer manage-billing action on `/payments`
+
+Exit criteria:
+
+- authenticated users can request a Stripe test billing portal session when a provider customer record exists
+- users without provider customer records receive a safe blocked response
+- live portal sessions return unavailable
+- portal attempts are audit logged
+- TypeScript and targeted portal tests pass
+
+Stage 13 customer billing portal completed:
+
+- added provider-agnostic billing portal adapter contracts
+- implemented Stripe test billing portal session creation
+- added `POST /api/billing/portal/session`
+- added `/payments` manage billing action
+- blocked client-controlled provider/customer identifiers
+- kept live portal sessions disabled
+
+Stage 13 slice document:
+
+```text
+Documentation/billing/Billing stage 13 customer billing portal.md
+```
+
 ## Important Constraints
 
 Preserve:
