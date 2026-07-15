@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,12 @@ type BillingCatalogResponse = {
   checkoutEnabled: boolean;
 };
 
+type BillingHistoryResponse = {
+  transactions: Record<string, unknown>[];
+  subscriptions: Record<string, unknown>[];
+  entitlements: Record<string, unknown>[];
+};
+
 function formatDate(value: unknown) {
   if (!value) return "Not set";
   if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") {
@@ -26,6 +32,13 @@ function formatDate(value: unknown) {
   }
   if (typeof value === "string") return new Date(value).toLocaleDateString();
   return "Not set";
+}
+
+function formatMoney(amount: unknown, currency: unknown) {
+  const numericAmount = typeof amount === "number" ? amount : Number(amount);
+  const currencyCode = typeof currency === "string" && currency ? currency : "USD";
+  if (!Number.isFinite(numericAmount)) return "Not set";
+  return `${currencyCode} ${numericAmount}`;
 }
 
 function packageLabel(packageId: string) {
@@ -64,7 +77,9 @@ export default function PaymentsPage() {
   const [userDoc, setUserDoc] = useState<UserDocument | null>(null);
   const [docLoading, setDocLoading] = useState(true);
   const [catalog, setCatalog] = useState<BillingCatalogResponse | null>(null);
+  const [history, setHistory] = useState<BillingHistoryResponse | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -82,6 +97,36 @@ export default function PaymentsPage() {
       setCheckoutNotice(checkoutStatus);
     }
   }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const user = currentUser;
+    let cancelled = false;
+
+    async function loadHistory() {
+      setHistoryLoading(true);
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch("/api/billing/history", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) throw new Error("Could not load billing history");
+        const data = (await response.json()) as BillingHistoryResponse;
+        if (!cancelled) setHistory(data);
+      } catch {
+        if (!cancelled) setError("Could not load your billing history.");
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    }
+
+    void loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -340,6 +385,59 @@ export default function PaymentsPage() {
             </div>
           </section>
 
+          <section className="mb-6 rounded-xl border border-gray-200 bg-white">
+            <div className="border-b border-gray-200 px-5 py-4">
+              <h2 className="text-lg font-semibold text-gray-950">Payment History</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Read-only records created after verified webhook processing or controlled admin billing operations.
+              </p>
+            </div>
+            {historyLoading ? (
+              <p className="p-5 text-sm text-gray-500">Loading billing history...</p>
+            ) : !history ? (
+              <p className="p-5 text-sm text-gray-500">Billing history is not available right now.</p>
+            ) : (
+              <div className="grid gap-4 p-5 xl:grid-cols-3">
+                <HistoryPanel
+                  title="Transactions"
+                  emptyMessage="No payment transactions recorded yet."
+                  records={history.transactions}
+                  renderRecord={(record) => (
+                    <>
+                      <p className="font-semibold text-gray-950">{formatMoney(record.amount, record.currency)}</p>
+                      <p className="mt-1 text-xs text-gray-500">{String(record.planId ?? "No plan")} · {String(record.status ?? "No status")}</p>
+                      <p className="mt-2 text-xs text-gray-500">Paid: {formatDate(record.paidAt ?? record.createdAt)}</p>
+                    </>
+                  )}
+                />
+                <HistoryPanel
+                  title="Subscriptions"
+                  emptyMessage="No subscriptions recorded yet."
+                  records={history.subscriptions}
+                  renderRecord={(record) => (
+                    <>
+                      <p className="font-semibold text-gray-950">{String(record.planId ?? "No plan")}</p>
+                      <p className="mt-1 text-xs text-gray-500">{String(record.provider ?? "No provider")} · {String(record.status ?? "No status")}</p>
+                      <p className="mt-2 text-xs text-gray-500">Period ends: {formatDate(record.currentPeriodEnd)}</p>
+                    </>
+                  )}
+                />
+                <HistoryPanel
+                  title="Entitlements"
+                  emptyMessage="No entitlement records yet."
+                  records={history.entitlements}
+                  renderRecord={(record) => (
+                    <>
+                      <p className="font-semibold text-gray-950">{packageLabel(String(record.packageId ?? "unknown"))}</p>
+                      <p className="mt-1 text-xs text-gray-500">{String(record.source ?? "No source")} · {String(record.status ?? "No status")}</p>
+                      <p className="mt-2 text-xs text-gray-500">Granted: {formatDate(record.grantedAt ?? record.createdAt)}</p>
+                    </>
+                  )}
+                />
+              </div>
+            )}
+          </section>
+
           <section className="rounded-xl border border-gray-200 bg-white">
             <div className="border-b border-gray-200 px-5 py-4">
               <h2 className="text-lg font-semibold text-gray-950">Available Plans</h2>
@@ -412,6 +510,45 @@ export default function PaymentsPage() {
         </div>
       </main>
     </Layout>
+  );
+}
+
+function HistoryPanel({
+  title,
+  emptyMessage,
+  records,
+  renderRecord,
+}: {
+  title: string;
+  emptyMessage: string;
+  records: Record<string, unknown>[];
+  renderRecord: (record: Record<string, unknown>) => ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50">
+      <div className="border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-gray-950">{title}</h3>
+          <StatusPill>{String(records.length)}</StatusPill>
+        </div>
+      </div>
+      {records.length === 0 ? (
+        <p className="p-4 text-sm text-gray-500">{emptyMessage}</p>
+      ) : (
+        <div className="max-h-72 overflow-y-auto p-3">
+          <div className="space-y-3">
+            {records.map((record, index) => (
+              <article
+                key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? index)}
+                className="rounded-lg border border-gray-200 bg-white p-3 text-sm"
+              >
+                {renderRecord(record)}
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

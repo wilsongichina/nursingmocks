@@ -1107,6 +1107,66 @@ Stage 20 slice document:
 Documentation/billing/Billing stage 20 admin record detail view.md
 ```
 
+### Stage 21: Admin Record Filters
+
+Goals:
+
+- make admin billing operational records easier to narrow down
+- add status, provider, and date filters to record-heavy tables
+- keep filtering client-side over already loaded records
+- avoid billing mutations and provider calls
+
+Exit criteria:
+
+- billing record tables support status filtering
+- billing record tables support provider filtering
+- billing record tables support date range filtering
+- result counts update with filters
+- TypeScript passes
+
+Stage 21 admin record filters completed:
+
+- added reusable status, provider, date-from, and date-to filters
+- kept existing table search and newest-first ordering
+- applied filters to billing operation tables
+- kept the change display-only
+
+Stage 21 slice document:
+
+```text
+Documentation/billing/Billing stage 21 admin record filters.md
+```
+
+### Stage 22: Customer Payment History
+
+Goals:
+
+- show customers their own billing history on `/payments`
+- keep payment history read-only
+- restrict history records to the authenticated user
+- avoid changing checkout, webhook processing, or entitlement rules
+
+Exit criteria:
+
+- authenticated users can load their own transactions
+- authenticated users can load their own subscriptions
+- authenticated users can load their own entitlement records
+- `/payments` displays the records clearly
+- TypeScript passes
+
+Stage 22 customer payment history completed:
+
+- added `GET /api/billing/history`
+- scoped history queries to the authenticated user's UID
+- added transaction, subscription, and entitlement history panels to `/payments`
+- kept the change read-only
+
+Stage 22 slice document:
+
+```text
+Documentation/billing/Billing stage 22 customer payment history.md
+```
+
 ## Important Constraints
 
 Preserve:

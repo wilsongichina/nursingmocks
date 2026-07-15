@@ -389,19 +389,47 @@ function OperationsTable({
   emptyMessage: string;
 }) {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [providerFilter, setProviderFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<Record<string, unknown> | null>(null);
   const normalizedSearch = search.trim().toLowerCase();
   const sortedRecords = useMemo(
     () => [...records].sort((left, right) => recordTimestamp(right) - recordTimestamp(left)),
     [records]
   );
+  const statusOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          records
+            .map((record) => displayValue(record.status ?? record.processingStatus))
+            .filter((value) => value !== "Not set")
+        )
+      ).sort(),
+    [records]
+  );
+  const providerOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(records.map((record) => displayValue(record.provider)).filter((value) => value !== "Not set"))
+      ).sort(),
+    [records]
+  );
   const visibleRecords = useMemo(() => {
-    if (!normalizedSearch) return sortedRecords;
+    const fromTime = dateFrom ? Date.parse(`${dateFrom}T00:00:00`) : null;
+    const toTime = dateTo ? Date.parse(`${dateTo}T23:59:59`) : null;
 
     return sortedRecords.filter((record) =>
-      columns.some((column) => displayValue(recordValue(record, column.key)).toLowerCase().includes(normalizedSearch))
+      (statusFilter === "all" || displayValue(record.status ?? record.processingStatus) === statusFilter) &&
+      (providerFilter === "all" || displayValue(record.provider) === providerFilter) &&
+      (fromTime === null || recordTimestamp(record) >= fromTime) &&
+      (toTime === null || recordTimestamp(record) <= toTime) &&
+      (!normalizedSearch ||
+        columns.some((column) => displayValue(recordValue(record, column.key)).toLowerCase().includes(normalizedSearch)))
     );
-  }, [columns, normalizedSearch, sortedRecords]);
+  }, [columns, dateFrom, dateTo, normalizedSearch, providerFilter, sortedRecords, statusFilter]);
 
   if (records.length === 0) {
     return <p className="p-4 text-sm text-gray-500">{emptyMessage}</p>;
@@ -409,20 +437,59 @@ function OperationsTable({
 
   return (
     <div>
-      <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="grid gap-3 border-b border-gray-100 bg-gray-50/60 p-4 lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
           <p className="text-sm font-semibold text-gray-950">Records</p>
           <p className="mt-1 text-xs text-gray-500">
             Showing {visibleRecords.length} of {records.length}. Newest records appear first.
           </p>
         </div>
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search records"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 sm:max-w-xs"
-        />
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[220px_150px_150px_140px_140px]">
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search records"
+            aria-label="Search billing records"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+          />
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            aria-label="Filter billing records by status"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+          >
+            <option value="all">All statuses</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+          <select
+            value={providerFilter}
+            onChange={(event) => setProviderFilter(event.target.value)}
+            aria-label="Filter billing records by provider"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+          >
+            <option value="all">All providers</option>
+            {providerOptions.map((provider) => (
+              <option key={provider} value={provider}>{provider}</option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(event) => setDateFrom(event.target.value)}
+            aria-label="Filter billing records from date"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+          />
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(event) => setDateTo(event.target.value)}
+            aria-label="Filter billing records to date"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+          />
+        </div>
       </div>
       {visibleRecords.length === 0 ? (
         <p className="p-4 text-sm text-gray-500">No records match this search.</p>
