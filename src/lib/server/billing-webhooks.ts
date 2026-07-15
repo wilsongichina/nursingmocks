@@ -29,7 +29,8 @@ async function recordWebhookEvent(input: {
   normalizedEventType: string | null;
   eventSupported: boolean;
   plannedEffects: string[];
-  effectsEnabled: false;
+  effectsEnabled: boolean;
+  providerPayload: Record<string, unknown> | null;
   status: BillingWebhookIntakeResult["status"];
   message: string;
   signaturePresent: boolean;
@@ -50,6 +51,7 @@ async function recordWebhookEvent(input: {
       eventSupported: input.eventSupported,
       plannedEffects: input.plannedEffects,
       effectsEnabled: input.effectsEnabled,
+      providerPayload: input.providerPayload,
       status: input.status,
       message: input.message,
       signaturePresent: input.signaturePresent,
@@ -83,6 +85,7 @@ async function recordWebhookEvent(input: {
       eventSupported: input.eventSupported,
       plannedEffects: input.plannedEffects,
       effectsEnabled: input.effectsEnabled,
+      providerPayload: input.providerPayload,
       status: input.status,
       message: input.message,
       signaturePresent: input.signaturePresent,
@@ -133,6 +136,7 @@ export async function intakeBillingWebhook(input: {
       eventSupported: false,
       plannedEffects: [],
       effectsEnabled: false,
+      providerPayload: null,
       status: "rejected",
       message: "Webhook gateway was not found or provider did not match.",
       signaturePresent: true,
@@ -162,6 +166,7 @@ export async function intakeBillingWebhook(input: {
       eventSupported: false,
       plannedEffects: [],
       effectsEnabled: false,
+      providerPayload: null,
       status: "rejected",
       message,
       signaturePresent: true,
@@ -185,7 +190,8 @@ export async function intakeBillingWebhook(input: {
   const providerEventId = verification.providerEventId ?? null;
   const eventType = verification.eventType ?? null;
   const classification = classifyBillingWebhookEvent(validation.input.provider, eventType);
-  const effectPlan = planBillingWebhookEffects(classification.normalizedEventType);
+  const effectsEnabled = verification.status === "ready" && classification.supported && gateway.environment === "test";
+  const effectPlan = planBillingWebhookEffects(classification.normalizedEventType, { effectsEnabled });
   const status =
     verification.status === "ready"
       ? "recorded"
@@ -201,6 +207,7 @@ export async function intakeBillingWebhook(input: {
     eventSupported: classification.supported,
     plannedEffects: effectPlan.effects,
     effectsEnabled: effectPlan.effectsEnabled,
+    providerPayload: verification.payload ?? null,
     status,
     message: `${verification.message} ${classification.message} ${effectPlan.message}`,
     signaturePresent: true,

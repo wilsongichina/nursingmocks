@@ -11,6 +11,14 @@ describe("billing webhook effect planning", () => {
     });
   });
 
+  it("can enable planned effects for controlled test webhook processing", () => {
+    expect(planBillingWebhookEffects("checkout_completed", { effectsEnabled: true })).toEqual({
+      effectsEnabled: true,
+      effects: ["record_transaction", "grant_entitlements"],
+      message: "Billing effects for checkout_completed are enabled for verified test webhook processing.",
+    });
+  });
+
   it("plans subscription cancellation effects without enabling them", () => {
     expect(planBillingWebhookEffects("subscription_cancelled")).toEqual({
       effectsEnabled: false,

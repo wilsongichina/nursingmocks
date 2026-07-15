@@ -142,10 +142,10 @@ describe("Stripe webhook verification", () => {
       message: "Stripe webhook signature verified.",
       providerEventId: "evt_test",
       eventType: "checkout.session.completed",
-      payload: {
+      payload: expect.objectContaining({
         id: "evt_test",
         type: "checkout.session.completed",
-      },
+      }),
     });
   });
 

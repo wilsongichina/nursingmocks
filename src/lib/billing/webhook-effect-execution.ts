@@ -16,7 +16,7 @@ export type BillingWebhookEffectExecutionInput = {
 
 export type BillingWebhookEffectExecutionResult = {
   executed: boolean;
-  status: "disabled" | "not_implemented" | "ready";
+  status: "disabled" | "not_implemented" | "ready" | "failed";
   writeTargets: BillingWebhookWriteTarget[];
   message: string;
 };

@@ -813,7 +813,43 @@ Stage 11 sandbox checkout activation completed:
 Stage 11 slice document:
 
 ```text
-Documentation/Billing stage 11 sandbox checkout activation.md
+Documentation/billing/Billing stage 11 sandbox checkout activation.md
+```
+
+### Stage 12: Verified Webhook State Writers
+
+Goals:
+
+- write billing state only from verified provider webhooks
+- grant access only after trusted webhook processing
+- create billing transactions from verified checkout or invoice events
+- create or update subscriptions from verified subscription events
+- grant, expire, or revoke entitlements from verified webhook effects
+- update the existing `users/{uid}` billing snapshot for compatibility
+- keep live webhook effects disabled until explicit approval
+
+Exit criteria:
+
+- checkout success redirects still do not grant access
+- duplicate webhook events do not double-grant access
+- test gateway webhook events can write billing state
+- live gateway webhook events are recorded but effects remain disabled
+- missing trusted metadata fails processing
+- TypeScript and targeted webhook tests pass
+
+Stage 12 verified webhook state writers completed:
+
+- preserved verified Stripe webhook payloads on event records
+- enabled planned effects only for verified test gateway webhooks
+- added server-side billing state writers for transactions, subscriptions, entitlements, user billing summaries, and audit logs
+- invoked webhook processing after successful Stripe webhook intake
+- kept duplicate webhook events idempotent
+- updated admin readiness copy for the live-webhook guardrail
+
+Stage 12 slice document:
+
+```text
+Documentation/billing/Billing stage 12 verified webhook state writers.md
 ```
 
 ## Important Constraints

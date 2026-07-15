@@ -169,7 +169,7 @@ export const stripeGatewayAdapter: PaymentGatewayAdapter = {
     }
 
     try {
-      const payload = JSON.parse(request.rawBody) as { id?: unknown; type?: unknown };
+      const payload = JSON.parse(request.rawBody) as { id?: unknown; type?: unknown } & Record<string, unknown>;
       const providerEventId = typeof payload.id === "string" ? payload.id : undefined;
       const eventType = typeof payload.type === "string" ? payload.type : undefined;
 
@@ -185,10 +185,7 @@ export const stripeGatewayAdapter: PaymentGatewayAdapter = {
         message: "Stripe webhook signature verified.",
         providerEventId,
         eventType,
-        payload: {
-          id: providerEventId,
-          type: eventType,
-        },
+        payload,
       };
     } catch {
       return {

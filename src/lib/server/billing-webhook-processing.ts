@@ -2,6 +2,8 @@ import { FieldValue } from "firebase-admin/firestore";
 import {
   executePlannedBillingWebhookEffects,
 } from "@/lib/billing/webhook-effect-execution";
+import type { BillingProvider, PaymentGatewayConfig } from "@/lib/billing/models";
+import type { BillingWebhookEventType } from "@/lib/billing/webhook-events";
 import { isBillingWebhookEffect, type BillingWebhookEffect } from "@/lib/billing/webhook-effect-plan";
 import {
   decideWebhookProcessing,
@@ -9,8 +11,10 @@ import {
   type BillingWebhookProcessingRecord,
 } from "@/lib/billing/webhook-processing";
 import { getAdminDb } from "@/lib/server/firebase-admin";
+import { writeBillingWebhookState } from "@/lib/server/billing-webhook-state-writer";
 
 const BILLING_WEBHOOK_EVENTS_COLLECTION = "billing_webhook_events";
+const BILLING_GATEWAYS_COLLECTION = "billing_gateways";
 
 export type ProcessBillingWebhookEventResult = BillingWebhookProcessingDecision & {
   eventRecordId: string;
@@ -39,6 +43,9 @@ export async function processBillingWebhookEvent(
       processingLockedAt?: unknown;
       normalizedEventType?: unknown;
       providerEventId?: unknown;
+      provider?: unknown;
+      gatewayId?: unknown;
+      providerPayload?: unknown;
     };
 
     if (data.processingLockedAt && !data.processed) {
@@ -64,19 +71,68 @@ export async function processBillingWebhookEvent(
           (effect): effect is BillingWebhookEffect => typeof effect === "string" && isBillingWebhookEffect(effect)
         )
       : [];
-    const execution = executePlannedBillingWebhookEffects({
+    let execution = executePlannedBillingWebhookEffects({
       effectsEnabled: Boolean(data.effectsEnabled),
       plannedEffects,
       normalizedEventType: typeof data.normalizedEventType === "string" ? data.normalizedEventType : null,
       providerEventId: typeof data.providerEventId === "string" ? data.providerEventId : null,
     });
 
+    if (decision.shouldProcess) {
+      const provider = typeof data.provider === "string" ? data.provider : null;
+      const gatewayId = typeof data.gatewayId === "string" ? data.gatewayId : null;
+      const providerEventId = typeof data.providerEventId === "string" ? data.providerEventId : null;
+      const normalizedEventType = typeof data.normalizedEventType === "string" ? data.normalizedEventType : null;
+      const providerPayload =
+        data.providerPayload && typeof data.providerPayload === "object" && !Array.isArray(data.providerPayload)
+          ? (data.providerPayload as Record<string, unknown>)
+          : null;
+
+      if (!provider || !gatewayId || !providerEventId || !normalizedEventType || !providerPayload) {
+        execution = {
+          executed: false,
+          status: "failed",
+          writeTargets: execution.writeTargets,
+          message: "Webhook event is missing provider, gateway, event type, event ID, or verified payload.",
+        };
+      } else {
+        const gatewayRef = db.collection(BILLING_GATEWAYS_COLLECTION).doc(gatewayId);
+        const gatewaySnapshot = await transaction.get(gatewayRef);
+        const gateway = gatewaySnapshot.exists
+          ? ({ ...gatewaySnapshot.data(), gatewayId } as PaymentGatewayConfig)
+          : null;
+
+        if (!gateway) {
+          execution = {
+            executed: false,
+            status: "failed",
+            writeTargets: execution.writeTargets,
+            message: "Webhook gateway was not found during state writing.",
+          };
+        } else {
+          execution = await writeBillingWebhookState({
+            transaction,
+            db,
+            eventRecordId,
+            provider: provider as BillingProvider,
+            gateway,
+            providerEventId,
+            normalizedEventType: normalizedEventType as BillingWebhookEventType,
+            plannedEffects,
+            providerPayload,
+          });
+        }
+      }
+    }
+
     transaction.update(eventRef, {
-      processingStatus: decision.status,
+      processingStatus: execution.executed ? "processed" : execution.status === "failed" ? "failed" : decision.status,
       processingMessage: decision.message,
       effectExecutionStatus: execution.status,
       effectExecutionMessage: execution.message,
       blockedWriteTargets: execution.writeTargets,
+      processed: execution.executed,
+      processedAt: execution.executed ? FieldValue.serverTimestamp() : null,
       processingAttemptedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
       ...(decision.shouldProcess

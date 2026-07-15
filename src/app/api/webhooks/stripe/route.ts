@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { processBillingWebhookEvent } from "@/lib/server/billing-webhook-processing";
 import { intakeBillingWebhook } from "@/lib/server/billing-webhooks";
 
 export const runtime = "nodejs";
@@ -17,6 +18,11 @@ export async function POST(request: NextRequest) {
 
     const statusCode =
       result.status === "rejected" ? 400 : result.status === "duplicate" ? 200 : 202;
+
+    if (result.status === "recorded" && result.eventRecordId) {
+      const processing = await processBillingWebhookEvent(result.eventRecordId);
+      return NextResponse.json({ ...result, processing }, { status: statusCode });
+    }
 
     return NextResponse.json(result, { status: statusCode });
   } catch (error) {

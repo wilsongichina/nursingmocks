@@ -765,9 +765,9 @@ function AdminBillingContent() {
       detail: "Stage 11 allows Stripe test checkout sessions only; live gateway checkout remains blocked.",
     },
     {
-      label: "Webhook effects remain disabled",
+      label: "Live webhook effects remain disabled",
       passed: true,
-      detail: "Webhook effect execution and processing enablement remain blocked.",
+      detail: "Stage 12 allows verified test webhook state writers only; live webhook effects remain blocked.",
     },
     {
       label: "Gateway secret references configured",

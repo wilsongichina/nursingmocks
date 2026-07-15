@@ -18,7 +18,7 @@ export function isBillingWebhookEffect(value: string): value is BillingWebhookEf
 }
 
 export type BillingWebhookEffectPlan = {
-  effectsEnabled: false;
+  effectsEnabled: boolean;
   effects: BillingWebhookEffect[];
   message: string;
 };
@@ -34,7 +34,10 @@ const EFFECTS_BY_EVENT_TYPE: Record<BillingWebhookEventType, BillingWebhookEffec
   dispute_created: ["record_dispute"],
 };
 
-export function planBillingWebhookEffects(eventType: BillingWebhookEventType | null): BillingWebhookEffectPlan {
+export function planBillingWebhookEffects(
+  eventType: BillingWebhookEventType | null,
+  options: { effectsEnabled?: boolean } = {}
+): BillingWebhookEffectPlan {
   if (!eventType) {
     return {
       effectsEnabled: false,
@@ -43,9 +46,12 @@ export function planBillingWebhookEffects(eventType: BillingWebhookEventType | n
     };
   }
 
+  const effectsEnabled = Boolean(options.effectsEnabled);
   return {
-    effectsEnabled: false,
+    effectsEnabled,
     effects: EFFECTS_BY_EVENT_TYPE[eventType],
-    message: `Billing effects for ${eventType} are planned but disabled until webhook processing is explicitly enabled.`,
+    message: effectsEnabled
+      ? `Billing effects for ${eventType} are enabled for verified test webhook processing.`
+      : `Billing effects for ${eventType} are planned but disabled until webhook processing is explicitly enabled.`,
   };
 }
