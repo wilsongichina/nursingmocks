@@ -886,6 +886,41 @@ Stage 13 slice document:
 Documentation/billing/Billing stage 13 customer billing portal.md
 ```
 
+### Stage 14: Admin Billing Operations
+
+Goals:
+
+- add controlled admin support operations
+- allow audited manual entitlement grants and revokes
+- allow webhook reprocessing through the existing idempotent processor
+- record refund reviews without executing provider refunds
+- record subscription and transaction notes without changing provider state
+- show operation review records in the admin billing operations views
+
+Exit criteria:
+
+- every operation requires admin authorization
+- every operation writes an audit log
+- entitlement changes require a reason and update compatibility entitlement state
+- refund/subscription/transaction operations are review-only
+- live provider mutations remain disabled
+- TypeScript passes
+
+Stage 14 admin billing operations completed:
+
+- added `POST /api/admin/billing/operations`
+- added manual entitlement grant and revoke
+- added webhook reprocess operation
+- added refund review, subscription note, and transaction note records
+- added `billing_operation_reviews` to admin billing data
+- added operation reviews tab and operations action form in `/admin/billing`
+
+Stage 14 slice document:
+
+```text
+Documentation/billing/Billing stage 14 admin billing operations.md
+```
+
 ## Important Constraints
 
 Preserve:

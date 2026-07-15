@@ -34,6 +34,7 @@ const BILLING_SUBSCRIPTIONS_COLLECTION = "billing_subscriptions";
 const BILLING_ENTITLEMENTS_COLLECTION = "billing_entitlements";
 const BILLING_WEBHOOK_EVENTS_COLLECTION = "billing_webhook_events";
 const BILLING_CHECKOUT_ATTEMPTS_COLLECTION = "billing_checkout_attempts";
+const BILLING_OPERATION_REVIEWS_COLLECTION = "billing_operation_reviews";
 
 type Serializable<T> = {
   [K in keyof T]: T[K] extends Date | null ? string | null : T[K];
@@ -76,6 +77,7 @@ export type AdminBillingConfigSnapshot = {
   entitlements: Serializable<BillingEntitlement>[];
   webhookEvents: Record<string, unknown>[];
   checkoutAttempts: Record<string, unknown>[];
+  operationReviews: Record<string, unknown>[];
   auditLogs: Serializable<BillingAuditLogEntry>[];
 };
 
@@ -230,6 +232,7 @@ export async function getAdminBillingConfig(): Promise<AdminBillingConfigSnapsho
     entitlements,
     webhookEvents,
     checkoutAttempts,
+    operationReviews,
     auditLogs,
   ] = await Promise.all([
     listCollection<BillingPlan>(BILLING_PLANS_COLLECTION),
@@ -240,6 +243,7 @@ export async function getAdminBillingConfig(): Promise<AdminBillingConfigSnapsho
     listCollection<BillingEntitlement>(BILLING_ENTITLEMENTS_COLLECTION),
     listCollection<Record<string, unknown>>(BILLING_WEBHOOK_EVENTS_COLLECTION),
     listCollection<Record<string, unknown>>(BILLING_CHECKOUT_ATTEMPTS_COLLECTION),
+    listCollection<Record<string, unknown>>(BILLING_OPERATION_REVIEWS_COLLECTION),
     listCollection<BillingAuditLogEntry>(BILLING_AUDIT_LOG_COLLECTION),
   ]);
 
@@ -252,6 +256,7 @@ export async function getAdminBillingConfig(): Promise<AdminBillingConfigSnapsho
     entitlements,
     webhookEvents,
     checkoutAttempts,
+    operationReviews,
     auditLogs,
   };
 }

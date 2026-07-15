@@ -30,6 +30,7 @@ type BillingConfigResponse = {
   entitlements: Serialized<BillingEntitlement>[];
   webhookEvents: Record<string, unknown>[];
   checkoutAttempts: Record<string, unknown>[];
+  operationReviews: Record<string, unknown>[];
   auditLogs: Serialized<BillingAuditLogEntry>[];
 };
 
@@ -98,6 +99,7 @@ type BillingManagementTab =
   | "entitlements"
   | "webhooks"
   | "attempts"
+  | "reviews"
   | "audit";
 type EditTarget =
   | { type: "plan"; id: string }
@@ -148,6 +150,19 @@ type ProviderPriceMappingEditForm = {
   billingInterval: string;
   purchaseType: ProviderPriceMapping["purchaseType"];
   active: boolean;
+};
+
+type OperationForm = {
+  operation: string;
+  uid: string;
+  packageId: string;
+  planId: string;
+  entitlementId: string;
+  webhookEventRecordId: string;
+  transactionId: string;
+  subscriptionId: string;
+  reason: string;
+  note: string;
 };
 
 const initialGatewayForm: GatewayForm = {
@@ -256,6 +271,19 @@ const initialProviderPriceMappingEditForm: ProviderPriceMappingEditForm = {
   billingInterval: "",
   purchaseType: "subscription",
   active: true,
+};
+
+const initialOperationForm: OperationForm = {
+  operation: "manualEntitlementGrant",
+  uid: "",
+  packageId: "ati_teas_7",
+  planId: "",
+  entitlementId: "",
+  webhookEventRecordId: "",
+  transactionId: "",
+  subscriptionId: "",
+  reason: "",
+  note: "",
 };
 
 function Pill({ children, tone = "gray" }: { children: string; tone?: "green" | "gray" | "blue" | "amber" }) {
@@ -374,6 +402,7 @@ function AdminBillingContent() {
     entitlements: [],
     webhookEvents: [],
     checkoutAttempts: [],
+    operationReviews: [],
     auditLogs: [],
   });
   const [form, setForm] = useState<GatewayForm>(initialGatewayForm);
@@ -388,6 +417,7 @@ function AdminBillingContent() {
   const [mappingEditForm, setMappingEditForm] = useState<ProviderPriceMappingEditForm>(
     initialProviderPriceMappingEditForm
   );
+  const [operationForm, setOperationForm] = useState<OperationForm>(initialOperationForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
@@ -636,6 +666,35 @@ function AdminBillingContent() {
     }
   };
 
+  const submitAdminOperation = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!currentUser) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch("/api/admin/billing/operations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(operationForm),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not run billing operation");
+      setMessage("Billing operation recorded.");
+      setOperationForm(initialOperationForm);
+      await loadConfig();
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : "Could not run billing operation");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const editPlan = (plan: Serialized<BillingPlan>) => {
     setActiveTab("plans");
     setEditTarget({ type: "plan", id: plan.planId });
@@ -844,9 +903,98 @@ function AdminBillingContent() {
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(420px,0.65fr)]">
               <div className="grid gap-6 xl:order-2">
                 <div>
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Create Records</h2>
-                  <p className="mt-1 text-sm text-gray-600">Plans and gateways are saved as internal billing configuration records.</p>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Operations And Create Records</h2>
+                  <p className="mt-1 text-sm text-gray-600">Run audited operations or create internal billing configuration records.</p>
                 </div>
+
+                <details className="rounded-xl border border-amber-200 bg-white">
+                  <summary className="cursor-pointer border-b border-amber-200 px-4 py-3 marker:text-amber-500">
+                    <span className="block text-sm font-semibold text-gray-950">Operations Actions</span>
+                    <span className="mt-1 block text-xs text-gray-500">Manual entitlement changes and review records are audited. Provider refunds remain disabled.</span>
+                  </summary>
+                  <form onSubmit={submitAdminOperation} className="grid gap-4 p-4">
+                    <LockedNotice>
+                      These actions affect access or operational records. Provide a clear reason. Live provider actions are not executed from this panel.
+                    </LockedNotice>
+                    <label className="grid gap-1 text-sm font-medium text-gray-700">
+                      Operation
+                      <select
+                        value={operationForm.operation}
+                        onChange={(event) => setOperationForm({ ...initialOperationForm, operation: event.target.value })}
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                      >
+                        <option value="manualEntitlementGrant">Manual Entitlement Grant</option>
+                        <option value="manualEntitlementRevoke">Manual Entitlement Revoke</option>
+                        <option value="webhookReprocess">Webhook Reprocess</option>
+                        <option value="refundReview">Refund Review Record</option>
+                        <option value="subscriptionNote">Subscription Review Note</option>
+                        <option value="transactionNote">Transaction Note</option>
+                      </select>
+                    </label>
+
+                    {(operationForm.operation === "manualEntitlementGrant" || operationForm.operation === "manualEntitlementRevoke") && (
+                      <div className="grid gap-4">
+                        <label className="grid gap-1 text-sm font-medium text-gray-700">
+                          User ID
+                          <input value={operationForm.uid} onChange={(event) => setOperationForm({ ...operationForm, uid: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Firebase UID" />
+                        </label>
+                        <label className="grid gap-1 text-sm font-medium text-gray-700">
+                          Package
+                          <select value={operationForm.packageId} onChange={(event) => setOperationForm({ ...operationForm, packageId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
+                            {packageOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                          </select>
+                        </label>
+                        <label className="grid gap-1 text-sm font-medium text-gray-700">
+                          Plan ID
+                          <input value={operationForm.planId} onChange={(event) => setOperationForm({ ...operationForm, planId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Optional plan ID" />
+                        </label>
+                        {operationForm.operation === "manualEntitlementRevoke" && (
+                          <label className="grid gap-1 text-sm font-medium text-gray-700">
+                            Entitlement ID
+                            <input value={operationForm.entitlementId} onChange={(event) => setOperationForm({ ...operationForm, entitlementId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Optional existing entitlement ID" />
+                          </label>
+                        )}
+                      </div>
+                    )}
+
+                    {operationForm.operation === "webhookReprocess" && (
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Webhook Event Record ID
+                        <input value={operationForm.webhookEventRecordId} onChange={(event) => setOperationForm({ ...operationForm, webhookEventRecordId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="stripe_evt_..." />
+                      </label>
+                    )}
+
+                    {(operationForm.operation === "refundReview" || operationForm.operation === "transactionNote") && (
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Transaction ID
+                        <input value={operationForm.transactionId} onChange={(event) => setOperationForm({ ...operationForm, transactionId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Transaction ID" />
+                      </label>
+                    )}
+
+                    {operationForm.operation === "subscriptionNote" && (
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Subscription ID
+                        <input value={operationForm.subscriptionId} onChange={(event) => setOperationForm({ ...operationForm, subscriptionId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Subscription ID" />
+                      </label>
+                    )}
+
+                    {(operationForm.operation === "refundReview" || operationForm.operation === "subscriptionNote" || operationForm.operation === "transactionNote") && (
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Note
+                        <textarea value={operationForm.note} onChange={(event) => setOperationForm({ ...operationForm, note: event.target.value })} className="min-h-20 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Operational note for review" />
+                      </label>
+                    )}
+
+                    <label className="grid gap-1 text-sm font-medium text-gray-700">
+                      Reason
+                      <textarea value={operationForm.reason} onChange={(event) => setOperationForm({ ...operationForm, reason: event.target.value })} className="min-h-20 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Required reason, minimum 10 characters" />
+                    </label>
+
+                    <button disabled={saving} className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60">
+                      Run Audited Operation
+                    </button>
+                  </form>
+                </details>
 
                 <details className="rounded-xl border border-gray-200 bg-white">
                   <summary className="cursor-pointer border-b border-gray-200 px-4 py-3 marker:text-gray-400">
@@ -1453,6 +1601,7 @@ function AdminBillingContent() {
                     { id: "entitlements" as const, label: "Entitlements", count: config.entitlements.length },
                     { id: "webhooks" as const, label: "Webhooks", count: config.webhookEvents.length },
                     { id: "attempts" as const, label: "Checkout Attempts", count: config.checkoutAttempts.length },
+                    { id: "reviews" as const, label: "Operation Reviews", count: config.operationReviews.length },
                     { id: "audit" as const, label: "Audit Logs", count: config.auditLogs.length },
                   ].map((tab) => (
                     <button
@@ -1734,6 +1883,24 @@ function AdminBillingContent() {
                       { key: "provider", label: "Provider" },
                       { key: "status", label: "Status" },
                       { key: "message", label: "Message" },
+                      { key: "createdAt", label: "Created" },
+                    ]}
+                  />
+                </Section>
+                )}
+
+                {activeTab === "reviews" && (
+                <Section title="Operation Reviews" count={config.operationReviews.length}>
+                  <OperationsTable
+                    records={config.operationReviews}
+                    emptyMessage="No billing operation reviews recorded yet."
+                    columns={[
+                      { key: "reviewId", label: "Review" },
+                      { key: "reviewType", label: "Type" },
+                      { key: "entityId", label: "Entity" },
+                      { key: "uid", label: "User" },
+                      { key: "status", label: "Status" },
+                      { key: "reason", label: "Reason" },
                       { key: "createdAt", label: "Created" },
                     ]}
                   />
