@@ -151,6 +151,22 @@ export default function AdminSidebar() {
               />
             </svg>
           );
+        case "users":
+          return (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-6a4 4 0 11-8 0 4 4 0 018 0zm8 2a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          );
         case "payments":
           return (
             <svg
@@ -670,6 +686,60 @@ export default function AdminSidebar() {
 
           {/* Separator after Content */}
           {!isCollapsed && (
+            <li className="px-3 py-2">
+              <div className="border-t border-gray-200"></div>
+            </li>
+          )}
+
+          {/* User Management */}
+          {currentUser && (
+            <li>
+              {isCollapsed ? (
+                <Link
+                  href="/admin/users"
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                    isActive("/admin/users")
+                      ? "bg-purple-50"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                  title="User Management"
+                >
+                  <IconWithBackground
+                    icon="users"
+                    color="purple"
+                    size="w-8 h-8"
+                  />
+                </Link>
+              ) : (
+                <Link
+                  href="/admin/users"
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                    isActive("/admin/users")
+                      ? "bg-purple-50"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <IconWithBackground
+                    icon="users"
+                    color="purple"
+                    size="w-8 h-8"
+                  />
+                  <span
+                    className={`text-sm font-medium ${
+                      isActive("/admin/users")
+                        ? "text-purple-600"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    User Management
+                  </span>
+                </Link>
+              )}
+            </li>
+          )}
+
+          {/* Separator after User Management */}
+          {currentUser && !isCollapsed && (
             <li className="px-3 py-2">
               <div className="border-t border-gray-200"></div>
             </li>
