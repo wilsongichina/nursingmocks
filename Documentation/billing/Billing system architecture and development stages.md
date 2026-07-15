@@ -1018,6 +1018,35 @@ Stage 17 slice document:
 Documentation/billing/Billing stage 17 legacy Stripe button migration.md
 ```
 
+### Stage 18: Payment State Visibility Review
+
+Goals:
+
+- review whether users can understand checkout return state
+- review whether admins can inspect payment, subscription, entitlement, webhook, checkout attempt, operation, and audit records
+- keep checkout success redirects informational only
+- avoid granting access from the checkout return page
+
+Exit criteria:
+
+- `/payments?checkout=success` explains that access updates after verified webhook processing
+- `/payments?checkout=cancelled` explains that no billing access changed
+- admin billing state views are reviewed
+- TypeScript passes
+
+Stage 18 payment state visibility review completed:
+
+- added checkout return notices to `/payments`
+- kept checkout return pages read-only
+- confirmed admin billing already exposes transactions, subscriptions, entitlements, webhook events, checkout attempts, operation reviews, and audit logs
+- documented visibility assumptions and remaining guardrails
+
+Stage 18 slice document:
+
+```text
+Documentation/billing/Billing stage 18 payment state visibility review.md
+```
+
 ## Important Constraints
 
 Preserve:

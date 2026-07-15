@@ -68,12 +68,20 @@ export default function PaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [checkoutNotice, setCheckoutNotice] = useState<"success" | "cancelled" | null>(null);
 
   useEffect(() => {
     if (!loading && !currentUser) {
       router.push("/login");
     }
   }, [currentUser, loading, router]);
+
+  useEffect(() => {
+    const checkoutStatus = new URLSearchParams(window.location.search).get("checkout");
+    if (checkoutStatus === "success" || checkoutStatus === "cancelled") {
+      setCheckoutNotice(checkoutStatus);
+    }
+  }, []);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -251,6 +259,23 @@ export default function PaymentsPage() {
           </div>
 
           {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
+
+          {checkoutNotice === "success" && (
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+              <p className="font-semibold">Checkout returned successfully.</p>
+              <p className="mt-1">
+                Access is updated after the payment provider sends a verified webhook. If your access does not appear yet,
+                refresh this page after a moment.
+              </p>
+            </div>
+          )}
+
+          {checkoutNotice === "cancelled" && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-semibold">Checkout was cancelled.</p>
+              <p className="mt-1">No billing access changed. You can choose a plan below whenever you are ready.</p>
+            </div>
+          )}
 
           <section className="mb-6 grid gap-4 lg:grid-cols-3">
             <div className="rounded-xl border border-gray-200 bg-white p-5 lg:col-span-2">
