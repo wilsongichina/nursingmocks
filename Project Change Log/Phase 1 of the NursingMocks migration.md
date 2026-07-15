@@ -15,7 +15,7 @@ migration/firebase-config-safety
 - `.env.example`
 - `.gitignore`
 - `scripts/generate-sidebar-data.js`
-- `Changes Track/Phase 1 of the NursingMocks migration.md`
+- `Project Change Log/Phase 1 of the NursingMocks migration.md`
 
 ## Changes made
 

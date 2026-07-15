@@ -19,9 +19,58 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /{document=**} {
+    match /pages/{pageId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /blogCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pillarPages/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /knowledgeBase/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /questions/{questionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /questionTypes/{questionTypeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /questionCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /routeMappings/{mappingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

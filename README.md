@@ -7,7 +7,7 @@ NursingMocks is a Next.js application for nursing exam practice resources, inclu
 - Next.js 15
 - React 19
 - Firebase Auth, Firestore, and Storage
-- SendGrid email
+- Resend email
 - TikTok Pixel tracking
 - Vercel deployment
 
@@ -25,7 +25,7 @@ npm install
 copy .env.example .env.local
 ```
 
-3. Fill `.env.local` with values from the independent NursingMocks Firebase, SendGrid, analytics, and site configuration.
+3. Fill `.env.local` with values from the independent NursingMocks Firebase, Resend, analytics, and site configuration.
 
 4. Start the dev server:
 
@@ -49,9 +49,14 @@ Required environment values:
 - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
-- `SENDGRID_API_KEY`
-- `SENDGRID_FROM_EMAIL`
-- `SENDGRID_TO_EMAIL`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+- `EMAIL_REPLY_TO`
+- `SUPPORT_EMAIL`
+- `EMAIL_WORKER_SECRET`
+- `FIREBASE_ADMIN_PROJECT_ID`
+- `FIREBASE_ADMIN_CLIENT_EMAIL`
+- `FIREBASE_ADMIN_PRIVATE_KEY`
 - `NEXT_PUBLIC_TIKTOK_PIXEL_ID`
 
 ## Scripts

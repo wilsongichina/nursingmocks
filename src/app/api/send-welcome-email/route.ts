@@ -1,58 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendWelcomeEmail } from "@/lib/sendgrid";
+import { createWelcomeEmailJob } from "@/lib/email/jobs";
+import { processDueEmailJobs } from "@/lib/email/worker";
+import { bearerToken } from "@/lib/server/security";
+import { verifyFirebaseIdToken } from "@/lib/server/firebase-admin";
+
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, email } = body;
-
-    // Validate required fields
-    if (!name || !email) {
+    const decoded = await verifyFirebaseIdToken(bearerToken(request.headers.get("authorization")));
+    const email = decoded.email;
+    if (!email || decoded.email_verified === false) {
       return NextResponse.json(
-        { error: "Missing required fields: name and email" },
+        { error: "A verified account email is required" },
         { status: 400 }
       );
     }
 
-    // Check if SendGrid is configured
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error("SENDGRID_API_KEY is not configured");
-      return NextResponse.json(
-        { error: "Email service not configured" },
-        { status: 500 }
-      );
-    }
+    const name =
+      typeof decoded.name === "string" && decoded.name.trim()
+        ? decoded.name.trim()
+        : email.split("@")[0];
 
-    // Send welcome email using SendGrid
-    await sendWelcomeEmail({
-      name,
+    const job = await createWelcomeEmailJob({
+      uid: decoded.uid,
       email,
+      name,
     });
 
-    console.log("Welcome email sent successfully");
+    await processDueEmailJobs({ limit: 3 });
+
     return NextResponse.json(
-      { success: true, message: "Welcome email sent successfully" },
+      { success: true, jobCreated: job.created },
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Error sending welcome email:", error);
-    
-    let errorMessage = "Failed to send welcome email";
-    if (error?.response?.body) {
-      try {
-        const errorBody = JSON.parse(error.response.body);
-        errorMessage = errorBody?.errors?.[0]?.message || errorMessage;
-      } catch {
-        // If parsing fails, use default message
-      }
-    } else if (error?.message) {
-      errorMessage = error.message;
-    }
-
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    console.error("Error queueing welcome email:", {
+      message: error?.message || "Unknown error",
+    });
+    return NextResponse.json({ error: "Failed to queue welcome email" }, { status: 500 });
   }
 }
 

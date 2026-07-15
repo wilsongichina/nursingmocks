@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendContactEmail } from "@/lib/sendgrid";
+import { FieldValue } from "firebase-admin/firestore";
+import { createContactEmailJobs } from "@/lib/email/jobs";
+import { processDueEmailJobs } from "@/lib/email/worker";
+import { getEmailConfig } from "@/lib/email/config";
+import { assertValidEmailAddress, sanitizeLongText, sanitizeText } from "@/lib/email/validation";
+import { getAdminDb } from "@/lib/server/firebase-admin";
+import { checkFirestoreRateLimit, RateLimitError } from "@/lib/server/rate-limit";
+
+export const runtime = "nodejs";
+
+function clientIp(request: NextRequest) {
+  return (request.headers.get("x-forwarded-for") || "unknown")
+    .split(",")[0]
+    .trim()
+    .slice(0, 80);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,9 +40,15 @@ export async function POST(request: NextRequest) {
       formData = body;
     }
 
-    const { name, email, phone, budget, services, topic, urgency, message } = formData;
+    const name = sanitizeText(formData.name, 120);
+    const email = sanitizeText(formData.email, 254).toLowerCase();
+    const phone = sanitizeText(formData.phone, 40);
+    const budget = sanitizeText(formData.budget, 80);
+    const services = sanitizeText(formData.services, 120);
+    const topic = sanitizeText(formData.topic, 120);
+    const urgency = sanitizeText(formData.urgency, 120);
+    const message = sanitizeLongText(formData.message, 4000);
 
-    // Validate required fields
     if (!name || !email || !message) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -35,27 +56,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if SendGrid is configured
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error("SENDGRID_API_KEY is not configured");
-      return NextResponse.json(
-        { error: "Email service not configured" },
-        { status: 500 }
-      );
+    assertValidEmailAddress(email);
+    await checkFirestoreRateLimit({
+      scope: "contact_form",
+      key: `${email}:${clientIp(request)}`,
+      limit: 5,
+      windowMs: 10 * 60 * 1000,
+    });
+
+    const config = getEmailConfig();
+    if (!config.supportEmail) {
+      throw new Error("SUPPORT_EMAIL is not configured");
     }
 
-    // Send email using SendGrid
-    console.log("Attempting to send contact email...");
-    console.log(
-      "To email (recipient):",
-      process.env.SENDGRID_TO_EMAIL || "azmeerhamasali@gmail.com"
-    );
-    console.log(
-      "From email (sender):",
-      process.env.SENDGRID_FROM_EMAIL || "azmeerhamasaliltd@gmail.com"
-    );
-
-    await sendContactEmail({
+    const submissionRef = await getAdminDb().collection("contactSubmissions").add({
       name,
       email,
       phone: phone || undefined,
@@ -64,41 +78,35 @@ export async function POST(request: NextRequest) {
       topic: topic || undefined,
       urgency: urgency || undefined,
       message,
+      createdAt: FieldValue.serverTimestamp(),
+      source: "contact_form",
     });
 
-    console.log("Contact email sent successfully");
-    return NextResponse.json(
-      { success: true, message: "Email sent successfully" },
-      { status: 200 }
-    );
+    await createContactEmailJobs({
+      submissionId: submissionRef.id,
+      name,
+      email,
+      topic,
+      urgency,
+      message,
+      internalRecipient: config.supportEmail,
+    });
+
+    await processDueEmailJobs({ limit: 5 });
+
+    return NextResponse.json({ success: true, message: "Message received" }, { status: 200 });
   } catch (error: any) {
-    console.error("Error sending contact email:", error);
-    console.error("Error details:", JSON.stringify(error, null, 2));
+    console.error("Error handling contact form:", {
+      message: error?.message || "Unknown error",
+    });
 
-    let errorMessage = "Failed to send email";
-
-    // Handle SendGrid error responses
-    if (error?.response?.body) {
-      try {
-        const errorBody =
-          typeof error.response.body === "string"
-            ? JSON.parse(error.response.body)
-            : error.response.body;
-
-        if (errorBody?.errors && Array.isArray(errorBody.errors)) {
-          errorMessage = errorBody.errors[0]?.message || errorMessage;
-          console.error("SendGrid error:", errorBody.errors);
-        } else if (errorBody?.message) {
-          errorMessage = errorBody.message;
-        }
-      } catch (parseError) {
-        console.error("Error parsing SendGrid error response:", parseError);
-        errorMessage = error.response.body?.toString() || errorMessage;
-      }
-    } else if (error?.message) {
-      errorMessage = error.message;
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
+    if (error?.message?.includes("email") || error?.message?.includes("required")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "Could not process contact request" }, { status: 500 });
   }
 }

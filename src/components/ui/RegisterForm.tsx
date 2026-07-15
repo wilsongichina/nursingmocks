@@ -76,15 +76,14 @@ export default function RegisterForm() {
 
       // Send welcome email (don't block on failure)
       try {
+        const idToken = await (await import("@/lib/firebase")).auth.currentUser?.getIdToken();
         const emailResponse = await fetch("/api/send-welcome-email", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
           },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-          }),
+          body: JSON.stringify({}),
         });
 
         if (!emailResponse.ok) {
@@ -147,21 +146,18 @@ export default function RegisterForm() {
 
       // Send welcome email for Google sign-up (don't block on failure)
       if (user) {
-        const userName =
-          user.displayName || user.email?.split("@")[0] || "User";
         const userEmail = user.email || "";
 
         if (userEmail) {
           try {
+            const idToken = await user.getIdToken();
             const emailResponse = await fetch("/api/send-welcome-email", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
+                Authorization: `Bearer ${idToken}`,
               },
-              body: JSON.stringify({
-                name: userName,
-                email: userEmail,
-              }),
+              body: JSON.stringify({}),
             });
 
             if (!emailResponse.ok) {
