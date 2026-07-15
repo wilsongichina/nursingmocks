@@ -1077,6 +1077,36 @@ Stage 19 slice document:
 Documentation/billing/Billing stage 19 admin record table management.md
 ```
 
+### Stage 20: Admin Record Detail View
+
+Goals:
+
+- make full billing operational records readable from admin
+- add a read-only detail view to record-heavy tables
+- preserve table scanning while supporting detailed inspection
+- avoid billing mutations, provider calls, and schema changes
+
+Exit criteria:
+
+- billing record tables expose a `View` action
+- admins can inspect full record key/value details
+- nested objects are readable as formatted JSON
+- detail view is read-only
+- TypeScript passes
+
+Stage 20 admin record detail view completed:
+
+- added a reusable read-only record detail modal
+- added row-level `View` actions to billing operation tables
+- formatted nested record fields for inspection
+- kept the change display-only
+
+Stage 20 slice document:
+
+```text
+Documentation/billing/Billing stage 20 admin record detail view.md
+```
+
 ## Important Constraints
 
 Preserve:

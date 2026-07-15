@@ -349,6 +349,12 @@ function displayValue(value: unknown) {
   return String(value);
 }
 
+function displayDetailValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "Not set";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return displayValue(value);
+}
+
 function recordTimestamp(record: Record<string, unknown>) {
   const candidates = ["createdAt", "updatedAt", "currentPeriodEnd", "accessEndsAt"];
   for (const key of candidates) {
@@ -358,6 +364,19 @@ function recordTimestamp(record: Record<string, unknown>) {
     if (Number.isFinite(timestamp)) return timestamp;
   }
   return 0;
+}
+
+function recordIdentity(record: Record<string, unknown>) {
+  return displayValue(
+    record.transactionId ??
+      record.subscriptionId ??
+      record.entitlementId ??
+      record.webhookEventRecordId ??
+      record.attemptId ??
+      record.reviewId ??
+      record.auditLogId ??
+      record.id
+  );
 }
 
 function OperationsTable({
@@ -370,6 +389,7 @@ function OperationsTable({
   emptyMessage: string;
 }) {
   const [search, setSearch] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState<Record<string, unknown> | null>(null);
   const normalizedSearch = search.trim().toLowerCase();
   const sortedRecords = useMemo(
     () => [...records].sort((left, right) => recordTimestamp(right) - recordTimestamp(left)),
@@ -389,7 +409,7 @@ function OperationsTable({
 
   return (
     <div>
-      <div className="flex flex-col gap-3 border-b border-gray-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-gray-950">Records</p>
           <p className="mt-1 text-xs text-gray-500">
@@ -411,6 +431,7 @@ function OperationsTable({
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
+                <th className="sticky left-0 z-10 bg-gray-50 px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 shadow-[1px_0_0_#e5e7eb]">Actions</th>
                 {columns.map((column) => (
                   <th key={column.key} className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
                     {column.label}
@@ -420,7 +441,19 @@ function OperationsTable({
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {visibleRecords.map((record, index) => (
-                <tr key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? record.auditLogId ?? record.webhookEventRecordId ?? record.attemptId ?? index)}>
+                <tr
+                  key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? record.auditLogId ?? record.webhookEventRecordId ?? record.attemptId ?? index)}
+                  className="group hover:bg-purple-50/40"
+                >
+                  <td className="sticky left-0 z-10 bg-white px-4 py-4 align-top shadow-[1px_0_0_#f3f4f6] group-hover:bg-purple-50">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRecord(record)}
+                      className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:border-purple-300 hover:bg-purple-100"
+                    >
+                      View
+                    </button>
+                  </td>
                   {columns.map((column) => (
                     <td key={column.key} className="max-w-xs px-4 py-4 align-top text-gray-700">
                       <span className="break-words text-xs">{displayValue(recordValue(record, column.key))}</span>
@@ -430,6 +463,38 @@ function OperationsTable({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {selectedRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-4 backdrop-blur-sm">
+          <div className="max-h-[88vh] w-full max-w-4xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-gray-200 bg-gray-50 px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-purple-700">Read-only billing record</p>
+                <h3 className="mt-1 text-lg font-semibold text-gray-950">Record Details</h3>
+                <p className="mt-1 max-w-2xl break-words text-sm text-gray-600">{recordIdentity(selectedRecord)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedRecord(null)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </div>
+            <div className="max-h-[72vh] overflow-y-auto bg-white p-5">
+              <dl className="grid gap-3">
+                {Object.entries(selectedRecord).map(([key, value]) => (
+                  <div key={key} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <dt className="text-xs font-semibold uppercase text-gray-500">{key}</dt>
+                    <dd className="mt-2 min-w-0 whitespace-pre-wrap break-words rounded-md bg-white px-3 py-2 font-mono text-xs leading-5 text-gray-800 ring-1 ring-gray-100">
+                      {displayDetailValue(value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
         </div>
       )}
     </div>
