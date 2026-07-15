@@ -24,6 +24,17 @@ describe("email worker route", () => {
     expect(response.status).toBe(401);
   });
 
+  it("rejects an incorrect worker secret", async () => {
+    process.env.EMAIL_WORKER_SECRET = "secret";
+    const request = new Request("http://localhost/api/internal/email/process-jobs", {
+      method: "POST",
+      headers: { authorization: "Bearer wrong-secret" },
+    });
+
+    const response = await POST(request as never);
+    expect(response.status).toBe(401);
+  });
+
   it("returns safe aggregate counts", async () => {
     process.env.EMAIL_WORKER_SECRET = "secret";
     const request = new Request("http://localhost/api/internal/email/process-jobs", {

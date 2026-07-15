@@ -6,7 +6,7 @@ vi.mock("@/lib/server/firebase-admin", () => ({
   verifyFirebaseIdToken: vi.fn(async () => ({
     uid: "user-123",
     email: "real@example.com",
-    email_verified: true,
+    email_verified: false,
     name: "Real User",
   })),
 }));
@@ -25,7 +25,7 @@ vi.mock("@/lib/email/worker", () => ({
 import { POST } from "@/app/api/send-welcome-email/route";
 
 describe("welcome email route", () => {
-  it("derives recipient from verified Firebase token and ignores browser body", async () => {
+  it("derives recipient from a server-verified Firebase token and ignores browser body", async () => {
     const request = new Request("http://localhost/api/send-welcome-email", {
       method: "POST",
       headers: {

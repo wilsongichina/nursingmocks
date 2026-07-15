@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createWelcomeEmailJob } from "@/lib/email/jobs";
 import { processDueEmailJobs } from "@/lib/email/worker";
+import { assertValidEmailAddress } from "@/lib/email/validation";
 import { bearerToken } from "@/lib/server/security";
 import { verifyFirebaseIdToken } from "@/lib/server/firebase-admin";
 
@@ -10,12 +11,13 @@ export async function POST(request: NextRequest) {
   try {
     const decoded = await verifyFirebaseIdToken(bearerToken(request.headers.get("authorization")));
     const email = decoded.email;
-    if (!email || decoded.email_verified === false) {
+    if (!email) {
       return NextResponse.json(
-        { error: "A verified account email is required" },
+        { error: "An account email is required" },
         { status: 400 }
       );
     }
+    assertValidEmailAddress(email, "account email");
 
     const name =
       typeof decoded.name === "string" && decoded.name.trim()

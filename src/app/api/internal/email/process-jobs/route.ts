@@ -5,12 +5,21 @@ import { bearerToken, constantTimeEqual } from "@/lib/server/security";
 
 export const runtime = "nodejs";
 
+function isAuthorizedWorkerRequest(provided: string, expected: string) {
+  if (!provided || !expected) return false;
+  try {
+    return constantTimeEqual(provided, expected);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const config = validateWorkerConfig();
     const provided = bearerToken(request.headers.get("authorization"));
 
-    if (!provided || !constantTimeEqual(provided, config.workerSecret || "")) {
+    if (!isAuthorizedWorkerRequest(provided, config.workerSecret || "")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
