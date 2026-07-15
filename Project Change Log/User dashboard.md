@@ -1,0 +1,857 @@
+# User dashboard
+
+## Scope
+
+This phase replaces the existing `/dashboard` page with the first practical NursingMocks student dashboard.
+
+Branch:
+
+```text
+feature/user-dashboard
+```
+
+Main route:
+
+```text
+/dashboard
+```
+
+## Current dashboard architecture discovered
+
+The previous dashboard was a client page at:
+
+```text
+src/app/dashboard/page.tsx
+```
+
+It used:
+
+- `useAuth` from `src/contexts/AuthContext.tsx`
+- `Layout` from `src/components/layout/Layout.tsx`
+- hardcoded visual metrics such as study hours, test result percentage, and course count
+- a local chart component with placeholder weekly time values
+
+The old dashboard did not load the signed-in user's Firestore profile document and showed fake statistics.
+
+## Existing auth and user data discovered
+
+Authentication is provided by:
+
+```text
+src/contexts/AuthContext.tsx
+```
+
+Relevant values:
+
+- `currentUser`
+- `loading`
+- Firebase Auth `uid`
+- Firebase Auth `email`
+- Firebase Auth `displayName`
+- Firebase Auth `emailVerified`
+
+User profile data is stored at:
+
+```text
+users/{uid}
+```
+
+Type definition:
+
+```text
+src/types/user-document.ts
+```
+
+User document helper:
+
+```text
+src/lib/user-document-firestore.ts
+```
+
+The dashboard uses the existing live subscription helper:
+
+```text
+subscribeUserDocument(uid, onNext, onError)
+```
+
+## Attempt and progress collections discovered
+
+The codebase contains many quiz content collections and admin quiz-management operations under `pillarPages/.../quizzes/.../questions`.
+
+However, this phase did not find a confirmed owner-scoped quiz attempt/result collection such as:
+
+```text
+users/{uid}/quizAttempts
+quizAttempts
+completedExams
+userProgress
+```
+
+Because a reliable attempt/result data model was not confirmed, the new dashboard does not generate fake recent activity or completed exams.
+
+Instead:
+
+- Recent activity shows a real empty state.
+- Completed Exams shows a real empty state.
+- Performance uses only `users/{uid}.stats`.
+
+## Files created
+
+### Dashboard view model
+
+```text
+src/lib/dashboard/dashboard-view-model.ts
+```
+
+Purpose:
+
+- Converts Firebase Auth user data and Firestore `users/{uid}` data into a normalized dashboard model.
+- Keeps package, billing, entitlement, profile-task, and recommendation interpretation out of the React page.
+- Handles missing profile data safely.
+- Handles Firestore `Timestamp`, `Date`, string, null, and missing values.
+- Avoids exposing raw billing provider IDs or internal subscription references.
+
+### Dashboard tests
+
+```text
+src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+```
+
+Tests cover:
+
+- name fallback behavior
+- primary exam label behavior
+- active access derivation
+- active package sorting
+- honest empty attempt sections
+- profile tasks for missing data
+- cancelling subscription interpretation
+
+### Documentation
+
+```text
+Project Change Log/User dashboard.md
+```
+
+This file documents the dashboard implementation and future work.
+
+## Files modified
+
+### Dashboard page
+
+```text
+src/app/dashboard/page.tsx
+```
+
+The old placeholder dashboard was replaced with a real user-facing dashboard.
+
+The new page:
+
+- redirects unauthenticated users to `/login`
+- subscribes only to the current user's `users/{uid}` document
+- builds a normalized dashboard view model
+- renders a responsive student dashboard
+- does not query other users
+- does not write billing, entitlement, subscription, role, or admin fields
+
+## Implementation details
+
+### Authentication behavior
+
+The dashboard remains a client-side authenticated page.
+
+Behavior:
+
+1. The page reads `currentUser` and `loading` from `useAuth`.
+2. While authentication is loading, it shows a compact loading state.
+3. If there is no authenticated user, it redirects to:
+
+```text
+/login
+```
+
+4. If the user is authenticated, it subscribes to only that user's Firestore profile document:
+
+```text
+users/{currentUser.uid}
+```
+
+5. It builds the dashboard view model from:
+
+- the Firebase Auth user
+- the current user's Firestore document
+
+The page does not accept a UID from the URL and does not use client-provided UID values to load another user's dashboard.
+
+### User-document loading behavior
+
+The dashboard uses:
+
+```text
+subscribeUserDocument(currentUser.uid, onNext, onError)
+```
+
+This keeps the dashboard live with the current user's profile document.
+
+If the Firestore profile document is missing, the dashboard still renders safely using Firebase Auth data and empty states.
+
+Missing user document behavior:
+
+- first name falls back to Firebase Auth display name or email username
+- package/access data falls back to free access
+- performance shows empty state
+- profile tasks encourage completing setup
+- no private or fake data is generated
+
+### View-model responsibility
+
+The dashboard page does not directly interpret billing, entitlements, package status, or profile tasks.
+
+That logic lives in:
+
+```text
+src/lib/dashboard/dashboard-view-model.ts
+```
+
+The view model is responsible for:
+
+- first-name fallback
+- primary exam label mapping
+- account status label mapping
+- access-status derivation
+- package card generation
+- package sorting
+- continue-action selection
+- recommendation generation
+- profile-task generation
+- referral summary formatting
+- performance value normalization
+- Firestore timestamp/date conversion
+
+This keeps the React page focused on rendering.
+
+### Package model used in this first version
+
+The dashboard defines a user-facing package catalog in the view model.
+
+Package groups:
+
+- Entrance Exams
+- Test Banks
+- Exit Exams
+
+Package status values:
+
+- `active`
+- `free`
+- `expired`
+- `locked`
+- `cancelling`
+- `lifetime`
+- `payment_issue`
+
+The UI maps those status values to user-facing labels:
+
+- Active
+- Free preview
+- Expired
+- Locked
+- Cancelling
+- Lifetime
+- Payment issue
+
+Active packages receive stronger visual emphasis through the NursingMocks accent color.
+
+### Entitlement mapping
+
+The first version maps the current known entitlement keys to package access.
+
+Known entitlement keys used:
+
+```text
+exam:ati_teas_7
+exam:hesi_a2
+bundle:all_access
+```
+
+Behavior:
+
+- `exam:ati_teas_7` activates ATI TEAS 7.
+- `exam:hesi_a2` activates HESI A2.
+- `bundle:all_access` activates the full visible package catalog when access is active.
+
+Unknown entitlement keys are not displayed directly to the user.
+
+### Continue-action priority implemented
+
+The requested ideal priority was:
+
+1. resumable attempt
+2. recent completed exam
+3. next exam in active package
+4. selected primary exam
+5. browse available exams
+
+Because no confirmed owner-scoped attempt/result model exists yet, the implemented priority is:
+
+1. first active package
+2. selected ATI TEAS 7 primary exam
+3. selected HESI A2 primary exam
+4. Nursing Test Bank focus
+5. Nursing Exit Exam focus
+6. browse entrance exams fallback
+
+No fake resumable attempt is created.
+
+### Empty-state policy
+
+The dashboard intentionally uses empty states instead of placeholder data.
+
+Empty-state sections:
+
+- Recent activity
+- Completed Exams
+- Performance, when stats are missing
+
+Reason:
+
+- There is no confirmed real attempt/result source in the codebase yet.
+- Showing fake attempts, fake scores, or fake completion history would mislead users.
+
+### Visual design notes
+
+The page uses:
+
+- existing `Layout`
+- white cards on a gray page background
+- rounded cards
+- compact status badges
+- responsive two-column layout on desktop
+- single-column layout on mobile
+- accent color `#6a5cff`
+- compact dashboard density rather than a marketing hero
+
+The main visual priority is:
+
+1. Welcome/access status
+2. Continue studying
+3. Performance metrics
+4. My Packages
+5. Activity/completed exam empty states
+6. Account, recommendations, profile tasks, referrals, support
+
+## Detailed file responsibilities
+
+### `src/app/dashboard/page.tsx`
+
+Responsibilities:
+
+- handles auth loading
+- redirects unauthenticated users
+- subscribes to the current user's Firestore document
+- builds the dashboard view model
+- renders all dashboard sections
+- renders loading and missing-profile states
+- keeps all dashboard actions as navigation only
+
+Important constraints:
+
+- does not write to Firestore
+- does not modify quiz attempts
+- does not update billing
+- does not update entitlements
+- does not expose admin data
+
+### `src/lib/dashboard/dashboard-view-model.ts`
+
+Responsibilities:
+
+- defines dashboard-specific TypeScript types
+- derives user-facing access state
+- maps entitlements to packages
+- sorts package cards
+- selects the continue action
+- builds recommendations
+- builds profile tasks
+- formats referral values
+- normalizes dates
+- avoids raw provider/billing identifiers
+
+Important exported items:
+
+```text
+buildDashboardViewModel
+formatDashboardDate
+DashboardViewModel
+DashboardPackage
+DashboardAccessStatus
+```
+
+### `src/lib/dashboard/__tests__/dashboard-view-model.test.ts`
+
+Responsibilities:
+
+- validates dashboard view-model behavior
+- tests name fallback behavior
+- tests primary exam labels
+- tests active access status
+- tests active package sorting
+- tests empty attempt/result arrays
+- tests profile task creation
+- tests cancelling subscription interpretation
+
+### `Project Change Log/User dashboard.md`
+
+Responsibilities:
+
+- documents the dashboard architecture
+- documents discovered data sources
+- documents unimplemented attempt/result sections
+- documents validation results
+- records future work
+
+## Dashboard sections implemented
+
+### 1. Welcome header
+
+Shows:
+
+- first name
+- primary exam focus when available
+- account status badge
+- access status badge
+- email verification warning when unverified
+- account settings link
+- support link
+
+Data sources:
+
+- Firebase Auth `displayName`
+- Firebase Auth `email`
+- Firebase Auth `emailVerified`
+- Firestore `full_name`
+- Firestore `profile.display_name`
+- Firestore `profile.primary_exam_id`
+- Firestore `profile.focus_areas`
+- Firestore `account_state.status`
+- Firestore `auth.email_verified`
+
+Name fallback order:
+
+1. Firestore `profile.display_name`
+2. Firestore `full_name`
+3. Firebase Auth `displayName`
+4. email username
+5. `Student`
+
+### 2. Continue studying
+
+Shows the strongest available action.
+
+Current logic:
+
+1. Active package, if available.
+2. Selected ATI TEAS 7 primary exam.
+3. Selected HESI A2 primary exam.
+4. Nursing Test Bank focus.
+5. Nursing Exit Exam focus.
+6. Browse entrance exams fallback.
+
+Data sources:
+
+- Firestore `entitlements`
+- Firestore `profile.primary_exam_id`
+- Firestore `profile.focus_areas`
+- derived package list
+
+Limitations:
+
+- Does not resume unfinished quiz attempts yet because no confirmed owner-scoped attempt model was found.
+
+### 3. My Packages
+
+Shows package cards for NursingMocks product families.
+
+Product families represented:
+
+- Entrance Exams
+- Test Banks
+- Exit Exams
+
+Package names represented:
+
+- ATI TEAS 7
+- HESI A2
+- ATI Fundamentals
+- ATI Pharmacology
+- ATI Medical-Surgical
+- HESI Fundamentals
+- HESI Pharmacology
+- HESI Medical-Surgical
+- HESI LPN Exit
+- HESI RN Exit
+- ATI LPN Comprehensive Predictor
+- ATI RN Comprehensive Predictor
+
+Data sources:
+
+- Firestore `entitlements`
+- Firestore `billing.subscription_status`
+- Firestore `billing.plan_id`
+- Firestore `billing.current_period_end`
+- Firestore `billing.cancel_at_period_end`
+
+Behavior:
+
+- active packages are sorted first
+- entrance exam cards can show free preview status
+- locked/expired/payment issue packages link to plans
+- active packages link to the related practice area
+- raw entitlement keys are not shown to users
+
+### 4. Performance snapshot
+
+Shows:
+
+- completed attempts
+- questions answered
+- overall accuracy
+- study streak
+- last practice date
+
+Data sources:
+
+- Firestore `stats.total_attempts`
+- Firestore `stats.total_questions_answered`
+- Firestore `stats.accuracy_overall`
+- Firestore `stats.streak_days`
+- Firestore `stats.last_attempt_at`
+
+When stats are missing or zero, the dashboard shows:
+
+```text
+Performance tracking starts after your first practice exam
+```
+
+No fake performance values are displayed.
+
+### 5. Recent activity
+
+Current behavior:
+
+- Shows an empty state.
+
+Reason:
+
+- No reliable owner-scoped quiz attempt feed was confirmed in the codebase.
+
+Future requirement:
+
+- Connect this section only after a real attempt/result model exists.
+
+### 6. Completed Exams
+
+Current behavior:
+
+- Shows an empty state.
+
+Reason:
+
+- No reliable owner-scoped completed exam/result collection was confirmed in the codebase.
+
+Future requirement:
+
+- Connect this section only after completed result records are available.
+
+### 7. Recommended for You
+
+Uses simple reliable signals only.
+
+Signals:
+
+- active packages
+- selected primary exam ID
+- missing exam focus
+
+Data sources:
+
+- Firestore `entitlements`
+- Firestore `profile.primary_exam_id`
+- Firestore `profile.focus_areas`
+
+The dashboard does not label weak areas because question-level performance data is not available yet.
+
+### 8. Account and subscription summary
+
+Shows safe user-facing subscription information:
+
+- access status
+- plan name
+- access end date
+- manage subscription link
+- view plans link
+
+Data sources:
+
+- Firestore `billing.subscription_status`
+- Firestore `billing.plan_id`
+- Firestore `billing.current_period_end`
+- Firestore `billing.cancel_at_period_end`
+- Firestore `entitlements`
+
+Not shown:
+
+- payment provider customer IDs
+- subscription IDs
+- internal billing references
+- raw provider records
+- card details
+- transaction IDs
+
+### 9. Profile tasks
+
+Shows only useful outstanding tasks.
+
+Possible tasks:
+
+- verify email
+- add display name
+- select exam focus
+- set timezone
+- set preferences
+
+Data sources:
+
+- Firebase Auth `emailVerified`
+- Firestore `auth.email_verified`
+- Firestore `full_name`
+- Firestore `profile.display_name`
+- Firestore `profile.primary_exam_id`
+- Firestore `profile.focus_areas`
+- Firestore `profile.timezone`
+- Firestore `preferences`
+
+The section is hidden when there are no outstanding tasks.
+
+### 10. Referral summary
+
+Shown only when the user has a referral code.
+
+Data sources:
+
+- Firestore `referral_summary.referral_code`
+- Firestore `referral_summary.total_referrals`
+- Firestore `referral_summary.total_converted`
+- Firestore `referral_summary.total_commission_earned`
+- Firestore `referral_summary.total_commission_paid`
+
+Referral values are read-only.
+
+### 11. Support links
+
+Links added:
+
+- `/contact`
+- `/knowledge-base`
+- `/terms-and-conditions`
+- `/privacy-policy`
+
+No invented URLs were added.
+
+## Section-by-section data-source table
+
+| Dashboard section | Data source | Real data used now | Empty state used |
+| --- | --- | --- | --- |
+| Welcome header | Firebase Auth + `users/{uid}` | Yes | No |
+| Continue studying | `users/{uid}.entitlements`, `profile.primary_exam_id`, `profile.focus_areas` | Yes | No |
+| My Packages | `users/{uid}.entitlements`, `billing` | Yes | No |
+| Performance snapshot | `users/{uid}.stats` | Yes | Yes, when stats are missing |
+| Recent activity | Attempt/result model not confirmed | No | Yes |
+| Completed Exams | Attempt/result model not confirmed | No | Yes |
+| Recommended for You | primary exam, focus areas, active packages | Yes | No |
+| Account and subscription | `users/{uid}.billing`, `entitlements` | Yes | No |
+| Profile tasks | Firebase Auth + profile fields + preferences | Yes | Hidden when no tasks |
+| Referral summary | `users/{uid}.referral_summary` | Yes, only when referral code exists | Card omitted |
+| Support links | existing application routes | Yes | No |
+
+## Manual review checklist
+
+Use this checklist before approving or committing the dashboard phase.
+
+### Authentication states
+
+- Signed-out user visiting `/dashboard` is redirected to `/login`.
+- Signed-in user can load `/dashboard`.
+- Admin user can also load the normal user dashboard because admins are still users.
+
+### User document states
+
+- User with complete `users/{uid}` document sees profile, package, access, and stats sections.
+- User with missing `users/{uid}` document sees safe fallback UI.
+- User with partially populated `users/{uid}` document does not see `undefined`, `NaN`, or invalid dates.
+
+### Access states
+
+- Free user sees free access and preview-oriented cards.
+- Active subscriber sees active access.
+- Cancelling subscriber with future period end sees cancelling/access-end behavior.
+- Past-due subscriber sees payment issue.
+- Expired user sees expired/locked package actions.
+
+### Dashboard content states
+
+- Stats display real values only.
+- Recent activity does not show fake quiz attempts.
+- Completed Exams does not show fake completed exams.
+- Profile tasks disappear when all required fields are present.
+- Referral summary appears only when a referral code exists.
+
+### Responsive states
+
+- Desktop layout keeps the main dashboard and right column readable.
+- Mobile layout stacks cards without horizontal overflow.
+- Long package names wrap cleanly.
+- Long plan names do not break the card layout.
+
+## Future data model needed for attempts/results
+
+To connect Recent activity and Completed Exams safely, the app needs a confirmed owner-scoped data model.
+
+Recommended structure, subject to the existing quiz engine:
+
+```text
+users/{uid}/quizAttempts/{attemptId}
+```
+
+Possible fields:
+
+```ts
+type QuizAttempt = {
+  userId: string;
+  quizId: string;
+  quizTitle: string;
+  productFamily: "entrance" | "test_bank" | "exit_exam";
+  productName: string;
+  setNumber?: number;
+  status: "in_progress" | "completed";
+  mode: "timed" | "tutor" | "review";
+  currentQuestionIndex?: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  scorePercent?: number;
+  accuracyPercent?: number;
+  startedAt: Timestamp;
+  updatedAt: Timestamp;
+  completedAt?: Timestamp;
+};
+```
+
+Security rule expectation:
+
+```text
+Only request.auth.uid can read/write their own attempts.
+Admins may read only through explicit admin tools or server routes when needed.
+```
+
+The dashboard should not connect to this until the structure and rules are confirmed.
+
+## Production caution
+
+This dashboard reads private user profile/account data.
+
+Before deployment, confirm:
+
+- Firestore rules still restrict `users/{uid}` to the owner and admins.
+- Normal users cannot read other users' dashboard data.
+- Billing provider IDs are not rendered.
+- Entitlement keys are mapped to friendly package names.
+- No fake attempt data is introduced.
+- No dashboard action writes trusted fields from the client.
+
+## Access-status interpretation
+
+The dashboard derives a user-friendly access status from billing and entitlement data.
+
+Possible statuses:
+
+- `active`
+- `free`
+- `expired`
+- `past_due`
+- `cancelling`
+- `lifetime`
+- `none`
+
+Important behavior:
+
+- `billing.subscription_status` is not used as the only access decision.
+- Active entitlements can also indicate active access.
+- A cancelled subscription with a future access end date is treated as cancelling, not immediately expired.
+- Past-due subscriptions show as payment issue.
+
+## Security considerations
+
+The dashboard is owner-scoped.
+
+Security rules followed:
+
+- only reads the current authenticated user's `users/{uid}` document
+- does not query all users
+- does not read admin user-management data
+- does not expose Firebase custom claims
+- does not display raw provider billing IDs
+- does not write billing fields
+- does not write entitlement fields
+- does not write role/admin fields
+- does not create or modify quiz attempts
+- does not weaken Firestore rules
+
+## Validation results
+
+Commands run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm test
+.\node_modules\.bin\next.cmd build
+```
+
+Results:
+
+- TypeScript passed.
+- Tests passed.
+- Production build passed.
+
+Test summary:
+
+```text
+10 test files passed
+45 tests passed
+```
+
+Build note:
+
+- The first production build attempt compiled successfully but failed during page-data collection with unrelated `PageNotFoundError` module resolution errors across many routes.
+- Rerunning the same build command succeeded.
+- No dashboard code change was required for that transient build failure.
+
+## Known limitations
+
+- Recent activity is not connected because no reliable owner-scoped attempt model was confirmed.
+- Completed Exams is not connected because no reliable owner-scoped result model was confirmed.
+- Package progress is not shown because no reliable package-progress source was confirmed.
+- Free preview wording assumes the current product rule of previewing the first 10 questions per set.
+- Package mapping is based on current entitlement keys and product family routes.
+- Advanced recommendations are not implemented because weak-area analytics are not available yet.
+
+## Recommended next phase
+
+1. Define or confirm the quiz attempt/result data model.
+2. Ensure attempts are owner-scoped.
+3. Add Firestore rules/tests for attempt ownership.
+4. Connect recent activity to real attempt data.
+5. Connect completed exams to real result data.
+6. Add package progress only when reliable progress data exists.
+7. Add topic-level recommendations only after question-level performance data exists.
+
+Do not add fake stats or placeholder attempts.
