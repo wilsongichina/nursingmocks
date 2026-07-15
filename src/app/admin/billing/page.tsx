@@ -15,6 +15,7 @@ import type {
   PaymentGatewayConfig,
   ProviderPriceMapping,
 } from "@/lib/billing/models";
+import type { BillingLiveCapability, BillingLiveControls } from "@/lib/billing/live-controls";
 import { normalizePlanName } from "@/lib/billing/admin-config";
 
 type Serialized<T> = {
@@ -32,6 +33,7 @@ type BillingConfigResponse = {
   checkoutAttempts: Record<string, unknown>[];
   operationReviews: Record<string, unknown>[];
   auditLogs: Serialized<BillingAuditLogEntry>[];
+  liveControls: Serialized<BillingLiveControls>;
 };
 
 type GatewayForm = {
@@ -165,6 +167,11 @@ type OperationForm = {
   note: string;
 };
 
+type LiveApprovalForm = {
+  capability: BillingLiveCapability;
+  reason: string;
+};
+
 const initialGatewayForm: GatewayForm = {
   gatewayId: "",
   provider: "stripe",
@@ -286,6 +293,11 @@ const initialOperationForm: OperationForm = {
   note: "",
 };
 
+const initialLiveApprovalForm: LiveApprovalForm = {
+  capability: "checkout",
+  reason: "",
+};
+
 function Pill({ children, tone = "gray" }: { children: string; tone?: "green" | "gray" | "blue" | "amber" }) {
   const tones = {
     green: "border-green-200 bg-green-50 text-green-700",
@@ -404,6 +416,11 @@ function AdminBillingContent() {
     checkoutAttempts: [],
     operationReviews: [],
     auditLogs: [],
+    liveControls: {
+      checkout: { approved: false, approvedBy: null, approvedAt: null, reason: null },
+      webhookEffects: { approved: false, approvedBy: null, approvedAt: null, reason: null },
+      portal: { approved: false, approvedBy: null, approvedAt: null, reason: null },
+    },
   });
   const [form, setForm] = useState<GatewayForm>(initialGatewayForm);
   const [planForm, setPlanForm] = useState<PlanForm>(initialPlanForm);
@@ -418,6 +435,7 @@ function AdminBillingContent() {
     initialProviderPriceMappingEditForm
   );
   const [operationForm, setOperationForm] = useState<OperationForm>(initialOperationForm);
+  const [liveApprovalForm, setLiveApprovalForm] = useState<LiveApprovalForm>(initialLiveApprovalForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
@@ -690,6 +708,35 @@ function AdminBillingContent() {
       await loadConfig();
     } catch (operationError) {
       setError(operationError instanceof Error ? operationError.message : "Could not run billing operation");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitLiveApproval = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!currentUser) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch("/api/admin/billing/live-controls", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(liveApprovalForm),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not approve live billing capability");
+      setMessage("Live billing capability approval recorded.");
+      setLiveApprovalForm(initialLiveApprovalForm);
+      await loadConfig();
+    } catch (approvalError) {
+      setError(approvalError instanceof Error ? approvalError.message : "Could not approve live billing capability");
     } finally {
       setSaving(false);
     }
@@ -1634,6 +1681,60 @@ function AdminBillingContent() {
                   <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                     Live billing is not enabled. Passing these checks only means the configuration is closer to readiness; explicit approval is still required before any checkout or webhook effect can mutate billing state.
                   </div>
+                  <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                    {[
+                      { id: "checkout" as const, label: "Live Checkout" },
+                      { id: "webhookEffects" as const, label: "Live Webhook Effects" },
+                      { id: "portal" as const, label: "Live Billing Portal" },
+                    ].map((control) => {
+                      const status = config.liveControls[control.id];
+                      return (
+                        <div key={control.id} className="rounded-lg border border-gray-200 bg-white p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="text-sm font-semibold text-gray-950">{control.label}</h3>
+                              <p className="mt-1 text-xs text-gray-500">
+                                {status.approved ? `Approved by ${status.approvedBy ?? "admin"}` : "Blocked until approved"}
+                              </p>
+                            </div>
+                            <Pill tone={status.approved ? "green" : "amber"}>{status.approved ? "Approved" : "Blocked"}</Pill>
+                          </div>
+                          {status.reason && <p className="mt-3 text-xs text-gray-600">{status.reason}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <form onSubmit={submitLiveApproval} className="mt-4 grid gap-4 rounded-lg border border-gray-200 bg-white p-4">
+                    <LockedNotice>
+                      Live approvals are server-side controls. Only approve a capability after sandbox testing, secret storage, rollback, and owner approval are complete.
+                    </LockedNotice>
+                    <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Capability
+                        <select
+                          value={liveApprovalForm.capability}
+                          onChange={(event) => setLiveApprovalForm({ ...liveApprovalForm, capability: event.target.value as BillingLiveCapability })}
+                          className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                        >
+                          <option value="checkout">Live Checkout</option>
+                          <option value="webhookEffects">Live Webhook Effects</option>
+                          <option value="portal">Live Billing Portal</option>
+                        </select>
+                      </label>
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Approval Reason
+                        <input
+                          value={liveApprovalForm.reason}
+                          onChange={(event) => setLiveApprovalForm({ ...liveApprovalForm, reason: event.target.value })}
+                          className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                          placeholder="Required approval reason, minimum 15 characters"
+                        />
+                      </label>
+                    </div>
+                    <button disabled={saving} className="w-fit rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60">
+                      Record Live Approval
+                    </button>
+                  </form>
                 </Section>
                 )}
 

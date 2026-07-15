@@ -4,6 +4,7 @@ import type { BillingProvider } from "@/lib/billing/models";
 import type { BillingPortalSessionInput } from "@/lib/billing/billing-portal";
 import { createBillingGatewayRegistry } from "@/lib/billing/gateway-registry";
 import { getAdminDb } from "@/lib/server/firebase-admin";
+import { isBillingLiveCapabilityApproved } from "@/lib/server/billing-live-controls";
 import { getBillingCatalog } from "@/lib/server/billing-readiness";
 
 const USERS_COLLECTION = "users";
@@ -105,10 +106,15 @@ export async function createBillingPortalSession(
         (!input.gatewayId || gateway.gatewayId === input.gatewayId)
     )
     .sort((a, b) => a.priority - b.priority || a.gatewayId.localeCompare(b.gatewayId));
-  const gateway = candidateGateways.find((item) => item.environment === "test") ?? null;
+  const livePortalApproved = await isBillingLiveCapabilityApproved("portal");
+  const gateway =
+    candidateGateways.find((item) => item.environment === "test") ??
+    (livePortalApproved ? candidateGateways.find((item) => item.environment === "live") ?? null : null);
 
   if (!gateway) {
-    const message = "Billing portal is unavailable because no ready test gateway exists for the active provider.";
+    const message = livePortalApproved
+      ? "Billing portal is unavailable because no ready gateway exists for the active provider."
+      : "Billing portal is unavailable because no ready test gateway exists and live portal approval has not been recorded.";
     const auditLogId = await auditPortalRequest({
       uid,
       gatewayId: input.gatewayId,
@@ -149,6 +155,7 @@ export async function createBillingPortalSession(
     gateway,
     providerCustomerId: customerId,
     returnUrl: input.returnUrl,
+    liveModeApproved: livePortalApproved,
   });
   const created = providerResult.status === "ready" && Boolean(providerResult.portalUrl);
   const auditLogId = await auditPortalRequest({

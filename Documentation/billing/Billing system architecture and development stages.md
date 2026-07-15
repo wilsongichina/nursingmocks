@@ -921,6 +921,41 @@ Stage 14 slice document:
 Documentation/billing/Billing stage 14 admin billing operations.md
 ```
 
+### Stage 15: Live Readiness Approval Controls
+
+Goals:
+
+- add explicit server-side controls before live billing behavior can run
+- keep live checkout blocked until approved
+- keep live webhook effects blocked until approved
+- keep live billing portal blocked until approved
+- show live approval status in the admin readiness view
+- audit every live capability approval
+
+Exit criteria:
+
+- all live capabilities default to blocked
+- admin approval records are stored server-side
+- live checkout checks approval before provider session creation
+- live webhook effect processing checks approval before state writers are enabled
+- live portal sessions check approval before provider portal creation
+- TypeScript and billing tests pass
+
+Stage 15 live readiness approval controls completed:
+
+- added `billing_live_controls/live`
+- added approval status for checkout, webhook effects, and portal
+- added admin live-controls API
+- added admin readiness approval cards and form
+- added server-side approval checks in checkout, webhook, and portal paths
+- updated live-blocking tests and live-control tests
+
+Stage 15 slice document:
+
+```text
+Documentation/billing/Billing stage 15 live readiness approval controls.md
+```
+
 ## Important Constraints
 
 Preserve:

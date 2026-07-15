@@ -15,6 +15,7 @@ import {
   PLAN_STATUSES,
   PURCHASE_TYPES,
 } from "@/lib/billing/models";
+import type { BillingLiveControls } from "@/lib/billing/live-controls";
 import {
   type CreateBillingPlanInput,
   type CreatePaymentGatewayInput,
@@ -24,6 +25,7 @@ import {
   validateCreatePaymentGatewayInput,
   validateCreateProviderPriceMappingInput,
 } from "@/lib/billing/admin-config";
+import { getBillingLiveControls } from "@/lib/server/billing-live-controls";
 
 const BILLING_PLANS_COLLECTION = "billing_plans";
 const BILLING_GATEWAYS_COLLECTION = "billing_gateways";
@@ -79,6 +81,7 @@ export type AdminBillingConfigSnapshot = {
   checkoutAttempts: Record<string, unknown>[];
   operationReviews: Record<string, unknown>[];
   auditLogs: Serializable<BillingAuditLogEntry>[];
+  liveControls: BillingLiveControls;
 };
 
 function toDateOrNull(value: unknown): Date | null {
@@ -234,6 +237,7 @@ export async function getAdminBillingConfig(): Promise<AdminBillingConfigSnapsho
     checkoutAttempts,
     operationReviews,
     auditLogs,
+    liveControls,
   ] = await Promise.all([
     listCollection<BillingPlan>(BILLING_PLANS_COLLECTION),
     listCollection<PaymentGatewayConfig>(BILLING_GATEWAYS_COLLECTION),
@@ -245,6 +249,7 @@ export async function getAdminBillingConfig(): Promise<AdminBillingConfigSnapsho
     listCollection<Record<string, unknown>>(BILLING_CHECKOUT_ATTEMPTS_COLLECTION),
     listCollection<Record<string, unknown>>(BILLING_OPERATION_REVIEWS_COLLECTION),
     listCollection<BillingAuditLogEntry>(BILLING_AUDIT_LOG_COLLECTION),
+    getBillingLiveControls(),
   ]);
 
   return {
@@ -258,6 +263,7 @@ export async function getAdminBillingConfig(): Promise<AdminBillingConfigSnapsho
     checkoutAttempts,
     operationReviews,
     auditLogs,
+    liveControls,
   };
 }
 

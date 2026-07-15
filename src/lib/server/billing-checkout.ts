@@ -3,6 +3,7 @@ import { createBillingGatewayRegistry } from "@/lib/billing/gateway-registry";
 import type { CheckoutSessionResult } from "@/lib/billing/gateway-adapter";
 import type { CheckoutSessionDraftInput } from "@/lib/billing/checkout-session";
 import { getAdminDb } from "@/lib/server/firebase-admin";
+import { isBillingLiveCapabilityApproved } from "@/lib/server/billing-live-controls";
 import { getBillingCatalog } from "@/lib/server/billing-readiness";
 import { resolveCheckoutReadiness } from "@/lib/billing/checkout-readiness";
 
@@ -82,6 +83,29 @@ export async function createCheckoutSessionDraft(
 
   const { registry, issues } = createBillingGatewayRegistry(catalog.gateways);
   const entry = registry.get(readiness.selectedGateway.gatewayId);
+  const liveModeApproved =
+    readiness.selectedGateway.environment === "live"
+      ? await isBillingLiveCapabilityApproved("checkout")
+      : false;
+
+  if (readiness.selectedGateway.environment === "live" && !liveModeApproved) {
+    const message = "Live checkout is blocked because live checkout approval has not been recorded.";
+    const attemptId = await logCheckoutAttempt({
+      uid,
+      planId: input.planId,
+      gatewayId: readiness.selectedGateway.gatewayId,
+      provider: readiness.selectedGateway.provider,
+      status: "blocked",
+      message,
+    });
+
+    return {
+      status: "blocked",
+      checkoutEnabled: false,
+      message,
+      attemptId,
+    };
+  }
 
   if (!entry) {
     const message = issues[0] ?? "No registered payment adapter is available for the selected gateway.";
@@ -111,6 +135,7 @@ export async function createCheckoutSessionDraft(
     successUrl: input.successUrl,
     cancelUrl: input.cancelUrl,
     customerEmail: input.customerEmail,
+    liveModeApproved,
     metadata: {
       uid,
       planId: readiness.plan.planId,

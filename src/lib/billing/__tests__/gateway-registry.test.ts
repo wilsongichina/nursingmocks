@@ -145,6 +145,6 @@ describe("billing gateway registry", () => {
 
     expect(result.status).toBe("unavailable");
     expect(result.checkoutUrl).toBeUndefined();
-    expect(result.message).toBe("Live Stripe checkout is disabled. Stage 11 only allows test gateway checkout sessions.");
+    expect(result.message).toBe("Live Stripe checkout is disabled until live checkout approval is recorded.");
   });
 });

@@ -8,6 +8,7 @@ import {
   webhookEventDocumentId,
 } from "@/lib/billing/webhook-intake";
 import { getAdminDb } from "@/lib/server/firebase-admin";
+import { isBillingLiveCapabilityApproved } from "@/lib/server/billing-live-controls";
 import { getBillingCatalog } from "@/lib/server/billing-readiness";
 
 const BILLING_WEBHOOK_EVENTS_COLLECTION = "billing_webhook_events";
@@ -190,7 +191,12 @@ export async function intakeBillingWebhook(input: {
   const providerEventId = verification.providerEventId ?? null;
   const eventType = verification.eventType ?? null;
   const classification = classifyBillingWebhookEvent(validation.input.provider, eventType);
-  const effectsEnabled = verification.status === "ready" && classification.supported && gateway.environment === "test";
+  const liveWebhookEffectsApproved =
+    gateway.environment === "live" ? await isBillingLiveCapabilityApproved("webhookEffects") : false;
+  const effectsEnabled =
+    verification.status === "ready" &&
+    classification.supported &&
+    (gateway.environment === "test" || liveWebhookEffectsApproved);
   const effectPlan = planBillingWebhookEffects(classification.normalizedEventType, { effectsEnabled });
   const status =
     verification.status === "ready"

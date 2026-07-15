@@ -34,10 +34,10 @@ export const stripeGatewayAdapter: PaymentGatewayAdapter = {
       };
     }
 
-    if (request.gateway.environment !== "test") {
+    if (request.gateway.environment !== "test" && !request.liveModeApproved) {
       return {
         status: "unavailable",
-        message: "Live Stripe checkout is disabled. Stage 11 only allows test gateway checkout sessions.",
+        message: "Live Stripe checkout is disabled until live checkout approval is recorded.",
       };
     }
 
@@ -140,10 +140,10 @@ export const stripeGatewayAdapter: PaymentGatewayAdapter = {
       };
     }
 
-    if (request.gateway.environment !== "test") {
+    if (request.gateway.environment !== "test" && !request.liveModeApproved) {
       return {
         status: "unavailable",
-        message: "Live Stripe billing portal is disabled. Stage 13 only allows test gateway portal sessions.",
+        message: "Live Stripe billing portal is disabled until live portal approval is recorded.",
       };
     }
 

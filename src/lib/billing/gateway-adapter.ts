@@ -34,6 +34,7 @@ export type CheckoutSessionRequest = {
   cancelUrl: string;
   customerEmail?: string | null;
   metadata?: Record<string, string>;
+  liveModeApproved?: boolean;
 };
 
 export type CheckoutSessionResult = GatewayOperationResult & {
@@ -46,6 +47,7 @@ export type BillingPortalSessionRequest = {
   gateway: PaymentGatewayConfig;
   providerCustomerId: string;
   returnUrl: string;
+  liveModeApproved?: boolean;
 };
 
 export type BillingPortalSessionResult = GatewayOperationResult & {
