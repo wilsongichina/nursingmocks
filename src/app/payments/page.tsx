@@ -2,6 +2,17 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock3,
+  CreditCard,
+  LockKeyhole,
+  PackageCheck,
+  ReceiptText,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeUserDocument } from "@/lib/user-document-firestore";
@@ -21,7 +32,6 @@ type BillingCatalogResponse = {
 
 type BillingHistoryResponse = {
   transactions: Record<string, unknown>[];
-  subscriptions: Record<string, unknown>[];
   entitlements: Record<string, unknown>[];
 };
 
@@ -30,15 +40,18 @@ function formatDate(value: unknown) {
   if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") {
     return value.toDate().toLocaleDateString();
   }
-  if (typeof value === "string") return new Date(value).toLocaleDateString();
+  if (typeof value === "string") {
+    const timestamp = Date.parse(value);
+    if (Number.isFinite(timestamp)) return new Date(timestamp).toLocaleDateString();
+  }
   return "Not set";
 }
 
 function formatMoney(amount: unknown, currency: unknown) {
   const numericAmount = typeof amount === "number" ? amount : Number(amount);
-  const currencyCode = typeof currency === "string" && currency ? currency : "USD";
+  const currencyCode = typeof currency === "string" && currency ? currency.toUpperCase() : "USD";
   if (!Number.isFinite(numericAmount)) return "Not set";
-  return `${currencyCode} ${numericAmount}`;
+  return `${currencyCode} ${numericAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 function packageLabel(packageId: string) {
@@ -61,14 +74,80 @@ function entitlementLabel(entitlementId: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function StatusPill({ children, tone = "gray" }: { children: string; tone?: "green" | "amber" | "gray" | "purple" }) {
+function statusText(value: unknown) {
+  const raw = String(value ?? "").trim();
+  return raw ? raw.replace(/_/g, " ") : "No status";
+}
+
+function StatusPill({ children, tone = "gray" }: { children: string; tone?: "green" | "amber" | "gray" | "purple" | "blue" }) {
   const tones = {
-    green: "border-green-200 bg-green-50 text-green-700",
-    amber: "border-amber-200 bg-amber-50 text-amber-700",
-    gray: "border-gray-200 bg-gray-50 text-gray-700",
-    purple: "border-purple-200 bg-purple-50 text-purple-700",
+    green: "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]",
+    amber: "border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] text-[#b45309]",
+    gray: "border-[#e0e3f0] bg-white text-[#7a819c]",
+    purple: "border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,.08)] text-[#4f46e5]",
+    blue: "border-[rgba(59,130,246,.35)] bg-[rgba(59,130,246,.08)] text-[#2563eb]",
   };
-  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}>{children}</span>;
+  return (
+    <span className={`inline-flex min-h-7 shrink-0 items-center rounded-full border border-dashed px-3 text-xs font-semibold ${tones[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <section className={`overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)] ${className}`}>
+      {children}
+    </section>
+  );
+}
+
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 className="text-lg font-semibold tracking-[-0.02em] text-[#202437]">{title}</h2>
+        {subtitle && <p className="mt-1 max-w-3xl text-sm leading-6 text-[#7a819c]">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+function SummaryTile({
+  label,
+  value,
+  helper,
+  icon,
+}: {
+  label: string;
+  value: string;
+  helper?: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-[112px] items-start gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-4">
+      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#a0a5bf]">{label}</p>
+        <p className="mt-1 break-words text-lg font-semibold tracking-[-0.02em] text-[#202437]">{value}</p>
+        {helper && <p className="mt-1 text-xs leading-5 text-[#7a819c]">{helper}</p>}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-5 text-center">
+      <div className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
+        {icon}
+      </div>
+      <h3 className="mt-3 text-sm font-semibold text-[#202437]">{title}</h3>
+      <p className="mt-1 text-sm leading-6 text-[#7a819c]">{text}</p>
+    </div>
+  );
 }
 
 export default function PaymentsPage() {
@@ -82,7 +161,6 @@ export default function PaymentsPage() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
-  const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutNotice, setCheckoutNotice] = useState<"success" | "cancelled" | null>(null);
 
   useEffect(() => {
@@ -174,23 +252,11 @@ export default function PaymentsPage() {
     [userDoc]
   );
   const billing = userDoc?.billing;
-  const activeProvider = billing?.active_provider ?? "stripe";
-  const providerCustomerId =
-    activeProvider === "stripe"
-      ? userDoc?.billing_providers?.stripe?.customer_id
-      : activeProvider === "paypal"
-        ? userDoc?.billing_providers?.paypal?.payer_id
-        : userDoc?.billing_providers?.authorize_net?.customer_profile_id;
-  const portalGateway = catalog?.gateways
-    .filter(
-      (gateway) =>
-        gateway.provider === activeProvider &&
-        gateway.environment === "test" &&
-        gateway.enabled &&
-        gateway.configurationStatus === "ready"
-    )
-    .sort((a, b) => a.priority - b.priority || a.gatewayId.localeCompare(b.gatewayId))[0];
-  const portalReady = Boolean(providerCustomerId && portalGateway);
+  const activePlan = useMemo(
+    () => catalog?.plans.find((plan) => plan.planId === billing?.plan_id) ?? null,
+    [billing?.plan_id, catalog?.plans]
+  );
+  const latestTransaction = history?.transactions[0] ?? null;
   const testCheckoutAvailable = Boolean(
     catalog?.plans.some((plan) => {
       const assignedGateways = catalog.gateways.filter(
@@ -239,45 +305,13 @@ export default function PaymentsPage() {
     }
   }
 
-  async function openBillingPortal() {
-    if (!currentUser) return;
-
-    setError(null);
-    setPortalLoading(true);
-
-    try {
-      const token = await currentUser.getIdToken();
-      const response = await fetch("/api/billing/portal/session", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          gatewayId: portalGateway?.gatewayId ?? null,
-          returnUrl: `${window.location.origin}/payments`,
-        }),
-      });
-      const result = (await response.json()) as { portalUrl?: string; message?: string; error?: string };
-
-      if (!response.ok || !result.portalUrl) {
-        throw new Error(result.error || result.message || "Billing portal is not available yet.");
-      }
-
-      window.location.assign(result.portalUrl);
-    } catch (portalError) {
-      setError(portalError instanceof Error ? portalError.message : "Could not open billing portal.");
-      setPortalLoading(false);
-    }
-  }
-
   if (loading || (currentUser && docLoading)) {
     return (
       <Layout>
-        <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <main className="flex min-h-screen items-center justify-center bg-[#f5f6fb] px-4">
           <div className="text-center">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-b-purple-600" />
-            <p className="mt-4 text-sm font-medium text-gray-600">Loading billing...</p>
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#e0e3f0] border-b-[#6a5cff]" />
+            <p className="mt-4 text-sm font-medium text-[#7a819c]">Loading payments...</p>
           </div>
         </main>
       </Layout>
@@ -288,225 +322,277 @@ export default function PaymentsPage() {
 
   return (
     <Layout>
-      <main className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-purple-700">Billing</p>
-              <h1 className="mt-1 text-3xl font-bold text-gray-950">Payments & Subscription</h1>
-              <p className="mt-2 max-w-3xl text-sm text-gray-600">
-                Review your current access and start test checkout for ready NursingMocks plans.
-              </p>
-            </div>
-            <StatusPill tone={testCheckoutAvailable ? "green" : "amber"}>
-              {testCheckoutAvailable ? "Test checkout available" : "Checkout unavailable"}
-            </StatusPill>
-          </div>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.08),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(79,70,229,0.05),transparent_55%),#f5f6fb]">
+        <div className="mx-auto max-w-[1220px] px-4 pb-14 pt-[18px] text-[#202437] max-[560px]:px-[14px] max-[560px]:pb-[46px] max-[560px]:pt-[14px]">
+          <header className="pb-[14px] pt-[18px]">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusPill tone={activeEntitlements.length > 0 ? "green" : "amber"}>
+                    {activeEntitlements.length > 0 ? "Access active" : "No paid access"}
+                  </StatusPill>
+                  <StatusPill tone={testCheckoutAvailable ? "purple" : "gray"}>
+                    {testCheckoutAvailable ? "Checkout ready" : "Checkout unavailable"}
+                  </StatusPill>
+                </div>
+                <h1 className="mt-3 text-[30px] font-extrabold tracking-[-0.03em] text-[#202437] max-[560px]:text-2xl">
+                  Payments & Access
+                </h1>
+                <p className="mt-2 max-w-[96ch] text-sm font-medium leading-6 text-[#7a819c]">
+                  Manage your NursingMocks access, review payment transactions, and choose a one-time access plan when checkout is available.
+                </p>
+              </div>
 
-          {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
+              <div className="w-full rounded-2xl bg-white p-4 shadow-[0_18px_45px_rgba(23,35,79,.08)] sm:w-[360px]">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#a0a5bf]">Current Plan</p>
+                    <p className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[#202437]">{activePlan?.name ?? billing?.plan_id ?? "No paid plan"}</p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-2 text-sm text-[#7a819c]">
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] px-3 py-2">
+                    <span>Provider</span>
+                    <span className="font-semibold text-[#202437]">{billing?.active_provider ?? "Not set"}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] px-3 py-2">
+                    <span>Access ends</span>
+                    <span className="font-semibold text-[#202437]">{formatDate(billing?.current_period_end)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {error && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+              {error}
+            </div>
+          )}
 
           {checkoutNotice === "success" && (
-            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+            <div className="mb-4 rounded-2xl border border-[rgba(43,170,96,.35)] bg-[rgba(43,170,96,.10)] p-4 text-sm text-[#166534]">
               <p className="font-semibold">Checkout returned successfully.</p>
               <p className="mt-1">
-                Access is updated after the payment provider sends a verified webhook. If your access does not appear yet,
-                refresh this page after a moment.
+                Access updates after the payment provider sends a verified webhook. Refresh this page after a moment if access is not visible yet.
               </p>
             </div>
           )}
 
           {checkoutNotice === "cancelled" && (
-            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="mb-4 rounded-2xl border border-[rgba(245,158,11,.35)] bg-[rgba(245,158,11,.10)] p-4 text-sm text-[#92400e]">
               <p className="font-semibold">Checkout was cancelled.</p>
-              <p className="mt-1">No billing access changed. You can choose a plan below whenever you are ready.</p>
+              <p className="mt-1">No access changed. You can choose a plan below whenever you are ready.</p>
             </div>
           )}
 
-          <section className="mb-6 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 lg:col-span-2">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-950">Current Billing Summary</h2>
-                  <p className="mt-1 text-sm text-gray-600">Based on your account billing snapshot.</p>
+          <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <SummaryTile
+              label="Access Status"
+              value={activeEntitlements.length > 0 ? "Active" : "Not active"}
+              helper={`${activeEntitlements.length} active access grant(s)`}
+              icon={<PackageCheck className="h-5 w-5" />}
+            />
+            <SummaryTile
+              label="Plan"
+              value={activePlan?.name ?? billing?.plan_id ?? "No paid plan"}
+              helper="Based on your account billing snapshot"
+              icon={<Sparkles className="h-5 w-5" />}
+            />
+            <SummaryTile
+              label="Last Payment"
+              value={latestTransaction ? formatMoney(latestTransaction.amount, latestTransaction.currency) : "No payment yet"}
+              helper={latestTransaction ? `Status: ${statusText(latestTransaction.status)}` : "Transactions appear after provider confirmation"}
+              icon={<ReceiptText className="h-5 w-5" />}
+            />
+            <SummaryTile
+              label="Access End"
+              value={formatDate(billing?.current_period_end)}
+              helper="One-time access may show lifetime or no end date"
+              icon={<Clock3 className="h-5 w-5" />}
+            />
+          </section>
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.55fr)]">
+            <div className="grid content-start gap-6">
+              <Card>
+                <div className="border-b border-[#edf0f7] p-5">
+                  <SectionHeader
+                    title="Available Plans"
+                    subtitle="Choose a one-time access plan. Checkout is enabled only when the plan has a ready payment gateway and provider price mapping."
+                  />
                 </div>
-                <StatusPill tone={billing?.subscription_status === "active" ? "green" : "gray"}>
-                  {billing?.subscription_status ?? "No active subscription"}
-                </StatusPill>
-              </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <InfoCard label="Current Plan" value={billing?.plan_id ?? "No paid plan"} />
-                <InfoCard label="Billing Interval" value={billing?.interval ?? "Not set"} />
-                <InfoCard label="Provider" value={billing?.active_provider ?? "Not set"} />
-                <InfoCard label="Renewal / Access End" value={formatDate(billing?.current_period_end)} />
-              </div>
-
-              <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-950">Billing Management</h3>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Manage payment method and subscription details through the provider test portal.
-                    </p>
+                {catalogLoading ? (
+                  <p className="p-5 text-sm text-[#7a819c]">Loading plans...</p>
+                ) : !catalog || catalog.plans.length === 0 ? (
+                  <div className="p-5">
+                    <EmptyState
+                      icon={<LockKeyhole className="h-5 w-5" />}
+                      title="No plans available"
+                      text="Public billing plans will appear here after they are configured by the admin team."
+                    />
                   </div>
-                  <button
-                    type="button"
-                    disabled={!portalReady || portalLoading}
-                    onClick={() => void openBillingPortal()}
-                    className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                      portalReady && !portalLoading
-                        ? "bg-purple-600 text-white hover:bg-purple-700"
-                        : "bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {portalLoading ? "Opening portal..." : portalReady ? "Manage billing" : "Portal unavailable"}
-                  </button>
-                </div>
-                {!portalReady && (
-                  <p className="mt-3 text-xs text-gray-500">
-                    The portal appears after a verified test webhook saves your provider customer record.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="text-lg font-semibold text-gray-950">Active Access</h2>
-              <p className="mt-1 text-sm text-gray-600">Enabled entitlements on your account.</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {activeEntitlements.length === 0 ? (
-                  <StatusPill>No active paid access</StatusPill>
                 ) : (
-                  activeEntitlements.map((entitlement) => (
-                    <StatusPill key={entitlement} tone="purple">{entitlementLabel(entitlement)}</StatusPill>
-                  ))
+                  <div className="grid gap-4 p-5 lg:grid-cols-2">
+                    {catalog.plans.map((plan) => {
+                      const mappings = catalog.providerPriceMappings.filter((mapping) => mapping.planId === plan.planId);
+                      const assignedGateways = catalog.gateways.filter((gateway) => plan.gatewayIds.includes(gateway.gatewayId));
+                      const testGateway = assignedGateways.find((gateway) =>
+                        gateway.environment === "test" &&
+                        mappings.some((mapping) => mapping.gatewayId === gateway.gatewayId)
+                      );
+                      const ready = Boolean(testGateway);
+                      const checkingOut = checkoutPlanId === plan.planId;
+
+                      return (
+                        <article
+                          key={plan.planId}
+                          className={`flex min-h-[300px] flex-col rounded-2xl border p-4 ${
+                            ready
+                              ? "border-[rgba(106,92,255,.26)] bg-[rgba(106,92,255,.045)]"
+                              : "border-[#e0e3f0] bg-white"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-[#a0a5bf]">One-time access</p>
+                              <h3 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[#202437]">{plan.name}</h3>
+                              <p className="mt-2 text-sm leading-6 text-[#7a819c]">
+                                {plan.shortDescription || plan.description || "NursingMocks access plan"}
+                              </p>
+                            </div>
+                            <StatusPill tone={ready ? "green" : "amber"}>{ready ? "Ready" : "Incomplete"}</StatusPill>
+                          </div>
+
+                          <div className="mt-5">
+                            <p className="text-4xl font-bold tracking-[-0.04em] text-[#202437]">
+                              {plan.currency} {plan.price}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-[#7a819c]">
+                              {plan.purchaseType === "one_time" ? "One payment for access" : statusText(plan.purchaseType)}
+                            </p>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {plan.packageIds.map((packageId) => (
+                              <StatusPill key={packageId} tone="purple">{packageLabel(packageId)}</StatusPill>
+                            ))}
+                          </div>
+
+                          <div className="mt-auto pt-5">
+                            <button
+                              type="button"
+                              disabled={!ready || checkingOut}
+                              onClick={() => void startCheckout(plan, testGateway?.gatewayId ?? null)}
+                              className={`inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
+                                ready && !checkingOut
+                                  ? "bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] hover:-translate-y-px hover:shadow-[0_18px_42px_rgba(79,70,229,.33)]"
+                                  : "cursor-not-allowed border border-[#e0e3f0] bg-[#f5f6fb] text-[#a0a5bf]"
+                              }`}
+                            >
+                              {checkingOut ? "Starting checkout..." : ready ? "Continue to checkout" : "Configuration incomplete"}
+                              {ready && !checkingOut && <ArrowRight className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
                 )}
-              </div>
-            </div>
-          </section>
+              </Card>
 
-          <section className="mb-6 rounded-xl border border-gray-200 bg-white">
-            <div className="border-b border-gray-200 px-5 py-4">
-              <h2 className="text-lg font-semibold text-gray-950">Payment History</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Read-only records created after verified webhook processing or controlled admin billing operations.
-              </p>
-            </div>
-            {historyLoading ? (
-              <p className="p-5 text-sm text-gray-500">Loading billing history...</p>
-            ) : !history ? (
-              <p className="p-5 text-sm text-gray-500">Billing history is not available right now.</p>
-            ) : (
-              <div className="grid gap-4 p-5 xl:grid-cols-3">
+              <Card>
+                <div className="border-b border-[#edf0f7] p-5">
+                  <SectionHeader
+                    title="Payment Transactions"
+                    subtitle="Completed payment records appear here after provider confirmation."
+                  />
+                </div>
                 <HistoryPanel
-                  title="Transactions"
-                  emptyMessage="No payment transactions recorded yet."
-                  records={history.transactions}
+                  loading={historyLoading}
+                  unavailable={!history}
+                  emptyIcon={<CreditCard className="h-5 w-5" />}
+                  emptyTitle="No transactions yet"
+                  emptyMessage="Your payment transactions will appear here after checkout is confirmed."
+                  records={history?.transactions ?? []}
                   renderRecord={(record) => (
-                    <>
-                      <p className="font-semibold text-gray-950">{formatMoney(record.amount, record.currency)}</p>
-                      <p className="mt-1 text-xs text-gray-500">{String(record.planId ?? "No plan")} · {String(record.status ?? "No status")}</p>
-                      <p className="mt-2 text-xs text-gray-500">Paid: {formatDate(record.paidAt ?? record.createdAt)}</p>
-                    </>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold text-[#202437]">{formatMoney(record.amount, record.currency)}</p>
+                        <p className="mt-1 break-words text-xs text-[#7a819c]">{String(record.planId ?? "No plan")}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <StatusPill tone="blue">{statusText(record.status)}</StatusPill>
+                        <span className="text-xs font-medium text-[#7a819c]">Paid {formatDate(record.paidAt ?? record.createdAt)}</span>
+                      </div>
+                    </div>
                   )}
                 />
-                <HistoryPanel
-                  title="Subscriptions"
-                  emptyMessage="No subscriptions recorded yet."
-                  records={history.subscriptions}
-                  renderRecord={(record) => (
-                    <>
-                      <p className="font-semibold text-gray-950">{String(record.planId ?? "No plan")}</p>
-                      <p className="mt-1 text-xs text-gray-500">{String(record.provider ?? "No provider")} · {String(record.status ?? "No status")}</p>
-                      <p className="mt-2 text-xs text-gray-500">Period ends: {formatDate(record.currentPeriodEnd)}</p>
-                    </>
-                  )}
-                />
-                <HistoryPanel
-                  title="Entitlements"
-                  emptyMessage="No entitlement records yet."
-                  records={history.entitlements}
-                  renderRecord={(record) => (
-                    <>
-                      <p className="font-semibold text-gray-950">{packageLabel(String(record.packageId ?? "unknown"))}</p>
-                      <p className="mt-1 text-xs text-gray-500">{String(record.source ?? "No source")} · {String(record.status ?? "No status")}</p>
-                      <p className="mt-2 text-xs text-gray-500">Granted: {formatDate(record.grantedAt ?? record.createdAt)}</p>
-                    </>
-                  )}
-                />
-              </div>
-            )}
-          </section>
-
-          <section className="rounded-xl border border-gray-200 bg-white">
-            <div className="border-b border-gray-200 px-5 py-4">
-              <h2 className="text-lg font-semibold text-gray-950">Available Plans</h2>
-              <p className="mt-1 text-sm text-gray-600">These plans come from the admin billing catalog. Only ready test-gateway checkout is enabled in this stage.</p>
+              </Card>
             </div>
 
-            {catalogLoading ? (
-              <p className="p-5 text-sm text-gray-500">Loading plans...</p>
-            ) : !catalog || catalog.plans.length === 0 ? (
-              <p className="p-5 text-sm text-gray-500">No public billing plans are available yet.</p>
-            ) : (
-              <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-                {catalog.plans.map((plan) => {
-                  const mappings = catalog.providerPriceMappings.filter((mapping) => mapping.planId === plan.planId);
-                  const assignedGateways = catalog.gateways.filter((gateway) => plan.gatewayIds.includes(gateway.gatewayId));
-                  const testGateway = assignedGateways.find((gateway) =>
-                    gateway.environment === "test" &&
-                    mappings.some((mapping) => mapping.gatewayId === gateway.gatewayId)
-                  );
-                  const ready = Boolean(testGateway);
-                  const checkingOut = checkoutPlanId === plan.planId;
-
-                  return (
-                    <article key={plan.planId} className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-base font-semibold text-gray-950">{plan.name}</h3>
-                          <p className="mt-1 text-sm text-gray-600">{plan.shortDescription || plan.description || "Billing plan"}</p>
+            <aside className="grid content-start gap-6">
+              <Card>
+                <div className="border-b border-[#edf0f7] p-5">
+                  <SectionHeader
+                    title="Active Access"
+                    subtitle="Access grants currently enabled on your account."
+                  />
+                </div>
+                <div className="p-5">
+                  {activeEntitlements.length === 0 ? (
+                    <EmptyState
+                      icon={<LockKeyhole className="h-5 w-5" />}
+                      title="No active paid access"
+                      text="Choose a plan to unlock exam packages and study materials."
+                    />
+                  ) : (
+                    <div className="grid gap-3">
+                      {activeEntitlements.map((entitlement) => (
+                        <div key={entitlement} className="flex items-center gap-3 rounded-xl border border-dashed border-[rgba(43,170,96,.35)] bg-[rgba(43,170,96,.08)] p-3">
+                          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-[#2baa60]">
+                            <CheckCircle2 className="h-5 w-5" />
+                          </div>
+                          <p className="min-w-0 text-sm font-semibold text-[#202437]">{entitlementLabel(entitlement)}</p>
                         </div>
-                        <StatusPill tone={ready ? "green" : "amber"}>{ready ? "Ready" : "Incomplete"}</StatusPill>
-                      </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
 
-                      <div className="mt-4">
-                        <p className="text-3xl font-bold text-gray-950">
-                          {plan.currency} {plan.price}
-                        </p>
-                        <p className="text-sm text-gray-500">{plan.billingInterval ?? "No interval"} / {plan.purchaseType}</p>
+              <Card>
+                <div className="border-b border-[#edf0f7] p-5">
+                  <SectionHeader
+                    title="Access Grants"
+                    subtitle="Read-only access changes from payments or admin updates."
+                  />
+                </div>
+                <HistoryPanel
+                  loading={historyLoading}
+                  unavailable={!history}
+                  emptyIcon={<PackageCheck className="h-5 w-5" />}
+                  emptyTitle="No access grant records"
+                  emptyMessage="Access grant records will appear after checkout or admin updates."
+                  records={history?.entitlements ?? []}
+                  renderRecord={(record) => (
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="font-semibold text-[#202437]">{packageLabel(String(record.packageId ?? "unknown"))}</p>
+                        <StatusPill tone="purple">{statusText(record.status)}</StatusPill>
                       </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {plan.packageIds.map((packageId) => (
-                          <StatusPill key={packageId}>{packageLabel(packageId)}</StatusPill>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
-                        {ready
-                          ? "This plan can start a test checkout session. Access is granted only after verified webhook processing."
-                          : "This plan is missing an enabled test gateway or active provider price mapping."}
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={!ready || checkingOut}
-                        onClick={() => void startCheckout(plan, testGateway?.gatewayId ?? null)}
-                        className={`mt-4 rounded-lg px-4 py-2 text-sm font-semibold ${
-                          ready && !checkingOut
-                            ? "bg-purple-600 text-white hover:bg-purple-700"
-                            : "bg-gray-200 text-gray-500"
-                        }`}
-                      >
-                        {checkingOut ? "Starting checkout..." : ready ? "Start test checkout" : "Configuration incomplete"}
-                      </button>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
+                      <p className="mt-2 text-xs text-[#7a819c]">{String(record.source ?? "No source")}</p>
+                      <p className="mt-2 text-xs font-medium text-[#7a819c]">Granted {formatDate(record.grantedAt ?? record.createdAt)}</p>
+                    </div>
+                  )}
+                />
+              </Card>
+            </aside>
+          </div>
         </div>
       </main>
     </Layout>
@@ -514,49 +600,50 @@ export default function PaymentsPage() {
 }
 
 function HistoryPanel({
-  title,
+  loading,
+  unavailable,
+  emptyIcon,
+  emptyTitle,
   emptyMessage,
   records,
   renderRecord,
 }: {
-  title: string;
+  loading: boolean;
+  unavailable: boolean;
+  emptyIcon: ReactNode;
+  emptyTitle: string;
   emptyMessage: string;
   records: Record<string, unknown>[];
   renderRecord: (record: Record<string, unknown>) => ReactNode;
 }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50">
-      <div className="border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-gray-950">{title}</h3>
-          <StatusPill>{String(records.length)}</StatusPill>
-        </div>
-      </div>
-      {records.length === 0 ? (
-        <p className="p-4 text-sm text-gray-500">{emptyMessage}</p>
-      ) : (
-        <div className="max-h-72 overflow-y-auto p-3">
-          <div className="space-y-3">
-            {records.map((record, index) => (
-              <article
-                key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? index)}
-                className="rounded-lg border border-gray-200 bg-white p-3 text-sm"
-              >
-                {renderRecord(record)}
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+  if (loading) {
+    return <p className="p-5 text-sm text-[#7a819c]">Loading records...</p>;
+  }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+  if (unavailable) {
+    return <p className="p-5 text-sm text-[#7a819c]">Billing history is not available right now.</p>;
+  }
+
+  if (records.length === 0) {
+    return (
+      <div className="p-5">
+        <EmptyState icon={emptyIcon} title={emptyTitle} text={emptyMessage} />
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-      <p className="text-xs font-semibold uppercase text-gray-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-gray-950">{value}</p>
+    <div className="max-h-[420px] overflow-y-auto p-5">
+      <div className="grid gap-3">
+        {records.map((record, index) => (
+          <article
+            key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? index)}
+            className="rounded-xl border border-[#e0e3f0] bg-white p-4 text-sm transition hover:border-[rgba(106,92,255,.35)] hover:bg-[rgba(106,92,255,.035)]"
+          >
+            {renderRecord(record)}
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

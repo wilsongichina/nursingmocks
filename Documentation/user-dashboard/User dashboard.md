@@ -880,6 +880,33 @@ Visual system changes:
 - changed support links to profile-style rounded pill rows
 - kept dashboard data behavior unchanged
 
+## User Account Theme Reference
+
+The shared user account theme now applies to `/dashboard`, `/profile`, and `/payments`.
+
+Use this theme for authenticated user management pages:
+
+- page background: radial violet accents over `#f5f6fb`
+- page container: centered `max-w-[1220px]` with compact responsive padding
+- primary text: `#202437`
+- secondary text: `#7a819c`
+- muted label text: `#a0a5bf`
+- primary accent: `#6a5cff`
+- action hover/accent: `#4f46e5`
+- panels: white `rounded-2xl` cards with `shadow-[0_18px_45px_rgba(23,35,79,.08)]`
+- status pills: rounded full, dashed borders, compact text, no wrapping
+- detail rows and stat tiles: dashed violet-tinted borders with subtle `rgba(106,92,255,.045)` backgrounds
+- primary buttons: rounded full violet gradient buttons with subtle lift on hover
+- secondary buttons: rounded full white buttons with dashed or soft border and violet hover state
+
+Do not introduce a dark hero or a separate standalone visual system for normal authenticated user management pages unless the product explicitly creates a new user theme.
+
+Payments page adoption:
+
+- `/payments` uses this shared user account theme for the header, summary tiles, plan cards, transaction history, active access, and access grant panels.
+- Transactions remain visible as payment history.
+- Subscription management remains hidden because recurring subscriptions are not part of the current customer flow.
+
 Validation run:
 
 ```text

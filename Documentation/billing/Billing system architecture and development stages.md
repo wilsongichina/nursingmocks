@@ -1257,6 +1257,69 @@ Stage 25 slice document:
 Documentation/billing/Billing stage 25 gateway readiness status fix.md
 ```
 
+### Stage 26: One-Time Access UI Simplification
+
+Goals:
+
+- simplify billing screens around one-time purchases
+- remove subscription-focused UI from the normal customer billing page
+- remove subscription-heavy tabs from the normal admin billing workflow while keeping transaction payment history visible
+- keep backend records intact for audit and future use
+
+Exit criteria:
+
+- `/payments` focuses on current access, transactions, access grants, and available plans
+- admin billing focuses on plans, gateways, mappings, transactions, access grants, webhooks, checkout attempts, reviews, and audit logs
+- subscription review actions are hidden from the normal admin UI
+- TypeScript passes
+
+Stage 26 one-time access UI simplification completed:
+
+- renamed customer billing to payments and access
+- removed customer subscription status, portal management, and subscription history card
+- kept customer transaction display as payment history
+- kept admin transaction records visible as payment history
+- hid subscription record tabs from the normal admin billing workflow
+- defaulted new admin plan and mapping forms toward one-time lifetime access
+- validated with `.\node_modules\.bin\tsc.cmd --noEmit`
+
+Stage 26 slice document:
+
+```text
+Documentation/billing/Billing stage 26 one-time access UI simplification.md
+```
+
+### Stage 27: Customer Payments UI Redesign
+
+Goals:
+
+- make `/payments` easier for customers to understand and manage
+- keep transactions visible as payment history
+- keep subscription management out of the normal customer interface
+- preserve the existing checkout and billing history data flow
+
+Exit criteria:
+
+- `/payments` has a clearer account status header
+- current access, payment transactions, access grants, and available plans are visually separated
+- one-time plan cards have clearer pricing, package, and checkout states
+- TypeScript passes
+
+Stage 27 customer payments UI redesign completed:
+
+- rebuilt `/payments` into a dashboard-style account management layout
+- aligned `/payments` with the shared authenticated user account theme documented under `Documentation/user-dashboard/User dashboard.md`
+- added compact summary tiles for access, plan, last payment, and access end
+- kept transactions visible as payment history
+- kept subscriptions hidden from the customer interface
+- validated with `.\node_modules\.bin\tsc.cmd --noEmit`
+
+Stage 27 slice document:
+
+```text
+Documentation/billing/Billing stage 27 customer payments UI redesign.md
+```
+
 ## Important Constraints
 
 Preserve:

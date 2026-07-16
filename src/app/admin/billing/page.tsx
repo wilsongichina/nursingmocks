@@ -97,7 +97,6 @@ type BillingManagementTab =
   | "gateways"
   | "mappings"
   | "transactions"
-  | "subscriptions"
   | "entitlements"
   | "webhooks"
   | "attempts"
@@ -180,8 +179,8 @@ const initialGatewayForm: GatewayForm = {
   enabled: false,
   supportedCurrencies: "USD",
   supportedCountries: "US",
-  supportedPaymentTypes: ["subscription", "one_time"],
-  supportsSubscriptions: true,
+  supportedPaymentTypes: ["one_time"],
+  supportsSubscriptions: false,
   supportsOneTimePayments: true,
   minimumAmount: "",
   maximumAmount: "",
@@ -207,8 +206,8 @@ const initialPlanForm: PlanForm = {
   description: "",
   shortDescription: "",
   status: "draft",
-  purchaseType: "subscription",
-  billingInterval: "monthly",
+  purchaseType: "one_time",
+  billingInterval: "lifetime",
   price: "",
   currency: "USD",
   packageIds: [],
@@ -231,7 +230,7 @@ const initialProviderPriceMappingForm: ProviderPriceMappingForm = {
   amount: "",
   currency: "USD",
   billingInterval: "",
-  purchaseType: "subscription",
+  purchaseType: "one_time",
   active: true,
 };
 
@@ -240,8 +239,8 @@ const initialPlanEditForm: PlanEditForm = {
   description: "",
   shortDescription: "",
   status: "draft",
-  purchaseType: "subscription",
-  billingInterval: "monthly",
+  purchaseType: "one_time",
+  billingInterval: "lifetime",
   price: "",
   currency: "USD",
   packageIds: [],
@@ -258,8 +257,8 @@ const initialGatewayEditForm: GatewayEditForm = {
   isDefault: false,
   supportedCurrencies: "USD",
   supportedCountries: "US",
-  supportedPaymentTypes: ["subscription", "one_time"],
-  supportsSubscriptions: true,
+  supportedPaymentTypes: ["one_time"],
+  supportsSubscriptions: false,
   supportsOneTimePayments: true,
   minimumAmount: "",
   maximumAmount: "",
@@ -276,7 +275,7 @@ const initialProviderPriceMappingEditForm: ProviderPriceMappingEditForm = {
   amount: "",
   currency: "USD",
   billingInterval: "",
-  purchaseType: "subscription",
+  purchaseType: "one_time",
   active: true,
 };
 
@@ -1084,7 +1083,7 @@ function AdminBillingContent() {
       ? [{ label: "No checkout attempts recorded", detail: "Run test checkout from /payments before live launch." }]
       : []),
     ...(config.transactions.length === 0
-      ? [{ label: "No billing transactions recorded", detail: "Confirm verified webhook processing writes transaction records." }]
+      ? [{ label: "No transaction records found", detail: "Confirm verified webhook processing writes payment transaction records." }]
       : []),
   ];
   const preflightReadyItems = [
@@ -1203,9 +1202,6 @@ function AdminBillingContent() {
                         <option value="manualEntitlementGrant">Manual Entitlement Grant</option>
                         <option value="manualEntitlementRevoke">Manual Entitlement Revoke</option>
                         <option value="webhookReprocess">Webhook Reprocess</option>
-                        <option value="refundReview">Refund Review Record</option>
-                        <option value="subscriptionNote">Subscription Review Note</option>
-                        <option value="transactionNote">Transaction Note</option>
                       </select>
                     </label>
 
@@ -1238,27 +1234,6 @@ function AdminBillingContent() {
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
                         Webhook Event Record ID
                         <input value={operationForm.webhookEventRecordId} onChange={(event) => setOperationForm({ ...operationForm, webhookEventRecordId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="stripe_evt_..." />
-                      </label>
-                    )}
-
-                    {(operationForm.operation === "refundReview" || operationForm.operation === "transactionNote") && (
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Transaction ID
-                        <input value={operationForm.transactionId} onChange={(event) => setOperationForm({ ...operationForm, transactionId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Transaction ID" />
-                      </label>
-                    )}
-
-                    {operationForm.operation === "subscriptionNote" && (
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Subscription ID
-                        <input value={operationForm.subscriptionId} onChange={(event) => setOperationForm({ ...operationForm, subscriptionId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Subscription ID" />
-                      </label>
-                    )}
-
-                    {(operationForm.operation === "refundReview" || operationForm.operation === "subscriptionNote" || operationForm.operation === "transactionNote") && (
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Note
-                        <textarea value={operationForm.note} onChange={(event) => setOperationForm({ ...operationForm, note: event.target.value })} className="min-h-20 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Operational note for review" />
                       </label>
                     )}
 
@@ -1319,7 +1294,6 @@ function AdminBillingContent() {
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
                         Purchase Type
                         <select value={planForm.purchaseType} onChange={(event) => setPlanForm({ ...planForm, purchaseType: event.target.value as PlanForm["purchaseType"] })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
-                          <option value="subscription">Subscription</option>
                           <option value="one_time">One-time</option>
                           <option value="manual_access">Manual</option>
                         </select>
@@ -1467,10 +1441,10 @@ function AdminBillingContent() {
                   <div className="grid gap-2 text-sm font-medium text-gray-700">
                     Payment Types
                     <div className="flex flex-wrap gap-3">
-                      {["subscription", "one_time"].map((paymentType) => (
+                      {["one_time"].map((paymentType) => (
                         <label key={paymentType} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
                           <input type="checkbox" checked={form.supportedPaymentTypes.includes(paymentType)} onChange={() => togglePaymentType(paymentType)} />
-                          {paymentType === "one_time" ? "One-time" : "Subscription"}
+                          One-time
                         </label>
                       ))}
                     </div>
@@ -1551,11 +1525,6 @@ function AdminBillingContent() {
                     </label>
                   </div>
 
-                  <label className="grid gap-1 text-sm font-medium text-gray-700">
-                    External Plan ID
-                    <input value={mappingForm.externalPlanId} onChange={(event) => setMappingForm({ ...mappingForm, externalPlanId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Optional provider subscription plan ID" />
-                  </label>
-
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label className="grid gap-1 text-sm font-medium text-gray-700">
                       Amount
@@ -1567,7 +1536,7 @@ function AdminBillingContent() {
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-700">
                       Interval
-                      <input value={mappingForm.billingInterval} onChange={(event) => setMappingForm({ ...mappingForm, billingInterval: event.target.value })} className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="monthly" />
+                      <input value={mappingForm.billingInterval} onChange={(event) => setMappingForm({ ...mappingForm, billingInterval: event.target.value })} className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="lifetime" />
                     </label>
                   </div>
 
@@ -1642,13 +1611,12 @@ function AdminBillingContent() {
                           </label>
                         </div>
                         <LockedNotice>
-                          Pricing, interval, purchase type, trial days, packages, and assigned gateways are locked after creation because changing them can invalidate provider mappings, checkout rules, subscriptions, or entitlements. Create a new plan for those changes.
+                          Pricing, interval, purchase type, trial days, packages, and assigned gateways are locked after creation because changing them can invalidate provider mappings, checkout rules, or entitlements. Create a new plan for those changes.
                         </LockedNotice>
                         <div className="grid gap-4 sm:grid-cols-2">
                           <label className="grid gap-1 text-sm font-medium text-gray-700">
                             Purchase Type
                             <select value={planEditForm.purchaseType} disabled className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                              <option value="subscription">Subscription</option>
                               <option value="one_time">One-time</option>
                               <option value="manual_access">Manual</option>
                             </select>
@@ -1758,10 +1726,10 @@ function AdminBillingContent() {
                         <div className="grid gap-2 text-sm font-medium text-gray-700">
                           Payment Types
                           <div className="flex flex-wrap gap-3">
-                            {["subscription", "one_time"].map((paymentType) => (
+                            {["one_time"].map((paymentType) => (
                               <label key={paymentType} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
                                 <input type="checkbox" checked={gatewayEditForm.supportedPaymentTypes.includes(paymentType)} disabled onChange={() => toggleGatewayEditPaymentType(paymentType)} />
-                                {paymentType === "one_time" ? "One-time" : "Subscription"}
+                                One-time
                               </label>
                             ))}
                           </div>
@@ -1781,10 +1749,6 @@ function AdminBillingContent() {
                           </label>
                         </div>
                         <div className="grid gap-2">
-                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <input type="checkbox" checked={gatewayEditForm.supportsSubscriptions} disabled onChange={(event) => setGatewayEditForm({ ...gatewayEditForm, supportsSubscriptions: event.target.checked })} />
-                            Supports subscriptions
-                          </label>
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                             <input type="checkbox" checked={gatewayEditForm.supportsOneTimePayments} disabled onChange={(event) => setGatewayEditForm({ ...gatewayEditForm, supportsOneTimePayments: event.target.checked })} />
                             Supports one-time payments
@@ -1840,7 +1804,6 @@ function AdminBillingContent() {
                           <label className="grid gap-1 text-sm font-medium text-gray-700">
                             Purchase Type
                             <select value={mappingEditForm.purchaseType} disabled className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                              <option value="subscription">Subscription</option>
                               <option value="one_time">One-time</option>
                               <option value="manual_access">Manual</option>
                             </select>
@@ -1874,8 +1837,7 @@ function AdminBillingContent() {
                     { id: "gateways" as const, label: "Gateways", count: config.gateways.length },
                     { id: "mappings" as const, label: "Provider Mappings", count: config.providerPriceMappings.length },
                     { id: "transactions" as const, label: "Transactions", count: config.transactions.length },
-                    { id: "subscriptions" as const, label: "Subscriptions", count: config.subscriptions.length },
-                    { id: "entitlements" as const, label: "Entitlements", count: config.entitlements.length },
+                    { id: "entitlements" as const, label: "Access Grants", count: config.entitlements.length },
                     { id: "webhooks" as const, label: "Webhooks", count: config.webhookEvents.length },
                     { id: "attempts" as const, label: "Checkout Attempts", count: config.checkoutAttempts.length },
                     { id: "reviews" as const, label: "Operation Reviews", count: config.operationReviews.length },
@@ -2197,35 +2159,20 @@ function AdminBillingContent() {
                       { key: "transactionId", label: "Transaction" },
                       { key: "uid", label: "User" },
                       { key: "planId", label: "Plan" },
-                      { key: "status", label: "Status" },
+                      { key: "gatewayId", label: "Gateway" },
+                      { key: "provider", label: "Provider" },
                       { key: "amount", label: "Amount" },
                       { key: "currency", label: "Currency" },
+                      { key: "status", label: "Status" },
+                      { key: "paidAt", label: "Paid" },
                       { key: "createdAt", label: "Created" },
                     ]}
                   />
                 </Section>
                 )}
 
-                {activeTab === "subscriptions" && (
-                <Section title="Subscriptions" count={config.subscriptions.length}>
-                  <OperationsTable
-                    records={config.subscriptions as unknown as Record<string, unknown>[]}
-                    emptyMessage="No billing subscriptions recorded yet."
-                    columns={[
-                      { key: "subscriptionId", label: "Subscription" },
-                      { key: "uid", label: "User" },
-                      { key: "planId", label: "Plan" },
-                      { key: "provider", label: "Provider" },
-                      { key: "status", label: "Status" },
-                      { key: "currentPeriodEnd", label: "Period End" },
-                      { key: "updatedAt", label: "Updated" },
-                    ]}
-                  />
-                </Section>
-                )}
-
                 {activeTab === "entitlements" && (
-                <Section title="Entitlements" count={config.entitlements.length}>
+                <Section title="Access Grants" count={config.entitlements.length}>
                   <OperationsTable
                     records={config.entitlements as unknown as Record<string, unknown>[]}
                     emptyMessage="No billing entitlements recorded yet."
@@ -2342,7 +2289,7 @@ function AdminBillingContent() {
             <div className="grid gap-4 px-5 py-5 text-sm text-gray-700">
               <section className="rounded-lg border border-gray-200 p-4">
                 <h3 className="font-semibold text-gray-950">Billing Configuration Flow</h3>
-                <p className="mt-1">Billing is configured in three layers. Create a plan first, create one or more gateways, then create provider price mappings that connect the internal plan to the provider price or subscription object.</p>
+                <p className="mt-1">Billing is configured in three layers. Create a plan first, create one or more gateways, then create provider price mappings that connect the internal plan to the provider price.</p>
                 <div className="mt-3 grid gap-2 text-xs text-gray-600">
                   <p><span className="font-semibold text-gray-800">Plans</span> define what access is sold and the internal billing contract.</p>
                   <p><span className="font-semibold text-gray-800">Gateways</span> define which payment provider can process the payment.</p>
@@ -2359,10 +2306,10 @@ function AdminBillingContent() {
                   <p><span className="font-semibold text-gray-800">Name</span> is automatically cleaned into title case and removes separators or unusual punctuation.</p>
                   <p><span className="font-semibold text-gray-800">Description and Short Description</span> describe the plan for admin review and future display surfaces.</p>
                   <p><span className="font-semibold text-gray-800">Status</span> controls lifecycle: draft, active, inactive, or archived.</p>
-                  <p><span className="font-semibold text-gray-800">Purchase Type</span> defines whether the plan is subscription, one-time, or manual access.</p>
-                  <p><span className="font-semibold text-gray-800">Interval</span> defines subscription timing or lifetime one-time access.</p>
+                  <p><span className="font-semibold text-gray-800">Purchase Type</span> is kept focused on one-time or manual access for now.</p>
+                  <p><span className="font-semibold text-gray-800">Interval</span> should normally be lifetime for one-time access plans.</p>
                   <p><span className="font-semibold text-gray-800">Price and Currency</span> define the internal billing amount that provider mappings must match.</p>
-                  <p><span className="font-semibold text-gray-800">Trial Days</span> controls the planned trial window for subscription plans.</p>
+                  <p><span className="font-semibold text-gray-800">Trial Days</span> should remain 0 for the current one-time access flow.</p>
                   <p><span className="font-semibold text-gray-800">Packages</span> define which exam/product access the plan grants.</p>
                   <p><span className="font-semibold text-gray-800">Assigned Gateways</span> define which payment gateways are allowed to process the plan.</p>
                   <p><span className="font-semibold text-gray-800">Public, Featured, and Display Order</span> control future visibility and ordering.</p>
@@ -2381,7 +2328,7 @@ function AdminBillingContent() {
                   <p><span className="font-semibold text-gray-800">Secret Key Ref</span> stores the environment variable or secret reference name for the server-side provider secret key.</p>
                   <p><span className="font-semibold text-gray-800">Webhook Secret Ref</span> stores the environment variable or secret reference name used to verify webhook signatures.</p>
                   <p><span className="font-semibold text-gray-800">Currencies and Countries</span> define where and how this gateway can be used.</p>
-                  <p><span className="font-semibold text-gray-800">Payment Types</span> define whether the gateway can process subscriptions, one-time purchases, or both.</p>
+                  <p><span className="font-semibold text-gray-800">Payment Types</span> should stay focused on one-time purchases for the current billing flow.</p>
                   <p><span className="font-semibold text-gray-800">Min Amount and Max Amount</span> define planned checkout eligibility limits.</p>
                   <p><span className="font-semibold text-gray-800">Priority</span> controls preferred gateway order when multiple gateways can process a plan.</p>
                   <p><span className="font-semibold text-gray-800">Enabled</span> allows the gateway to be considered by later checkout stages.</p>
@@ -2391,14 +2338,13 @@ function AdminBillingContent() {
 
               <section className="rounded-lg border border-gray-200 p-4">
                 <h3 className="font-semibold text-gray-950">Provider Price Mappings Section</h3>
-                <p className="mt-1">Use mappings to connect an internal plan to a provider product, price, or subscription plan.</p>
+                <p className="mt-1">Use mappings to connect an internal plan to a provider product and price.</p>
                 <div className="mt-3 grid gap-2 text-xs text-gray-600">
                   <p><span className="font-semibold text-gray-800">Mapping ID</span> is the stable internal mapping identifier.</p>
                   <p><span className="font-semibold text-gray-800">Plan</span> selects the internal billing plan.</p>
                   <p><span className="font-semibold text-gray-800">Gateway</span> selects the provider gateway assigned to that plan.</p>
                   <p><span className="font-semibold text-gray-800">External Product ID</span> stores the provider product reference when available.</p>
                   <p><span className="font-semibold text-gray-800">External Price ID</span> stores the provider price reference, such as a Stripe price ID.</p>
-                  <p><span className="font-semibold text-gray-800">External Plan ID</span> stores provider subscription-plan references for providers that use that model.</p>
                   <p><span className="font-semibold text-gray-800">Amount, Currency, Interval, and Purchase Type</span> are copied from the plan and must match it.</p>
                   <p><span className="font-semibold text-gray-800">Provider and Environment</span> are copied from the selected gateway.</p>
                   <p><span className="font-semibold text-gray-800">Active Mapping</span> controls whether this mapping can be used by later checkout stages.</p>
@@ -2434,9 +2380,8 @@ function AdminBillingContent() {
                 <h3 className="font-semibold text-gray-950">Operations Views</h3>
                 <p className="mt-1">The admin tables also include read-only operational records for future billing activity.</p>
                 <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p><span className="font-semibold text-gray-800">Transactions</span> will show payment records after webhook processing is enabled.</p>
-                  <p><span className="font-semibold text-gray-800">Subscriptions</span> will show provider subscription state after subscription writers are enabled.</p>
-                  <p><span className="font-semibold text-gray-800">Entitlements</span> will show package access grants and revocations.</p>
+                  <p><span className="font-semibold text-gray-800">Access Grants</span> show package access grants and revocations.</p>
+                  <p><span className="font-semibold text-gray-800">Transactions</span> show payment records. These stay visible because they are payment history, not recurring subscriptions.</p>
                   <p><span className="font-semibold text-gray-800">Webhook Events</span> shows recorded provider webhook intake records.</p>
                   <p><span className="font-semibold text-gray-800">Checkout Attempts</span> shows blocked or unavailable checkout draft attempts.</p>
                   <p><span className="font-semibold text-gray-800">Audit Logs</span> shows admin billing configuration changes.</p>
@@ -2456,7 +2401,7 @@ function AdminBillingContent() {
 
               <section className="rounded-lg border border-gray-200 p-4">
                 <h3 className="font-semibold text-gray-950">Current Billing Stage</h3>
-                <p className="mt-1">This stage manages configuration only. Gateway secrets, live checkout, webhook processing, transactions, subscriptions, and entitlement grants remain disabled until later billing stages.</p>
+                <p className="mt-1">This screen manages configuration and operational review. Live checkout remains blocked until explicit approval.</p>
               </section>
             </div>
           </div>
