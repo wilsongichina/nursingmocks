@@ -192,6 +192,30 @@ function validateBillingContract(input: {
   if (issues.length > 0) throw new Error(issues.join(" "));
 }
 
+function sanitizeAuditValue(value: unknown): unknown {
+  if (value === undefined) return null;
+  if (Array.isArray(value)) return value.map((item) => sanitizeAuditValue(item));
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, sanitizeAuditValue(entry)])
+    );
+  }
+  return value;
+}
+
+function sanitizeAuditSummary(summary: Record<string, unknown> | null) {
+  return sanitizeAuditValue(summary) as Record<string, unknown> | null;
+}
+
+function resolveGatewayConfigurationStatus(input: {
+  provider: string;
+  secretKeyRef: string | null;
+  webhookSecretRef: string | null;
+}): PaymentGatewayConfig["configurationStatus"] {
+  if (input.provider === "stripe" && input.secretKeyRef && input.webhookSecretRef) return "ready";
+  return "incomplete";
+}
+
 function createBillingAuditEntry(input: {
   action: string;
   entityType: string;
@@ -217,8 +241,8 @@ function createBillingAuditEntry(input: {
       uid: null,
       adminUid: input.adminUid,
       timestamp: input.timestamp,
-      beforeSummary: input.beforeSummary,
-      afterSummary: input.afterSummary,
+      beforeSummary: sanitizeAuditSummary(input.beforeSummary),
+      afterSummary: sanitizeAuditSummary(input.afterSummary),
       reason: input.reason,
       requestMetadata: null,
     },
@@ -734,6 +758,15 @@ async function updateAdminPaymentGateway(
     if (nextMinimum !== null && nextMaximum !== null && nextMinimum > nextMaximum) {
       throw new Error("Minimum amount cannot be greater than maximum amount.");
     }
+
+    const nextSecretKeyRef = (update.secretKeyRef as string | null | undefined) ?? before.secretKeyRef;
+    const nextWebhookSecretRef = (update.webhookSecretRef as string | null | undefined) ?? before.webhookSecretRef;
+    update.configurationStatus = resolveGatewayConfigurationStatus({
+      provider: before.provider,
+      secretKeyRef: nextSecretKeyRef,
+      webhookSecretRef: nextWebhookSecretRef,
+    });
+
     if (Object.keys(update).length <= 2) throw new Error("No editable gateway fields were provided.");
 
     updatedGateway = {
@@ -758,6 +791,7 @@ async function updateAdminPaymentGateway(
         publishableKeyRef: before.publishableKeyRef,
         secretKeyRef: before.secretKeyRef,
         webhookSecretRef: before.webhookSecretRef,
+        configurationStatus: before.configurationStatus,
         supportedCurrencies: before.supportedCurrencies,
         supportedCountries: before.supportedCountries,
         supportedPaymentTypes: before.supportedPaymentTypes,
@@ -774,6 +808,7 @@ async function updateAdminPaymentGateway(
         publishableKeyRef: updatedGateway.publishableKeyRef,
         secretKeyRef: updatedGateway.secretKeyRef,
         webhookSecretRef: updatedGateway.webhookSecretRef,
+        configurationStatus: updatedGateway.configurationStatus,
         supportedCurrencies: updatedGateway.supportedCurrencies,
         supportedCountries: updatedGateway.supportedCountries,
         supportedPaymentTypes: updatedGateway.supportedPaymentTypes,

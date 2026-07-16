@@ -1167,6 +1167,96 @@ Stage 22 slice document:
 Documentation/billing/Billing stage 22 customer payment history.md
 ```
 
+### Stage 23: Live Launch Preflight Report
+
+Goals:
+
+- summarize what still blocks live billing
+- show live launch review warnings before approval
+- display a compact current billing snapshot
+- keep the report read-only
+- avoid live approvals, provider calls, billing mutations, or schema changes
+
+Exit criteria:
+
+- readiness tab shows live launch blockers
+- readiness tab shows launch review warnings
+- readiness tab shows current billing snapshot counts
+- report remains read-only
+- TypeScript passes
+
+Stage 23 live launch preflight report completed:
+
+- added a live launch preflight panel to admin billing readiness
+- summarized gateway, mapping, live approval, webhook, checkout, and transaction readiness
+- kept existing live approval controls unchanged
+- kept the change display-only
+
+Stage 23 slice document:
+
+```text
+Documentation/billing/Billing stage 23 live launch preflight report.md
+```
+
+### Stage 24: Billing Closeout Checklist
+
+Goals:
+
+- avoid adding more billing features in this phase
+- document what is already in place
+- document what must stay blocked until explicit live approval
+- document manual checks before live billing
+- keep the stage documentation-only
+
+Exit criteria:
+
+- closeout checklist is documented
+- live approval guardrails are restated
+- manual verification checklist is recorded
+- no application code changes are made
+
+Stage 24 billing closeout checklist completed:
+
+- documented current billing capabilities
+- documented live billing controls that must remain blocked
+- documented manual verification before live billing approval
+- documented non-urgent cleanup items
+- made no code or runtime behavior changes
+
+Stage 24 slice document:
+
+```text
+Documentation/billing/Billing stage 24 billing closeout checklist.md
+```
+
+### Stage 25: Gateway Readiness Status Fix
+
+Goals:
+
+- remove the need for a manual gateway status field
+- derive Stripe gateway readiness from saved secret reference names
+- unblock sandbox checkout when gateway refs are configured
+- keep raw provider secrets out of Firestore
+
+Exit criteria:
+
+- newly created Stripe gateways can be marked ready from refs
+- edited Stripe gateways can move from incomplete to ready from refs
+- readiness status remains incomplete when required refs are missing
+- TypeScript passes
+
+Stage 25 gateway readiness status fix completed:
+
+- derived Stripe gateway `configurationStatus` from `secretKeyRef` and `webhookSecretRef`
+- applied the derivation on gateway creation and update
+- kept the admin UI free of raw secret values
+
+Stage 25 slice document:
+
+```text
+Documentation/billing/Billing stage 25 gateway readiness status fix.md
+```
+
 ## Important Constraints
 
 Preserve:

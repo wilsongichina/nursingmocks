@@ -164,6 +164,15 @@ export function normalizePlanName(value: string) {
     .join(" ");
 }
 
+function resolveGatewayConfigurationStatus(input: {
+  provider: string;
+  secretKeyRef: string | null;
+  webhookSecretRef: string | null;
+}): PaymentGatewayConfig["configurationStatus"] {
+  if (input.provider === "stripe" && input.secretKeyRef && input.webhookSecretRef) return "ready";
+  return "incomplete";
+}
+
 export function validateCreatePaymentGatewayInput(
   input: CreatePaymentGatewayInput,
   context: { existingGatewayIds?: string[]; adminUid?: string | null } = {}
@@ -227,7 +236,7 @@ export function validateCreatePaymentGatewayInput(
       secretKeyRef,
       webhookSecretRef,
       planIds: [],
-      configurationStatus: "incomplete",
+      configurationStatus: resolveGatewayConfigurationStatus({ provider, secretKeyRef, webhookSecretRef }),
       lastConnectionTestAt: null,
       lastConnectionTestStatus: "not_tested",
       lastSuccessfulWebhookAt: null,

@@ -341,9 +341,18 @@ function recordValue(record: Record<string, unknown>, key: string) {
   return record[key] ?? "";
 }
 
-function displayValue(value: unknown) {
+function displayValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "Not set";
-  if (Array.isArray(value)) return value.join(", ");
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "object" && item !== null && "message" in item) {
+          return String((item as { message?: unknown }).message ?? JSON.stringify(item));
+        }
+        return displayValue(item);
+      })
+      .join("; ");
+  }
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
@@ -1042,6 +1051,49 @@ function AdminBillingContent() {
     (plan) => plan.status === "active" && !activeMappings.some((mapping) => mapping.planId === plan.planId)
   );
   const incompleteGateways = config.gateways.filter((gateway) => gateway.configurationStatus !== "ready");
+  const liveApprovalSummaries = [
+    { id: "checkout" as const, label: "Live checkout", status: config.liveControls.checkout },
+    { id: "webhookEffects" as const, label: "Live webhook effects", status: config.liveControls.webhookEffects },
+    { id: "portal" as const, label: "Live billing portal", status: config.liveControls.portal },
+  ];
+  const preflightBlockers = [
+    ...gatewaysMissingRefs.map((gateway) => ({
+      label: `Gateway ${gateway.gatewayId} is missing secret references`,
+      detail: "Secret key and webhook secret references are required before live provider traffic can be trusted.",
+    })),
+    ...activePlansWithoutMappings.map((plan) => ({
+      label: `Plan ${plan.planId} has no active provider mapping`,
+      detail: "Active plans need an active provider price mapping before checkout can be considered ready.",
+    })),
+    ...incompleteGateways.map((gateway) => ({
+      label: `Gateway ${gateway.gatewayId} is not ready`,
+      detail: `Current configuration status: ${gateway.configurationStatus}.`,
+    })),
+    ...liveApprovalSummaries
+      .filter((control) => !control.status.approved)
+      .map((control) => ({
+        label: `${control.label} is not approved`,
+        detail: "Live behavior remains blocked by server-side approval controls.",
+      })),
+  ];
+  const preflightWarnings = [
+    ...(config.webhookEvents.length === 0
+      ? [{ label: "No webhook events recorded", detail: "Run and verify test webhooks before live launch." }]
+      : []),
+    ...(config.checkoutAttempts.length === 0
+      ? [{ label: "No checkout attempts recorded", detail: "Run test checkout from /payments before live launch." }]
+      : []),
+    ...(config.transactions.length === 0
+      ? [{ label: "No billing transactions recorded", detail: "Confirm verified webhook processing writes transaction records." }]
+      : []),
+  ];
+  const preflightReadyItems = [
+    `${activePlanCount} active plan(s)`,
+    `${enabledGatewayCount} enabled gateway(s)`,
+    `${activeMappings.length} active provider mapping(s)`,
+    `${config.webhookEvents.length} webhook event record(s)`,
+    `${config.checkoutAttempts.length} checkout attempt record(s)`,
+  ];
   const readinessChecks = [
     {
       label: "Live checkout remains disabled",
@@ -1851,6 +1903,66 @@ function AdminBillingContent() {
 
                 {activeTab === "readiness" && (
                 <Section title="Live Readiness" count={readinessChecks.length}>
+                  <div className="mb-4 grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-950">Live Launch Preflight</h3>
+                          <p className="mt-1 text-sm text-gray-600">
+                            A read-only summary of what still blocks live billing.
+                          </p>
+                        </div>
+                        <Pill tone={preflightBlockers.length === 0 ? "green" : "amber"}>
+                          {preflightBlockers.length === 0 ? "No blockers" : `${preflightBlockers.length} blocker(s)`}
+                        </Pill>
+                      </div>
+                      <div className="mt-4 grid gap-3">
+                        {preflightBlockers.length === 0 ? (
+                          <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                            No launch blockers were found in the current admin billing snapshot. Final owner approval and deployment checks are still required.
+                          </div>
+                        ) : (
+                          preflightBlockers.map((item) => (
+                            <div key={item.label} className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                              <p className="font-semibold">{item.label}</p>
+                              <p className="mt-1 text-xs">{item.detail}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4">
+                      <div className="rounded-xl border border-gray-200 bg-white p-4">
+                        <h3 className="text-base font-semibold text-gray-950">Needs Review</h3>
+                        <div className="mt-3 grid gap-2">
+                          {preflightWarnings.length === 0 ? (
+                            <p className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                              Test checkout, webhook, and transaction records are present.
+                            </p>
+                          ) : (
+                            preflightWarnings.map((item) => (
+                              <div key={item.label} className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                                <p className="font-semibold text-gray-950">{item.label}</p>
+                                <p className="mt-1 text-xs text-gray-600">{item.detail}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-gray-200 bg-white p-4">
+                        <h3 className="text-base font-semibold text-gray-950">Current Snapshot</h3>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {preflightReadyItems.map((item) => (
+                            <span key={item} className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
                     {readinessChecks.map((check) => (
                       <ReadinessCheckRow key={check.label} {...check} />
@@ -2162,6 +2274,7 @@ function AdminBillingContent() {
                       { key: "provider", label: "Provider" },
                       { key: "status", label: "Status" },
                       { key: "message", label: "Message" },
+                      { key: "readinessIssues", label: "Issue Details" },
                       { key: "createdAt", label: "Created" },
                     ]}
                   />
