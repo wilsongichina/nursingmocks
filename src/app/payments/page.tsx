@@ -47,6 +47,24 @@ function formatDate(value: unknown) {
   return "Not set";
 }
 
+function dateFromValue(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "string") {
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? new Date(timestamp) : null;
+  }
+  if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate();
+  }
+  return null;
+}
+
+function isCurrentAccessPeriod(value: unknown) {
+  const accessEnd = dateFromValue(value);
+  return accessEnd === null || accessEnd.getTime() > Date.now();
+}
+
 function formatMoney(amount: unknown, currency: unknown) {
   const numericAmount = typeof amount === "number" ? amount : Number(amount);
   const currencyCode = typeof currency === "string" && currency ? currency.toUpperCase() : "USD";
@@ -257,6 +275,11 @@ export default function PaymentsPage() {
     [billing?.plan_id, catalog?.plans]
   );
   const latestTransaction = history?.transactions[0] ?? null;
+  const hasActiveBillingPlan = Boolean(
+    billing?.plan_id &&
+      activeEntitlements.length > 0 &&
+      isCurrentAccessPeriod(billing.current_period_end)
+  );
   const testCheckoutAvailable = Boolean(
     catalog?.plans.some((plan) => {
       const assignedGateways = catalog.gateways.filter(
@@ -447,6 +470,8 @@ export default function PaymentsPage() {
                       );
                       const ready = Boolean(testGateway);
                       const checkingOut = checkoutPlanId === plan.planId;
+                      const alreadyActive = hasActiveBillingPlan && billing?.plan_id === plan.planId;
+                      const canCheckout = ready && !alreadyActive;
 
                       return (
                         <article
@@ -486,17 +511,28 @@ export default function PaymentsPage() {
                           <div className="mt-auto pt-5">
                             <button
                               type="button"
-                              disabled={!ready || checkingOut}
+                              disabled={!canCheckout || checkingOut}
                               onClick={() => void startCheckout(plan, testGateway?.gatewayId ?? null)}
                               className={`inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
-                                ready && !checkingOut
+                                canCheckout && !checkingOut
                                   ? "bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] hover:-translate-y-px hover:shadow-[0_18px_42px_rgba(79,70,229,.33)]"
                                   : "cursor-not-allowed border border-[#e0e3f0] bg-[#f5f6fb] text-[#a0a5bf]"
                               }`}
                             >
-                              {checkingOut ? "Starting checkout..." : ready ? "Continue to checkout" : "Configuration incomplete"}
-                              {ready && !checkingOut && <ArrowRight className="h-4 w-4" />}
+                              {checkingOut
+                                ? "Starting checkout..."
+                                : alreadyActive
+                                  ? "Already active"
+                                  : ready
+                                    ? "Continue to checkout"
+                                    : "Configuration incomplete"}
+                              {canCheckout && !checkingOut && <ArrowRight className="h-4 w-4" />}
                             </button>
+                            {alreadyActive && (
+                              <p className="mt-2 text-center text-xs font-medium text-[#7a819c]">
+                                This plan can be purchased again after your current access period ends.
+                              </p>
+                            )}
                           </div>
                         </article>
                       );

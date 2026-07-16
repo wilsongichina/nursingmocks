@@ -1320,6 +1320,37 @@ Stage 27 slice document:
 Documentation/billing/Billing stage 27 customer payments UI redesign.md
 ```
 
+### Stage 28: Duplicate Active Plan Checkout Prevention
+
+Goals:
+
+- prevent users from paying for the same active plan before the current access period ends
+- enforce the rule server-side before provider checkout creation
+- show a clear disabled state on `/payments` for already-active plans
+- keep transactions visible as payment history
+
+Exit criteria:
+
+- checkout session creation checks active same-plan entitlements
+- checkout session creation checks the user billing summary as a fallback
+- `accessEndsAt: null` is treated as active access with no expiration
+- `/payments` shows `Already active` for the current active plan
+- TypeScript passes
+
+Stage 28 duplicate active plan checkout prevention completed:
+
+- added a server-side active same-plan access guard before provider checkout session creation
+- logged blocked duplicate checkout attempts with readiness issue details
+- disabled the same active plan on `/payments`
+- kept server-side checkout validation as the source of truth
+- validated with `.\node_modules\.bin\tsc.cmd --noEmit`
+
+Stage 28 slice document:
+
+```text
+Documentation/billing/Billing stage 28 duplicate active plan checkout prevention.md
+```
+
 ## Important Constraints
 
 Preserve:
