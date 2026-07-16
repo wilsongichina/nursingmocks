@@ -1138,9 +1138,9 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                   teas: "TEAS",
                   "hesi-a2": "HESI A2",
                   nursing: "Nursing",
-                  "terms-and-conditions": "Terms and Conditions",
+                  "terms-and-conditions": "Terms & Conditions",
                   "privacy-policy": "Privacy Policy",
-                  "money-back-guarantee": "Money Back Guarantee",
+                  "money-back-guarantee": "Money-Back Guarantee",
                   guarantees: "Guarantees",
                 };
 
@@ -1235,9 +1235,9 @@ function LayoutWithoutSidebar({
         teas: "TEAS",
         "hesi-a2": "HESI A2",
         nursing: "Nursing",
-        "terms-and-conditions": "Terms and Conditions",
+        "terms-and-conditions": "Terms & Conditions",
         "privacy-policy": "Privacy Policy",
-        "money-back-guarantee": "Money Back Guarantee",
+        "money-back-guarantee": "Money-Back Guarantee",
         guarantees: "Guarantees",
       };
 

@@ -26,9 +26,9 @@ export default function NewHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-b from-[rgba(248,250,252,0.9)] to-[rgba(248,250,252,0.7)] backdrop-blur-[24px] border-b border-[rgba(148,163,184,0.18)]">
-      <div className=" max-w-[1320px] mx-auto ">
+      <div className="public-page-container">
         <div
-          className="flex items-center justify-between py-[0.9rem] gap-4"
+          className="flex items-center justify-between py-3 sm:py-[0.9rem] gap-4"
           style={{
             fontFamily:
               'system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif',
@@ -36,13 +36,13 @@ export default function NewHeader() {
         >
           {/* Logo */}
           <div className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/" className="flex min-w-0 items-center gap-2.5" aria-label="NursingMocks home">
               <Image
                 src="/nursing-mocks-logo.png"
                 alt="NursingMocks Logo"
                 width={150}
                 height={40}
-                className="h-9 w-auto object-contain"
+                className="h-8 w-auto max-w-[168px] object-contain sm:h-9"
                 priority
               />
             </Link>
@@ -70,7 +70,7 @@ export default function NewHeader() {
                     className="opacity-60 translate-y-[1px]"
                     style={{ fontSize: "0.7rem" }}
                   >
-                    ▾
+                    v
                   </span>
                 </Link>
                 {hoveredDropdown === "entrance" && (
@@ -269,7 +269,7 @@ export default function NewHeader() {
                     className="opacity-60 translate-y-[1px]"
                     style={{ fontSize: "0.7rem" }}
                   >
-                    ▾
+                    v
                   </span>
                 </Link>
                 {hoveredDropdown === "testbank" && (
@@ -366,7 +366,7 @@ export default function NewHeader() {
                     className="opacity-60 translate-y-[1px]"
                     style={{ fontSize: "0.7rem" }}
                   >
-                    ▾
+                    v
                   </span>
                 </Link>
                 {hoveredDropdown === "exit" && (
@@ -463,7 +463,7 @@ export default function NewHeader() {
                     className="opacity-60 translate-y-[1px]"
                     style={{ fontSize: "0.7rem" }}
                   >
-                    ▾
+                    v
                   </span>
                 </Link>
                 {hoveredDropdown === "company" && (
@@ -506,7 +506,7 @@ export default function NewHeader() {
                                 fontSize: "0.83rem",
                               }}
                             >
-                              Privacy policy
+                              Privacy Policy
                             </Link>
                           </li>
                           <li>
@@ -518,7 +518,7 @@ export default function NewHeader() {
                                 fontSize: "0.83rem",
                               }}
                             >
-                              Terms &amp; conditions
+                              Terms &amp; Conditions
                             </Link>
                           </li>
                           <li>
@@ -530,7 +530,7 @@ export default function NewHeader() {
                                 fontSize: "0.83rem",
                               }}
                             >
-                              Money-back guarantee
+                              Money-Back Guarantee
                             </Link>
                           </li>
                         </ul>
@@ -566,8 +566,9 @@ export default function NewHeader() {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-[#111827] hover:text-[#4f46e5] focus:outline-none transition-colors"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#111827] hover:bg-[#eef2ff] hover:text-[#4f46e5] focus:outline-none focus:ring-2 focus:ring-[#c7d2fe] transition-colors"
               aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? (
                 <svg
@@ -612,8 +613,8 @@ export default function NewHeader() {
             onClick={() => setIsMobileMenuOpen(false)}
           />
           {/* Mobile Menu */}
-          <div className="lg:hidden border-t border-[rgba(148,163,184,0.18)] bg-white fixed left-0 right-0 top-[57px] overflow-y-auto z-50" style={{ maxHeight: 'calc(100vh - 57px)', height: 'calc(100vh - 57px)' }}>
-            <div className="max-w-[1200px] mx-auto px-6 py-4">
+          <div className="lg:hidden border-t border-[rgba(148,163,184,0.18)] bg-white fixed left-0 right-0 top-[65px] overflow-y-auto z-50" style={{ maxHeight: 'calc(100vh - 65px)', height: 'calc(100vh - 65px)' }}>
+            <div className="public-page-container py-4">
             <nav className="space-y-1">
               {/* Mobile CTA / Profile Badge */}
               <div className="border-b border-[rgba(148,163,184,0.1)] pb-3 mb-3">
@@ -949,7 +950,7 @@ export default function NewHeader() {
                       className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                       style={{ fontSize: "0.83rem" }}
                     >
-                      Privacy policy
+                      Privacy Policy
                     </Link>
                   </li>
                   <li>
@@ -959,7 +960,7 @@ export default function NewHeader() {
                       className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                       style={{ fontSize: "0.83rem" }}
                     >
-                      Terms &amp; conditions
+                      Terms &amp; Conditions
                     </Link>
                   </li>
                   <li>
@@ -969,7 +970,7 @@ export default function NewHeader() {
                       className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                       style={{ fontSize: "0.83rem" }}
                     >
-                      Money-back guarantee
+                      Money-Back Guarantee
                     </Link>
                   </li>
                 </ul>

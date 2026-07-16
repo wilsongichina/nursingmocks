@@ -36,15 +36,13 @@ export default function MoneyBackGuaranteePage() {
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-[#eef2ff] to-[#fdf2ff] border-b border-[#e5e7eb]">
         <section
-          className="mx-auto"
+          className="public-page-container"
           style={{
-            width: "94%",
-            maxWidth: "980px",
-            margin: "0 auto",
             paddingTop: "42px",
             paddingBottom: "30px",
           }}
         >
+          <div style={{ maxWidth: "980px", margin: "0 auto" }}>
           <div className="flex flex-wrap gap-[10px] items-center mb-[8px] text-[12px] uppercase tracking-[0.18em] text-[#4f46e5]">
             <span
               className="rounded-full border border-[#c4b5fd] bg-white/70 text-[#4c1d95]"
@@ -99,16 +97,14 @@ export default function MoneyBackGuaranteePage() {
               Always read this together with our Terms &amp; Conditions.
             </span>
           </div>
+          </div>
         </section>
       </div>
 
       {/* Main Content */}
       <main
-        className="mx-auto"
+        className="public-page-container"
         style={{
-          width: "94%",
-          maxWidth: "1320px",
-          margin: "0 auto",
           paddingTop: "30px",
           paddingBottom: "40px",
           display: "flex",

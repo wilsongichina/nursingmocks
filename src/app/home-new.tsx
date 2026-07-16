@@ -58,16 +58,16 @@ export default function NewHomePage() {
                   </div>
                   <div className="flex flex-col gap-1.5 mb-1.5">
                     <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-2.5 py-1.5 text-[13px] text-left cursor-pointer transition-all hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      ATI TEAS entrance exam
+                      ATI TEAS Entrance Exam
                     </button>
                     <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-2.5 py-1.5 text-[13px] text-left cursor-pointer transition-all hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      HESI A2 entrance exam
+                      HESI A2 Entrance Exam
                     </button>
                     <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-2.5 py-1.5 text-[13px] text-left cursor-pointer transition-all hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      ATI or HESI nursing test bank (class tests)
+                      ATI or HESI Nursing Test Bank (class tests)
                     </button>
                     <button className="rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-2.5 py-1.5 text-[13px] text-left cursor-pointer transition-all hover:border-[#6366f1] hover:bg-[#eef2ff] hover:text-[#111827]">
-                      LPN or RN nursing exit exam
+                      LPN or RN Nursing Exit Exam
                     </button>
                   </div>
                   <div className="flex items-center justify-between mt-1 text-[11px] text-[#6b7280]">
@@ -98,20 +98,20 @@ export default function NewHomePage() {
           <div className="text-center mb-4">
             <h2 className="text-[22px] mb-1">Proven Results For Real Nursing Students</h2>
             <p className="text-[13px] text-[#6b7280] max-w-[640px] mx-auto">
-              NursingMocks is built to support you across every ATI &amp; HESI stage — from ATI TEAS or HESI A2, through ATI/HESI test banks,
-              all the way to nursing exit exams for LPN and RN programs.
+              NursingMocks is built to support you across every ATI &amp; HESI stage — from ATI TEAS or HESI A2, through ATI/HESI Test Banks,
+              all the way to Nursing Exit Exams for LPN and RN programs.
             </p>
           </div>
           <div className="grid grid-cols-4 gap-4 mt-[18px]">
             <article className="bg-white rounded-[14px] p-3.5 pb-3 border border-[#e5e7eb]">
               <div className="text-[11px] uppercase tracking-[0.16em] text-[#9ca3af]">Practice questions</div>
               <div className="text-lg font-semibold mt-1 text-[#111827]">17,000+ items</div>
-              <div className="text-xs text-[#6b7280] mt-1">Nursing-style TEAS, HESI, test bank &amp; exit exam questions.</div>
+              <div className="text-xs text-[#6b7280] mt-1">Nursing-style TEAS, HESI, Test Bank &amp; Exit Exam questions.</div>
             </article>
             <article className="bg-white rounded-[14px] p-3.5 pb-3 border border-[#e5e7eb]">
               <div className="text-[11px] uppercase tracking-[0.16em] text-[#9ca3af]">Exam types</div>
               <div className="text-lg font-semibold mt-1 text-[#111827]">3 major paths</div>
-              <div className="text-xs text-[#6b7280] mt-1">Nursing test bank · nursing exit exams · nursing entrance exams.</div>
+              <div className="text-xs text-[#6b7280] mt-1">Nursing Test Bank · Nursing Exit Exams · Nursing Entrance Exams.</div>
             </article>
             <article className="bg-white rounded-[14px] p-3.5 pb-3 border border-[#e5e7eb]">
               <div className="text-[11px] uppercase tracking-[0.16em] text-[#9ca3af]">Tracks</div>
@@ -136,16 +136,16 @@ export default function NewHomePage() {
               <h2 className="text-[22px]">Nursing Exams We Cover</h2>
             </div>
             <p className="text-[13px] text-[#6b7280] max-w-[440px]">
-              Choose where you are in the nursing journey. We organize content into nursing test bank, nursing exit exams, and
-              nursing entrance exams (ATI TEAS &amp; HESI A2) so you always know what to focus on.
+              Choose where you are in the nursing journey. We organize content into Nursing Test Bank, Nursing Exit Exams, and
+              Nursing Entrance Exams (ATI TEAS &amp; HESI A2) so you always know what to focus on.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-5">
             {/* Program Card 1 */}
             <article className="bg-white rounded-[20px] border border-[#e5e7eb] p-4 pb-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] flex flex-col gap-2.5">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">Nursing test bank</div>
-              <h3 className="text-[17px] font-semibold text-[#111827]">LPN &amp; RN question banks</h3>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">Nursing Test Bank</div>
+              <h3 className="text-[17px] font-semibold text-[#111827]">LPN &amp; RN Question Banks</h3>
               <p className="text-[13px] text-[#6b7280]">
                 Practice with module-tagged ATI &amp; HESI questions that match your classroom quizzes and proctored tests.
               </p>
@@ -154,11 +154,11 @@ export default function NewHomePage() {
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">LPN</div>
                   <div>
                     <Link href="/nursing-test-bank/lpn/ati" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>ATI – LPN test bank</strong>
+                      <strong>ATI – LPN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">Fundamentals, med-surg, pharm &amp; more</small>
                     </Link>
                     <Link href="/nursing-test-bank/lpn/hesi" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>HESI – LPN test bank</strong>
+                      <strong>HESI – LPN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">Core modules &amp; practice sets</small>
                     </Link>
                   </div>
@@ -167,11 +167,11 @@ export default function NewHomePage() {
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">RN</div>
                   <div>
                     <Link href="/nursing-test-bank/rn/ati" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>ATI – RN test bank</strong>
+                      <strong>ATI – RN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">Predictor-style question groups</small>
                     </Link>
                     <Link href="/nursing-test-bank/rn/hesi" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>HESI – RN test bank</strong>
+                      <strong>HESI – RN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">RN modules &amp; review sets</small>
                     </Link>
                   </div>
@@ -180,14 +180,14 @@ export default function NewHomePage() {
               <div className="flex items-center justify-between mt-1 text-xs text-[#6b7280]">
                 <span><strong className="text-[#111827]">Use this for:</strong> weekly tests &amp; unit exams</span>
                 <Link href="/nursing-test-bank" className="rounded-full px-2.5 py-1 text-[11px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
-                  Browse all nursing test banks
+                  Browse All Nursing Test Banks
                 </Link>
               </div>
             </article>
 
             {/* Program Card 2 */}
             <article className="bg-white rounded-[20px] border border-[#e5e7eb] p-4 pb-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] flex flex-col gap-2.5">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">Nursing exit exams</div>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">Nursing Exit Exams</div>
               <h3 className="text-[17px] font-semibold text-[#111827]">Capstone exam practice</h3>
               <p className="text-[13px] text-[#6b7280]">
                 Use RN and LPN exit-exam style tests to rehearse timing, question mix, and difficulty before your final.
@@ -197,11 +197,11 @@ export default function NewHomePage() {
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">LPN</div>
                   <div>
                     <Link href="/nursing-exit-exams/ati-lpn" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>ATI – LPN exit exams</strong>
+                        <strong>ATI – LPN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">End-of-program blueprints</small>
                     </Link>
                     <Link href="/nursing-exit-exams/hesi-lpn" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>HESI – LPN exit exams</strong>
+                        <strong>HESI – LPN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">Exit-style mock exams</small>
                     </Link>
                   </div>
@@ -210,11 +210,11 @@ export default function NewHomePage() {
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">RN</div>
                   <div>
                     <Link href="/nursing-exit-exams/ati-rn" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>ATI – RN exit exams</strong>
+                        <strong>ATI – RN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">Comprehensive predictor-style sets</small>
                     </Link>
                     <Link href="/nursing-exit-exams/hesi-rn" className="block py-0.5 text-[13px] text-[#4f46e5]">
-                      <strong>HESI – RN exit exams</strong>
+                        <strong>HESI – RN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">Exit readiness practice</small>
                     </Link>
                   </div>
@@ -223,15 +223,15 @@ export default function NewHomePage() {
               <div className="flex items-center justify-between mt-1 text-xs text-[#6b7280]">
                 <span><strong className="text-[#111827]">Use this for:</strong> final semester &amp; graduation</span>
                 <Link href="/nursing-exit-exams" className="rounded-full px-2.5 py-1 text-[11px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
-                  View nursing exit exam prep
+                  View Nursing Exit Exam Prep
                 </Link>
               </div>
             </article>
 
             {/* Program Card 3 */}
             <article className="bg-white rounded-[20px] border border-[#e5e7eb] p-4 pb-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] flex flex-col gap-2.5">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">Nursing entrance exams</div>
-              <h3 className="text-[17px] font-semibold text-[#111827]">Get into your nursing program</h3>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#6b7280]">Nursing Entrance Exams</div>
+              <h3 className="text-[17px] font-semibold text-[#111827]">Get Into Your Nursing Program</h3>
               <p className="text-[13px] text-[#6b7280]">
                 Focused practice for ATI TEAS and HESI A2, with subject breakdowns and realistic question styles.
               </p>
@@ -258,7 +258,7 @@ export default function NewHomePage() {
               <div className="flex items-center justify-between mt-1 text-xs text-[#6b7280]">
                 <span><strong className="text-[#111827]">Use this for:</strong> nursing school admission</span>
                 <Link href="/nursing-entrance-exams" className="rounded-full px-2.5 py-1 text-[11px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
-                  Start nursing entrance exam prep
+                  Start Nursing Entrance Exam Prep
                 </Link>
               </div>
             </article>
@@ -274,15 +274,15 @@ export default function NewHomePage() {
                 <h2 className="text-[22px]">How NursingMocks Works</h2>
               </div>
               <p className="text-[13px] text-[#6b7280] max-w-[440px] mt-2">
-                Instead of juggling different TEAS, HESI, test bank and exit-exam resources, you move through one flow that keeps everything connected.
+                Instead of juggling different TEAS, HESI, Nursing Test Bank and Nursing Exit Exam resources, you move through one flow that keeps everything connected.
               </p>
             </div>
             <div className="grid grid-cols-4 gap-[18px]">
               {[
-                { num: "1", title: "Pick your path", text: "Start with where you are: ATI TEAS, HESI A2, nursing test bank (LPN/RN · ATI/HESI), or nursing exit exams." },
-                { num: "2", title: "Take a diagnostic", text: "Use a TEAS or HESI-style test to see your baseline and identify which subjects and skills need attention." },
-                { num: "3", title: "Practice with feedback", text: "Work through nursing test bank sets and entrance/exit practice with explanations so you know why answers are right or wrong." },
-                { num: "4", title: "Simulate the real exam", text: "Finish with full-length exams that mimic the real timing and pressure for TEAS, HESI A2, or exit exams." },
+                { num: "1", title: "Pick Your Path", text: "Start with where you are: ATI TEAS, HESI A2, Nursing Test Bank (LPN/RN · ATI/HESI), or Nursing Exit Exams." },
+                { num: "2", title: "Take A Diagnostic", text: "Use a TEAS or HESI-style test to see your baseline and identify which subjects and skills need attention." },
+                { num: "3", title: "Practice With Feedback", text: "Work through Nursing Test Bank sets and Entrance/Exit practice with explanations so you know why answers are right or wrong." },
+                { num: "4", title: "Simulate The Real Exam", text: "Finish with full-length exams that mimic the real timing and pressure for TEAS, HESI A2, or Nursing Exit Exams." },
               ].map((step) => (
                 <article key={step.num} className="bg-[#f9fafb] rounded-[14px] p-3.5 pb-3 border border-[#e5e7eb] text-[13px]">
                   <div className="w-6 h-6 rounded-full border border-[#e5e7eb] flex items-center justify-center text-xs mb-1.5 text-[#4b5563] bg-white">
@@ -315,7 +315,7 @@ export default function NewHomePage() {
                 title: "High-quality nursing questions",
                 text: "Every question is written to feel like ATI or HESI: nursing-focused stems, realistic distractors, and exam-level difficulty.",
                 list: [
-                  "Modeled on ATI TEAS & HESI A2 blueprints and nursing test bank topics.",
+                  "Modeled on ATI TEAS & HESI A2 blueprints and Nursing Test Bank topics.",
                   "Balanced mix of easier warm-ups and harder \"exam shock\" questions.",
                   "Updated regularly so you are not drilling outdated wording or content.",
                 ],
@@ -336,7 +336,7 @@ export default function NewHomePage() {
                 text: "Instead of guessing what to review next, you use your results to build a simple, realistic plan around your actual weak spots.",
                 list: [
                   "See which subjects and skills are pulling your ATI TEAS or HESI scores down.",
-                  "Shift between entrance, test bank and exit exams without losing your focus areas.",
+                  "Shift between Nursing Entrance Exams, Nursing Test Banks, and Nursing Exit Exams without losing your focus areas.",
                   "Create short daily blocks (20–40 minutes) that target one clear goal at a time.",
                 ],
               },
@@ -366,7 +366,7 @@ export default function NewHomePage() {
                 <h2>Start With The Module That Matches You Right Now</h2>
               </div>
               <p className="text-[13px] text-[#6b7280] max-w-[420px]">
-                Entrance exams, nursing test banks and exit exams all live under one roof.
+                Nursing Entrance Exams, Nursing Test Banks, and Nursing Exit Exams all live under one roof.
                 Choose where you are today — you can always move between modules later.
               </p>
             </div>
@@ -374,7 +374,7 @@ export default function NewHomePage() {
             {/* Entrance Exams Group */}
             <div className="mt-[18px]">
               <h3 className="text-sm uppercase tracking-[0.16em] text-[#9ca3af] mb-2.5">
-                Nursing entrance exams · ATI TEAS &amp; HESI A2
+                Nursing Entrance Exams · ATI TEAS &amp; HESI A2
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 {/* ATI TEAS Card */}
@@ -431,7 +431,7 @@ export default function NewHomePage() {
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#fed7aa] bg-[#fffbeb] text-[#9a3412] text-[11px] mb-2">
                       Entrance exam · HESI A2
                     </div>
-                    <h2 className="text-lg font-semibold mb-1.5 text-[#111827]">HESI A2 – full-length entrance exam</h2>
+                    <h2 className="text-lg font-semibold mb-1.5 text-[#111827]">HESI A2 – Full-Length Entrance Exam</h2>
                     <p className="text-[13px] text-[#4b5563] mb-2.5 max-w-[520px]">
                       Practice the HESI A2 with questions that mirror the real exam: vocab-heavy reading,
                       straightforward math, and A&amp;P basics built for pre-nursing students.
@@ -486,7 +486,7 @@ export default function NewHomePage() {
               <h1 className="m-0 mb-2.5 text-[clamp(28px,4vw,34px)] font-bold">Frequently Asked Questions</h1>
               <p className="m-0 text-[15px] leading-relaxed text-[#6b7280] max-w-[640px] mx-auto">
                 Get answers to the most common questions about our TEAS, HESI and nursing exam prep —
-                and how NursingMocks can support you from entrance exams to exit exams.
+                and how NursingMocks can support you from Nursing Entrance Exams to Nursing Exit Exams.
               </p>
             </header>
 
@@ -508,8 +508,8 @@ export default function NewHomePage() {
                     degrees in education or advanced practice nursing.
                   </p>
                   <p className="m-0 mb-2.5">
-                    Because they have worked with ATI TEAS, HESI A2, ATI &amp; HESI test banks and
-                    nursing exit exams, they understand how questions are written, how scoring works,
+                    Because they have worked with ATI TEAS, HESI A2, ATI &amp; HESI Test Banks and
+                    Nursing Exit Exams, they understand how questions are written, how scoring works,
                     and which content actually appears on exams — not just what textbooks repeat.
                   </p>
                   <p className="m-0">
@@ -526,15 +526,15 @@ export default function NewHomePage() {
         {/* Closing CTA */}
         <section className="my-[34px] mx-0 bg-[#111827] rounded-[22px] p-4 px-[18px] pb-3.5 text-[#f9fafb] flex items-center justify-between gap-3.5 text-[13px]">
           <div>
-            <strong className="text-base">Ready to organize your TEAS, HESI, test banks, and exit exams in one place?</strong>
+            <strong className="text-base">Ready to organize your TEAS, HESI, Test Banks, and Exit Exams in one place?</strong>
             <div>Pick your path, start with a free TEAS or HESI diagnostic, and keep using NursingMocks as you move through nursing school.</div>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Link href="#exam-modules" className="rounded-full px-4 py-2.5 text-sm border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
-              Explore all nursing exam modules
+              Explore All Nursing Exam Modules
             </Link>
             <Link href="#programs" className="rounded-full px-4 py-2.5 text-sm border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
-              Browse all nursing programs
+              Browse All Nursing Programs
             </Link>
           </div>
         </section>
@@ -553,7 +553,7 @@ export default function NewHomePage() {
               </Link>
               <div className="text-sm text-[#9ca3af] max-w-[380px] leading-relaxed">
                 Your trusted partner for nursing exam prep.
-                Practice ATI TEAS, HESI A2, nursing test banks and exit exams in one place —
+                Practice ATI TEAS, HESI A2, Nursing Test Banks, and Nursing Exit Exams in one place —
                 with realistic questions and explanations that feel like the real thing.
               </div>
               <div className="flex gap-2.5 items-center">
@@ -588,4 +588,3 @@ export default function NewHomePage() {
     </div>
   );
 }
-

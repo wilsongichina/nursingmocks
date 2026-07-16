@@ -15,6 +15,9 @@
   --user-page-max-width: 1360px;
   --user-page-gutter: 32px;
   --user-page-gutter-mobile: 28px;
+  --public-page-max-width: 1320px;
+  --public-page-gutter: 6vw;
+  --public-page-gutter-mobile: 28px;
 }
 
 @theme inline {
@@ -61,6 +64,14 @@ body {
   width: min(100% - var(--user-page-gutter), var(--user-page-max-width));
   margin-inline: auto;
   padding-block: 18px 56px;
+}
+
+/* Shared public/company page width.
+   Use this for the homepage and public company pages so marketing, support,
+   legal, and informational pages align to the same content measure. */
+.public-page-container {
+  width: min(100% - var(--public-page-gutter), var(--public-page-max-width));
+  margin-inline: auto;
 }
 
 .user-page-header {
@@ -968,6 +979,10 @@ body {
   .user-page-container {
     width: min(100% - var(--user-page-gutter-mobile), var(--user-page-max-width));
     padding-block: 14px 46px;
+  }
+
+  .public-page-container {
+    width: min(100% - var(--public-page-gutter-mobile), var(--public-page-max-width));
   }
 
   .user-page-header {

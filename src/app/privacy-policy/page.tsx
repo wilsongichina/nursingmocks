@@ -12,37 +12,37 @@ export default function PrivacyPolicyPage() {
 
       {/* Privacy Hero */}
       <div className="bg-gradient-to-br from-[#eef2ff] to-[#fdf2ff] border-b border-[#e5e7eb]">
-        <section className="max-w-[1320px] mx-auto w-[94%] py-[42px] pb-[30px]">
+        <section className="public-page-container py-[42px] pb-[30px]">
           <div className="max-w-[980px] mx-auto">
-          <div className="text-[12px] uppercase tracking-[0.18em] text-[#4f46e5] flex gap-[10px] items-center flex-wrap mb-2">
-            <span className="px-[10px] py-1 rounded-full border border-[#c4b5fd] bg-[rgba(255,255,255,0.7)] text-[#4c1d95]">
-              Privacy &amp; Data Protection
-            </span>
-            <span>How we treat the information you share with NursingMocks</span>
-          </div>
-          <h1 className="text-[clamp(30px,3.4vw,38px)] m-0 mb-[10px] leading-[1.08] font-bold">
+            <div className="text-[12px] uppercase tracking-[0.18em] text-[#4f46e5] flex gap-[10px] items-center flex-wrap mb-2">
+              <span className="px-[10px] py-1 rounded-full border border-[#c4b5fd] bg-[rgba(255,255,255,0.7)] text-[#4c1d95]">
+                Privacy &amp; Data Protection
+              </span>
+              <span>How we treat the information you share with NursingMocks</span>
+            </div>
+            <h1 className="text-[clamp(30px,3.4vw,38px)] m-0 mb-[10px] leading-[1.08] font-bold">
               Privacy Policy
             </h1>
-          <p className="text-[15px] max-w-[780px] text-[#4b5563] leading-[1.7] m-0 mb-[14px]">
-            When you sign up for TEAS or HESI practice, you trust us with exam scores, study habits, and contact details.
-            This page explains, in plain language, what we collect, why we collect it, and the choices you have.
-          </p>
+            <p className="text-[15px] max-w-[780px] text-[#4b5563] leading-[1.7] m-0 mb-[14px]">
+              When you sign up for TEAS or HESI practice, you trust us with exam scores, study habits, and contact details.
+              This page explains, in plain language, what we collect, why we collect it, and the choices you have.
+            </p>
 
-          <div className="flex flex-wrap gap-3 items-center text-xs text-[#6b7280]">
-            <div className="inline-flex items-center gap-1.5 px-[11px] py-1.5 rounded-full bg-[rgba(255,255,255,0.98)] border border-[#e5e7eb] text-[#111827]">
-              <svg className="w-[11px] h-[11px] text-[#10b981]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18l6 2.25v4.81c0 4.12-2.69 7.77-6 8.89-3.31-1.12-6-4.77-6-8.89V6.43l6-2.25z"/>
-              </svg>
-              Last updated: <span>December 5, 2025</span>
+            <div className="flex flex-wrap gap-3 items-center text-xs text-[#6b7280]">
+              <div className="inline-flex items-center gap-1.5 px-[11px] py-1.5 rounded-full bg-[rgba(255,255,255,0.98)] border border-[#e5e7eb] text-[#111827]">
+                <svg className="w-[11px] h-[11px] text-[#10b981]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18l6 2.25v4.81c0 4.12-2.69 7.77-6 8.89-3.31-1.12-6-4.77-6-8.89V6.43l6-2.25z"/>
+                </svg>
+                Last updated: <span>December 5, 2025</span>
+              </div>
+              <span>We review this policy whenever we ship meaningful product changes.</span>
             </div>
-            <span>We review this policy whenever we ship meaningful product changes.</span>
           </div>
-        </div>
-      </section>
+        </section>
       </div>
 
       {/* Privacy Main Content */}
-      <main className="flex-1 py-[30px] pb-10 flex justify-center max-w-[1320px] w-[94%] mx-auto">
+      <main className="flex-1 py-[30px] pb-10 flex justify-center public-page-container">
         <section className="w-full max-w-[980px]">
           <article className="bg-white rounded-[22px] border border-[#e5e7eb] pt-[18px] px-4 pb-4 md:pt-[22px] md:px-[22px] md:pb-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
             <p className="mt-1 text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">

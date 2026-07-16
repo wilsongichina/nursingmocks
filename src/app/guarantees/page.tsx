@@ -26,7 +26,7 @@ export default function GuaranteesPage() {
     <Layout>
       {/* Hero Section */}
       <section className="gradient-bg text-white py-[1.25rem]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="public-page-container">
           {/* Breadcrumb */}
           <div className="mb-8">
             <Breadcrumb
@@ -177,7 +177,7 @@ export default function GuaranteesPage() {
 
       {/* CTA Section */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="public-page-container">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 text-white shadow-2xl">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4">

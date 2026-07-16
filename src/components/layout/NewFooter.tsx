@@ -66,8 +66,8 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
               />
             </Link>
             <div className="text-[14px] text-[#9ca3af] max-w-[380px] leading-[1.5]">
-              NursingMocks helps nursing students move from entrance exams to graduation with one organized prep hub:
-              ATI TEAS, HESI A2, ATI &amp; HESI Nursing Practice Tests, and nursing exit exams for LPN &amp; RN programs.
+              NursingMocks helps nursing students move from Nursing Entrance Exams to graduation with one organized prep hub:
+              ATI TEAS, HESI A2, ATI &amp; HESI Nursing Practice Tests, and Nursing Exit Exams for LPN &amp; RN programs.
             </div>
           </div>
 
@@ -123,19 +123,19 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
               href="/privacy-policy"
               className="block text-[13px] text-[#9ca3af] mb-1.5 no-underline hover:text-[#f9fafb] hover:translate-x-[2px] transition-all"
             >
-              Privacy policy
+              Privacy Policy
             </Link>
             <Link
               href="/terms-and-conditions"
               className="block text-[13px] text-[#9ca3af] mb-1.5 no-underline hover:text-[#f9fafb] hover:translate-x-[2px] transition-all"
             >
-              Terms &amp; conditions
+              Terms &amp; Conditions
             </Link>
             <Link
               href="/money-back-guarantee"
               className="block text-[13px] text-[#9ca3af] mb-1.5 no-underline hover:text-[#f9fafb] hover:translate-x-[2px] transition-all"
             >
-              Money-back guarantee
+              Money-Back Guarantee
             </Link>
           </div>
 

@@ -106,7 +106,7 @@ export default function Footer() {
                     href="/faqs"
                     className="hover:text-white transition-colors text-left"
                   >
-                    FAQS
+                    FAQs
                   </Link>
                 </li>
                 <li>
@@ -114,7 +114,7 @@ export default function Footer() {
                     href="/how-it-works"
                     className="hover:text-white transition-colors text-left"
                   >
-                    How it Works
+                    How It Works
                   </Link>
                 </li>
                 <li>
@@ -160,7 +160,7 @@ export default function Footer() {
                     href="/terms-and-conditions"
                     className="hover:text-white transition-colors text-left"
                   >
-                    Terms and Conditions
+                    Terms &amp; Conditions
                   </Link>
                 </li>
                 <li>
@@ -168,7 +168,7 @@ export default function Footer() {
                     href="/money-back-guarantee"
                     className="hover:text-white transition-colors text-left"
                   >
-                    Money Back Guarantee
+                    Money-Back Guarantee
                   </Link>
                 </li>
               </ul>
