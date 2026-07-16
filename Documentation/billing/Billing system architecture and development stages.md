@@ -1343,6 +1343,8 @@ Stage 28 duplicate active plan checkout prevention completed:
 - logged blocked duplicate checkout attempts with readiness issue details
 - disabled the same active plan on `/payments`
 - kept server-side checkout validation as the source of truth
+- documented that `accessEndsAt: null` means lifetime/permanent access and blocks duplicate checkout indefinitely
+- documented that future time-limited one-time plans must write a real `accessEndsAt` timestamp before repurchase can be allowed after expiry
 - validated with `.\node_modules\.bin\tsc.cmd --noEmit`
 
 Stage 28 slice document:

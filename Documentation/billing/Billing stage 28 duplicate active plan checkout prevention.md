@@ -34,6 +34,18 @@ This is a checkout safety guard. It does not remove payment history, entitlement
 - A user may buy the same plan again only after the current access period has ended.
 - Server-side checkout blocking is the source of truth; the UI disabled state is only a user experience improvement.
 
+## Future Access Period Rule
+
+Do not leave the access period ambiguous in future billing updates.
+
+Use this rule:
+
+- Lifetime or permanent one-time access: keep `accessEndsAt: null`; duplicate checkout for the same plan remains blocked indefinitely.
+- Time-limited one-time access: write an exact `accessEndsAt` timestamp when the webhook grants access; duplicate checkout for the same plan stays blocked until that timestamp passes.
+- Unknown access period: do not treat it as a configurable middle state. Decide whether the plan is lifetime or time-limited before enabling checkout.
+
+Future admin plan work should add an explicit access-duration field before offering time-limited one-time plans. The webhook state writer should then calculate and store `accessEndsAt` from that plan duration.
+
 ## Validation
 
 Completed:
