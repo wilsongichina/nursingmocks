@@ -45,6 +45,9 @@ export interface UserDocumentAuth {
 export interface UserDocumentLoginMetrics {
   total_logins: number;
   last_session_id: string | null;
+  last_ip_address: string | null;
+  last_user_agent: string | null;
+  last_login_provider: UserDocumentAuthProvider | null;
 }
 
 export interface UserDocumentBilling {

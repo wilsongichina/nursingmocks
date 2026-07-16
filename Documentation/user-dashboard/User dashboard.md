@@ -1023,6 +1023,181 @@ Validation:
 
 Result: passed.
 
+## Follow-up: My Exams UI-first page
+
+Implemented the first UI-focused version of the user `My Exams` route.
+
+Files added:
+
+- `src/app/dashboard/my-exams/page.tsx`
+- `src/lib/my-exams/get-my-exams.ts`
+- `src/lib/my-exams/types.ts`
+- `src/lib/my-exams/__tests__/get-my-exams.test.ts`
+
+Files updated:
+
+- `src/components/layout/Sidebar.tsx`
+
+What changed:
+
+- added `/dashboard/my-exams` using the existing authenticated dashboard layout and shared `user-*` typography system
+- changed the sidebar `My Exams` item from the old dashboard anchor to the new route
+- added a typed My Exams view model that derives access from `users/{uid}.entitlements`
+- kept billing status out of exam-access decisions
+- added access summary, search, family filter, subject filter, access filter, sort control, and functional status tabs
+- added grouped exam cards for Nursing Entrance Exams, Nursing Test Bank, and Nursing Exit Exams
+- represented preview-enabled entrance exam content with `Preview` badges and `Start Free Preview` actions
+- represented unavailable paid packages in a compact `More exams available` section
+- intentionally did not show fake unfinished attempts, completed exams, scores, or progress because no confirmed owner-scoped attempt/result collection exists yet
+- kept start/review actions routed into existing page areas instead of duplicating exam-taking logic
+
+Typography follow-up:
+
+- aligned the My Exams tabs with the shared `user-tabs` and `user-tab` typography pattern
+- replaced one-off card value text classes with shared `user-card-title` and `user-label` classes
+- kept My Exams surfaces, buttons, badges, pills, fields, progress bars, alerts, skeletons, and page shell on the documented user typography standard
+
+Validation:
+
+```text
+npm test -- src/lib/my-exams/__tests__/get-my-exams.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- My Exams view-model tests passed.
+- TypeScript passed.
+
+## Follow-up: Canonical user entitlements and login tracking
+
+Simplified user package access and added server-side login tracking.
+
+Files added:
+
+- `src/lib/user-entitlements.ts`
+- `src/app/api/users/login-event/route.ts`
+
+Files updated:
+
+- `src/types/user-document.ts`
+- `src/lib/user-document-firestore.ts`
+- `src/contexts/AuthContext.tsx`
+- `src/lib/profile-view-model.ts`
+- `src/lib/dashboard/dashboard-view-model.ts`
+- `src/lib/my-exams/get-my-exams.ts`
+- `src/lib/my-exams/__tests__/get-my-exams.test.ts`
+- `src/lib/dashboard/__tests__/dashboard-view-model.test.ts`
+- `src/lib/server/billing-webhook-state-writer.ts`
+- `src/lib/admin/billing-operations.ts`
+
+Entitlement standard:
+
+`users/{uid}.entitlements` should contain only these four package keys:
+
+```text
+ati_teas_7
+hesi_a2
+nursing_test_bank
+nursing_exit_exams
+```
+
+All Access is represented by setting all four package keys to `true`; it is not stored as `bundle:all_access`.
+
+Compatibility:
+
+- readers normalize older keys such as `exam:ati_teas_7`, `exam:hesi_a2`, `bundle:all_access`, `test_bank:rn`, and `exit_exam:rn` so existing users do not lose access before migration
+- new users, webhook writers, and manual admin entitlement operations write only the four canonical keys
+- profile entitlement display now shows only the four package entitlements
+- dashboard and My Exams access checks use the canonical entitlement helper
+
+Login tracking:
+
+- added `POST /api/users/login-event`
+- verifies the Firebase ID token server-side
+- writes append-only login history to `user_login_events/{eventId}`
+- updates `users/{uid}.last_login_at`, `users/{uid}.last_active_at`, and `users/{uid}.login_metrics`
+
+Tracked login summary fields:
+
+```text
+login_metrics.total_logins
+login_metrics.last_session_id
+login_metrics.last_ip_address
+login_metrics.last_user_agent
+login_metrics.last_login_provider
+```
+
+Validation:
+
+```text
+npm test -- src/lib/my-exams/__tests__/get-my-exams.test.ts src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+npm test -- src/lib/billing/__tests__/webhook-state-writer.test.ts src/lib/billing/__tests__/checkout-session.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result:
+
+- My Exams and dashboard view-model tests passed.
+- Billing writer and checkout tests passed.
+- TypeScript passed.
+
+### Current user cleanup script
+
+Added a Firestore cleanup script for existing `users/{uid}` documents.
+
+Files added/updated:
+
+- `scripts/clean-users-collection.js`
+- `package.json`
+
+Dry-run command:
+
+```text
+npm run users:clean:dry-run
+```
+
+Live apply command:
+
+```text
+npm run users:clean:apply
+```
+
+The script:
+
+- scans the `users` collection
+- rewrites `entitlements` to exactly the four canonical package keys
+- maps old `exam:ati_teas_7`, `exam:hesi_a2`, `bundle:all_access`, RN/LPN test bank, and RN/LPN exit exam keys into the canonical package keys
+- removes old feature entitlement keys from the rewritten `entitlements` object
+- backfills `login_metrics.last_ip_address`, `login_metrics.last_user_agent`, and `login_metrics.last_login_provider`
+- preserves existing `login_metrics.total_logins` and `login_metrics.last_session_id` where present
+- prints a sample of proposed changes in dry-run mode
+
+Live cleanup result:
+
+```text
+npm run users:clean:apply
+```
+
+Result:
+
+- scanned 10 current `users` documents
+- updated 10 current `users` documents
+- converted legacy entitlement keys to the four canonical keys
+- preserved the detected `all_access: true` user by setting all four canonical entitlements to `true`
+- backfilled the new login metric fields
+
+Verification:
+
+```text
+npm run users:clean:dry-run
+```
+
+Result:
+
+- scanned 10 current `users` documents
+- changed 0 documents
+
 Validation run:
 
 ```text

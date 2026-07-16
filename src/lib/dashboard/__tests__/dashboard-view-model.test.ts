@@ -69,6 +69,9 @@ function userDoc(overrides: Partial<UserDocument> = {}): UserDocument {
     login_metrics: {
       total_logins: 1,
       last_session_id: null,
+      last_ip_address: null,
+      last_user_agent: null,
+      last_login_provider: "password",
     },
     billing: {
       subscription_status: "active",
@@ -98,8 +101,10 @@ function userDoc(overrides: Partial<UserDocument> = {}): UserDocument {
       },
     },
     entitlements: {
-      "exam:ati_teas_7": true,
-      "bundle:all_access": false,
+      ati_teas_7: true,
+      hesi_a2: false,
+      nursing_test_bank: false,
+      nursing_exit_exams: false,
     },
     referral_summary: {
       referral_code: "ADA123",
@@ -167,9 +172,10 @@ describe("buildDashboardViewModel", () => {
           current_period_end: null,
         },
         entitlements: {
-          "exam:ati_teas_7": false,
-          "exam:hesi_a2": false,
-          "bundle:all_access": false,
+          ati_teas_7: false,
+          hesi_a2: false,
+          nursing_test_bank: false,
+          nursing_exit_exams: false,
         },
       }),
       authUser()

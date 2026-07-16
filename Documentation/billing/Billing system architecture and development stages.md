@@ -32,6 +32,21 @@ Stripe or another trusted provider remains the authority for payment and subscri
 
 Never grant access from checkout success redirects, query parameters, client-provided amounts, client-provided price IDs, or unverified webhook payloads.
 
+## User Entitlement Compatibility Note
+
+`users/{uid}.entitlements` is standardized to the four user package keys:
+
+```text
+ati_teas_7
+hesi_a2
+nursing_test_bank
+nursing_exit_exams
+```
+
+Billing plans use these package IDs. Webhook writers and manual admin entitlement operations must write only these keys into the user document. If an All Access plan is purchased or manually granted, set all four keys to `true` rather than storing `bundle:all_access`.
+
+Legacy keys may still be normalized by user-facing readers during migration, but new billing writes must not create `exam:ati_teas_7`, `exam:hesi_a2`, `bundle:all_access`, `feature:analytics`, `feature:review_mode`, or `feature:timed_mode`.
+
 ## Initial Package IDs
 
 Use existing package/catalog source of truth where available.

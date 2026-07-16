@@ -3,6 +3,7 @@ import type { BillingWebhookEffect } from "@/lib/billing/webhook-effect-plan";
 import type { BillingWebhookEventType } from "@/lib/billing/webhook-events";
 import type { BillingPlan, BillingProvider, PaymentGatewayConfig, ProviderPriceMapping } from "@/lib/billing/models";
 import type { BillingWebhookWriteTarget } from "@/lib/billing/webhook-effect-execution";
+import { entitlementPatchForPackageIds } from "@/lib/user-entitlements";
 
 const BILLING_PLANS_COLLECTION = "billing_plans";
 const BILLING_PROVIDER_MAPPINGS_COLLECTION = "billing_provider_price_mappings";
@@ -265,7 +266,7 @@ export async function writeBillingWebhookState(
     input.transaction.set(
       userRef,
       {
-        entitlements: Object.fromEntries(plan.packageIds.map((packageId) => [packageId, true])),
+        entitlements: entitlementPatchForPackageIds(plan.packageIds, true),
         billing: {
           subscription_status: plan.purchaseType === "subscription" ? "active" : null,
           plan_id: planId,
@@ -309,7 +310,7 @@ export async function writeBillingWebhookState(
     input.transaction.set(
       userRef,
       {
-        entitlements: Object.fromEntries(plan.packageIds.map((packageId) => [packageId, false])),
+        entitlements: entitlementPatchForPackageIds(plan.packageIds, false),
         billing: {
           subscription_status: "canceled",
           plan_id: planId,

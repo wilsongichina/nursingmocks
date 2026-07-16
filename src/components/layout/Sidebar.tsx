@@ -240,7 +240,7 @@ export default function Sidebar({
 
   const mainItems = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard", color: "blue" },
-    { label: "My Exams", href: "/dashboard#my-exams", icon: "test-bank", color: "indigo" },
+    { label: "My Exams", href: "/dashboard/my-exams", icon: "test-bank", color: "indigo" },
     {
       label: "Results & Progress",
       href: "/progress-reports",
@@ -639,6 +639,9 @@ export default function Sidebar({
   const isActive = (href: string) => {
     if (href === "/") {
       return pathname === "/";
+    }
+    if (href === "/dashboard") {
+      return pathname === "/dashboard";
     }
     return pathname.startsWith(href);
   };

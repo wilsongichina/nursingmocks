@@ -3,6 +3,7 @@ import type { BillingPackageId, BillingProvider } from "@/lib/billing/models";
 import { BILLING_PACKAGE_IDS } from "@/lib/billing/models";
 import { processBillingWebhookEvent } from "@/lib/server/billing-webhook-processing";
 import { getAdminDb } from "@/lib/server/firebase-admin";
+import { entitlementPatchForPackageIds } from "@/lib/user-entitlements";
 
 const BILLING_ENTITLEMENTS_COLLECTION = "billing_entitlements";
 const BILLING_AUDIT_LOG_COLLECTION = "billing_audit_logs";
@@ -153,7 +154,7 @@ async function grantManualEntitlement(input: AdminBillingOperationInput, adminUi
     transaction.set(
       userRef,
       {
-        entitlements: { [packageId]: true },
+        entitlements: entitlementPatchForPackageIds([packageId], true),
         updated_at: FieldValue.serverTimestamp(),
       },
       { merge: true }
@@ -205,7 +206,7 @@ async function revokeManualEntitlement(input: AdminBillingOperationInput, adminU
     transaction.set(
       userRef,
       {
-        entitlements: { [packageId]: false },
+        entitlements: entitlementPatchForPackageIds([packageId], false),
         updated_at: FieldValue.serverTimestamp(),
       },
       { merge: true }

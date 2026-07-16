@@ -6,6 +6,7 @@ import {
   PRIMARY_EXAM_LABELS,
   PROGRAM_TYPE_LABELS,
 } from "@/lib/program-type";
+import { normalizeUserEntitlements } from "@/lib/user-entitlements";
 
 export type DashboardAccessStatus =
   | "active"
@@ -127,33 +128,6 @@ const ACCOUNT_STATUS_LABELS: Record<string, string> = {
   locked: "Locked",
   deleted_requested: "Deletion requested",
   deleted: "Deleted",
-};
-
-const ENTITLEMENT_PACKAGE_MAP: Record<string, string[]> = {
-  "exam:hesi_a2": ["hesi_a2"],
-  "exam:ati_teas_7": ["ati_teas"],
-  "test_bank:rn": ["nursing_test_bank_rn"],
-  "test_bank:lpn": ["nursing_test_bank_lpn"],
-  "exit_exam:rn": ["nursing_exit_exam_rn"],
-  "exit_exam:lpn": ["nursing_exit_exam_lpn"],
-  "ati_fundamentals": ["nursing_test_bank_rn"],
-  "ati_pharmacology": ["nursing_test_bank_rn"],
-  "ati_med_surg": ["nursing_test_bank_rn"],
-  "hesi_fundamentals": ["nursing_test_bank_rn"],
-  "hesi_pharmacology": ["nursing_test_bank_rn"],
-  "hesi_med_surg": ["nursing_test_bank_rn"],
-  "hesi_lpn_exit": ["nursing_exit_exam_lpn"],
-  "hesi_rn_exit": ["nursing_exit_exam_rn"],
-  "ati_lpn_predictor": ["nursing_exit_exam_lpn"],
-  "ati_rn_predictor": ["nursing_exit_exam_rn"],
-  "bundle:all_access": [
-    "hesi_a2",
-    "ati_teas",
-    "nursing_test_bank_rn",
-    "nursing_test_bank_lpn",
-    "nursing_exit_exam_rn",
-    "nursing_exit_exam_lpn",
-  ],
 };
 
 const PACKAGE_CATALOG: Omit<DashboardPackage, "status" | "actionLabel" | "accessEndsAt" | "progressPercent">[] = [
@@ -282,7 +256,7 @@ function deriveAccess(doc: UserDocument | null): DashboardViewModel["access"] {
   const billing = doc?.billing;
   const periodEnd = toDate(billing?.current_period_end);
   const now = new Date();
-  const hasActiveEntitlement = Object.values(doc?.entitlements ?? {}).some(Boolean);
+  const hasActiveEntitlement = Object.values(normalizeUserEntitlements(doc?.entitlements)).some(Boolean);
   const hasFutureAccess = Boolean(periodEnd && periodEnd.getTime() > now.getTime());
 
   if (billing?.cancel_at_period_end && hasFutureAccess) {
@@ -336,24 +310,27 @@ function deriveAccess(doc: UserDocument | null): DashboardViewModel["access"] {
 
 function activePackageIds(doc: UserDocument | null) {
   const active = new Set<string>();
-  const entitlements = doc?.entitlements ?? {};
-  for (const [key, enabled] of Object.entries(entitlements)) {
-    if (!enabled) continue;
-    for (const packageId of ENTITLEMENT_PACKAGE_MAP[key] ?? []) {
-      active.add(packageId);
-    }
+  const entitlements = normalizeUserEntitlements(doc?.entitlements);
+  if (entitlements.ati_teas_7) active.add("ati_teas");
+  if (entitlements.hesi_a2) active.add("hesi_a2");
+  if (entitlements.nursing_test_bank) {
+    active.add("nursing_test_bank_rn");
+    active.add("nursing_test_bank_lpn");
+  }
+  if (entitlements.nursing_exit_exams) {
+    active.add("nursing_exit_exam_rn");
+    active.add("nursing_exit_exam_lpn");
   }
   return active;
 }
 
 function buildPackages(doc: UserDocument | null, access: DashboardViewModel["access"]): DashboardPackage[] {
   const active = activePackageIds(doc);
-  const hasAnyPaidAccess = access.status === "active" || access.status === "cancelling" || access.status === "lifetime";
   const defaultStatus: DashboardPackageStatus =
     access.status === "past_due" ? "payment_issue" : access.status === "expired" ? "expired" : "locked";
 
   return PACKAGE_CATALOG.map((pkg) => {
-    const isActive = active.has(pkg.id) || (doc?.entitlements?.["bundle:all_access"] === true && hasAnyPaidAccess);
+    const isActive = active.has(pkg.id);
     const status: DashboardPackageStatus = isActive
       ? access.status === "cancelling"
         ? "cancelling"

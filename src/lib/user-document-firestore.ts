@@ -25,6 +25,7 @@ import type {
   UserDocumentAuthProvider,
 } from "@/types/user-document";
 import { inferPrimaryExamIdFromProgramType } from "@/lib/program-type";
+import { defaultUserEntitlements } from "@/lib/user-entitlements";
 
 const USERS_COLLECTION = "users";
 
@@ -112,8 +113,11 @@ function buildInitialUserPayload(
     },
 
     login_metrics: {
-      total_logins: 1,
+      total_logins: 0,
       last_session_id: null,
+      last_ip_address: null,
+      last_user_agent: null,
+      last_login_provider: provider,
     },
 
     billing: {
@@ -145,14 +149,7 @@ function buildInitialUserPayload(
       },
     },
 
-    entitlements: {
-      "exam:ati_teas_7": false,
-      "exam:hesi_a2": false,
-      "bundle:all_access": false,
-      "feature:analytics": false,
-      "feature:review_mode": false,
-      "feature:timed_mode": false,
-    },
+    entitlements: defaultUserEntitlements(),
 
     referral_summary: {
       referral_code: opts.referralCode,

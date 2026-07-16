@@ -48,6 +48,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  async function recordLoginEvent(user: User) {
+    try {
+      const token = await user.getIdToken();
+      await fetch("/api/users/login-event", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.warn("Login event could not be recorded", error);
+    }
+  }
+
   function register(
     email: string,
     password: string,
@@ -64,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fullName: name,
           focusAreas: [normalizedProgram],
         });
+        await recordLoginEvent(userCredential.user);
       }
     );
   }
@@ -75,8 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : browserSessionPersistence;
 
     return setPersistence(auth, persistence).then(() => {
-      return signInWithEmailAndPassword(auth, email, password).then(() => {
-        // User is signed in, onAuthStateChanged will update currentUser
+      return signInWithEmailAndPassword(auth, email, password).then(async (credential) => {
+        await recordLoginEvent(credential.user);
       });
     });
   }
@@ -97,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         providerOverride: "google",
         focusAreas: normalizedProgram ? [normalizedProgram] : undefined,
       });
+      await recordLoginEvent(u);
       return credential;
     });
   }

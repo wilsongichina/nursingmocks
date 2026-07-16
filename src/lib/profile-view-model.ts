@@ -6,6 +6,12 @@ import {
   PRIMARY_EXAM_LABELS,
   PROGRAM_TYPE_LABELS,
 } from "@/lib/program-type";
+import {
+  normalizeUserEntitlements,
+  USER_ENTITLEMENT_KEYS,
+  USER_ENTITLEMENT_LABELS,
+  type UserEntitlementKey,
+} from "@/lib/user-entitlements";
 
 const ACCESS_STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -26,41 +32,12 @@ const AUTH_PROVIDER_LABELS = {
   apple: "Apple",
 } as const;
 
-const ENTITLEMENT_METADATA: Record<string, { title: string; description: string }> = {
-  "exam:ati_teas_7": {
-    title: "ATI TEAS 7",
-    description: "Practice exams and content",
-  },
-  "exam:hesi_a2": {
-    title: "HESI A2",
-    description: "HESI A2 content access",
-  },
-  "bundle:all_access": {
-    title: "All Access Bundle",
-    description: "Combined access to all exam content",
-  },
-  "feature:analytics": {
-    title: "Analytics",
-    description: "Performance insights and tracking",
-  },
-  "feature:review_mode": {
-    title: "Review mode",
-    description: "Detailed answer review support",
-  },
-  "feature:timed_mode": {
-    title: "Timed mode",
-    description: "Timed test experience",
-  },
+const ENTITLEMENT_DESCRIPTIONS: Record<UserEntitlementKey, string> = {
+  ati_teas_7: "ATI TEAS 7 exam package access",
+  hesi_a2: "HESI A2 exam package access",
+  nursing_test_bank: "Nursing test bank package access",
+  nursing_exit_exams: "Nursing exit exams package access",
 };
-
-function formatEntitlementKey(key: string): string {
-  const parts = key.split(":");
-  const raw = parts.length > 1 ? parts[1] : key;
-  return raw
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 function isTimestamp(value: unknown): value is Timestamp {
   return (
@@ -199,15 +176,13 @@ export function buildProfileView(
       ? "Google"
       : "Password";
 
-  const ent = doc?.entitlements ?? {};
-  const entitlementKeys = Object.keys(ent).sort();
-  const entitlements = entitlementKeys.map((key) => {
-    const metadata = ENTITLEMENT_METADATA[key];
+  const normalizedEntitlements = normalizeUserEntitlements(doc?.entitlements);
+  const entitlements = USER_ENTITLEMENT_KEYS.map((key) => {
     return {
       key,
-      title: metadata?.title ?? formatEntitlementKey(key),
-      description: metadata?.description ?? "Access permission from your profile",
-      included: Boolean(ent[key]),
+      title: USER_ENTITLEMENT_LABELS[key],
+      description: ENTITLEMENT_DESCRIPTIONS[key],
+      included: normalizedEntitlements[key],
     };
   });
 
