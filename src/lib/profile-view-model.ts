@@ -7,7 +7,7 @@ import {
   PROGRAM_TYPE_LABELS,
 } from "@/lib/program-type";
 
-const SUBSCRIPTION_LABELS: Record<string, string> = {
+const ACCESS_STATUS_LABELS: Record<string, string> = {
   active: "Active",
   canceled: "Canceled",
   past_due: "Past due",
@@ -72,22 +72,22 @@ function isTimestamp(value: unknown): value is Timestamp {
 }
 
 export function formatFirestoreDate(value: unknown): string {
-  if (!value) return "—";
+  if (!value) return "-";
   if (isTimestamp(value)) {
     return value.toDate().toLocaleString(undefined, {
       dateStyle: "medium",
       timeStyle: "short",
     });
   }
-  return "—";
+  return "-";
 }
 
 function formatDateShort(value: unknown): string {
-  if (!value) return "—";
+  if (!value) return "-";
   if (isTimestamp(value)) {
     return value.toDate().toLocaleDateString(undefined, { dateStyle: "medium" });
   }
-  return "—";
+  return "-";
 }
 
 function roleLabel(role: string | undefined): string {
@@ -110,7 +110,7 @@ export function buildProfileView(
   country: string;
   programTypeLabel: string;
   primaryExamLabel: string;
-  subscriptionStatusLabel: string;
+  accessStatusLabel: string;
   accountStatusLabel: string;
   planLabel: string;
   billingIntervalLabel: string;
@@ -169,8 +169,8 @@ export function buildProfileView(
     : "Not set";
 
   const sub = doc?.billing?.subscription_status;
-  const subscriptionStatusLabel = sub
-    ? SUBSCRIPTION_LABELS[sub] ?? sub
+  const accessStatusLabel = sub
+    ? ACCESS_STATUS_LABELS[sub] ?? sub
     : "None";
 
   const acct = doc?.account_state?.status;
@@ -184,10 +184,10 @@ export function buildProfileView(
       ? "Monthly"
       : interval === "yearly"
         ? "Yearly"
-        : "—";
+        : "-";
 
   const planId = doc?.billing?.plan_id?.trim();
-  const planLabel = planId || "—";
+  const planLabel = planId || "-";
 
   const periodEnd = doc?.billing?.current_period_end;
   const accessUntilLabel = formatDateShort(periodEnd);
@@ -236,17 +236,17 @@ export function buildProfileView(
     email,
     phone: doc?.phone_e164 ?? "",
     roleLabel: roleLabel(doc?.access?.role),
-    timezone: doc?.profile?.timezone ?? "—",
-    locale: doc?.profile?.locale ?? "—",
-    country: doc?.profile?.country ?? "—",
+    timezone: doc?.profile?.timezone ?? "-",
+    locale: doc?.profile?.locale ?? "-",
+    country: doc?.profile?.country ?? "-",
     programTypeLabel,
     primaryExamLabel,
-    subscriptionStatusLabel,
+    accessStatusLabel,
     accountStatusLabel,
     planLabel,
     billingIntervalLabel,
     accessUntilLabel,
-    referralCode: code || "—",
+    referralCode: code || "-",
     referralLink,
     createdAt: formatFirestoreDate(doc?.created_at),
     updatedAt: formatFirestoreDate(doc?.updated_at),

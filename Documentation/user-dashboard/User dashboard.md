@@ -901,11 +901,88 @@ Use this theme for authenticated user management pages:
 
 Do not introduce a dark hero or a separate standalone visual system for normal authenticated user management pages unless the product explicitly creates a new user theme.
 
+Typography reference:
+
+```text
+/typography
+Documentation/user-dashboard/User typography standards.md
+```
+
+The global typography standard lives in `src/app/globals.css` and should be used for authenticated user pages before adding page-specific text classes.
+
+Visual source update:
+
+- The shared authenticated-user background now follows `/pricing`: `radial-gradient(circle at top left, #eef2ff, #f5f6fb 40%, #f9fafb 100%)`.
+- Shared cards use the pricing page's translucent white surface, light `#e3e5f0` border, and soft slate shadow.
+- Shared primary buttons use the pricing page's indigo gradient and shadow language.
+- User pages should reuse these surfaces while keeping the larger, more readable authenticated-user typography scale.
+
 Payments page adoption:
 
 - `/payments` uses this shared user account theme for the header, summary tiles, plan cards, transaction history, active access, and access grant panels.
 - Transactions remain visible as payment history.
 - Subscription management remains hidden because recurring subscriptions are not part of the current customer flow.
+
+## Profile Page Simplification
+
+Updated after auditing `/profile` for user manageability.
+
+Files changed:
+
+```text
+src/app/profile/page.tsx
+src/lib/profile-view-model.ts
+Documentation/user-dashboard/User dashboard.md
+```
+
+Decision:
+
+- `/profile` is an account settings page, not a second dashboard.
+- Keep only the profile workflows a user naturally expects there: account details, preferences, and security.
+- Move payment/access management to `/payments`.
+- Move referral management to `/referrals`.
+- Keep dashboard-level stats and activity on `/dashboard`.
+
+Profile structure:
+
+- `Account`: display name, full name, email, country, phone, timezone, program type, recommended focus, locale, and bio.
+- `Preferences`: notification choices, quiz mode, and explanation default.
+- `Manage Password`: password update for email/password users only.
+
+Removed from the normal profile page:
+
+- large overview dashboard
+- practice stats cards
+- full access entitlement table
+- full referral management panel
+- sign-in status security tiles
+- unfinished MFA action button
+- user-facing subscription wording
+
+The left profile summary now shows only identity, study focus, current plan, access end, and links to the dedicated payments and referral pages.
+
+Manage Password tab follow-up:
+
+- removed the sign-in method, email verification, phone verification, and MFA status tiles
+- retained only the change-password workflow
+- redesigned the password panel with grouped password fields, requirements text, and one primary update action
+- renamed the visible tab from `Security` to `Manage Password`
+
+Profile readability follow-up:
+
+- increased form input text from 13px to the shared readable `text-sm` size
+- increased helper text where it carries instructions
+- increased section titles to `text-xl`
+- increased profile summary values and tab labels for easier scanning
+- kept compact badges and field labels smaller so the page still feels organized
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Result: passed.
 
 Validation run:
 

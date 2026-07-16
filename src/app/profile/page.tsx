@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -11,28 +12,28 @@ import {
 } from "firebase/auth";
 import ct from "countries-and-timezones";
 import { getCountryCallingCode, type CountryCode } from "libphonenumber-js";
-import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
+import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { buildProfileView } from "@/lib/profile-view-model";
-import type { UserDocument } from "@/types/user-document";
-import {
-  ensureUserDocumentOnRegister,
-  subscribeUserDocument,
-  updateUserPreferenceFields,
-  updateUserProfileContact,
-} from "@/lib/user-document-firestore";
 import {
   isValidProgramType,
   normalizeProgramTypeFromProfile,
   PROGRAM_TYPE_OPTIONS,
   recommendedFocusLabelFromProgramType,
 } from "@/lib/program-type";
+import {
+  ensureUserDocumentOnRegister,
+  subscribeUserDocument,
+  updateUserPreferenceFields,
+  updateUserProfileContact,
+} from "@/lib/user-document-firestore";
+import type { UserDocument } from "@/types/user-document";
 
-type TabKey = "overview" | "account" | "access" | "referrals" | "security";
+type TabKey = "account" | "preferences" | "security";
 
 function isTabKey(value: string | null): value is TabKey {
-  return value === "overview" || value === "account" || value === "access" || value === "referrals" || value === "security";
+  return value === "account" || value === "preferences" || value === "security";
 }
 
 function normalizeCountryCode(value: string | null | undefined): string {
@@ -118,13 +119,104 @@ const TIMEZONE_OPTIONS = [
   "Pacific/Fiji",
 ] as const;
 
+const primaryButtonClass =
+  "inline-flex min-h-[38px] items-center justify-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60";
+
+const secondaryButtonClass =
+  "inline-flex min-h-[38px] items-center justify-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-4 text-sm font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff] disabled:cursor-not-allowed disabled:opacity-60";
+
+const panelClass = "rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)]";
+const fieldClass = "mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-sm outline-none transition focus:border-[#6a5cff] focus:shadow-[0_0_0_3px_rgba(106,92,255,.12)]";
+const readOnlyFieldClass = `${fieldClass} bg-[rgba(106,92,255,.03)]`;
+const tabLabels: Record<TabKey, string> = {
+  account: "Account",
+  preferences: "Preferences",
+  security: "Manage Password",
+};
+
+function Badge({ children, tone = "gray" }: { children: React.ReactNode; tone?: "green" | "purple" | "amber" | "gray" }) {
+  const tones = {
+    green: "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]",
+    purple: "border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,.08)] text-[#4f46e5]",
+    amber: "border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] text-[#b45309]",
+    gray: "border-[#e0e3f0] bg-[rgba(255,255,255,.65)] text-[#7a819c]",
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full border border-dashed px-[10px] py-[6px] text-xs font-semibold ${tones[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+function FormField({
+  label,
+  hint,
+  children,
+  wide = false,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div className={`${wide ? "sm:col-span-2" : ""} rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3`}>
+      <label className="text-xs font-semibold text-[#a0a5bf]">{label}</label>
+      {children}
+      {hint && <div className="mt-2 text-[13px] leading-5 text-[#7a819c]">{hint}</div>}
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  hint,
+  value,
+  disabled,
+  onToggle,
+}: {
+  label: string;
+  hint: string;
+  value: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
+      <div>
+        <b className="text-sm font-semibold">{label}</b>
+        <span className="mt-[2px] block text-[13px] leading-5 text-[#7a819c]">{hint}</span>
+      </div>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        onClick={onToggle}
+        className={`relative h-7 w-[50px] shrink-0 rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+          value
+            ? "border-[rgba(106,92,255,.55)] bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] shadow-[0_0_0_3px_rgba(106,92,255,.12)]"
+            : "border-[rgba(210,217,245,.95)] bg-[#dfe4fb]"
+        }`}
+      >
+        <span
+          className={`absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_10px_18px_rgba(23,35,79,.18)] transition ${
+            value ? "left-[25px]" : "left-[3px]"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { currentUser, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [activeTab, setActiveTab] = useState<TabKey>("account");
   const [userDoc, setUserDoc] = useState<UserDocument | null>(null);
   const [hasSnapshot, setHasSnapshot] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
+  const ensureAttemptedRef = useRef(false);
+
   const [accountDisplayName, setAccountDisplayName] = useState("");
   const [accountFullName, setAccountFullName] = useState("");
   const [accountPhone, setAccountPhone] = useState("");
@@ -135,6 +227,7 @@ export default function ProfilePage() {
   const [accountProgramType, setAccountProgramType] = useState("");
   const [accountSaving, setAccountSaving] = useState(false);
   const [accountSaveMessage, setAccountSaveMessage] = useState<string | null>(null);
+
   const [prefDarkMode, setPrefDarkMode] = useState(false);
   const [prefEmailUpdates, setPrefEmailUpdates] = useState(false);
   const [prefNotifEmail, setPrefNotifEmail] = useState(false);
@@ -145,39 +238,21 @@ export default function ProfilePage() {
   const [prefSaving, setPrefSaving] = useState(false);
   const [prefSaveMessage, setPrefSaveMessage] = useState<string | null>(null);
   const [prefError, setPrefError] = useState<string | null>(null);
+
   const [securityCurrentPassword, setSecurityCurrentPassword] = useState("");
   const [securityNewPassword, setSecurityNewPassword] = useState("");
   const [securityConfirmPassword, setSecurityConfirmPassword] = useState("");
   const [securityMessage, setSecurityMessage] = useState<string | null>(null);
   const [securityPasswordSaving, setSecurityPasswordSaving] = useState(false);
-  const [referralCopyNotice, setReferralCopyNotice] = useState<{
-    text: string;
-    error: boolean;
-  } | null>(null);
-  const ensureAttemptedRef = useRef(false);
-  const referralNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
 
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get("tab");
-    if (isTabKey(tab)) {
-      setActiveTab(tab);
-    }
+    if (isTabKey(tab)) setActiveTab(tab);
   }, []);
 
-  const countryOptions = useMemo(() => {
-    const displayNames =
-      typeof Intl !== "undefined" && "DisplayNames" in Intl
-        ? new Intl.DisplayNames(["en"], { type: "region" })
-        : null;
-    return Object.values(ct.getAllCountries())
-      .map((country) => ({
-        code: country.id,
-        name: displayNames?.of(country.id) ?? country.name,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
+  useEffect(() => {
+    if (!loading && !currentUser) router.push("/login");
+  }, [currentUser, loading, router]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -191,22 +266,17 @@ export default function ProfilePage() {
           ensureAttemptedRef.current = true;
           try {
             await ensureUserDocumentOnRegister(currentUser, {
-              fullName:
-                currentUser.displayName?.trim() ||
-                currentUser.email?.split("@")[0] ||
-                "User",
+              fullName: currentUser.displayName?.trim() || currentUser.email?.split("@")[0] || "User",
             });
-          } catch (e) {
-            setDocError(
-              e instanceof Error ? e.message : "Could not create profile document"
-            );
+          } catch (error) {
+            setDocError(error instanceof Error ? error.message : "Could not create profile document");
           }
         }
         setUserDoc(data);
         setHasSnapshot(true);
       },
-      (err) => {
-        setDocError(err.message);
+      (error) => {
+        setDocError(error.message);
         setHasSnapshot(true);
       }
     );
@@ -222,8 +292,7 @@ export default function ProfilePage() {
     setAccountCountry(normalizeCountryCode(userDoc.profile?.country));
     setAccountLocale(userDoc.profile?.locale ?? "");
     setAccountBio(userDoc.profile?.bio ?? "");
-    const rawProgram = userDoc.profile?.focus_areas?.[0]?.trim() ?? "";
-    setAccountProgramType(normalizeProgramTypeFromProfile(rawProgram));
+    setAccountProgramType(normalizeProgramTypeFromProfile(userDoc.profile?.focus_areas?.[0]?.trim() ?? ""));
     setPrefDarkMode(!!userDoc.preferences?.dark_mode);
     setPrefEmailUpdates(!!userDoc.preferences?.email_marketing_opt_in);
     setPrefNotifEmail(!!userDoc.preferences?.notifications?.email);
@@ -235,52 +304,62 @@ export default function ProfilePage() {
     setPrefError(null);
   }, [userDoc]);
 
-  const view = useMemo(() => {
-    if (!currentUser) {
-      return null;
-    }
-    return buildProfileView(userDoc, currentUser);
-  }, [userDoc, currentUser]);
+  const view = useMemo(() => (currentUser ? buildProfileView(userDoc, currentUser) : null), [currentUser, userDoc]);
 
-  const accountPhonePlaceholder = useMemo(() => {
-    if (!accountCountry) return "eg +15551234567";
-    try {
-      const code = getCountryCallingCode(accountCountry as CountryCode);
-      return `eg +${code}555123456`;
-    } catch {
-      return "eg +15551234567";
-    }
-  }, [accountCountry]);
-  const accountPrimaryExamPreview = useMemo(() => {
-    return recommendedFocusLabelFromProgramType(accountProgramType);
-  }, [accountProgramType]);
+  const countryOptions = useMemo(() => {
+    const displayNames = typeof Intl !== "undefined" && "DisplayNames" in Intl ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
+    return Object.values(ct.getAllCountries())
+      .map((country) => ({ code: country.id, name: displayNames?.of(country.id) ?? country.name }))
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, []);
+
   const timezoneOptions = useMemo(() => {
     const merged = new Set<string>(TIMEZONE_OPTIONS);
     if (accountTimezone) merged.add(accountTimezone);
     return Array.from(merged);
   }, [accountTimezone]);
-  const panelMeta: Record<TabKey, { title: string; desc: string }> = {
-    overview: {
-      title: "Overview",
-      desc: "Quick snapshot of account, access, referrals, and recent activity.",
-    },
-    account: {
-      title: "Account",
-      desc: "Edit profile details and preferences without exposing internal system records.",
-    },
-    access: {
-      title: "Access",
-      desc: "Clear summary of what is included in your subscription.",
-    },
-    referrals: {
-      title: "Referrals",
-      desc: "Share your referral link and monitor your referral summary.",
-    },
-    security: {
-      title: "Security",
-      desc: "Manage sign-in settings and account-level preferences.",
-    },
-  };
+
+  const accountPhonePlaceholder = useMemo(() => {
+    if (!accountCountry) return "eg +15551234567";
+    try {
+      return `eg +${getCountryCallingCode(accountCountry as CountryCode)}555123456`;
+    } catch {
+      return "eg +15551234567";
+    }
+  }, [accountCountry]);
+
+  const accountPrimaryExamPreview = useMemo(
+    () => recommendedFocusLabelFromProgramType(accountProgramType),
+    [accountProgramType]
+  );
+
+  const resetAccountForm = useCallback(() => {
+    if (!userDoc) return;
+    setAccountDisplayName(userDoc.profile?.display_name ?? "");
+    setAccountFullName(userDoc.full_name ?? "");
+    setAccountPhone(userDoc.phone_e164 ?? "");
+    setAccountTimezone(userDoc.profile?.timezone ?? "America/New_York");
+    setAccountCountry(normalizeCountryCode(userDoc.profile?.country));
+    setAccountLocale(userDoc.profile?.locale ?? "");
+    setAccountBio(userDoc.profile?.bio ?? "");
+    setAccountProgramType(normalizeProgramTypeFromProfile(userDoc.profile?.focus_areas?.[0]?.trim() ?? ""));
+    setAccountSaveMessage(null);
+  }, [userDoc]);
+
+  const handleCountryChange = useCallback((value: string) => {
+    const nextCode = normalizeCountryCode(value);
+    setAccountCountry(nextCode);
+    if (!nextCode) return;
+    const country = ct.getCountry(nextCode);
+    const preferredTimezone = PREFERRED_COUNTRY_TIMEZONE[nextCode];
+    const timezone =
+      (preferredTimezone && country?.timezones?.some((tz) => tz === preferredTimezone) ? preferredTimezone : undefined) ??
+      country?.timezones?.find((tz) => TIMEZONE_OPTIONS.includes(tz as never)) ??
+      country?.timezones?.[0] ??
+      "UTC";
+    setAccountTimezone(timezone);
+    setAccountLocale(`en-${nextCode}`);
+  }, []);
 
   const handleSaveAccount = useCallback(async () => {
     if (!currentUser || !userDoc) return;
@@ -289,7 +368,6 @@ export default function ProfilePage() {
     try {
       if (!isValidProgramType(accountProgramType)) {
         setAccountSaveMessage("Please select a program type.");
-        setAccountSaving(false);
         return;
       }
       await updateUserProfileContact(currentUser.uid, {
@@ -302,62 +380,16 @@ export default function ProfilePage() {
         bio: accountBio.trim() || null,
         program_type: accountProgramType,
       });
-      const u = auth.currentUser;
-      if (u) {
-        await updateProfile(u, { displayName: accountDisplayName.trim() });
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: accountDisplayName.trim() });
       }
       setAccountSaveMessage("Saved.");
-    } catch (e) {
-      setAccountSaveMessage(
-        e instanceof Error ? e.message : "Could not save profile"
-      );
+    } catch (error) {
+      setAccountSaveMessage(error instanceof Error ? error.message : "Could not save profile");
     } finally {
       setAccountSaving(false);
     }
-  }, [
-    currentUser,
-    userDoc,
-    accountDisplayName,
-    accountFullName,
-    accountPhone,
-    accountTimezone,
-    accountCountry,
-    accountLocale,
-    accountBio,
-    accountProgramType,
-  ]);
-
-  const resetAccountForm = useCallback(() => {
-    if (!userDoc) return;
-    setAccountDisplayName(userDoc.profile?.display_name ?? "");
-    setAccountFullName(userDoc.full_name ?? "");
-    setAccountPhone(userDoc.phone_e164 ?? "");
-    setAccountTimezone(userDoc.profile?.timezone ?? "America/New_York");
-    setAccountCountry(normalizeCountryCode(userDoc.profile?.country));
-    setAccountLocale(userDoc.profile?.locale ?? "");
-    setAccountBio(userDoc.profile?.bio ?? "");
-    const rawProgram = userDoc.profile?.focus_areas?.[0]?.trim() ?? "";
-    setAccountProgramType(normalizeProgramTypeFromProfile(rawProgram));
-    setAccountSaveMessage(null);
-  }, [userDoc]);
-
-  const handleCountryChange = useCallback((value: string) => {
-    const nextCode = normalizeCountryCode(value);
-    setAccountCountry(nextCode);
-    if (!nextCode) return;
-    const country = ct.getCountry(nextCode);
-    const preferredTimezone = PREFERRED_COUNTRY_TIMEZONE[nextCode];
-    const timezone =
-      (preferredTimezone &&
-      country?.timezones?.some((tz) => tz === preferredTimezone)
-        ? preferredTimezone
-        : undefined) ??
-      country?.timezones?.find((tz) => TIMEZONE_OPTIONS.includes(tz as never)) ??
-      country?.timezones?.[0] ??
-      "UTC";
-    setAccountTimezone(timezone);
-    setAccountLocale(`en-${nextCode}`);
-  }, []);
+  }, [accountBio, accountCountry, accountDisplayName, accountFullName, accountLocale, accountPhone, accountProgramType, accountTimezone, currentUser, userDoc]);
 
   const handleSavePrefs = useCallback(async () => {
     if (!currentUser || !userDoc) return;
@@ -375,22 +407,12 @@ export default function ProfilePage() {
         quiz_mode: prefQuizMode,
       });
       setPrefSaveMessage("Preferences saved.");
-    } catch (e) {
-      setPrefError(e instanceof Error ? e.message : "Could not update settings");
+    } catch (error) {
+      setPrefError(error instanceof Error ? error.message : "Could not update settings");
     } finally {
       setPrefSaving(false);
     }
-  }, [
-    currentUser,
-    userDoc,
-    prefDarkMode,
-    prefEmailUpdates,
-    prefNotifEmail,
-    prefNotifPush,
-    prefNotifSms,
-    prefShowExplanations,
-    prefQuizMode,
-  ]);
+  }, [currentUser, prefDarkMode, prefEmailUpdates, prefNotifEmail, prefNotifPush, prefNotifSms, prefQuizMode, prefShowExplanations, userDoc]);
 
   const handleResetPrefs = useCallback(() => {
     if (!userDoc) return;
@@ -409,11 +431,7 @@ export default function ProfilePage() {
 
   const handleUpdatePassword = useCallback(async () => {
     setSecurityMessage(null);
-    if (
-      !securityCurrentPassword.trim() ||
-      !securityNewPassword.trim() ||
-      !securityConfirmPassword.trim()
-    ) {
+    if (!securityCurrentPassword.trim() || !securityNewPassword.trim() || !securityConfirmPassword.trim()) {
       setSecurityMessage("Fill in all password fields before saving.");
       return;
     }
@@ -426,122 +444,42 @@ export default function ProfilePage() {
       return;
     }
 
-    const u = auth.currentUser;
-    const email = u?.email ?? currentUser?.email ?? null;
-    if (!u || !email) {
+    const user = auth.currentUser;
+    const email = user?.email ?? currentUser?.email ?? null;
+    if (!user || !email) {
       setSecurityMessage("You must be signed in with an email account to change your password.");
       return;
     }
 
     setSecurityPasswordSaving(true);
     try {
-      const credential = EmailAuthProvider.credential(
-        email,
-        securityCurrentPassword
-      );
-      await reauthenticateWithCredential(u, credential);
-      await updatePassword(u, securityNewPassword.trim());
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(email, securityCurrentPassword));
+      await updatePassword(user, securityNewPassword.trim());
       setSecurityCurrentPassword("");
       setSecurityNewPassword("");
       setSecurityConfirmPassword("");
       setSecurityMessage("Password updated.");
-    } catch (err: unknown) {
-      const code =
-        typeof err === "object" && err !== null && "code" in err
-          ? String((err as { code?: string }).code)
-          : "";
-      let msg = "Could not update password. Please try again.";
-      if (
-        code === "auth/wrong-password" ||
-        code === "auth/invalid-credential" ||
-        code === "auth/invalid-login-credentials"
-      ) {
-        msg = "Current password is incorrect.";
+    } catch (error: unknown) {
+      const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: string }).code) : "";
+      let message = "Could not update password. Please try again.";
+      if (["auth/wrong-password", "auth/invalid-credential", "auth/invalid-login-credentials"].includes(code)) {
+        message = "Current password is incorrect.";
       } else if (code === "auth/weak-password") {
-        msg = "New password is too weak. Choose a stronger password.";
+        message = "New password is too weak. Choose a stronger password.";
       } else if (code === "auth/requires-recent-login") {
-        msg = "Please sign out and sign in again, then try changing your password.";
+        message = "Please sign out and sign in again, then try changing your password.";
       } else if (code === "auth/too-many-requests") {
-        msg = "Too many attempts. Try again later.";
+        message = "Too many attempts. Try again later.";
       } else if (code === "auth/network-request-failed") {
-        msg = "Network error. Check your connection and try again.";
+        message = "Network error. Check your connection and try again.";
       }
-      setSecurityMessage(msg);
+      setSecurityMessage(message);
     } finally {
       setSecurityPasswordSaving(false);
     }
-  }, [
-    currentUser,
-    securityConfirmPassword,
-    securityCurrentPassword,
-    securityNewPassword,
-  ]);
+  }, [currentUser, securityConfirmPassword, securityCurrentPassword, securityNewPassword]);
 
-  const showReferralNotice = useCallback((text: string, error: boolean) => {
-    if (referralNoticeTimeoutRef.current) {
-      clearTimeout(referralNoticeTimeoutRef.current);
-    }
-    setReferralCopyNotice({ text, error });
-    referralNoticeTimeoutRef.current = setTimeout(() => {
-      setReferralCopyNotice(null);
-      referralNoticeTimeoutRef.current = null;
-    }, 3200);
-  }, []);
-
-  const copyReferralCode = useCallback(async () => {
-    const code = userDoc?.referral_summary?.referral_code?.trim();
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-      showReferralNotice("Referral code copied", false);
-    } catch {
-      showReferralNotice("Could not copy referral code.", true);
-    }
-  }, [userDoc, showReferralNotice]);
-
-  const copyReferralLink = useCallback(async () => {
-    const link = view?.referralLink;
-    if (!link) return;
-    try {
-      await navigator.clipboard.writeText(link);
-      showReferralNotice("Referral link copied", false);
-    } catch {
-      showReferralNotice("Could not copy link.", true);
-    }
-  }, [view, showReferralNotice]);
-
-  useEffect(() => {
-    return () => {
-      if (referralNoticeTimeoutRef.current) {
-        clearTimeout(referralNoticeTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!loading && !currentUser) {
-      router.push("/login");
-    }
-  }, [currentUser, loading, router]);
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex min-h-[90vh] items-center justify-center">
-          <div className="text-center text-[#7a819c]">
-            <div className="mx-auto mb-3 h-11 w-11 animate-spin rounded-full border-4 border-[rgba(106,92,255,0.2)] border-t-[#6a5cff]" />
-            <p>Loading...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!currentUser || !view) {
-    return null;
-  }
-
-  if (!hasSnapshot && !docError) {
+  if (loading || (!hasSnapshot && !docError && currentUser)) {
     return (
       <Layout>
         <div className="flex min-h-[90vh] items-center justify-center">
@@ -554,1091 +492,306 @@ export default function ProfilePage() {
     );
   }
 
+  if (!currentUser || !view) return null;
+
   return (
     <Layout>
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.08),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(79,70,229,0.05),transparent_55%),#f5f6fb]">
-        <div className="mx-auto max-w-[1220px] px-4 pb-14 pt-[18px] text-[#202437] max-[560px]:px-[14px] max-[560px]:pb-[46px] max-[560px]:pt-[14px]">
-          {docError ? (
-            <p
-              className="mb-3 rounded-xl border border-[rgba(239,68,68,0.45)] bg-[#fee2e2] px-3 py-2.5 text-sm font-medium text-[#991b1b]"
-              role="alert"
-            >
+        <div className="mx-auto max-w-[1360px] px-4 pb-14 pt-[18px] text-[#202437] max-[560px]:px-[14px] max-[560px]:pb-[46px] max-[560px]:pt-[14px]">
+          {docError && (
+            <p className="mb-3 rounded-xl border border-[rgba(239,68,68,0.45)] bg-[#fee2e2] px-3 py-2.5 text-sm font-medium text-[#991b1b]" role="alert">
               Profile data: {docError}
             </p>
-          ) : null}
+          )}
+
           <header className="pb-[14px] pt-[18px]">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className="text-[30px] font-extrabold tracking-[-0.03em] max-[560px]:text-2xl">
-                  User Profile Dashboard
-                </h1>
-                <p className="mt-2 max-w-[96ch] text-sm font-medium text-[#7a819c]">
-                  Manage your profile, access, referrals, and security from one
-                  clean account area.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[rgba(106,92,255,0.38)] bg-[rgba(106,92,255,0.08)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
-                    Role: {view.roleLabel}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                    Timezone: {view.timezone}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                    Locale: {view.locale}
-                  </span>
+                <div className="flex flex-wrap gap-2">
+                  <Badge tone="green">{view.accountStatusLabel}</Badge>
+                  <Badge tone="purple">Role: {view.roleLabel}</Badge>
                 </div>
+                <h1 className="mt-3 text-[30px] font-extrabold tracking-[-0.03em] max-[560px]:text-2xl">Profile Settings</h1>
+                <p className="mt-2 max-w-[86ch] text-[15px] font-medium leading-6 text-[#7a819c]">
+                  Manage your identity, study preferences, and sign-in security. Payments and referrals have their own pages.
+                </p>
               </div>
-              <div className="mt-1 flex flex-wrap items-center justify-end gap-[10px] max-[720px]:items-start max-[720px]:justify-start">
-                <button
-                  className="inline-flex h-[38px] items-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-3 text-xs font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]"
-                  type="button"
-                  onClick={() => router.push("/dashboard")}
-                >
-                  Back to dashboard
-                </button>
-                <button
-                  className="inline-flex h-[38px] items-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-[14px] text-xs font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px hover:shadow-[0_18px_42px_rgba(79,70,229,.33)]"
-                  type="button"
-                  onClick={() => router.push("/teas-7-practice")}
-                >
-                  Start Practice
-                </button>
+              <div className="mt-1 flex flex-wrap items-center justify-end gap-[10px] max-[720px]:justify-start">
+                <Link href="/dashboard" className={secondaryButtonClass}>Dashboard</Link>
+                <Link href="/payments" className={primaryButtonClass}>Manage payments</Link>
               </div>
             </div>
           </header>
 
-          <div className="mt-2 grid grid-cols-[360px_1fr] items-start gap-[18px] max-[980px]:grid-cols-1">
-            <aside className="overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)]">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 pb-3 pt-[14px]">
-                <h2 className="text-[11px] font-semibold text-[#a0a5bf]">Profile</h2>
-                <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#2baa60]">
-                  {view.accountStatusLabel}
-                </span>
-              </div>
-              <hr className="border-t border-dashed border-[#e0e3f0]" />
+          <div className="mt-2 grid grid-cols-[340px_1fr] items-start gap-[18px] max-[980px]:grid-cols-1">
+            <aside className={`${panelClass} overflow-hidden`}>
               <div className="px-4 pb-4 pt-[14px]">
                 <div className="flex items-center gap-3">
                   <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,.35),transparent_55%),linear-gradient(180deg,#6a5cff,#4f46e5)] font-semibold text-white shadow-[0_12px_26px_rgba(106,92,255,.25)]">
                     {view.photoURL ? (
-                      <Image
-                        src={view.photoURL}
-                        alt=""
-                        width={56}
-                        height={56}
-                        className="h-full w-full rounded-full object-cover"
-                        unoptimized
-                      />
+                      <Image src={view.photoURL} alt="" width={56} height={56} className="h-full w-full rounded-full object-cover" unoptimized />
                     ) : (
                       view.avatarInitial
                     )}
                   </div>
-                  <div>
-                    <div className="text-[22px] font-semibold tracking-[-0.025em]">
-                      {view.displayName}
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,0.08)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
-                        Primary exam: {view.primaryExamLabel}
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,0.08)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
-                        Program: {view.programTypeLabel}
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#2baa60]">
-                        Subscription: {view.subscriptionStatusLabel}
-                      </span>
-                    </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-2xl font-semibold tracking-[-0.025em]">{view.displayName}</div>
+                    <p className="mt-1 truncate text-sm text-[#7a819c]">{view.email}</p>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-col gap-[10px]">
-                  <div className="flex items-start justify-between gap-[10px] rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                    <div>
-                      <b className="block text-[13px] font-semibold">Email</b>
-                      <span className="mt-1 block text-xs text-[#7a819c]">
-                        Primary login email
-                      </span>
-                    </div>
-                    <div>{view.email}</div>
-                  </div>
-                  <div className="flex items-start justify-between gap-[10px] rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                    <div>
-                      <b className="block text-[13px] font-semibold">Current plan</b>
-                      <span className="mt-1 block text-xs text-[#7a819c]">
-                        Active subscription snapshot
-                      </span>
-                    </div>
-                    <div>
-                      {view.planLabel} — {view.billingIntervalLabel}
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between gap-[10px] rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                    <div>
-                      <b className="block text-[13px] font-semibold">Access until</b>
-                      <span className="mt-1 block text-xs text-[#7a819c]">
-                        Renew manually before access expires
-                      </span>
-                    </div>
-                    <div>{view.accessUntilLabel}</div>
-                  </div>
-                  <div className="flex items-start justify-between gap-[10px] rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                    <div>
-                      <b className="block text-[13px] font-semibold">Referral code</b>
-                      <span className="mt-1 block text-xs text-[#7a819c]">
-                        Share to invite friends
-                      </span>
-                    </div>
-                    {userDoc?.referral_summary?.referral_code?.trim() ? (
-                      <button
-                        type="button"
-                        onClick={() => void copyReferralCode()}
-                        className="font-semibold text-[#6a5cff] underline-offset-2 hover:underline"
-                      >
-                        {view.referralCode}
-                      </button>
-                    ) : (
-                      <div>{view.referralCode}</div>
-                    )}
-                  </div>
+
+                <div className="mt-4 grid gap-[10px]">
+                  <InfoRow label="Program" value={view.programTypeLabel} />
+                  <InfoRow label="Recommended focus" value={view.primaryExamLabel} />
+                  <InfoRow label="Current plan" value={view.planLabel} />
+                  <InfoRow label="Access ends" value={view.accessUntilLabel} />
+                </div>
+
+                <div className="mt-4 grid gap-2">
+                  <Link href="/payments" className={secondaryButtonClass}>Payments & access</Link>
+                  <Link href="/referrals" className={secondaryButtonClass}>Referral center</Link>
                 </div>
               </div>
             </aside>
 
             <main>
-              <section className="grid grid-cols-4 gap-3 max-[1100px]:grid-cols-2 max-[560px]:grid-cols-1">
-                <div className="flex min-h-24 items-center gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-base font-bold text-[#6a5cff]">
-                    {view.stats.attempts}
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold text-[#a0a5bf]">
-                      Total Attempts
-                    </div>
-                    <div className="text-xs text-[#7a819c]">
-                      Your overall practice activity
-                    </div>
-                  </div>
-                </div>
-                <div className="flex min-h-24 items-center gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-base font-bold text-[#6a5cff]">
-                    {view.stats.answered}
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold text-[#a0a5bf]">
-                      Questions Answered
-                    </div>
-                    <div className="text-xs text-[#7a819c]">
-                      Across practice sessions
-                    </div>
-                  </div>
-                </div>
-                <div className="flex min-h-24 items-center gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-base font-bold text-[#6a5cff]">
-                    {view.stats.accuracy}%
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold text-[#a0a5bf]">
-                      Overall Accuracy
-                    </div>
-                    <div className="text-xs text-[#7a819c]">Average score</div>
-                  </div>
-                </div>
-                <div className="flex min-h-24 items-center gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-base font-bold text-[#6a5cff]">
-                    {view.stats.streak}
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold text-[#a0a5bf]">
-                      Streak (Days)
-                    </div>
-                    <div className="text-xs text-[#7a819c]">
-                      Consecutive days of activity
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <nav className="mb-3 mt-[22px] flex gap-[10px] overflow-x-auto border-t border-dashed border-[rgba(224,227,240,.7)] pb-[10px] pt-[14px]">
-                {(["overview", "account", "access", "referrals", "security"] as TabKey[]).map(
-                  (tab) => (
-                    <button
-                      key={tab}
-                      className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-[10px] text-[13px] font-semibold transition ${
-                        activeTab === tab
-                          ? "border-[rgba(106,92,255,.40)] bg-gradient-to-b from-[rgba(106,92,255,.10)] to-[rgba(255,255,255,.86)] text-[#4f46e5] shadow-[0_12px_26px_rgba(106,92,255,.12)]"
-                          : "border-[rgba(224,227,240,.9)] bg-[rgba(255,255,255,.82)] text-[#202437]"
-                      }`}
-                      onClick={() => setActiveTab(tab)}
-                      type="button"
-                    >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                  )
-                )}
+              <nav className="mb-3 flex gap-[10px] overflow-x-auto border-t border-dashed border-[rgba(224,227,240,.7)] pb-[10px] pt-[14px]">
+                {(["account", "preferences", "security"] as TabKey[]).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-[10px] text-sm font-semibold transition ${
+                      activeTab === tab
+                        ? "border-[rgba(106,92,255,.40)] bg-gradient-to-b from-[rgba(106,92,255,.10)] to-[rgba(255,255,255,.86)] text-[#4f46e5] shadow-[0_12px_26px_rgba(106,92,255,.12)]"
+                        : "border-[rgba(224,227,240,.9)] bg-[rgba(255,255,255,.82)] text-[#202437]"
+                    }`}
+                  >
+                    {tabLabels[tab]}
+                  </button>
+                ))}
               </nav>
 
-              <div className="overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)]">
-                <div className="p-4">
-                  <div className="mb-[10px] flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h2 className="text-[18px] font-semibold tracking-[-0.02em]">
-                        {panelMeta[activeTab].title}
-                      </h2>
-                      <p className="mt-2 max-w-[88ch] text-[13px] text-[#7a819c]">
-                        {panelMeta[activeTab].desc}
-                      </p>
-                    </div>
-                  </div>
-                  <hr className="mb-3 border-t border-dashed border-[#e0e3f0]" />
-                  {activeTab === "overview" && (
-                    <>
-                      <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <div className="text-xs font-semibold text-[#7a819c]">
-                              Membership Snapshot
-                            </div>
-                            <div className="mt-1 text-xs text-[#a0a5bf]">
-                              The most important things a user should understand at
-                              a glance.
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                              Created: {view.createdAt}
-                            </span>
-                            <span className="inline-flex items-center rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                              Updated: {view.updatedAt}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 grid gap-[10px]">
-                          <div className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                            <div className="min-w-0">
-                              <b className="block text-[13px] font-semibold text-[#202437]">
-                                Current plan
-                              </b>
-                              <span className="mt-[6px] block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                Your active subscription snapshot
-                              </span>
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-2">
-                              <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(106,92,255,.55)] bg-[rgba(106,92,255,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
-                                {view.planLabel} - {view.billingIntervalLabel} -{" "}
-                                {view.subscriptionStatusLabel}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                            <div className="min-w-0">
-                              <b className="block text-[13px] font-semibold text-[#202437]">
-                                Access end date
-                              </b>
-                              <span className="mt-[6px] block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                Renew manually before access expires
-                              </span>
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-2">
-                              <span className="inline-flex items-center rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                                {view.accessUntilLabel}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                            <div className="min-w-0">
-                              <b className="block text-[13px] font-semibold text-[#202437]">
-                                Primary exam
-                              </b>
-                              <span className="mt-[6px] block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                Derived from your active subscription
-                              </span>
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-2">
-                              <span className="inline-flex items-center rounded-full border border-dashed border-[rgba(106,92,255,.55)] bg-[rgba(106,92,255,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
-                                {view.primaryExamLabel}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                            <div className="min-w-0">
-                              <b className="block text-[13px] font-semibold text-[#202437]">
-                                Last practice activity
-                              </b>
-                              <span className="mt-[6px] block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                Latest recorded attempt
-                              </span>
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-2">
-                              <span className="inline-flex items-center rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                                {view.lastAttemptAt}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <div className="text-xs font-semibold text-[#7a819c]">
-                              What you can do right now
-                            </div>
-                            <div className="mt-1 text-xs text-[#a0a5bf]">
-                              Helpful account actions based on your current state.
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => router.push("/teas-7-practice")}
-                              className="inline-flex h-[34px] items-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-3 text-xs font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px hover:shadow-[0_18px_42px_rgba(79,70,229,.33)]"
-                            >
-                              Start practice
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setActiveTab("referrals")}
-                              className="inline-flex h-[34px] items-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-3 text-xs font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]"
-                            >
-                              Share referral link
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-2 gap-3 max-[560px]:grid-cols-1">
-                          {view.entitlements.slice(0, 4).map((row) => (
-                            <div
-                              key={`overview-action-${row.key}`}
-                              className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3"
-                            >
-                              <div className="min-w-0">
-                                <b className="block text-[13px] font-semibold text-[#202437]">
-                                  {row.title}
-                                </b>
-                                <span className="mt-1 block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                  {row.description}
-                                </span>
-                              </div>
-                              <span
-                                className={`inline-flex shrink-0 items-center rounded-full border border-dashed px-[10px] py-[6px] text-[11px] font-semibold ${
-                                  row.included
-                                    ? "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]"
-                                    : "border-[rgba(239,68,68,.45)] bg-[rgba(239,68,68,.11)] text-[#b91c1c]"
-                                }`}
-                              >
-                                {row.included ? "Included" : "Locked"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {activeTab === "account" && (
-                    <>
-                      <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <div className="text-xs font-semibold text-[#7a819c]">
-                              Profile details
-                            </div>
-                            <div className="mt-1 text-xs text-[#a0a5bf]">
-                              Manage your personal details while keeping
-                              subscription-driven fields protected.
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              className="inline-flex h-[34px] items-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-3 text-xs font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-                              type="button"
-                              disabled={!userDoc || accountSaving}
-                              onClick={() => void handleSaveAccount()}
-                            >
-                              {accountSaving ? "Saving..." : "Save changes"}
-                            </button>
-                            <button
-                              className="inline-flex h-[34px] items-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-3 text-xs font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]"
-                              type="button"
-                              disabled={!userDoc}
-                              onClick={resetAccountForm}
-                            >
-                              Reset
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 max-[560px]:grid-cols-1">
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Display name
-                          </label>
-                          <input
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                            value={accountDisplayName}
-                            onChange={(e) => setAccountDisplayName(e.target.value)}
-                            disabled={!userDoc}
-                          />
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Shown across the profile and product UI.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Full name
-                          </label>
-                          <input
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                            value={accountFullName}
-                            onChange={(e) => setAccountFullName(e.target.value)}
-                            disabled={!userDoc}
-                          />
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Stored as the main account identity name.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Email
-                          </label>
-                          <input
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-[rgba(106,92,255,.03)] px-3 py-[10px] text-[13px]"
-                            value={view.email}
-                            readOnly
-                          />
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Primary login email. This cannot be edited here.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Country
-                          </label>
-                          <select
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                            value={accountCountry}
-                            onChange={(e) => handleCountryChange(e.target.value)}
-                            disabled={!userDoc}
-                          >
-                            <option value="">Select country</option>
-                            {accountCountry && !ct.getCountry(accountCountry) ? (
-                              <option value={accountCountry}>{accountCountry}</option>
-                            ) : null}
-                            {countryOptions.map((country) => (
-                              <option key={country.code} value={country.code}>
-                                {country.name}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Country selection updates timezone and locale.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Phone number
-                          </label>
-                          <input
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                            value={accountPhone}
-                            onChange={(e) => setAccountPhone(e.target.value)}
-                            disabled={!userDoc}
-                            placeholder={accountPhonePlaceholder}
-                          />
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Phone format updates based on the selected country.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Timezone
-                          </label>
-                          <select
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-[rgba(106,92,255,.03)] px-3 py-[10px] text-[13px]"
-                            value={accountTimezone}
-                            onChange={(e) => setAccountTimezone(e.target.value)}
-                            disabled={!userDoc}
-                          >
-                            <option value="">Select timezone</option>
-                            {timezoneOptions.map((timezone) => (
-                              <option key={timezone} value={timezone}>
-                                {timezone}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Timezone changes automatically based on country.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Recommended focus
-                          </label>
-                          <input
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-[rgba(106,92,255,.03)] px-3 py-[10px] text-[13px]"
-                            value={accountPrimaryExamPreview}
-                            readOnly
-                          />
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Updates from the selected program type.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Program type
-                          </label>
-                          <select
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                            value={accountProgramType}
-                            onChange={(e) => setAccountProgramType(e.target.value)}
-                            disabled={!userDoc}
-                            required
-                          >
-                            <option value="" disabled>
-                              Select program type
-                            </option>
-                            {PROGRAM_TYPE_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Same as at sign-up; you can update it here anytime.
-                          </div>
-                        </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Locale
-                          </label>
-                          <input
-                            className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-[rgba(106,92,255,.03)] px-3 py-[10px] text-[13px]"
-                            value={accountLocale}
-                            readOnly
-                          />
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Shown for reference. Locales are handled automatically.
-                          </div>
-                        </div>
-                          <div className="col-span-2 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3 max-[560px]:col-span-1">
-                          <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                            Bio
-                          </label>
-                          <textarea
-                            className="mt-2 min-h-[90px] w-full resize-y rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                            value={accountBio}
-                            onChange={(e) => setAccountBio(e.target.value)}
-                            disabled={!userDoc}
-                            placeholder="Short bio (optional)"
-                          />
-                          <div className="mt-2 text-xs text-[#7a819c]">
-                            Optional public-facing bio.
-                          </div>
-                          </div>
-                        </div>
-
-                        {accountSaveMessage ? (
-                          <div
-                            className={`mt-3 rounded-xl border px-3 py-2.5 text-[13px] font-medium ${
-                              accountSaveMessage === "Saved."
-                                ? "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
-                                : "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
-                            }`}
-                            role="alert"
-                          >
-                            {accountSaveMessage}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <div className="text-xs font-semibold text-[#7a819c]">
-                              Preferences
-                            </div>
-                            <div className="mt-1 text-xs text-[#a0a5bf]">
-                              Keep the same clean settings model without exposing
-                              internal system records.
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              className="inline-flex h-[34px] items-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-3 text-xs font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-                              type="button"
-                              disabled={!userDoc || prefSaving}
-                              onClick={() => void handleSavePrefs()}
-                            >
-                              {prefSaving ? "Saving..." : "Save preferences"}
-                            </button>
-                            <button
-                              className="inline-flex h-[34px] items-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-3 text-xs font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]"
-                              type="button"
-                              disabled={!userDoc}
-                              onClick={handleResetPrefs}
-                            >
-                              Reset
-                            </button>
-                          </div>
-                        </div>
-
-                        {prefError ? (
-                          <p
-                            className="mt-3 rounded-xl border border-[rgba(239,68,68,0.45)] bg-[#fee2e2] px-3 py-2.5 text-sm font-medium text-[#991b1b]"
-                            role="alert"
-                          >
-                            {prefError}
-                          </p>
-                        ) : null}
-
-                        <div className="mt-3 flex flex-col gap-[10px]">
-                          {[
-                            {
-                              label: "Dark mode",
-                              hint: "Choose your preferred theme for the dashboard.",
-                              value: prefDarkMode,
-                              onToggle: () => setPrefDarkMode((prev) => !prev),
-                            },
-                            {
-                              label: "Email updates",
-                              hint: "Receive product updates and occasional study reminders.",
-                              value: prefEmailUpdates,
-                              onToggle: () => setPrefEmailUpdates((prev) => !prev),
-                            },
-                            {
-                              label: "Email notifications",
-                              hint: "Receive important account and security messages by email.",
-                              value: prefNotifEmail,
-                              onToggle: () => setPrefNotifEmail((prev) => !prev),
-                            },
-                            {
-                              label: "Push notifications",
-                              hint: "Get reminders and account alerts on supported devices.",
-                              value: prefNotifPush,
-                              onToggle: () => setPrefNotifPush((prev) => !prev),
-                            },
-                            {
-                              label: "SMS notifications",
-                              hint: "Only use this for essential account messages.",
-                              value: prefNotifSms,
-                              onToggle: () => setPrefNotifSms((prev) => !prev),
-                            },
-                          ].map((pref) => (
-                            <div
-                              key={pref.label}
-                              className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3"
-                            >
-                              <div>
-                                <b className="text-[13px] font-semibold">{pref.label}</b>
-                                <span className="mt-[2px] block text-xs text-[#7a819c]">
-                                  {pref.hint}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                aria-label={pref.label}
-                                disabled={!userDoc}
-                                onClick={pref.onToggle}
-                                className={`relative h-7 w-[50px] shrink-0 rounded-full border transition ${
-                                  pref.value
-                                    ? "border-[rgba(106,92,255,.55)] bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] shadow-[0_0_0_3px_rgba(106,92,255,.12)]"
-                                    : "border-[rgba(210,217,245,.95)] bg-[#dfe4fb]"
-                                }`}
-                              >
-                                <span
-                                  className={`absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_10px_18px_rgba(23,35,79,.18)] transition ${
-                                    pref.value ? "left-[25px]" : "left-[3px]"
-                                  }`}
-                                />
-                              </button>
-                            </div>
-                          ))}
-
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                            <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                              Default quiz mode
-                            </label>
-                            <select
-                              className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                              value={prefQuizMode}
-                              onChange={(e) =>
-                                setPrefQuizMode(e.target.value as "timed" | "tutor")
-                              }
-                              disabled={!userDoc}
-                            >
-                              <option value="timed">Timed mode</option>
-                              <option value="tutor">Tutor mode</option>
-                            </select>
-                            <div className="mt-2 text-xs text-[#7a819c]">
-                              Sets the default practice experience when you start a
-                              session.
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                            <div>
-                              <b className="text-[13px] font-semibold">
-                                Show explanations by default
-                              </b>
-                              <span className="mt-[2px] block text-xs text-[#7a819c]">
-                                Automatically reveal answer explanations when available.
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              aria-label="Show explanations by default"
-                              disabled={!userDoc}
-                              onClick={() =>
-                                setPrefShowExplanations((prev) => !prev)
-                              }
-                              className={`relative h-7 w-[50px] shrink-0 rounded-full border transition ${
-                                prefShowExplanations
-                                  ? "border-[rgba(106,92,255,.55)] bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] shadow-[0_0_0_3px_rgba(106,92,255,.12)]"
-                                  : "border-[rgba(210,217,245,.95)] bg-[#dfe4fb]"
-                              }`}
-                            >
-                              <span
-                                className={`absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_10px_18px_rgba(23,35,79,.18)] transition ${
-                                  prefShowExplanations ? "left-[25px]" : "left-[3px]"
-                                }`}
-                              />
-                            </button>
-                          </div>
-                        </div>
-
-                        {prefSaveMessage ? (
-                          <div
-                            className="mt-3 rounded-xl border border-[rgba(34,197,94,0.45)] bg-[#dcfce7] px-3 py-2.5 text-[13px] font-medium text-[#166534]"
-                            role="status"
-                          >
-                            {prefSaveMessage}
-                          </div>
-                        ) : null}
-                      </div>
-                    </>
-                  )}
-
-                  {activeTab === "access" && (
-                    <>
-                      <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                        <div className="text-xs font-semibold text-[#7a819c]">
-                          Included in your plan
-                        </div>
-                        <div className="mt-1 text-xs text-[#a0a5bf]">
-                          Human-readable access summary derived from your active
-                          subscription.
-                        </div>
-                        <div className="mt-3 grid grid-cols-2 gap-3 max-[560px]:grid-cols-1">
-                          {view.entitlements.map((row) => (
-                            <div
-                              className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-[14px]"
-                              key={row.key}
-                            >
-                              <div className="min-w-0">
-                                <b className="block text-[13px] font-semibold text-[#202437]">
-                                  {row.title}
-                                </b>
-                                <span className="mt-1 block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                  {row.description}
-                                </span>
-                              </div>
-                              {row.included ? (
-                                <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#2baa60]">
-                                  Available
-                                </span>
-                              ) : (
-                                <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-[rgba(239,68,68,.45)] bg-[rgba(239,68,68,.11)] px-[10px] py-[6px] text-[11px] font-semibold text-[#b91c1c]">
-                                  Not included
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {activeTab === "referrals" && (
-                    <>
-                      <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <div className="text-xs font-semibold text-[#7a819c]">
-                              Invite friends
-                            </div>
-                            <div className="mt-1 text-xs text-[#a0a5bf]">
-                              Share your referral code to earn rewards when new users
-                              convert.
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            className="inline-flex h-[34px] items-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-3 text-xs font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]"
-                            onClick={() => void copyReferralLink()}
-                          >
-                            Copy referral link
+              <section className={`${panelClass} p-4`}>
+                {activeTab === "account" && (
+                  <div>
+                    <PanelHeader
+                      title="Account Details"
+                      description="Edit the profile information used across your account and dashboard."
+                      actions={
+                        <>
+                          <button type="button" className={primaryButtonClass} disabled={!userDoc || accountSaving} onClick={() => void handleSaveAccount()}>
+                            {accountSaving ? "Saving..." : "Save changes"}
                           </button>
-                        </div>
+                          <button type="button" className={secondaryButtonClass} disabled={!userDoc} onClick={resetAccountForm}>
+                            Reset
+                          </button>
+                        </>
+                      }
+                    />
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <FormField label="Display name">
+                        <input className={fieldClass} value={accountDisplayName} onChange={(event) => setAccountDisplayName(event.target.value)} disabled={!userDoc} />
+                      </FormField>
+                      <FormField label="Full name" hint="Stored as the main account identity name.">
+                        <input className={fieldClass} value={accountFullName} onChange={(event) => setAccountFullName(event.target.value)} disabled={!userDoc} />
+                      </FormField>
+                      <FormField label="Email" hint="Primary login email. This cannot be edited here.">
+                        <input className={readOnlyFieldClass} value={view.email} readOnly />
+                      </FormField>
+                      <FormField label="Country" hint="Country selection updates timezone and locale.">
+                        <select className={fieldClass} value={accountCountry} onChange={(event) => handleCountryChange(event.target.value)} disabled={!userDoc}>
+                          <option value="">Select country</option>
+                          {accountCountry && !ct.getCountry(accountCountry) && <option value={accountCountry}>{accountCountry}</option>}
+                          {countryOptions.map((country) => (
+                            <option key={country.code} value={country.code}>{country.name}</option>
+                          ))}
+                        </select>
+                      </FormField>
+                      <FormField label="Phone number">
+                        <input className={fieldClass} value={accountPhone} onChange={(event) => setAccountPhone(event.target.value)} disabled={!userDoc} placeholder={accountPhonePlaceholder} />
+                      </FormField>
+                      <FormField label="Timezone">
+                        <select className={fieldClass} value={accountTimezone} onChange={(event) => setAccountTimezone(event.target.value)} disabled={!userDoc}>
+                          <option value="">Select timezone</option>
+                          {timezoneOptions.map((timezone) => (
+                            <option key={timezone} value={timezone}>{timezone}</option>
+                          ))}
+                        </select>
+                      </FormField>
+                      <FormField label="Program type" hint="This also updates your recommended focus.">
+                        <select className={fieldClass} value={accountProgramType} onChange={(event) => setAccountProgramType(event.target.value)} disabled={!userDoc} required>
+                          <option value="" disabled>Select program type</option>
+                          {PROGRAM_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </FormField>
+                      <FormField label="Recommended focus">
+                        <input className={readOnlyFieldClass} value={accountPrimaryExamPreview} readOnly />
+                      </FormField>
+                      <FormField label="Locale">
+                        <input className={readOnlyFieldClass} value={accountLocale} readOnly />
+                      </FormField>
+                      <FormField label="Bio" wide>
+                        <textarea className={`${fieldClass} min-h-[90px] resize-y`} value={accountBio} onChange={(event) => setAccountBio(event.target.value)} disabled={!userDoc} placeholder="Short bio (optional)" />
+                      </FormField>
+                    </div>
+                    {accountSaveMessage && <AlertMessage text={accountSaveMessage} success={accountSaveMessage === "Saved."} />}
+                  </div>
+                )}
 
-                        <div className="mt-3 grid grid-cols-2 gap-4 max-[980px]:grid-cols-1">
-                          <div className="rounded-2xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-4 shadow-[0_18px_45px_rgba(23,35,79,.08)]">
-                            <div className="text-xs font-semibold text-[#7a819c]">
-                              Your referral link
-                            </div>
-                            <div className="mt-3 flex items-center justify-between gap-3 rounded-[14px] border border-dashed border-[rgba(106,92,255,.28)] bg-gradient-to-b from-[rgba(106,92,255,.06)] to-[rgba(106,92,255,.02)] px-4 py-3">
-                              {userDoc?.referral_summary?.referral_code?.trim() ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void copyReferralCode()}
-                                  className="min-w-0 break-all text-left text-base font-semibold text-[#6a5cff] underline-offset-2 hover:underline"
-                                >
-                                  {view.referralCode}
-                                </button>
-                              ) : (
-                                <span className="text-base font-semibold text-[#6a5cff]">
-                                  {view.referralCode}
-                                </span>
-                              )}
-                              <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-[rgba(106,92,255,.55)] bg-[rgba(106,92,255,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
-                                Active
-                              </span>
-                            </div>
-                            <div className="mt-[10px] rounded-[14px] border border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] px-3 py-[10px] text-xs font-normal text-[#2baa60]">
-                              Click your code to copy it. Use &quot;Copy referral
-                              link&quot; for the full invite URL.
-                            </div>
-                          </div>
+                {activeTab === "preferences" && (
+                  <div>
+                    <PanelHeader
+                      title="Preferences"
+                      description="Control communication and quiz defaults without mixing them into your profile identity."
+                      actions={
+                        <>
+                          <button type="button" className={primaryButtonClass} disabled={!userDoc || prefSaving} onClick={() => void handleSavePrefs()}>
+                            {prefSaving ? "Saving..." : "Save preferences"}
+                          </button>
+                          <button type="button" className={secondaryButtonClass} disabled={!userDoc} onClick={handleResetPrefs}>
+                            Reset
+                          </button>
+                        </>
+                      }
+                    />
+                    {prefError && <AlertMessage text={prefError} success={false} />}
+                    <div className="mt-4 grid gap-3">
+                      <ToggleRow label="Dark mode" hint="Choose your preferred theme for the dashboard." value={prefDarkMode} disabled={!userDoc} onToggle={() => setPrefDarkMode((value) => !value)} />
+                      <ToggleRow label="Email updates" hint="Receive product updates and occasional study reminders." value={prefEmailUpdates} disabled={!userDoc} onToggle={() => setPrefEmailUpdates((value) => !value)} />
+                      <ToggleRow label="Email notifications" hint="Receive important account and security messages by email." value={prefNotifEmail} disabled={!userDoc} onToggle={() => setPrefNotifEmail((value) => !value)} />
+                      <ToggleRow label="Push notifications" hint="Get reminders and account alerts on supported devices." value={prefNotifPush} disabled={!userDoc} onToggle={() => setPrefNotifPush((value) => !value)} />
+                      <ToggleRow label="SMS notifications" hint="Only use this for essential account messages." value={prefNotifSms} disabled={!userDoc} onToggle={() => setPrefNotifSms((value) => !value)} />
+                      <ToggleRow label="Show explanations by default" hint="Automatically reveal answer explanations when available." value={prefShowExplanations} disabled={!userDoc} onToggle={() => setPrefShowExplanations((value) => !value)} />
+                      <FormField label="Default quiz mode">
+                        <select className={fieldClass} value={prefQuizMode} onChange={(event) => setPrefQuizMode(event.target.value as "timed" | "tutor")} disabled={!userDoc}>
+                          <option value="timed">Timed mode</option>
+                          <option value="tutor">Tutor mode</option>
+                        </select>
+                      </FormField>
+                    </div>
+                    {prefSaveMessage && <AlertMessage text={prefSaveMessage} success />}
+                  </div>
+                )}
 
-                          <div className="rounded-2xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-4 shadow-[0_18px_45px_rgba(23,35,79,.08)]">
-                            <div className="text-xs font-semibold text-[#7a819c]">
-                              Summary
-                            </div>
-                            <div className="mt-3 flex flex-col gap-[10px]">
-                              <div className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                                <div className="min-w-0">
-                                  <b className="block text-[13px] font-semibold text-[#202437]">
-                                    Total referrals
-                                  </b>
-                                  <span className="mt-[6px] block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                    Invites attributed to your code
-                                  </span>
-                                </div>
-                                <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                                  {view.referralTotals.totalReferrals}
-                                </span>
-                              </div>
-                              <div className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                                <div className="min-w-0">
-                                  <b className="block text-[13px] font-semibold text-[#202437]">
-                                    Total converted
-                                  </b>
-                                  <span className="mt-[6px] block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                    Users who completed a qualifying purchase
-                                  </span>
-                                </div>
-                                <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#2baa60]">
-                                  {view.referralTotals.totalConverted}
-                                </span>
-                              </div>
-                              <div className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-                                <div className="min-w-0">
-                                  <b className="block text-[13px] font-semibold text-[#202437]">
-                                    Total earned
-                                  </b>
-                                  <span className="mt-[6px] block text-xs font-normal leading-[1.35] text-[#7a819c]">
-                                    User-facing earnings summary
-                                  </span>
-                                </div>
-                                <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-[rgba(106,92,255,.55)] bg-[rgba(106,92,255,.10)] px-[10px] py-[6px] text-[11px] font-semibold text-[#4f46e5]">
-                                  {view.referralTotals.commissionEarnedFormatted}
-                                </span>
+                {activeTab === "security" && (
+                  <div>
+                    {canChangePassword ? (
+                      <div>
+                        <PanelHeader
+                          title="Change Password"
+                          description="Update your account password. Keep it private and use a password you do not use elsewhere."
+                        />
+                        <div className="mt-4 rounded-2xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(245,246,251,.65)] p-4">
+                          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+                            <div className="grid gap-3">
+                              <FormField label="Current password">
+                                <input
+                                  type="password"
+                                  autoComplete="current-password"
+                                  className={fieldClass}
+                                  value={securityCurrentPassword}
+                                  onChange={(event) => setSecurityCurrentPassword(event.target.value)}
+                                />
+                              </FormField>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <FormField label="New password">
+                                  <input
+                                    type="password"
+                                    autoComplete="new-password"
+                                    className={fieldClass}
+                                    value={securityNewPassword}
+                                    onChange={(event) => setSecurityNewPassword(event.target.value)}
+                                  />
+                                </FormField>
+                                <FormField label="Confirm new password">
+                                  <input
+                                    type="password"
+                                    autoComplete="new-password"
+                                    className={fieldClass}
+                                    value={securityConfirmPassword}
+                                    onChange={(event) => setSecurityConfirmPassword(event.target.value)}
+                                  />
+                                </FormField>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
 
-                  {activeTab === "security" && (
-                    <>
-                      <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                        <div className="text-xs font-semibold text-[#7a819c]">
-                          Account security
-                        </div>
-                        <div className="mt-1 text-xs text-[#a0a5bf]">
-                          Clear user-facing security settings without exposing
-                          internal logs.
-                        </div>
-                        <div className="mt-3 grid grid-cols-2 gap-3 max-[560px]:grid-cols-1">
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                            <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                              Sign-in method
-                            </label>
-                            <div className="mt-[10px]">
-                              <span className="inline-flex items-center rounded-full border border-dashed border-[#e0e3f0] bg-[rgba(255,255,255,.65)] px-[10px] py-[6px] text-[11px] font-semibold text-[#7a819c]">
-                                {view.security.providerLabel}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                            <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                              Email verification
-                            </label>
-                            <div className="mt-[10px]">
-                              <span
-                                className={`inline-flex items-center rounded-full border border-dashed px-[10px] py-[6px] text-[11px] font-semibold ${
-                                  view.security.emailVerified
-                                    ? "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]"
-                                    : "border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] text-[#b45309]"
-                                }`}
-                              >
-                                {view.security.emailVerified
-                                  ? "Verified"
-                                  : "Not verified"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                            <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                              Phone verification
-                            </label>
-                            <div className="mt-[10px]">
-                              <span
-                                className={`inline-flex items-center rounded-full border border-dashed px-[10px] py-[6px] text-[11px] font-semibold ${
-                                  view.security.phoneVerified
-                                    ? "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]"
-                                    : "border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] text-[#b45309]"
-                                }`}
-                              >
-                                {view.security.phoneVerified
-                                  ? "Verified"
-                                  : "Not verified"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                            <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                              Multi-factor authentication
-                            </label>
-                            <div className="mt-[10px]">
-                              <span
-                                className={`inline-flex items-center rounded-full border border-dashed px-[10px] py-[6px] text-[11px] font-semibold ${
-                                  view.security.mfaEnabled
-                                    ? "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]"
-                                    : "border-[#e0e3f0] bg-[rgba(255,255,255,.65)] text-[#7a819c]"
-                                }`}
-                              >
-                                {view.security.mfaEnabled ? "Enabled" : "Disabled"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {canChangePassword ? (
-                        <div className="mt-3 rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-3">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <div className="text-xs font-semibold text-[#7a819c]">
-                                Change password
-                              </div>
-                              <div className="mt-1 text-xs text-[#a0a5bf]">
-                                Update your password securely from your profile.
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
+                            <aside className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-4">
+                              <p className="text-sm font-semibold text-[#202437]">Password requirements</p>
+                              <ul className="mt-3 grid gap-2 text-[13px] leading-5 text-[#7a819c]">
+                                <li>Use at least 8 characters.</li>
+                                <li>Use a password unique to this account.</li>
+                                <li>You may be asked to sign in again if your session is old.</li>
+                              </ul>
                               <button
                                 type="button"
+                                className={`${primaryButtonClass} mt-4 w-full`}
                                 disabled={securityPasswordSaving}
                                 onClick={() => void handleUpdatePassword()}
-                                className="inline-flex h-[34px] items-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-3 text-xs font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                {securityPasswordSaving ? "Updating…" : "Update password"}
+                                {securityPasswordSaving ? "Updating..." : "Update password"}
                               </button>
-                              <button
-                                type="button"
-                                className="inline-flex h-[34px] items-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-3 text-xs font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff]"
-                              >
-                                Enable MFA
-                              </button>
-                            </div>
+                            </aside>
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-3 max-[560px]:grid-cols-1">
-                            <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                              <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                                Current password
-                              </label>
-                              <input
-                                type="password"
-                                value={securityCurrentPassword}
-                                onChange={(e) =>
-                                  setSecurityCurrentPassword(e.target.value)
-                                }
-                                className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                              />
-                            </div>
-                            <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                              <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                                New password
-                              </label>
-                              <input
-                                type="password"
-                                value={securityNewPassword}
-                                onChange={(e) => setSecurityNewPassword(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                              />
-                            </div>
-                            <div className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
-                              <label className="text-[11px] font-semibold text-[#a0a5bf]">
-                                Confirm new password
-                              </label>
-                              <input
-                                type="password"
-                                value={securityConfirmPassword}
-                                onChange={(e) =>
-                                  setSecurityConfirmPassword(e.target.value)
-                                }
-                                className="mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-[13px]"
-                              />
-                            </div>
-                          </div>
-                          {securityMessage ? (
-                            <div
-                              className={`mt-3 rounded-xl border px-3 py-2.5 text-[13px] font-medium ${
-                                securityMessage === "Password updated."
-                                  ? "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
-                                  : "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
-                              }`}
-                              role="alert"
-                            >
-                              {securityMessage}
-                            </div>
-                          ) : null}
+                          {securityMessage && <AlertMessage text={securityMessage} success={securityMessage === "Password updated."} />}
                         </div>
-                      ) : null}
-
-                    </>
-                  )}
-                </div>
-              </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <PanelHeader
+                          title="Change Password"
+                          description="Password changes are managed by your sign-in provider for this account."
+                        />
+                        <div className="mt-4 rounded-2xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-4 text-sm leading-6 text-[#7a819c]">
+                          Use your sign-in provider account settings to update your password.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
             </main>
           </div>
         </div>
       </div>
-
-      {referralCopyNotice ? (
-        <div
-          className={`fixed bottom-6 left-1/2 z-[100] max-w-[min(92vw,400px)] -translate-x-1/2 rounded-xl border px-4 py-3 text-center text-sm font-medium shadow-[0_12px_40px_rgba(15,23,42,0.18)] ${
-            referralCopyNotice.error
-              ? "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
-              : "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
-          }`}
-          role="status"
-        >
-          {referralCopyNotice.text}
-        </div>
-      ) : null}
     </Layout>
   );
 }
 
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-[10px] rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
+      <b className="block text-sm font-semibold">{label}</b>
+      <span className="min-w-0 break-words text-right text-sm font-semibold text-[#202437]">{value}</span>
+    </div>
+  );
+}
+
+function PanelHeader({ title, description, actions }: { title: string; description: string; actions?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 className="text-xl font-semibold tracking-[-0.02em]">{title}</h2>
+        <p className="mt-2 max-w-[78ch] text-sm leading-6 text-[#7a819c]">{description}</p>
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+function AlertMessage({ text, success }: { text: string; success: boolean }) {
+  return (
+    <div
+      className={`mt-3 rounded-xl border px-3 py-2.5 text-sm font-medium ${
+        success
+          ? "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
+          : "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
+      }`}
+      role={success ? "status" : "alert"}
+    >
+      {text}
+    </div>
+  );
+}
