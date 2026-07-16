@@ -97,24 +97,24 @@ function statusText(value: unknown) {
   return raw ? raw.replace(/_/g, " ") : "No status";
 }
 
+function textValue(value: unknown, fallback = "Not set") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
 function StatusPill({ children, tone = "gray" }: { children: string; tone?: "green" | "amber" | "gray" | "purple" | "blue" }) {
   const tones = {
-    green: "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]",
-    amber: "border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] text-[#b45309]",
-    gray: "border-[#e0e3f0] bg-white text-[#7a819c]",
-    purple: "border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,.08)] text-[#4f46e5]",
-    blue: "border-[rgba(59,130,246,.35)] bg-[rgba(59,130,246,.08)] text-[#2563eb]",
+    green: "user-pill-green",
+    amber: "user-pill-amber",
+    gray: "",
+    purple: "user-pill-purple",
+    blue: "user-pill-purple",
   };
-  return (
-    <span className={`inline-flex min-h-7 shrink-0 items-center rounded-full border border-dashed px-3 text-xs font-semibold ${tones[tone]}`}>
-      {children}
-    </span>
-  );
+  return <span className={`user-pill ${tones[tone]}`}>{children}</span>;
 }
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)] ${className}`}>
+    <section className={`user-card overflow-hidden ${className}`}>
       {children}
     </section>
   );
@@ -124,8 +124,8 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
   return (
     <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h2 className="text-lg font-semibold tracking-[-0.02em] text-[#202437]">{title}</h2>
-        {subtitle && <p className="mt-1 max-w-3xl text-sm leading-6 text-[#7a819c]">{subtitle}</p>}
+        <h2 className="user-section-title">{title}</h2>
+        {subtitle && <p className="user-body-sm mt-1 max-w-3xl">{subtitle}</p>}
       </div>
     </div>
   );
@@ -143,14 +143,14 @@ function SummaryTile({
   icon: ReactNode;
 }) {
   return (
-    <div className="flex min-h-[112px] items-start gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-4">
-      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
+    <div className="user-stat-tile flex min-h-[112px] items-start gap-3">
+      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.06)] text-[#4338ca]">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#a0a5bf]">{label}</p>
-        <p className="mt-1 break-words text-lg font-semibold tracking-[-0.02em] text-[#202437]">{value}</p>
-        {helper && <p className="mt-1 text-xs leading-5 text-[#7a819c]">{helper}</p>}
+        <p className="user-label">{label}</p>
+        <p className="user-stat-value mt-1 break-words text-lg">{value}</p>
+        {helper && <p className="user-helper mt-1">{helper}</p>}
       </div>
     </div>
   );
@@ -158,12 +158,12 @@ function SummaryTile({
 
 function EmptyState({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-5 text-center">
-      <div className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
+    <div className="user-detail-surface p-5 text-center">
+      <div className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.06)] text-[#4338ca]">
         {icon}
       </div>
-      <h3 className="mt-3 text-sm font-semibold text-[#202437]">{title}</h3>
-      <p className="mt-1 text-sm leading-6 text-[#7a819c]">{text}</p>
+      <h3 className="user-card-title mt-3">{title}</h3>
+      <p className="user-helper mt-1">{text}</p>
     </div>
   );
 }
@@ -274,6 +274,11 @@ export default function PaymentsPage() {
     () => catalog?.plans.find((plan) => plan.planId === billing?.plan_id) ?? null,
     [billing?.plan_id, catalog?.plans]
   );
+  const planNameById = useMemo(() => {
+    const names = new Map<string, string>();
+    catalog?.plans.forEach((plan) => names.set(plan.planId, plan.name));
+    return names;
+  }, [catalog?.plans]);
   const latestTransaction = history?.transactions[0] ?? null;
   const hasActiveBillingPlan = Boolean(
     billing?.plan_id &&
@@ -291,6 +296,7 @@ export default function PaymentsPage() {
       return assignedGateways.length > 0 && mappings.length > 0;
     })
   );
+  const activeAccessCountLabel = `${activeEntitlements.length} active access grant${activeEntitlements.length === 1 ? "" : "s"}`;
 
   async function startCheckout(plan: Serialized<BillingPlan>, gatewayId: string | null) {
     if (!currentUser) return;
@@ -331,10 +337,16 @@ export default function PaymentsPage() {
   if (loading || (currentUser && docLoading)) {
     return (
       <Layout>
-        <main className="flex min-h-screen items-center justify-center bg-[#f5f6fb] px-4">
-          <div className="text-center">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#e0e3f0] border-b-[#6a5cff]" />
-            <p className="mt-4 text-sm font-medium text-[#7a819c]">Loading payments...</p>
+        <main className="user-page">
+          <div className="user-page-container">
+            <div className="user-card mx-auto mt-12 max-w-xl p-5">
+              <p className="user-card-title">Loading payments</p>
+              <div className="mt-4 grid gap-3">
+                <div className="user-skeleton h-5 w-2/3" />
+                <div className="user-skeleton h-4 w-full" />
+                <div className="user-skeleton h-4 w-3/4" />
+              </div>
+            </div>
           </div>
         </main>
       </Layout>
@@ -345,45 +357,47 @@ export default function PaymentsPage() {
 
   return (
     <Layout>
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.08),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(79,70,229,0.05),transparent_55%),#f5f6fb]">
-        <div className="mx-auto max-w-[1220px] px-4 pb-14 pt-[18px] text-[#202437] max-[560px]:px-[14px] max-[560px]:pb-[46px] max-[560px]:pt-[14px]">
-          <header className="pb-[14px] pt-[18px]">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
+      <main className="user-page">
+        <div className="user-page-container">
+          <header className="user-page-header">
+            <div className="user-page-header-row">
+              <div className="user-page-header-copy">
+                <p className="user-eyebrow inline-flex items-center gap-2">
+                  <span className="user-accent-dot" />
+                  Billing Center
+                </p>
+                <h1 className="user-page-title mt-2">Payments & Access</h1>
+                <p className="user-body-sm mt-3">
+                  Manage your NursingMocks access, review payment transactions, and choose a one-time access plan when checkout is available.
+                </p>
+                <div className="user-page-header-meta mt-4">
                   <StatusPill tone={activeEntitlements.length > 0 ? "green" : "amber"}>
                     {activeEntitlements.length > 0 ? "Access active" : "No paid access"}
                   </StatusPill>
-                  <StatusPill tone={testCheckoutAvailable ? "purple" : "gray"}>
-                    {testCheckoutAvailable ? "Checkout ready" : "Checkout unavailable"}
+                  <StatusPill tone={testCheckoutAvailable ? "purple" : "amber"}>
+                    {testCheckoutAvailable ? "Checkout ready" : "Checkout not ready"}
                   </StatusPill>
                 </div>
-                <h1 className="mt-3 text-[30px] font-extrabold tracking-[-0.03em] text-[#202437] max-[560px]:text-2xl">
-                  Payments & Access
-                </h1>
-                <p className="mt-2 max-w-[96ch] text-sm font-medium leading-6 text-[#7a819c]">
-                  Manage your NursingMocks access, review payment transactions, and choose a one-time access plan when checkout is available.
-                </p>
               </div>
 
-              <div className="w-full rounded-2xl bg-white p-4 shadow-[0_18px_45px_rgba(23,35,79,.08)] sm:w-[360px]">
+              <div className="user-card w-full p-4 sm:w-[360px]">
                 <div className="flex items-center gap-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-[rgba(106,92,255,.45)] bg-white text-[#6a5cff]">
+                  <div className="grid h-11 w-11 place-items-center rounded-full border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.06)] text-[#4338ca]">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#a0a5bf]">Current Plan</p>
-                    <p className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[#202437]">{activePlan?.name ?? billing?.plan_id ?? "No paid plan"}</p>
+                    <p className="user-label">Current Plan</p>
+                    <p className="user-card-title mt-1">{activePlan?.name ?? billing?.plan_id ?? "No paid plan"}</p>
                   </div>
                 </div>
-                <div className="mt-4 grid gap-2 text-sm text-[#7a819c]">
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] px-3 py-2">
-                    <span>Provider</span>
-                    <span className="font-semibold text-[#202437]">{billing?.active_provider ?? "Not set"}</span>
+                <div className="mt-4 grid gap-2">
+                  <div className="user-detail-surface flex items-center justify-between gap-3 px-3 py-2">
+                    <span>Payment provider</span>
+                    <span className="font-semibold text-[#0f172a]">{billing?.active_provider ?? "Not set"}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] px-3 py-2">
+                  <div className="user-detail-surface flex items-center justify-between gap-3 px-3 py-2">
                     <span>Access ends</span>
-                    <span className="font-semibold text-[#202437]">{formatDate(billing?.current_period_end)}</span>
+                    <span className="font-semibold text-[#0f172a]">{formatDate(billing?.current_period_end)}</span>
                   </div>
                 </div>
               </div>
@@ -391,24 +405,34 @@ export default function PaymentsPage() {
           </header>
 
           {error && (
-            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-              {error}
+            <div className="user-alert user-alert-error mb-5" role="alert">
+              <span className="user-alert-icon" aria-hidden="true">x</span>
+              <div>
+                <p className="user-card-title">Billing error</p>
+                <p className="user-helper mt-1">{error}</p>
+              </div>
             </div>
           )}
 
           {checkoutNotice === "success" && (
-            <div className="mb-4 rounded-2xl border border-[rgba(43,170,96,.35)] bg-[rgba(43,170,96,.10)] p-4 text-sm text-[#166534]">
-              <p className="font-semibold">Checkout returned successfully.</p>
-              <p className="mt-1">
-                Access updates after the payment provider sends a verified webhook. Refresh this page after a moment if access is not visible yet.
-              </p>
+            <div className="user-alert user-alert-success mb-5" role="status">
+              <span className="user-alert-icon" aria-hidden="true">ok</span>
+              <div>
+                <p className="user-card-title">Checkout returned successfully</p>
+                <p className="user-helper mt-1">
+                  Access updates after the payment provider sends a verified webhook. Refresh this page after a moment if access is not visible yet.
+                </p>
+              </div>
             </div>
           )}
 
           {checkoutNotice === "cancelled" && (
-            <div className="mb-4 rounded-2xl border border-[rgba(245,158,11,.35)] bg-[rgba(245,158,11,.10)] p-4 text-sm text-[#92400e]">
-              <p className="font-semibold">Checkout was cancelled.</p>
-              <p className="mt-1">No access changed. You can choose a plan below whenever you are ready.</p>
+            <div className="user-alert user-alert-warning mb-5" role="status">
+              <span className="user-alert-icon" aria-hidden="true">!</span>
+              <div>
+                <p className="user-card-title">Checkout was cancelled</p>
+                <p className="user-helper mt-1">No access changed. You can choose a plan below whenever you are ready.</p>
+              </div>
             </div>
           )}
 
@@ -416,7 +440,7 @@ export default function PaymentsPage() {
             <SummaryTile
               label="Access Status"
               value={activeEntitlements.length > 0 ? "Active" : "Not active"}
-              helper={`${activeEntitlements.length} active access grant(s)`}
+              helper={activeAccessCountLabel}
               icon={<PackageCheck className="h-5 w-5" />}
             />
             <SummaryTile
@@ -445,12 +469,18 @@ export default function PaymentsPage() {
                 <div className="border-b border-[#edf0f7] p-5">
                   <SectionHeader
                     title="Available Plans"
-                    subtitle="Choose a one-time access plan. Checkout is enabled only when the plan has a ready payment gateway and provider price mapping."
+                    subtitle="Choose a one-time access plan. Checkout stays disabled when payment setup is incomplete or the same plan is already active on your account."
                   />
                 </div>
 
                 {catalogLoading ? (
-                  <p className="p-5 text-sm text-[#7a819c]">Loading plans...</p>
+                  <div className="p-5">
+                    <div className="grid gap-3">
+                      <div className="user-skeleton h-5 w-2/3" />
+                      <div className="user-skeleton h-4 w-full" />
+                      <div className="user-skeleton h-4 w-3/4" />
+                    </div>
+                  </div>
                 ) : !catalog || catalog.plans.length === 0 ? (
                   <div className="p-5">
                     <EmptyState
@@ -476,17 +506,13 @@ export default function PaymentsPage() {
                       return (
                         <article
                           key={plan.planId}
-                          className={`flex min-h-[300px] flex-col rounded-2xl border p-4 ${
-                            ready
-                              ? "border-[rgba(106,92,255,.26)] bg-[rgba(106,92,255,.045)]"
-                              : "border-[#e0e3f0] bg-white"
-                          }`}
+                          className={`flex min-h-[300px] flex-col p-4 ${ready ? "user-feature-surface" : "user-detail-surface"}`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-[#a0a5bf]">One-time access</p>
-                              <h3 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[#202437]">{plan.name}</h3>
-                              <p className="mt-2 text-sm leading-6 text-[#7a819c]">
+                              <p className="user-label">One-time access</p>
+                              <h3 className="user-card-title mt-1 text-lg">{plan.name}</h3>
+                              <p className="user-helper mt-2">
                                 {plan.shortDescription || plan.description || "NursingMocks access plan"}
                               </p>
                             </div>
@@ -494,10 +520,10 @@ export default function PaymentsPage() {
                           </div>
 
                           <div className="mt-5">
-                            <p className="text-4xl font-bold tracking-[-0.04em] text-[#202437]">
+                            <p className="user-stat-value">
                               {plan.currency} {plan.price}
                             </p>
-                            <p className="mt-1 text-sm font-medium text-[#7a819c]">
+                            <p className="user-helper mt-1">
                               {plan.purchaseType === "one_time" ? "One payment for access" : statusText(plan.purchaseType)}
                             </p>
                           </div>
@@ -513,11 +539,7 @@ export default function PaymentsPage() {
                               type="button"
                               disabled={!canCheckout || checkingOut}
                               onClick={() => void startCheckout(plan, testGateway?.gatewayId ?? null)}
-                              className={`inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
-                                canCheckout && !checkingOut
-                                  ? "bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] hover:-translate-y-px hover:shadow-[0_18px_42px_rgba(79,70,229,.33)]"
-                                  : "cursor-not-allowed border border-[#e0e3f0] bg-[#f5f6fb] text-[#a0a5bf]"
-                              }`}
+                              className={`${canCheckout && !checkingOut ? "user-button-primary" : "user-button-secondary"} w-full gap-2`}
                             >
                               {checkingOut
                                 ? "Starting checkout..."
@@ -529,7 +551,7 @@ export default function PaymentsPage() {
                               {canCheckout && !checkingOut && <ArrowRight className="h-4 w-4" />}
                             </button>
                             {alreadyActive && (
-                              <p className="mt-2 text-center text-xs font-medium text-[#7a819c]">
+                              <p className="user-helper mt-2 text-center">
                                 This plan can be purchased again after your current access period ends.
                               </p>
                             )}
@@ -558,12 +580,17 @@ export default function PaymentsPage() {
                   renderRecord={(record) => (
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
-                        <p className="text-base font-semibold text-[#202437]">{formatMoney(record.amount, record.currency)}</p>
-                        <p className="mt-1 break-words text-xs text-[#7a819c]">{String(record.planId ?? "No plan")}</p>
+                        <p className="user-card-title">{formatMoney(record.amount, record.currency)}</p>
+                        <p className="user-helper mt-1 break-words">
+                          {textValue(record.planNameSnapshot, planNameById.get(textValue(record.planId, "")) ?? "No plan")}
+                        </p>
+                        <p className="user-helper mt-1 break-words">
+                          {textValue(record.paymentMethodSummary, textValue(record.provider, "Provider not recorded"))}
+                        </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                         <StatusPill tone="blue">{statusText(record.status)}</StatusPill>
-                        <span className="text-xs font-medium text-[#7a819c]">Paid {formatDate(record.paidAt ?? record.createdAt)}</span>
+                        <span className="user-helper">Paid {formatDate(record.paidAt ?? record.createdAt)}</span>
                       </div>
                     </div>
                   )}
@@ -589,11 +616,11 @@ export default function PaymentsPage() {
                   ) : (
                     <div className="grid gap-3">
                       {activeEntitlements.map((entitlement) => (
-                        <div key={entitlement} className="flex items-center gap-3 rounded-xl border border-dashed border-[rgba(43,170,96,.35)] bg-[rgba(43,170,96,.08)] p-3">
-                          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-[#2baa60]">
+                        <div key={entitlement} className="user-detail-surface flex items-center gap-3 p-3">
+                          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[rgba(43,170,96,.10)] text-[#15803d]">
                             <CheckCircle2 className="h-5 w-5" />
                           </div>
-                          <p className="min-w-0 text-sm font-semibold text-[#202437]">{entitlementLabel(entitlement)}</p>
+                          <p className="user-card-title min-w-0">{entitlementLabel(entitlement)}</p>
                         </div>
                       ))}
                     </div>
@@ -618,11 +645,11 @@ export default function PaymentsPage() {
                   renderRecord={(record) => (
                     <div>
                       <div className="flex items-start justify-between gap-3">
-                        <p className="font-semibold text-[#202437]">{packageLabel(String(record.packageId ?? "unknown"))}</p>
+                        <p className="user-card-title">{packageLabel(String(record.packageId ?? "unknown"))}</p>
                         <StatusPill tone="purple">{statusText(record.status)}</StatusPill>
                       </div>
-                      <p className="mt-2 text-xs text-[#7a819c]">{String(record.source ?? "No source")}</p>
-                      <p className="mt-2 text-xs font-medium text-[#7a819c]">Granted {formatDate(record.grantedAt ?? record.createdAt)}</p>
+                      <p className="user-helper mt-2">Source: {statusText(record.source)}</p>
+                      <p className="user-helper mt-2">Granted {formatDate(record.grantedAt ?? record.createdAt)}</p>
                     </div>
                   )}
                 />
@@ -653,11 +680,19 @@ function HistoryPanel({
   renderRecord: (record: Record<string, unknown>) => ReactNode;
 }) {
   if (loading) {
-    return <p className="p-5 text-sm text-[#7a819c]">Loading records...</p>;
+    return (
+      <div className="p-5">
+        <div className="grid gap-3">
+          <div className="user-skeleton h-5 w-2/3" />
+          <div className="user-skeleton h-4 w-full" />
+          <div className="user-skeleton h-4 w-3/4" />
+        </div>
+      </div>
+    );
   }
 
   if (unavailable) {
-    return <p className="p-5 text-sm text-[#7a819c]">Billing history is not available right now.</p>;
+    return <p className="user-helper p-5">Billing history is not available right now.</p>;
   }
 
   if (records.length === 0) {
@@ -674,7 +709,7 @@ function HistoryPanel({
         {records.map((record, index) => (
           <article
             key={String(record.id ?? record.transactionId ?? record.subscriptionId ?? record.entitlementId ?? index)}
-            className="rounded-xl border border-[#e0e3f0] bg-white p-4 text-sm transition hover:border-[rgba(106,92,255,.35)] hover:bg-[rgba(106,92,255,.035)]"
+            className="user-detail-surface p-4 transition hover:border-[rgba(79,70,229,0.32)] hover:bg-white"
           >
             {renderRecord(record)}
           </article>

@@ -135,6 +135,7 @@ Use these classes on authenticated user pages:
 - `user-pill-purple`
 - `user-pill-green`
 - `user-pill-amber`
+- `user-pill-red`
 - `user-badge`
 - `user-badge-count`
 - `user-badge-purple`

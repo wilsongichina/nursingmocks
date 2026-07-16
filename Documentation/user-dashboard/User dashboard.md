@@ -996,6 +996,25 @@ Profile action feedback visibility follow-up:
 - kept the shared `user-alert` feedback styling
 - kept profile persistence, preference save behavior, and password update logic unchanged
 
+Dashboard typography standard follow-up:
+
+- updated `/dashboard` to use the shared `/typography` user-page standard
+- replaced the local dashboard background and old `1220px` wrapper with `user-page` and `user-page-container`
+- replaced the custom dashboard hero with `user-page-header`
+- replaced local cards, metric tiles, package cards, empty states, and detail rows with shared `user-card`, `user-stat-tile`, `user-feature-surface`, `user-detail-surface`, `user-pill`, `user-badge`, and `user-alert` patterns
+- replaced local primary and secondary action styles with shared button classes
+- updated the loading state to use the shared skeleton pattern
+- kept the existing dashboard data flow, package grouping, recommendations, profile tasks, referral visibility, and access logic unchanged
+
+Payments typography standard follow-up:
+
+- updated `/payments` to use the shared `/typography` user-page standard
+- replaced the local payments background and old `1220px` wrapper with `user-page` and `user-page-container`
+- replaced the custom payments hero with `user-page-header`
+- replaced local status pills, summary tiles, plan cards, transaction rows, active access rows, empty states, alerts, and loading states with shared `user-*` typography classes
+- improved payment-facing labels so transaction history shows plan/payment method context before internal IDs and checkout readiness language stays user-friendly
+- kept billing catalog loading, checkout session creation, active-plan duplicate purchase blocking, billing history loading, and checkout return notices unchanged
+
 Validation:
 
 ```text

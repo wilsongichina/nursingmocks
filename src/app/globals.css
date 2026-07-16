@@ -905,6 +905,12 @@ body {
   color: #b45309;
 }
 
+.user-pill-red {
+  border-color: rgba(220, 38, 38, 0.38);
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+
 .user-badge {
   display: inline-flex;
   min-height: 1.375rem;
