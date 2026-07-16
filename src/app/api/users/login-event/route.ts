@@ -29,8 +29,10 @@ function authProviderFromToken(provider: unknown): UserDocumentAuthProvider | nu
 }
 
 export async function POST(request: NextRequest) {
+  let uid: string | null = null;
   try {
     const decoded = await requireUserFromAuthorizationHeader(request.headers.get("authorization"));
+    uid = decoded.uid;
     const db = getAdminDb();
     const eventRef = db.collection(USER_LOGIN_EVENTS_COLLECTION).doc();
     const userRef = db.collection(USERS_COLLECTION).doc(decoded.uid);
@@ -73,6 +75,21 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, eventId: eventRef.id });
   } catch (error) {
+    if (uid) {
+      try {
+        await getAdminDb().collection(USERS_COLLECTION).doc(uid).set(
+          {
+            login_metrics: {
+              last_login_event_error: error instanceof Error ? error.message : "Unknown login event error",
+            },
+            updated_at: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch {
+        // Avoid masking the original API failure.
+      }
+    }
     console.error("Login event tracking failed", {
       message: error instanceof Error ? error.message : "Unknown error",
     });

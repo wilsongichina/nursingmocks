@@ -1,20 +1,20 @@
-# User Dashboard Focus and Package Documentation
+# User Dashboard Focus and My Exams Documentation
 
 ## Purpose
 
-This document describes the current user dashboard package taxonomy, recommended focus behavior, and free preview access rules.
+This document describes the current user dashboard My Exams taxonomy, recommended focus behavior, and free preview access rules.
 
-## Package Families
+## My Exams Families
 
-The dashboard supports exactly three package families:
+The dashboard supports exactly three My Exams families:
 
 - Nursing Entrance Exams
 - Nursing Test Bank
 - Nursing Exit Exams
 
-Each family displays two package cards in `My Packages`.
+Each family displays two exam access areas in `My Exams`.
 
-## Package Cards
+## Exam Access Areas
 
 Nursing Entrance Exams:
 
@@ -31,13 +31,13 @@ Nursing Exit Exams:
 - RN Exams
 - LPN Exam
 
-The package names match the left sidebar structure.
+The exam access names match the left sidebar structure.
 
 ## Free Preview Rules
 
-All package families support free preview.
+All My Exams families support free preview.
 
-If a user is not subscribed and does not have an entitlement, each package displays:
+If a user is not subscribed and does not have an entitlement, each exam access area displays:
 
 - status: `Free preview`
 - action: `Start`
@@ -154,7 +154,7 @@ Program type mapping is covered by:
 src/lib/__tests__/program-type.test.ts
 ```
 
-Dashboard package and free preview behavior is covered by:
+Dashboard My Exams and free preview behavior is covered by:
 
 ```text
 src/lib/dashboard/__tests__/dashboard-view-model.test.ts

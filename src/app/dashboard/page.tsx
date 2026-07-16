@@ -11,11 +11,14 @@ import {
   Clock,
   HelpCircle,
   Lock,
+  PlusCircle,
   Settings,
   ShieldCheck,
   Sparkles,
   Target,
   Trophy,
+  Trash2,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
@@ -26,7 +29,7 @@ import {
   type DashboardPackageStatus,
   type DashboardViewModel,
 } from "@/lib/dashboard/dashboard-view-model";
-import { subscribeUserDocument } from "@/lib/user-document-firestore";
+import { subscribeUserDocument, updateUserDashboardExamIds } from "@/lib/user-document-firestore";
 import type { UserDocument } from "@/types/user-document";
 
 function badgeClasses(tone: "green" | "purple" | "amber" | "red" | "gray") {
@@ -55,6 +58,45 @@ const supportLinkClass =
 const detailRowClass =
   "user-detail-surface p-3";
 
+type DashboardExamOption = {
+  id: "ati_teas" | "hesi_a2" | "nursing_test_bank" | "nursing_exit_exams";
+  name: string;
+  description: string;
+  href: string;
+  packageIds: string[];
+};
+
+const DASHBOARD_EXAM_OPTIONS: DashboardExamOption[] = [
+  {
+    id: "ati_teas",
+    name: "ATI TEAS 7",
+    description: "Reading, math, science, and English entrance exam practice.",
+    href: "/teas-7-practice",
+    packageIds: ["ati_teas"],
+  },
+  {
+    id: "hesi_a2",
+    name: "HESI A2",
+    description: "Entrance exam practice for HESI A2 reading, vocabulary, grammar, math, and science.",
+    href: "/hesi-a2-practice-test",
+    packageIds: ["hesi_a2"],
+  },
+  {
+    id: "nursing_test_bank",
+    name: "Nursing Test Bank",
+    description: "RN and LPN practice sets across core nursing school subjects.",
+    href: "/nursing-test-bank",
+    packageIds: ["nursing_test_bank_rn", "nursing_test_bank_lpn"],
+  },
+  {
+    id: "nursing_exit_exams",
+    name: "Nursing Exit Exams",
+    description: "RN and LPN exit exam preparation and predictor-style practice.",
+    href: "/nursing-exit-exam",
+    packageIds: ["nursing_exit_exam_rn", "nursing_exit_exam_lpn"],
+  },
+];
+
 function packageTone(status: DashboardPackageStatus) {
   if (status === "active" || status === "lifetime") return "green";
   if (status === "cancelling" || status === "free") return "purple";
@@ -74,6 +116,10 @@ function packageStatusLabel(status: DashboardPackageStatus) {
     payment_issue: "Payment issue",
   };
   return labels[status];
+}
+
+function hasActiveExamAccess(status: DashboardPackageStatus) {
+  return status === "active" || status === "cancelling" || status === "lifetime";
 }
 
 function Card({
@@ -166,15 +212,25 @@ function ListLink({
   );
 }
 
-function PackageCard({ pkg }: { pkg: DashboardPackage }) {
-  const isStrong = ["active", "cancelling", "lifetime"].includes(pkg.status);
+function PackageCard({
+  pkg,
+  canRemove = false,
+  isRemoving = false,
+  onRemove,
+}: {
+  pkg: DashboardPackage;
+  canRemove?: boolean;
+  isRemoving?: boolean;
+  onRemove?: () => void;
+}) {
+  const isStrong = hasActiveExamAccess(pkg.status);
   return (
     <div
       className={`flex min-h-[248px] flex-col p-4 transition ${isStrong ? "user-feature-surface" : "user-detail-surface"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="user-label">Package</p>
+          <p className="user-label">Exam access</p>
           <h3 className="user-card-title mt-1">{pkg.name}</h3>
         </div>
         <span className={badgeClasses(packageTone(pkg.status))}>
@@ -192,7 +248,7 @@ function PackageCard({ pkg }: { pkg: DashboardPackage }) {
       {pkg.accessEndsAt && (
         <p className="user-helper mt-3">Access through {formatDashboardDate(pkg.accessEndsAt)}</p>
       )}
-      <div className="mt-auto pt-4">
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         <Link
           href={pkg.status === "locked" || pkg.status === "expired" || pkg.status === "payment_issue" ? "/pricing" : pkg.href}
           className={isStrong ? primaryActionClass : secondaryActionClass}
@@ -200,33 +256,197 @@ function PackageCard({ pkg }: { pkg: DashboardPackage }) {
           {pkg.actionLabel}
           <ArrowRight className="h-4 w-4" />
         </Link>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={isRemoving}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[#fecaca] bg-white px-4 py-2 text-sm font-bold text-[#b91c1c] transition hover:bg-[#fff1f2] focus:outline-none focus:ring-2 focus:ring-[#ef4444]/20 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <Trash2 className="h-4 w-4" />
+            {isRemoving ? "Removing..." : "Remove"}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-function PackageGroup({
-  title,
-  packages,
-}: {
-  title: DashboardPackage["family"];
-  packages: DashboardPackage[];
-}) {
+function AddExamCard({ onOpen }: { onOpen: () => void }) {
   return (
-    <section className={detailRowClass}>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="user-card-title">{title}</h3>
-          <p className="user-helper mt-1">Two package cards from the left panel structure.</p>
+    <div className="flex min-h-[248px] flex-col rounded-[18px] border-2 border-dashed border-[#c7d2fe] bg-[#f8f7ff] p-4 transition hover:border-[#8b7cff] hover:bg-white">
+      <div className="grid h-12 w-12 place-items-center rounded-full bg-[#6a5cff] text-white shadow-sm shadow-[#6a5cff]/20">
+        <PlusCircle className="h-6 w-6" />
+      </div>
+      <h3 className="user-card-title mt-4">Add exam</h3>
+      <p className="user-helper mt-2">
+        Choose another exam area to pin to this dashboard.
+      </p>
+      <div className="mt-auto pt-4">
+        <button type="button" onClick={onOpen} className={primaryActionClass}>
+          Choose exam
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function chosenExamOptionId(view: DashboardViewModel): DashboardExamOption["id"] | null {
+  if (view.user.primaryExamId === "ati_teas_7") return "ati_teas";
+  if (view.user.primaryExamId === "hesi_a2") return "hesi_a2";
+  if (view.user.focusAreaLabel === "Nursing Test Bank") return "nursing_test_bank";
+  if (view.user.focusAreaLabel === "Nursing Exit Exam") return "nursing_exit_exams";
+  return null;
+}
+
+function packageIdForChosenExam(view: DashboardViewModel) {
+  if (view.user.primaryExamId === "ati_teas_7") return "ati_teas";
+  if (view.user.primaryExamId === "hesi_a2") return "hesi_a2";
+  if (view.user.focusAreaLabel === "Nursing Test Bank") return "nursing_test_bank_rn";
+  if (view.user.focusAreaLabel === "Nursing Exit Exam") return "nursing_exit_exam_rn";
+  return null;
+}
+
+function packageForExamOption(optionId: DashboardExamOption["id"], packages: DashboardPackage[]) {
+  const option = DASHBOARD_EXAM_OPTIONS.find((item) => item.id === optionId);
+  if (!option) return null;
+  const relatedPackages = packages.filter((pkg) => option.packageIds.includes(pkg.id));
+  const activePackage = relatedPackages.find((pkg) => hasActiveExamAccess(pkg.status));
+  return activePackage ?? relatedPackages[0] ?? null;
+}
+
+function examOptionIdForPackageId(packageId: string): DashboardExamOption["id"] | null {
+  return DASHBOARD_EXAM_OPTIONS.find((option) => option.packageIds.includes(packageId))?.id ?? null;
+}
+
+function dashboardExamPackages(view: DashboardViewModel) {
+  const activePackages = view.packages.filter((pkg) => hasActiveExamAccess(pkg.status));
+  const chosenId = packageIdForChosenExam(view);
+  const chosenActive = chosenId ? activePackages.find((pkg) => pkg.id === chosenId) : null;
+  const chosenPackage = chosenId ? view.packages.find((pkg) => pkg.id === chosenId) : null;
+  const primaryPackage = chosenActive ?? activePackages[0] ?? chosenPackage ?? null;
+  const addedPackages = view.user.dashboardExamIds
+    .map((optionId) => packageForExamOption(optionId as DashboardExamOption["id"], view.packages))
+    .filter((pkg): pkg is DashboardPackage => Boolean(pkg));
+  const byId = new Map<string, DashboardPackage>();
+
+  // Keep the signup/active exam first, then append user-added dashboard exam cards.
+  [primaryPackage, ...addedPackages].forEach((pkg) => {
+    if (pkg) byId.set(pkg.id, pkg);
+  });
+
+  return Array.from(byId.values());
+}
+
+function examOptionStatus(option: DashboardExamOption, packages: DashboardPackage[]) {
+  const relatedPackages = packages.filter((pkg) => option.packageIds.includes(pkg.id));
+  const active = relatedPackages.find((pkg) => hasActiveExamAccess(pkg.status));
+  return active ?? relatedPackages[0] ?? null;
+}
+
+function dashboardExamOptionIds(view: DashboardViewModel, displayedExams: DashboardPackage[]) {
+  const ids = new Set<DashboardExamOption["id"]>();
+  const chosenId = chosenExamOptionId(view);
+  if (chosenId) ids.add(chosenId);
+  displayedExams.forEach((exam) => {
+    const id = DASHBOARD_EXAM_OPTIONS.find((option) => option.packageIds.includes(exam.id))?.id;
+    if (id) ids.add(id);
+  });
+  view.user.dashboardExamIds.forEach((id) => {
+    if (DASHBOARD_EXAM_OPTIONS.some((option) => option.id === id)) {
+      ids.add(id as DashboardExamOption["id"]);
+    }
+  });
+  return ids;
+}
+
+function AddExamModal({
+  options,
+  packages,
+  savingExamId,
+  onAdd,
+  onClose,
+}: {
+  options: DashboardExamOption[];
+  packages: DashboardPackage[];
+  savingExamId: string | null;
+  onAdd: (examId: DashboardExamOption["id"]) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-exam-modal-title"
+        className="user-card max-h-[90vh] w-full max-w-3xl overflow-y-auto p-5 shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[#edf0f7] pb-4">
+          <div>
+            <p className="user-eyebrow">Add exam</p>
+            <h2 id="add-exam-modal-title" className="user-section-title mt-1">
+              Choose another exam area
+            </h2>
+            <p className="user-body-sm mt-2">
+              These are the other exam areas available from your dashboard.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#d9deea] bg-white text-[#475569] transition hover:bg-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-[#6a5cff]/30"
+            aria-label="Close add exam"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <span className="user-badge">{packages.length} packages</span>
+
+        {options.length === 0 ? (
+          <div className="user-detail-surface mt-5 p-5 text-center">
+            <h3 className="user-card-title">All exam areas are already shown</h3>
+            <p className="user-helper mt-1">Your dashboard currently includes every available exam area.</p>
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {options.map((option) => {
+              const statusPackage = examOptionStatus(option, packages);
+              const status = statusPackage?.status ?? "free";
+              const saving = savingExamId === option.id;
+
+              return (
+                <article key={option.id} className="user-detail-surface flex min-h-[230px] flex-col p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="user-card-title">{option.name}</h3>
+                    <span className={badgeClasses(packageTone(status))}>{packageStatusLabel(status)}</span>
+                  </div>
+                  <p className="user-helper mt-3">{option.description}</p>
+                  <div className="mt-auto pt-4">
+                    <button
+                      type="button"
+                      onClick={() => onAdd(option.id)}
+                      disabled={saving}
+                      className={`${saving ? secondaryActionClass : primaryActionClass} w-full`}
+                    >
+                      {saving ? "Adding..." : "Add to dashboard"}
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {packages.map((pkg) => (
-          <PackageCard key={pkg.id} pkg={pkg} />
-        ))}
-      </div>
-    </section>
+    </div>
   );
 }
 
@@ -250,14 +470,51 @@ function EmptyState({
   );
 }
 
-function DashboardContent({ view }: { view: DashboardViewModel }) {
-  const packageFamilies: DashboardPackage["family"][] = [
-    "Nursing Entrance Exams",
-    "Nursing Test Bank",
-    "Nursing Exit Exams",
-  ];
+function DashboardContent({
+  view,
+  uid,
+}: {
+  view: DashboardViewModel;
+  uid: string;
+}) {
+  const [isAddExamOpen, setIsAddExamOpen] = useState(false);
+  const [addExamError, setAddExamError] = useState<string | null>(null);
+  const [savingExamId, setSavingExamId] = useState<string | null>(null);
+  const [removingExamId, setRemovingExamId] = useState<string | null>(null);
+  const featuredExams = dashboardExamPackages(view);
+  const displayedExamIds = dashboardExamOptionIds(view, featuredExams);
+  const addExamOptions = DASHBOARD_EXAM_OPTIONS.filter((option) => !displayedExamIds.has(option.id));
   const focusLabel = view.user.primaryExamName || view.user.focusAreaLabel || "Not selected";
   const focusHref = "/profile?tab=account";
+
+  async function addDashboardExam(examId: DashboardExamOption["id"]) {
+    setAddExamError(null);
+    setSavingExamId(examId);
+    try {
+      const nextExamIds = Array.from(new Set([...view.user.dashboardExamIds, examId]));
+      await updateUserDashboardExamIds(uid, nextExamIds);
+      setIsAddExamOpen(false);
+    } catch {
+      setAddExamError("Could not add this exam to your dashboard.");
+    } finally {
+      setSavingExamId(null);
+    }
+  }
+
+  async function removeDashboardExam(examId: DashboardExamOption["id"]) {
+    setAddExamError(null);
+    setRemovingExamId(examId);
+    try {
+      await updateUserDashboardExamIds(
+        uid,
+        view.user.dashboardExamIds.filter((id) => id !== examId)
+      );
+    } catch {
+      setAddExamError("Could not remove this exam from your dashboard.");
+    } finally {
+      setRemovingExamId(null);
+    }
+  }
 
   return (
     <Layout>
@@ -384,61 +641,84 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
 
               <Card className="p-4">
                 <SectionHeader
-                  title="My Packages"
-                  subtitle="Packages are grouped by the three exam types from the left panel. Each group has two package cards."
+                  title="My Exams"
+                  subtitle="Your dashboard shows the exam you selected or currently have access to. Use Add exam to manage other exam areas."
                 />
-                <div className="space-y-4">
-                  {packageFamilies.map((family) => (
-                    <PackageGroup
-                      key={family}
-                      title={family}
-                      packages={view.packages.filter((pkg) => pkg.family === family)}
-                    />
-                  ))}
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {featuredExams.length > 0 ? (
+                    featuredExams.map((exam) => {
+                      const optionId = examOptionIdForPackageId(exam.id);
+                      const isUserAdded = Boolean(optionId && view.user.dashboardExamIds.includes(optionId));
+                      const canRemove = Boolean(optionId && isUserAdded && !hasActiveExamAccess(exam.status));
+
+                      return (
+                        <PackageCard
+                          key={exam.id}
+                          pkg={exam}
+                          canRemove={canRemove}
+                          isRemoving={optionId === removingExamId}
+                          onRemove={optionId ? () => void removeDashboardExam(optionId) : undefined}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="user-detail-surface flex min-h-[248px] flex-col p-4">
+                      <p className="user-label">Exam focus</p>
+                      <h3 className="user-card-title mt-1">Choose your first exam</h3>
+                      <p className="user-helper mt-3">
+                        Select a study focus so the dashboard can show the right exam first.
+                      </p>
+                      <div className="mt-auto pt-4">
+                        <Link href={focusHref} className={primaryActionClass}>
+                          Choose exam focus
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                  <AddExamCard onOpen={() => setIsAddExamOpen(true)} />
                 </div>
               </Card>
 
-              <div className="grid gap-[18px] xl:grid-cols-2">
-                <Card className="p-4">
-                  <SectionHeader title="Recent activity" subtitle="Owner-scoped attempt history will appear here when reliable attempt data exists." />
-                  {view.recentActivity.length ? (
-                    <div className="space-y-3">
-                      {view.recentActivity.map((item) => (
-                        <ListLink key={item.id} href={item.href}>
-                          <p className="user-card-title">{item.title}</p>
-                          <p className="user-helper mt-1">{item.category}</p>
-                        </ListLink>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<Clock className="h-5 w-5" />}
-                      title="No recent quiz activity yet"
-                      text="The codebase does not currently expose a confirmed owner-scoped attempt feed, so this section stays empty instead of showing fake activity."
-                    />
-                  )}
-                </Card>
+              <Card className="p-4">
+                <SectionHeader title="Recent activity" subtitle="Owner-scoped attempt history will appear here when reliable attempt data exists." />
+                {view.recentActivity.length ? (
+                  <div className="space-y-3">
+                    {view.recentActivity.map((item) => (
+                      <ListLink key={item.id} href={item.href}>
+                        <p className="user-card-title">{item.title}</p>
+                        <p className="user-helper mt-1">{item.category}</p>
+                      </ListLink>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={<Clock className="h-5 w-5" />}
+                    title="No recent quiz activity yet"
+                    text="The codebase does not currently expose a confirmed owner-scoped attempt feed, so this section stays empty instead of showing fake activity."
+                  />
+                )}
+              </Card>
 
-                <Card className="p-4">
-                  <SectionHeader title="Completed Exams" subtitle="Recent completed exams will appear here when result records are available." />
-                  {view.completedExams.length ? (
-                    <div className="space-y-3">
-                      {view.completedExams.map((exam) => (
-                        <ListLink key={exam.id} href={exam.href}>
-                          <p className="user-card-title">{exam.title}</p>
-                          <p className="user-helper mt-1">{formatDashboardDate(exam.completedAt)}</p>
-                        </ListLink>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<CheckCircle2 className="h-5 w-5" />}
-                      title="No completed exams yet"
-                      text="Complete a practice exam and this area can show review links once the result model is connected."
-                    />
-                  )}
-                </Card>
-              </div>
+              <Card className="p-4">
+                <SectionHeader title="Completed Exams" subtitle="Recent completed exams will appear here when result records are available." />
+                {view.completedExams.length ? (
+                  <div className="space-y-3">
+                    {view.completedExams.map((exam) => (
+                      <ListLink key={exam.id} href={exam.href}>
+                        <p className="user-card-title">{exam.title}</p>
+                        <p className="user-helper mt-1">{formatDashboardDate(exam.completedAt)}</p>
+                      </ListLink>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={<CheckCircle2 className="h-5 w-5" />}
+                    title="No completed exams yet"
+                    text="Complete a practice exam and this area can show review links once the result model is connected."
+                  />
+                )}
+              </Card>
             </div>
 
             <aside className="space-y-[18px]">
@@ -552,6 +832,20 @@ function DashboardContent({ view }: { view: DashboardViewModel }) {
           </div>
         </div>
       </main>
+      {isAddExamOpen && (
+        <AddExamModal
+          options={addExamOptions}
+          packages={view.packages}
+          savingExamId={savingExamId}
+          onAdd={(examId) => void addDashboardExam(examId)}
+          onClose={() => setIsAddExamOpen(false)}
+        />
+      )}
+      {addExamError && (
+        <div className="sr-only" role="alert">
+          {addExamError}
+        </div>
+      )}
     </Layout>
   );
 }
@@ -621,7 +915,7 @@ export default function DashboardPage() {
           {docError}
         </div>
       )}
-      <DashboardContent view={view} />
+      <DashboardContent view={view} uid={currentUser.uid} />
     </>
   );
 }

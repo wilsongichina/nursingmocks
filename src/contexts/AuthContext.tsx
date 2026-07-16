@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   User,
   UserCredential,
@@ -47,18 +47,30 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const recordingLoginForUid = useRef<string | null>(null);
 
   async function recordLoginEvent(user: User) {
+    if (typeof window === "undefined") return;
+    if (recordingLoginForUid.current === user.uid) return;
+    recordingLoginForUid.current = user.uid;
+
     try {
       const token = await user.getIdToken();
-      await fetch("/api/users/login-event", {
+      const response = await fetch("/api/users/login-event", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      if (!response.ok) {
+        throw new Error(`Login event request failed with ${response.status}`);
+      }
     } catch (error) {
       console.warn("Login event could not be recorded", error);
+    } finally {
+      if (recordingLoginForUid.current === user.uid) {
+        recordingLoginForUid.current = null;
+      }
     }
   }
 
@@ -78,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fullName: name,
           focusAreas: [normalizedProgram],
         });
-        await recordLoginEvent(userCredential.user);
       }
     );
   }
@@ -90,8 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : browserSessionPersistence;
 
     return setPersistence(auth, persistence).then(() => {
-      return signInWithEmailAndPassword(auth, email, password).then(async (credential) => {
-        await recordLoginEvent(credential.user);
+      return signInWithEmailAndPassword(auth, email, password).then(() => {
+        // onAuthStateChanged records the login event after Firebase confirms the session.
       });
     });
   }
@@ -112,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         providerOverride: "google",
         focusAreas: normalizedProgram ? [normalizedProgram] : undefined,
       });
-      await recordLoginEvent(u);
       return credential;
     });
   }
@@ -142,6 +152,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
+      if (user) {
+        void recordLoginEvent(user);
+      }
     });
 
     return unsubscribe;

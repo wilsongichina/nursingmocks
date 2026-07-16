@@ -82,6 +82,7 @@ export interface DashboardViewModel {
     primaryExamId: string | null;
     primaryExamName: string | null;
     focusAreaLabel: string | null;
+    dashboardExamIds: string[];
     accountStatusLabel: string;
     userDocumentExists: boolean;
   };
@@ -533,6 +534,7 @@ export function buildDashboardViewModel(doc: UserDocument | null, authUser: User
       primaryExamId,
       primaryExamName,
       focusAreaLabel,
+      dashboardExamIds: doc?.profile?.dashboard_exam_ids?.filter((id): id is string => typeof id === "string" && id.trim().length > 0) ?? [],
       accountStatusLabel: ACCOUNT_STATUS_LABELS[doc?.account_state?.status ?? "active"] ?? "Active",
       userDocumentExists: Boolean(doc),
     },

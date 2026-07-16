@@ -90,6 +90,7 @@ export function buildProfileView(
   accessStatusLabel: string;
   accountStatusLabel: string;
   planLabel: string;
+  packageAccessLabel: string;
   billingIntervalLabel: string;
   accessUntilLabel: string;
   referralCode: string;
@@ -177,6 +178,10 @@ export function buildProfileView(
       : "Password";
 
   const normalizedEntitlements = normalizeUserEntitlements(doc?.entitlements);
+  const activePackageLabels = USER_ENTITLEMENT_KEYS
+    .filter((key) => normalizedEntitlements[key])
+    .map((key) => USER_ENTITLEMENT_LABELS[key]);
+  const packageAccessLabel = activePackageLabels.length > 0 ? activePackageLabels.join(", ") : "No exam access";
   const entitlements = USER_ENTITLEMENT_KEYS.map((key) => {
     return {
       key,
@@ -219,6 +224,7 @@ export function buildProfileView(
     accessStatusLabel,
     accountStatusLabel,
     planLabel,
+    packageAccessLabel,
     billingIntervalLabel,
     accessUntilLabel,
     referralCode: code || "-",

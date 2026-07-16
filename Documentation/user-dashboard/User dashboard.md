@@ -1198,6 +1198,18 @@ Result:
 - scanned 10 current `users` documents
 - changed 0 documents
 
+### Manual entitlement UI clarification
+
+During user-table testing, a manually granted `ati_teas_7` entitlement correctly made access active while leaving billing fields empty.
+
+Updated Profile and Payments wording so this state is clearer:
+
+- Profile side summary now shows `Package access` separately from `Paid plan`
+- Profile changed `Access ends` to `Billing access ends`
+- Payments changed `Plan` to `Paid Plan`
+- Payments changed `Access End` to `Billing Access End`
+- Payments helper text now explains that manual or payment-granted access can exist without a paid plan or access end date
+
 Validation run:
 
 ```text
@@ -1640,3 +1652,149 @@ Validation run:
 Result:
 
 - TypeScript passed.
+
+## Follow-up: My Exams terminology standard
+
+Updated user-facing dashboard terminology so students see `My Exams` instead of `My Packages`.
+
+Terminology rule:
+
+- user dashboard pages should refer to student content access as `My Exams`, `Exam access`, `Exam areas`, or `Access options`
+- avoid `My Packages`, `Package access`, `View Package`, and similar package wording on student-facing screens
+- internal billing configuration may still use `packageIds` and package identifiers because those are the entitlement keys used by payment plans and admin configuration
+
+Files changed:
+
+- `src/app/dashboard/page.tsx`
+- `src/app/dashboard/my-exams/page.tsx`
+- `src/app/profile/page.tsx`
+- `src/app/payments/page.tsx`
+- `src/lib/profile-view-model.ts`
+- `Documentation/user-dashboard/User dashboard.md`
+
+## Follow-up: focused dashboard My Exams cards
+
+Updated the main user dashboard `My Exams` section so it stays focused and easier to manage.
+
+Behavior:
+
+- the dashboard now shows one primary exam card instead of all exam access areas
+- if the user has an active exam entitlement, the dashboard shows one active exam card
+- if the active entitlement matches the signup-selected exam focus, that selected active exam is preferred
+- if the user has no active entitlement, the dashboard shows the signup-selected exam focus when available
+- Nursing Test Bank and Nursing Exit Exam signup choices are family-level, so the dashboard uses one representative card while the full list remains available from `My Exams`
+- a second `Add exam` card links to `/dashboard/my-exams` so users can browse or add other exam areas
+- if no focus exists, the dashboard shows a `Choose exam focus` card linked to profile account settings
+
+Files changed:
+
+- `src/app/dashboard/page.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: dashboard Add exam modal
+
+Changed the dashboard `Add exam` card from a link into an in-page modal.
+
+Behavior:
+
+- clicking `Add exam` now opens a popup instead of navigating to `/dashboard/my-exams`
+- the popup displays the other three top-level exam areas, excluding the exam currently shown on the dashboard
+- modal options use the same access status badges as the dashboard exam card
+- active exam areas link directly to the exam area
+- preview exam areas use `Start preview`
+- locked, expired, or payment-issue exam areas route to access options
+- the modal can be closed with the close button or `Escape`
+
+Files changed:
+
+- `src/app/dashboard/page.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: saved dashboard exam cards
+
+Updated the dashboard `Add exam` flow so added exams remain visible in the dashboard area.
+
+Behavior:
+
+- clicking `Add to dashboard` in the modal saves the selected exam area to `users/{uid}.profile.dashboard_exam_ids`
+- the dashboard keeps the original signup/active exam first
+- saved dashboard exams render as additional exam cards beside the original exam card
+- the add modal excludes every exam area already shown on the dashboard
+- if all four top-level exam areas are already visible, the modal shows an empty state instead of duplicate options
+- this is a dashboard display preference only; it does not grant paid access, change entitlements, or overwrite `profile.focus_areas`
+
+Data fields:
+
+- `profile.focus_areas`: original signup/profile focus
+- `profile.primary_exam_id`: primary ATI TEAS 7 or HESI A2 focus when applicable
+- `profile.dashboard_exam_ids`: optional user-managed dashboard card list
+
+Files changed:
+
+- `src/app/dashboard/page.tsx`
+- `src/lib/dashboard/dashboard-view-model.ts`
+- `src/lib/user-document-firestore.ts`
+- `src/types/user-document.ts`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: dashboard exam card remove rules
+
+Updated the dashboard My Exams card management controls.
+
+Behavior:
+
+- the `Add exam` card now has a distinct dashed, violet-tinted design so it does not look like a normal exam card
+- manually-added exam cards can be removed only when the card does not have active access
+- active, cancelling, and lifetime access cards do not show a remove action
+- the original signup/active exam card is not removable because it is not stored as a user-added dashboard card
+- removing an eligible exam updates `users/{uid}.profile.dashboard_exam_ids`
+
+Files changed:
+
+- `src/app/dashboard/page.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: full-width dashboard activity sections
+
+Updated the main dashboard layout so activity sections are easier to scan.
+
+Behavior:
+
+- `Recent activity` now renders as its own full-width card
+- `Completed Exams` now renders as a separate full-width card below it
+- removed the large-screen two-column wrapper that previously placed both cards side by side
+
+Files changed:
+
+- `src/app/dashboard/page.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```

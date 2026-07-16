@@ -555,8 +555,9 @@ export default function ProfilePage() {
                 <div className="mt-4 grid gap-[10px]">
                   <InfoRow label="Program" value={view.programTypeLabel} />
                   <InfoRow label="Recommended focus" value={view.primaryExamLabel} />
-                  <InfoRow label="Current plan" value={view.planLabel} />
-                  <InfoRow label="Access ends" value={view.accessUntilLabel} />
+                  <InfoRow label="Exam access" value={view.packageAccessLabel} />
+                  <InfoRow label="Paid plan" value={view.planLabel} />
+                  <InfoRow label="Billing access ends" value={view.accessUntilLabel} />
                 </div>
 
                 <div className="mt-4 grid gap-2">

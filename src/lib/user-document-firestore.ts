@@ -28,6 +28,12 @@ import { inferPrimaryExamIdFromProgramType } from "@/lib/program-type";
 import { defaultUserEntitlements } from "@/lib/user-entitlements";
 
 const USERS_COLLECTION = "users";
+const DASHBOARD_EXAM_IDS = new Set([
+  "ati_teas",
+  "hesi_a2",
+  "nursing_test_bank",
+  "nursing_exit_exams",
+]);
 
 function mapAuthProvider(user: User): UserDocumentAuthProvider {
   const providerId = user.providerData[0]?.providerId;
@@ -81,6 +87,7 @@ function buildInitialUserPayload(
       locale: "en",
       primary_exam_id: inferPrimaryExamId(opts.focusAreas),
       focus_areas: opts.focusAreas ?? [],
+      dashboard_exam_ids: [],
     },
 
     preferences: {
@@ -335,4 +342,15 @@ export async function updateUserPreferenceFields(
     updates["preferences.defaults.quiz_mode"] = patch.quiz_mode;
   }
   await updateDoc(ref, updates);
+}
+
+export async function updateUserDashboardExamIds(uid: string, examIds: string[]): Promise<void> {
+  const ref = doc(db, USERS_COLLECTION, uid);
+  const normalized = Array.from(
+    new Set(examIds.filter((examId) => DASHBOARD_EXAM_IDS.has(examId)))
+  );
+  await updateDoc(ref, {
+    "profile.dashboard_exam_ids": normalized,
+    updated_at: serverTimestamp(),
+  });
 }

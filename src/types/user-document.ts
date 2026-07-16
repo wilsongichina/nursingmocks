@@ -11,6 +11,7 @@ export interface UserDocumentProfile {
   locale: string;
   primary_exam_id: string | null;
   focus_areas: string[];
+  dashboard_exam_ids?: string[];
 }
 
 export interface UserDocumentPreferences {
@@ -48,6 +49,7 @@ export interface UserDocumentLoginMetrics {
   last_ip_address: string | null;
   last_user_agent: string | null;
   last_login_provider: UserDocumentAuthProvider | null;
+  last_login_event_error?: string | null;
 }
 
 export interface UserDocumentBilling {

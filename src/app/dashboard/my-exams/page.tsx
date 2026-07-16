@@ -60,7 +60,7 @@ function statusTone(status: ExamProgressStatus, access: ExamAccessState) {
 }
 
 function primaryAction(exam: MyExamItem) {
-  if (exam.accessState === "locked") return { label: "View Package", href: "/payments", className: "user-button-secondary" };
+  if (exam.accessState === "locked") return { label: "View Access Options", href: "/payments", className: "user-button-secondary" };
   if (exam.accessState === "preview") return { label: "Start Free Preview", href: exam.href, className: "user-button-secondary" };
   if (exam.progressStatus === "in_progress") return { label: "Continue", href: exam.href, className: "user-button-primary" };
   if (exam.progressStatus === "completed") return { label: "Review Results", href: "/progress-reports", className: "user-button-secondary" };
@@ -218,7 +218,7 @@ function AccessSummary({ view }: { view: MyExamsViewModel }) {
         {!view.hasPaidAccess && (
           <div className="user-detail-surface max-w-xl p-3">
             <p className="user-card-title text-sm">Start with a free preview</p>
-            <p className="user-helper mt-1">Try available preview questions, then view packages when you are ready to unlock complete exams.</p>
+            <p className="user-helper mt-1">Try available preview questions, then view access options when you are ready to unlock complete exams.</p>
           </div>
         )}
       </div>
@@ -305,7 +305,7 @@ function MyExamsContent({ view }: { view: MyExamsViewModel }) {
           : !view.hasPaidAccess
             ? {
                 title: "Start with a free preview",
-                text: "Try the available preview questions or view packages to unlock complete exams.",
+                text: "Try the available preview questions or view access options to unlock complete exams.",
                 icon: <Sparkles className="h-5 w-5" />,
               }
             : {
@@ -466,7 +466,7 @@ function MyExamsContent({ view }: { view: MyExamsViewModel }) {
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h2 className="user-section-title">More exams available</h2>
-                    <p className="user-body-sm mt-1">Package-level options that are not currently included in your access.</p>
+                    <p className="user-body-sm mt-1">Exam access options that are not currently included in your account.</p>
                   </div>
                   <LockKeyhole className="hidden h-5 w-5 text-[#4338ca] sm:block" />
                 </div>
@@ -478,7 +478,7 @@ function MyExamsContent({ view }: { view: MyExamsViewModel }) {
                       <p className="user-helper mt-2">{pkg.description}</p>
                       <div className="mt-auto pt-4">
                         <Link href={pkg.href} className="user-button-secondary gap-2">
-                          View Package
+                          View Access Options
                           <ArrowRight className="h-4 w-4" />
                         </Link>
                       </div>

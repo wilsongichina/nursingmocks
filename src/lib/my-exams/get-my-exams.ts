@@ -220,7 +220,7 @@ const LOCKED_PACKAGES: MyExamLockedPackage[] = [
   {
     id: "all-access",
     name: "All Access",
-    description: "Unlock all entrance, test bank, and exit exam packages.",
+    description: "Unlock all entrance, test bank, and exit exam sets.",
     packageIds: ["ati_teas_7", "hesi_a2", "nursing_test_bank", "nursing_exit_exams"],
     href: "/payments",
     includedExamCount: EXAM_CATALOG.length,

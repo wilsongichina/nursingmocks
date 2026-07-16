@@ -444,9 +444,9 @@ export default function PaymentsPage() {
               icon={<PackageCheck className="h-5 w-5" />}
             />
             <SummaryTile
-              label="Plan"
+              label="Paid Plan"
               value={activePlan?.name ?? billing?.plan_id ?? "No paid plan"}
-              helper="Based on your account billing snapshot"
+              helper={activeEntitlements.length > 0 ? "Manual or payment-granted access can exist without a paid plan." : "Based on your account billing snapshot"}
               icon={<Sparkles className="h-5 w-5" />}
             />
             <SummaryTile
@@ -456,9 +456,9 @@ export default function PaymentsPage() {
               icon={<ReceiptText className="h-5 w-5" />}
             />
             <SummaryTile
-              label="Access End"
+              label="Billing Access End"
               value={formatDate(billing?.current_period_end)}
-              helper="One-time access may show lifetime or no end date"
+              helper={activeEntitlements.length > 0 && !billing?.current_period_end ? "No end date is set for this access grant." : "One-time access may show lifetime or no end date"}
               icon={<Clock3 className="h-5 w-5" />}
             />
           </section>
@@ -611,7 +611,7 @@ export default function PaymentsPage() {
                     <EmptyState
                       icon={<LockKeyhole className="h-5 w-5" />}
                       title="No active paid access"
-                      text="Choose a plan to unlock exam packages and study materials."
+                      text="Choose a plan to unlock My Exams and study materials."
                     />
                   ) : (
                     <div className="grid gap-3">
