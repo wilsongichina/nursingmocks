@@ -13,7 +13,7 @@ export default function TermsAndConditionsPage() {
       {/* Terms Hero */}
       <div className="bg-gradient-to-br from-[#eef2ff] to-[#fdf2ff] border-b border-[#e5e7eb]">
         <section className="public-page-container py-[42px] pb-[30px]">
-          <div className="max-w-[980px] mx-auto">
+          <div>
             <div className="text-[12px] uppercase tracking-[0.18em] text-[#4f46e5] flex gap-[10px] items-center flex-wrap mb-2">
               <span className="px-[10px] py-1 rounded-full border border-[#c4b5fd] bg-[rgba(255,255,255,0.7)] text-[#4c1d95]">
                 Terms &amp; Conditions
@@ -51,8 +51,8 @@ export default function TermsAndConditionsPage() {
       </div>
 
       {/* Terms Main Content */}
-      <main className="flex-1 py-[30px] pb-10 flex justify-center public-page-container">
-        <section className="w-full max-w-[980px]">
+      <main className="flex-1 py-[30px] pb-10 public-page-container">
+        <section className="w-full">
           <article className="bg-white rounded-[22px] border border-[#e5e7eb] pt-[18px] px-4 pb-4 md:pt-[22px] md:px-[22px] md:pb-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
             <p className="mt-1 text-[14px] leading-[1.7] text-[#374151] m-0 mb-2.5">
               NursingMocks (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or

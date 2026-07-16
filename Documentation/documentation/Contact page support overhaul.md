@@ -18,6 +18,8 @@ The public `/contact` page was redesigned to be a focused NursingMocks support p
 - Updated contact-page typography and capitalization so headings, action labels, form labels, and option labels use consistent title case while helper text and descriptions stay sentence style.
 - Hardened the contact form sending path so support requests are still saved and email jobs are still queued even when immediate email delivery cannot run during the request.
 - The contact API now reports whether contact emails were sent immediately, queued for worker processing, or need support review.
+- Refined the contact page to follow the homepage layout more closely: shared hero grid, compact `clamp(31px,8vw,44px)` mobile title behavior, homepage card shadows, 13-15px copy rhythm, gradient information band, and full-width mobile form actions.
+- Normalized visible contact-page capitalization so headings, form labels, select placeholders, support categories, and action labels use consistent sentence/title casing without awkward capitalized small words.
 
 ## Validation
 

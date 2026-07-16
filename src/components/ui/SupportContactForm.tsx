@@ -25,19 +25,19 @@ const initialFormData: SupportFormData = {
 };
 
 const topicOptions = [
-  "Account And Login",
-  "Payment Or Billing",
+  "Account and Login",
+  "Payment or Billing",
   "Exam Access",
   "Technical Problem",
-  "Results Or Progress",
+  "Results or Progress",
   "Content Feedback",
   "Other",
 ];
 
 const urgencyOptions = [
-  "I Have An Exam This Week",
-  "I Have An Exam This Month",
-  "General Question",
+  "I have an exam this week",
+  "I have an exam this month",
+  "General question",
 ];
 
 function isValidEmail(value: string) {
@@ -153,10 +153,10 @@ export default function SupportContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit} className="grid gap-3.5" noValidate>
       {submitState.status !== "idle" && (
         <div
-          className={`flex gap-3 rounded-2xl border px-4 py-3 text-[14px] leading-6 ${
+          className={`flex gap-3 rounded-[16px] border px-3 py-2.5 text-[13px] leading-[1.6] ${
             submitState.status === "success"
               ? "border-[#bbf7d0] bg-[#ecfdf3] text-[#166534]"
               : "border-[#fecaca] bg-[#fef2f2] text-[#991b1b]"
@@ -173,10 +173,10 @@ export default function SupportContactForm() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3.5 md:grid-cols-2">
         <div>
-          <label htmlFor="support-name" className="mb-2 block text-[14px] font-semibold text-[#374151]">
-            Full Name
+          <label htmlFor="support-name" className="mb-1.5 block text-[13px] font-semibold text-[#374151]">
+            Full name
           </label>
           <input
             id="support-name"
@@ -185,14 +185,14 @@ export default function SupportContactForm() {
             autoComplete="name"
             value={formData.name}
             onChange={handleChange}
-            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-4 text-[15px] leading-6 text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
+            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-3.5 text-[14px] leading-6 text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
             placeholder="Your name"
           />
         </div>
 
         <div>
-          <label htmlFor="support-email" className="mb-2 block text-[14px] font-semibold text-[#374151]">
-            Account Email
+          <label htmlFor="support-email" className="mb-1.5 block text-[13px] font-semibold text-[#374151]">
+            Account email
           </label>
           <input
             id="support-email"
@@ -201,15 +201,15 @@ export default function SupportContactForm() {
             autoComplete="email"
             value={formData.email}
             onChange={handleChange}
-            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-4 text-[15px] leading-6 text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
+            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-3.5 text-[14px] leading-6 text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
             placeholder="you@example.com"
           />
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3.5 md:grid-cols-2">
         <div>
-          <label htmlFor="support-topic" className="mb-2 block text-[14px] font-semibold text-[#374151]">
+          <label htmlFor="support-topic" className="mb-1.5 block text-[13px] font-semibold text-[#374151]">
             Topic
           </label>
           <select
@@ -217,9 +217,9 @@ export default function SupportContactForm() {
             name="topic"
             value={formData.topic}
             onChange={handleChange}
-            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-4 text-[15px] leading-6 text-[#111827] outline-none transition focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
+            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-3.5 text-[14px] leading-6 text-[#111827] outline-none transition focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
           >
-            <option value="">Choose A Topic</option>
+            <option value="">Choose a topic</option>
             {topicOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -229,7 +229,7 @@ export default function SupportContactForm() {
         </div>
 
         <div>
-          <label htmlFor="support-urgency" className="mb-2 block text-[14px] font-semibold text-[#374151]">
+          <label htmlFor="support-urgency" className="mb-1.5 block text-[13px] font-semibold text-[#374151]">
             Urgency
           </label>
           <select
@@ -237,9 +237,9 @@ export default function SupportContactForm() {
             name="urgency"
             value={formData.urgency}
             onChange={handleChange}
-            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-4 text-[15px] leading-6 text-[#111827] outline-none transition focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
+            className="min-h-11 w-full rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-3.5 text-[14px] leading-6 text-[#111827] outline-none transition focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
           >
-            <option value="">Choose Urgency</option>
+            <option value="">Choose urgency</option>
             {urgencyOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -251,7 +251,7 @@ export default function SupportContactForm() {
 
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <label htmlFor="support-message" className="text-[14px] font-semibold text-[#374151]">
+          <label htmlFor="support-message" className="text-[13px] font-semibold text-[#374151]">
             Message
           </label>
           <span className="text-[12px] text-[#6b7280]">
@@ -265,7 +265,7 @@ export default function SupportContactForm() {
           onChange={handleChange}
           rows={6}
           maxLength={4000}
-          className="min-h-[150px] w-full resize-y rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-4 py-3 text-[15px] leading-7 text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe]"
+          className="min-h-[140px] w-full resize-y rounded-[12px] border border-[#d1d5db] bg-[#f9fafb] px-3.5 py-3 text-[14px] leading-6 text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:bg-white focus:ring-2 focus:ring-[#c7d2fe] sm:min-h-[150px]"
           placeholder="Example: I paid for ATI TEAS access using this email, but the exam still shows locked on my dashboard. I tried refreshing and signing out."
         />
         <p className="m-0 mt-2 text-[12px] leading-5 text-[#6b7280]">
@@ -280,7 +280,7 @@ export default function SupportContactForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#111827] bg-[#111827] px-5 text-[14px] font-semibold text-[#f9fafb] transition hover:border-[#4f46e5] hover:bg-[#4f46e5] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#111827] bg-[#111827] px-5 text-[14px] font-semibold text-[#f9fafb] transition hover:border-[#4f46e5] hover:bg-[#4f46e5] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {isSubmitting ? "Sending..." : "Send Message"}
           <FaPaperPlane className="text-[12px]" />

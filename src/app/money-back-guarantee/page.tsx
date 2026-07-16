@@ -42,7 +42,7 @@ export default function MoneyBackGuaranteePage() {
             paddingBottom: "30px",
           }}
         >
-          <div style={{ maxWidth: "980px", margin: "0 auto" }}>
+          <div>
           <div className="flex flex-wrap gap-[10px] items-center mb-[8px] text-[12px] uppercase tracking-[0.18em] text-[#4f46e5]">
             <span
               className="rounded-full border border-[#c4b5fd] bg-white/70 text-[#4c1d95]"
@@ -107,11 +107,9 @@ export default function MoneyBackGuaranteePage() {
         style={{
           paddingTop: "30px",
           paddingBottom: "40px",
-          display: "flex",
-          justifyContent: "center",
         }}
       >
-        <section style={{ width: "100%", maxWidth: "980px", margin: "0 auto" }}>
+        <section style={{ width: "100%" }}>
           <article
             className="bg-white rounded-[22px] border border-[#e5e7eb] shadow-[0_16px_40px_rgba(15,23,42,0.04)]"
             style={{ padding: "22px 22px 20px" }}
