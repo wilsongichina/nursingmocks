@@ -15,7 +15,6 @@ export default function AdminSidebar() {
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
     const initialSet = new Set<string>();
-    initialSet.add("dashboard");
     initialSet.add("content");
     return initialSet;
   });
@@ -24,38 +23,11 @@ export default function AdminSidebar() {
   useEffect(() => {
     setExpandedItems((prev) => {
       const newSet = new Set(prev);
-      newSet.add("dashboard");
       newSet.add("content");
-
-      // Check if we're on dashboard or any dashboard sub-page
-      if (
-        pathname === "/dashboard" ||
-        pathname === "/profile" ||
-        pathname === "/referrals" ||
-        pathname === "/payments"
-      ) {
-        newSet.add("dashboard");
-      }
 
       return newSet;
     });
   }, [pathname]);
-
-  const dashboardItems = [
-    { label: "Profile", href: "/profile", icon: "profile", color: "purple" },
-    {
-      label: "Referrals",
-      href: "/referrals",
-      icon: "referrals",
-      color: "green",
-    },
-    {
-      label: "Payments & Subscription",
-      href: "/payments",
-      icon: "payments",
-      color: "blue",
-    },
-  ];
 
   const contentItems = [
     {
@@ -79,6 +51,18 @@ export default function AdminSidebar() {
   ];
 
   const adminItems = [
+    {
+      label: "Admin Dashboard",
+      href: "/admin",
+      icon: "dashboard",
+      color: "blue",
+    },
+    {
+      label: "Admin Profile",
+      href: "/admin/profile",
+      icon: "profile",
+      color: "purple",
+    },
     {
       label: "User Management",
       href: "/admin/users",
@@ -427,23 +411,29 @@ export default function AdminSidebar() {
     }
   }, [isMobileMenuOpen, setIsMobileMenuOpen]);
 
+  const showCompactLogo = isCollapsed && !isMobileMenuOpen;
+
   const sidebarContent = (
     <>
       {/* Logo Section */}
       <div
-        className={`relative flex items-center border-b border-gray-200 h-16 ${
-          isCollapsed ? "justify-center px-2" : "justify-between px-4"
+        className={`relative flex h-16 items-center gap-2 border-b border-gray-200 ${
+          showCompactLogo ? "justify-center px-2" : "justify-between px-3 sm:px-4"
         }`}
         style={{ overflow: "visible" }}
       >
-        {!isCollapsed ? (
-          <Link href="/" aria-label="NursingMocks Home" className="flex-shrink-0">
+        {!showCompactLogo ? (
+          <Link
+            href="/"
+            aria-label="NursingMocks Home"
+            className="flex h-11 min-w-0 flex-1 items-center overflow-hidden"
+          >
             <Image
               src="/nursing-mocks-logo.png"
               alt="NursingMocks Logo"
               width={150}
               height={40}
-              className="h-8 w-auto"
+              className="h-auto max-h-10 w-auto max-w-full object-contain"
               priority
             />
           </Link>
@@ -451,22 +441,22 @@ export default function AdminSidebar() {
           <Link
             href="/"
             aria-label="NursingMocks Home"
-            className="flex-shrink-0 flex items-center justify-center"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden"
           >
             <Image
               src="/favicon.png"
               alt="NursingMocks Logo"
               width={40}
               height={40}
-              className="h-10 w-auto max-w-10 rounded object-contain"
+              className="h-auto max-h-10 w-auto max-w-10 rounded object-contain"
               priority
             />
           </Link>
         )}
-        {!isCollapsed && (
+        {!showCompactLogo && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex-shrink-0 rounded-lg p-2 transition-colors hover:bg-gray-100"
             aria-label="Collapse sidebar"
           >
             <svg
@@ -484,7 +474,7 @@ export default function AdminSidebar() {
             </svg>
           </button>
         )}
-        {isCollapsed && (
+        {showCompactLogo && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="absolute top-1/2 -translate-y-1/2 bg-white border-2 border-gray-200 rounded-full shadow-lg hover:bg-gray-50 transition-colors z-[70] flex items-center justify-center"
@@ -516,135 +506,12 @@ export default function AdminSidebar() {
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className={`space-y-1 ${isCollapsed ? "px-2" : "px-2"}`}>
-          {/* Dashboard Section - Only show if logged in */}
-          {currentUser && (
-            <li>
-              {isCollapsed ? (
-                <Link
-                  href="/dashboard"
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/dashboard") ||
-                    isActive("/profile") ||
-                    isActive("/referrals") ||
-                    isActive("/payments")
-                      ? "bg-blue-50"
-                      : "text-gray-900 hover:bg-gray-100"
-                  }`}
-                  title="Dashboard"
-                >
-                  <IconWithBackground
-                    icon="dashboard"
-                    color="blue"
-                    size="w-8 h-8"
-                  />
-                </Link>
-              ) : (
-                <div>
-                  <div
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                      isActive("/dashboard") ||
-                      isActive("/profile") ||
-                      isActive("/referrals") ||
-                      isActive("/payments")
-                        ? "bg-blue-50"
-                        : "text-gray-900 hover:bg-gray-100"
-                    }`}
-                  >
-                    <Link
-                      href="/dashboard"
-                      className="flex items-center gap-3 flex-1"
-                    >
-                      <IconWithBackground
-                        icon="dashboard"
-                        color="blue"
-                        size="w-8 h-8"
-                      />
-                      <span
-                        className={`text-sm font-medium ${
-                          isActive("/dashboard") ||
-                          isActive("/profile") ||
-                          isActive("/referrals") ||
-                          isActive("/payments")
-                            ? "text-blue-600"
-                            : "text-gray-900"
-                        }`}
-                      >
-                        Dashboard
-                      </span>
-                    </Link>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleExpand("dashboard");
-                      }}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors"
-                      aria-label="Toggle dashboard menu"
-                    >
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-200 ${
-                          expandedItems.has("dashboard") ? "rotate-90" : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  {expandedItems.has("dashboard") && (
-                    <ul className="ml-4 mt-1 space-y-1 pl-2">
-                      {dashboardItems.map((item) => {
-                        const itemActive = isActive(item.href);
-                        return (
-                          <li key={item.href}>
-                            <Link
-                              href={item.href}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                itemActive
-                                  ? "bg-blue-50"
-                                  : "text-gray-900 hover:bg-gray-50"
-                              }`}
-                            >
-                              <span
-                                className={
-                                  itemActive ? "text-blue-600" : "text-gray-900"
-                                }
-                              >
-                                •
-                              </span>
-                              <span
-                                className={`font-medium ${
-                                  itemActive ? "text-blue-600" : "text-gray-900"
-                                }`}
-                              >
-                                {item.label}
-                              </span>
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </li>
-          )}
-
-          {/* Separator after Dashboard */}
-          {currentUser && !isCollapsed && (
-            <li className="px-3 py-2">
-              <div className="border-t border-gray-200"></div>
-            </li>
-          )}
-
           {/* Content Section */}
+          {!isCollapsed && (
+            <li className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Content
+            </li>
+          )}
           <li>
             {isCollapsed ? (
               <div
@@ -715,7 +582,7 @@ export default function AdminSidebar() {
                   </button>
                 </div>
                 {expandedItems.has("content") && (
-                  <ul className="ml-4 mt-1 space-y-1 pl-2">
+                  <ul className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
                     {contentItems.map((item) => {
                       const itemActive = isActive(item.href);
                       const activeBgColor =
@@ -735,19 +602,12 @@ export default function AdminSidebar() {
                         <li key={item.href}>
                           <Link
                             href={item.href}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                               itemActive
                                 ? activeBgColor
                                 : "text-gray-900 hover:bg-gray-50"
                             }`}
                           >
-                            <span
-                              className={
-                                itemActive ? activeTextColor : "text-gray-900"
-                              }
-                            >
-                              •
-                            </span>
                             <span
                               className={`font-medium ${
                                 itemActive ? activeTextColor : "text-gray-900"
@@ -775,6 +635,11 @@ export default function AdminSidebar() {
           {/* Admin Tools */}
           {currentUser && (
             <>
+              {!isCollapsed && (
+                <li className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Admin Tools
+                </li>
+              )}
               {adminItems.map((item) => {
                 const itemActive = isActive(item.href);
                 return (
@@ -822,67 +687,6 @@ export default function AdminSidebar() {
                 );
               })}
             </>
-          )}
-
-          {/* Separator after Admin Tools */}
-          {currentUser && !isCollapsed && (
-            <li className="px-3 py-2">
-              <div className="border-t border-gray-200"></div>
-            </li>
-          )}
-
-          {/* Progress Reports - Only show if logged in */}
-          {currentUser && (
-            <li>
-              {isCollapsed ? (
-                <Link
-                  href="/progress-reports"
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/progress-reports")
-                      ? "bg-orange-50"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                  title="Progress Reports"
-                >
-                  <IconWithBackground
-                    icon="progress"
-                    color="orange"
-                    size="w-8 h-8"
-                  />
-                </Link>
-              ) : (
-                <Link
-                  href="/progress-reports"
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive("/progress-reports")
-                      ? "bg-orange-50"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <IconWithBackground
-                    icon="progress"
-                    color="orange"
-                    size="w-8 h-8"
-                  />
-                  <span
-                    className={`text-sm font-medium ${
-                      isActive("/progress-reports")
-                        ? "text-orange-600"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    Progress Reports
-                  </span>
-                </Link>
-              )}
-            </li>
-          )}
-
-          {/* Separator after Progress Reports */}
-          {currentUser && !isCollapsed && (
-            <li className="px-3 py-2">
-              <div className="border-t border-gray-200"></div>
-            </li>
           )}
         </ul>
       </nav>

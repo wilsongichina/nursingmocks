@@ -906,6 +906,7 @@ Required rule:
 - Use the standard `1360px` maximum width from `--user-page-max-width`.
 - Use the shared page header pattern for page hero/header areas.
 - Use the shared components for cards, forms, buttons, alerts, badges, pills, tabs, search filters, pagination, modals, loading states, empty states, summary tiles, and progress indicators.
+- Sidebar logos should autofit the top-left header area: use a constrained logo box, `object-contain`, max height/width, and overflow protection. Mobile sidebars should show the full logo even if the desktop sidebar was collapsed.
 - Keep page-specific styling limited to layout decisions or truly unique page needs.
 - If a new pattern is useful across multiple user pages, add it to `/typography` and document it before using it broadly.
 

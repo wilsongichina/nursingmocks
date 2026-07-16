@@ -938,23 +938,29 @@ export default function Sidebar({
     }
   }, [isMobileMenuOpen, setIsMobileMenuOpen]);
 
+  const showCompactLogo = isCollapsed && !isMobileMenuOpen;
+
   const sidebarContent = (
     <>
       {/* Logo Section */}
       <div
-        className={`relative flex items-center border-b border-gray-200 h-16 ${
-          isCollapsed ? "justify-center px-2" : "justify-between px-4"
+        className={`relative flex h-16 items-center gap-2 border-b border-gray-200 ${
+          showCompactLogo ? "justify-center px-2" : "justify-between px-3 sm:px-4"
         }`}
         style={{ overflow: "visible" }}
       >
-        {!isCollapsed ? (
-          <Link href="/" aria-label="NursingMocks Home" className="flex-shrink-0">
+        {!showCompactLogo ? (
+          <Link
+            href="/"
+            aria-label="NursingMocks Home"
+            className="flex h-11 min-w-0 flex-1 items-center overflow-hidden"
+          >
             <Image
               src="/nursing-mocks-logo.png"
               alt="NursingMocks Logo"
               width={150}
               height={40}
-              className="h-8 w-auto"
+              className="h-auto max-h-10 w-auto max-w-full object-contain"
               priority
             />
           </Link>
@@ -962,22 +968,22 @@ export default function Sidebar({
           <Link
             href="/"
             aria-label="NursingMocks Home"
-            className="flex-shrink-0 flex items-center justify-center"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden"
           >
             <Image
               src="/favicon.png"
               alt="NursingMocks Logo"
               width={40}
               height={40}
-              className="h-10 w-auto max-w-10 rounded object-contain"
+              className="h-auto max-h-10 w-auto max-w-10 rounded object-contain"
               priority
             />
           </Link>
         )}
-        {!isCollapsed && (
+        {!showCompactLogo && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex-shrink-0 rounded-lg p-2 transition-colors hover:bg-gray-100"
             aria-label="Collapse sidebar"
           >
             <svg
@@ -995,7 +1001,7 @@ export default function Sidebar({
             </svg>
           </button>
         )}
-        {isCollapsed && (
+        {showCompactLogo && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="absolute top-1/2 -translate-y-1/2 bg-white border-2 border-gray-200 rounded-full shadow-lg hover:bg-gray-50 transition-colors z-[70] flex items-center justify-center"

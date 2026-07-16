@@ -402,6 +402,86 @@ Validation run:
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
 
+## Follow-up: sidebar logo autofit
+
+Updated the admin sidebar logo header so the logo fits the available top-left section cleanly.
+
+Behavior:
+
+- full sidebar and mobile drawer use the full NursingMocks logo inside a constrained header-safe box
+- collapsed desktop sidebar uses the compact favicon-style logo
+- logo images use `object-contain`, max height, max width, and overflow protection
+- mobile drawer always shows the full logo even when the desktop sidebar was previously collapsed
+
+Files changed:
+
+- `src/components/layout/AdminSidebar.tsx`
+- `src/components/layout/Sidebar.tsx`
+- `Documentation/admin/Admin user management.md`
+- `Documentation/user-dashboard/User dashboard.md`
+
+## Follow-up: dedicated admin sidebar
+
+Updated the admin left menu so it is dedicated to admin work and no longer shares user dashboard navigation items.
+
+Behavior:
+
+- removed user-facing dashboard, profile, referrals, payments, and progress-report links from the admin sidebar
+- added `Admin Dashboard` as the admin landing page link
+- kept admin content links and admin tool links only
+- kept the existing auth/session behavior unchanged
+- replaced bullet-dot subitems with a left divider line, matching the cleaner user-sidebar subnavigation style
+- preserved the existing sidebar collapse, mobile drawer, route highlighting, and logout behavior
+
+Admin profile decision:
+
+- admins share the same Firebase Auth identity and base `users/{uid}` account record as other authenticated users
+- the admin UI should not send admins to the customer `/profile` page from the admin menu
+- `/admin/profile` provides an admin-facing identity view using the same signed-in Firebase user
+- `/admin/profile` allows the signed-in admin to update display name only
+- display name updates go through `/api/admin/profile`, update Firebase Auth plus safe mirrored Firestore fields, and write `user.profile.update` audit logs
+- email, UID, admin claim, role, access flags, billing, entitlements, account status, login security, provider IDs, and audit records remain locked from admin profile editing
+
+Files changed:
+
+- `src/components/layout/AdminSidebar.tsx`
+- `src/app/admin/profile/page.tsx`
+- `src/app/api/admin/profile/route.ts`
+- `Documentation/admin/Admin user management.md`
+
+## Follow-up: admin dashboard command center
+
+Redesigned `/admin` from a simple grid of links into an admin command center.
+
+Behavior:
+
+- adds `/api/admin/dashboard` for server-side admin dashboard summaries
+- keeps dashboard stats behind the existing Firebase admin authorization boundary
+- shows top KPI cards for total users, active users, disabled users, verified emails, transactions, revenue, active access grants, and pending email jobs
+- shows operational attention items for high-attention login security accounts, review accounts, failed email jobs, and recent audit failures
+- shows compact recent payment and recent admin-failure tables
+- preserves the existing admin destinations by grouping them into Users & Security, Billing, Content Management, and System sections
+- keeps `/admin` full width and aligned with the shared admin typography/card/table patterns
+- uses the shared `/typography` card system: `user-stat-tile` for KPI cards, plain `user-card` for management links, `user-card-title` for headings, `user-helper` for secondary copy, `user-pill` for metadata, and `user-button-secondary` for card actions
+- removes custom tinted admin card backgrounds, tone accents, and one-off action pill styling so admin cards stay consistent with the documented typography system
+
+Data sources:
+
+- Firebase Auth user list for total, disabled, and verified user counts
+- `users` for active-in-last-30-days activity
+- `billing_transactions` for transaction and revenue summaries
+- `billing_entitlements` for active access grant count
+- `users/{uid}.login_security` snapshots for login-security attention counts
+- `emailJobs` for pending and failed email work
+- `adminAuditLogs` for recent failed admin actions
+
+Files changed:
+
+- `src/app/admin/page.tsx`
+- `src/app/api/admin/dashboard/route.ts`
+- `src/lib/admin/dashboard.ts`
+- `Documentation/admin/Admin user management.md`
+
 ## Follow-up: login security telemetry foundation
 
 The login event writer was extended as the first step toward account-sharing detection.
