@@ -1124,9 +1124,27 @@ Tracked login summary fields:
 login_metrics.total_logins
 login_metrics.last_session_id
 login_metrics.last_ip_address
+login_metrics.last_ip_hash
 login_metrics.last_user_agent
+login_metrics.last_device
+login_metrics.last_location
 login_metrics.last_login_provider
 ```
+
+Login security telemetry update:
+
+- new login events also store `ip_hash` for privacy-preserving IP comparison
+- new login events store `device` summary with device type, browser, and OS inferred from the user agent
+- new login events store `location` summary from hosting/CDN request headers when available
+- user summaries now keep `login_metrics.last_ip_hash`, `login_metrics.last_device`, and `login_metrics.last_location`
+- successful login events refresh `users/{uid}.login_security` with a compact account-sharing detection snapshot for admin visibility
+- raw `ip_address` and `last_ip_address` are still preserved for compatibility with the current data model
+
+Current limitation:
+
+- location is based on request headers such as Vercel or Cloudflare geo headers; if the hosting layer does not provide them, location fields remain null
+- login-security signals are manual-review indicators only and do not automatically block users
+- impossible-travel detection and failed-login tracking are not built yet
 
 Validation:
 

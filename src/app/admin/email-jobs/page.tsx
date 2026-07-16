@@ -30,6 +30,22 @@ function statusClass(status: string) {
   return "border-gray-200 bg-gray-50 text-gray-700";
 }
 
+function displayName(value: string | null | undefined) {
+  const normalized = value?.trim();
+  if (!normalized) return "Not Available";
+  return normalized
+    .replace(/[_\-.]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      const upper = word.toUpperCase();
+      if (["ID", "UID", "URL", "API"].includes(upper)) return upper;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
 function AdminEmailJobsContent() {
   const { isCollapsed } = useSidebar();
   const { currentUser } = useAuth();
@@ -151,18 +167,18 @@ function AdminEmailJobsContent() {
               <div className="grid gap-3 md:grid-cols-4">
                 <label>
                   <span className="user-label">Template</span>
-                  <input value={templateId} onChange={(event) => setTemplateId(event.target.value)} className="user-field mt-2" placeholder="password_reset" />
+                  <input value={templateId} onChange={(event) => setTemplateId(event.target.value)} className="user-field mt-2" placeholder="Password Reset" />
                 </label>
                 <label>
                   <span className="user-label">Status</span>
                   <select value={status} onChange={(event) => setStatus(event.target.value)} className="user-field mt-2">
-                    <option value="">All statuses</option>
-                    <option value="pending">pending</option>
-                    <option value="processing">processing</option>
-                    <option value="sent">sent</option>
-                    <option value="retrying">retrying</option>
-                    <option value="failed">failed</option>
-                    <option value="delivery_uncertain">delivery_uncertain</option>
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="sent">Sent</option>
+                    <option value="retrying">Retrying</option>
+                    <option value="failed">Failed</option>
+                    <option value="delivery_uncertain">Delivery Uncertain</option>
                   </select>
                 </label>
                 <label>
@@ -224,12 +240,12 @@ function AdminEmailJobsContent() {
                       jobs.map((job) => (
                         <tr key={job.jobId}>
                           <td className="px-4 py-4 align-top">
-                            <p className="user-card-title">{job.templateId}</p>
+                            <p className="user-card-title">{displayName(job.templateId)}</p>
                             <p className="mt-1 max-w-52 truncate font-mono text-xs text-gray-400">{job.jobId}</p>
                           </td>
                           <td className="user-body-sm px-4 py-4 align-top">{job.to}</td>
                           <td className="px-4 py-4 align-top">
-                            <span className={`user-pill ${statusClass(job.status)}`}>{job.status}</span>
+                            <span className={`user-pill ${statusClass(job.status)}`}>{displayName(job.status)}</span>
                             {job.lastErrorMessage && <p className="user-helper mt-2 max-w-60">{job.lastErrorMessage}</p>}
                           </td>
                           <td className="user-body-sm px-4 py-4 align-top">{job.attempts} / {job.maxAttempts}</td>
@@ -244,9 +260,9 @@ function AdminEmailJobsContent() {
                             <p className="user-helper">Next: {formatDate(job.nextAttemptAt)}</p>
                           </td>
                           <td className="px-4 py-4 align-top">
-                            <p className="user-helper">Data keys: {job.dataKeys.length ? job.dataKeys.join(", ") : "None"}</p>
+                            <p className="user-helper">Data Keys: {job.dataKeys.length ? job.dataKeys.map(displayName).join(", ") : "None"}</p>
                             <p className="mt-1 max-w-56 truncate font-mono text-xs text-gray-400">{job.idempotencyKey || "No idempotency key"}</p>
-                            {job.lastErrorCategory && <p className="user-helper mt-1">Error type: {job.lastErrorCategory}</p>}
+                            {job.lastErrorCategory && <p className="user-helper mt-1">Error Type: {displayName(job.lastErrorCategory)}</p>}
                           </td>
                         </tr>
                       ))

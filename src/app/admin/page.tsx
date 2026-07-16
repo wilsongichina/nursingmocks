@@ -172,6 +172,56 @@ function AdminPageContent() {
             </div>
           </Link>
 
+          {/* Login Security Card */}
+          <Link
+            href="/admin/login-security"
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+          >
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-red-200 transition-colors">
+                <svg
+                  className="w-6 h-6 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zm0 2c-2.761 0-5 1.343-5 3v1h10v-1c0-1.657-2.239-3-5-3zm8-5.25A9.75 9.75 0 0112 21.75 9.75 9.75 0 014 7.75L12 3l8 4.75z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-red-600 transition-colors">
+                  Login Security
+                </h3>
+                <p className="text-sm text-gray-600">Review account activity</p>
+              </div>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Inspect recent login events, device summaries, location signals,
+              and IP hash changes for a specific user.
+            </p>
+            <div className="mt-4 flex items-center text-red-600 group-hover:text-red-700 transition-colors">
+              <span className="text-sm font-medium">View Activity</span>
+              <svg
+                className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </Link>
+
           {/* Email Jobs Card */}
           <Link
             href="/admin/email-jobs"

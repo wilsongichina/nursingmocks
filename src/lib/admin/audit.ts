@@ -62,6 +62,13 @@ function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeAction(value: unknown) {
+  const action = normalizeText(value).toLowerCase();
+  if (!action) return "";
+  if (action.includes(".")) return action.replace(/[^a-z0-9.]+/g, ".").replace(/^\.+|\.+$/g, "");
+  return action.replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "");
+}
+
 function timestampToIso(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === "string") return value;
@@ -120,7 +127,7 @@ export async function listAdminAuditLogs(input: AdminAuditListInput = {}) {
     .limit(limit);
 
   const snapshot = await query.get();
-  const action = normalizeText(input.action);
+  const action = normalizeAction(input.action);
   const targetUid = normalizeText(input.targetUid);
   const actorUid = normalizeText(input.actorUid);
 

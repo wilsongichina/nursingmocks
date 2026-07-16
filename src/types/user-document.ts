@@ -47,9 +47,39 @@ export interface UserDocumentLoginMetrics {
   total_logins: number;
   last_session_id: string | null;
   last_ip_address: string | null;
+  last_ip_hash?: string | null;
   last_user_agent: string | null;
+  last_device?: {
+    device_type: string | null;
+    browser: string | null;
+    os: string | null;
+  } | null;
+  last_location?: {
+    country: string | null;
+    region: string | null;
+    city: string | null;
+    source: string | null;
+  } | null;
   last_login_provider: UserDocumentAuthProvider | null;
   last_login_event_error?: string | null;
+}
+
+export interface UserDocumentLoginSecurity {
+  status: "normal" | "watch" | "review" | "high_attention";
+  unique_ip_hashes_24h: number;
+  unique_ip_hashes_7d: number;
+  unique_ip_hashes_30d: number;
+  unique_devices_24h: number;
+  unique_devices_7d: number;
+  unique_devices_30d: number;
+  unique_locations_30d: number;
+  unique_countries_30d: number;
+  recent_ip_switches_24h: number;
+  recent_device_switches_24h: number;
+  last_switch_at: string | null;
+  reasons: string[];
+  recommendation: string;
+  last_evaluated_at: Timestamp;
 }
 
 export interface UserDocumentBilling {
@@ -120,6 +150,7 @@ export interface UserDocument {
   access: UserDocumentAccess;
   auth: UserDocumentAuth;
   login_metrics: UserDocumentLoginMetrics;
+  login_security?: UserDocumentLoginSecurity;
   billing: UserDocumentBilling;
   billing_providers: UserDocumentBillingProviders;
   entitlements: UserDocumentEntitlements;

@@ -26,9 +26,25 @@ function formatDate(value: string | null) {
 function StatusPill({ status }: { status: AdminAuditLogRecord["status"] }) {
   return (
     <span className={`user-pill ${status === "failure" ? "user-pill-red" : "user-pill-green"}`}>
-      {status}
+      {displayName(status)}
     </span>
   );
+}
+
+function displayName(value: string | null | undefined) {
+  const normalized = value?.trim();
+  if (!normalized) return "Not Available";
+  return normalized
+    .replace(/[_\-.]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      const upper = word.toUpperCase();
+      if (["ID", "UID", "URL", "API"].includes(upper)) return upper;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
 }
 
 function JsonSummary({ title, data }: { title: string; data: Record<string, unknown> | null }) {
@@ -167,7 +183,7 @@ function AdminAuditLogsContent() {
               <div className="grid gap-3 md:grid-cols-4">
                 <label>
                   <span className="user-label">Action</span>
-                  <input value={action} onChange={(event) => setAction(event.target.value)} className="user-field mt-2" placeholder="admin.audit.view" />
+                  <input value={action} onChange={(event) => setAction(event.target.value)} className="user-field mt-2" placeholder="Admin Audit View" />
                 </label>
                 <label>
                   <span className="user-label">Actor UID</span>
@@ -231,7 +247,7 @@ function AdminAuditLogsContent() {
                       logs.map((log) => (
                         <tr key={log.auditLogId}>
                           <td className="px-4 py-4 align-top">
-                            <p className="user-card-title">{log.action}</p>
+                            <p className="user-card-title">{displayName(log.action)}</p>
                             <p className="mt-1 max-w-52 truncate font-mono text-xs text-gray-400">{log.requestId}</p>
                           </td>
                           <td className="px-4 py-4 align-top">

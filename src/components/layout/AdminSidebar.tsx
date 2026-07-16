@@ -98,6 +98,12 @@ export default function AdminSidebar() {
       color: "orange",
     },
     {
+      label: "Login Security",
+      href: "/admin/login-security",
+      icon: "security",
+      color: "red",
+    },
+    {
       label: "Email Jobs",
       href: "/admin/email-jobs",
       icon: "email",
@@ -223,6 +229,22 @@ export default function AdminSidebar() {
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M9 12l2 2 4-4m5.25-2.25A9.75 9.75 0 0112 21.75 9.75 9.75 0 013.75 7.75L12 3l8.25 4.75z"
+              />
+            </svg>
+          );
+        case "security":
+          return (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zm0 2c-2.761 0-5 1.343-5 3v1h10v-1c0-1.657-2.239-3-5-3zm8-5.25A9.75 9.75 0 0112 21.75 9.75 9.75 0 014 7.75L12 3l8 4.75z"
               />
             </svg>
           );

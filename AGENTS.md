@@ -77,6 +77,9 @@ Use `/admin/users` as the default admin aesthetic reference.
 - Layout should prioritize dense management: main record tables on the left or primary column, detail/create/edit panels in a secondary side column when practical.
 - For admin pages with several record types, use tabs or segmented controls so only one dense table is visible at a time.
 - Long create/edit forms should be collapsible or placed in a side panel/drawer so the primary management table stays easy to scan and scrolling remains short.
+- Admin search panels should be visually constrained instead of stretching across the full workspace; use a practical max width such as `max-w-3xl` unless the search is part of a wide filter grid.
+- User lookup search in admin pages should support autocomplete or selectable matches where practical, especially when admins can search by name, email, or UID.
+- Display user names in a readable, title-cased format in admin UI. Do not expose raw slug-like, hyphenated, dotted, or underscore-separated names when a friendly display label can be derived.
 
 ## Documentation
 

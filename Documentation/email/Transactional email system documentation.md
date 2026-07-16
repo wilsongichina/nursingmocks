@@ -251,6 +251,12 @@ Supported filters:
 - status
 - recipient text
 
+Display behavior:
+
+- Admin tables show readable title-case names such as `Password Reset` and `Delivery Uncertain`.
+- Stored identifiers such as `password_reset` and `delivery_uncertain` remain unchanged.
+- Readable filter input is normalized back to stored identifiers before matching.
+
 Current limitations:
 
 - filters apply to the latest 50 jobs to avoid Firestore composite index requirements

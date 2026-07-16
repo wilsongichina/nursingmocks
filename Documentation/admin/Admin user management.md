@@ -381,6 +381,8 @@ Behavior:
 - lists recent `emailJobs` records
 - supports template, status, and recipient filters across the latest 50 jobs
 - shows status, attempts, provider metadata, timestamps, error details, idempotency key, and safe template data keys
+- displays readable title-case names in admin tables instead of raw underscore, hyphen, or dot-separated identifiers
+- normalizes readable filter input such as `Password Reset` or `Admin Audit View` back to stored identifiers
 - hides sensitive template values such as reset URLs, verification URLs, and account-status messages
 - does not add retry, delete, or manual edit actions
 
@@ -399,6 +401,71 @@ Validation run:
 ```text
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
+
+## Follow-up: login security telemetry foundation
+
+The login event writer was extended as the first step toward account-sharing detection.
+
+Behavior:
+
+- keeps writing append-only `user_login_events`
+- adds `ip_hash` for privacy-preserving IP comparison
+- adds coarse `location` from hosting/CDN request headers when available
+- adds `device` summary with device type, browser, and operating system
+- updates `users/{uid}.login_metrics` with the latest IP hash, device, and location summary
+- preserves existing raw IP and user-agent fields for compatibility
+- exposes a standalone read-only Login Security section at `/admin/login-security`
+- allows lookup by user name, Firebase UID, or exact email address
+- shows selectable user matches when a name search finds more than one account
+- adds autocomplete suggestions while typing a user search
+- keeps the search panel visually constrained instead of stretching across the full admin workspace
+- formats displayed user names with readable capitalization instead of showing raw slug-like text
+- shows latest login activity with time, provider, device, coarse location, and short IP hash preview
+- summarizes reviewed events by unique IP hashes, device profiles, and locations
+- adds Account Sharing Signals with Normal, Watch, Review, and High Attention statuses
+- calculates 24-hour, 7-day, and 30-day IP/device indicators from `user_login_events`
+- highlights recent IP or device switching within 24 hours
+- refreshes `users/{uid}.login_security` after each successful login so detection is available without searching every user manually
+- adds an Auto-Detected Accounts overview table on `/admin/login-security` for users with Watch, Review, or High Attention snapshots
+- treats sharing signals as manual-review guidance only; no automatic blocking or account enforcement is performed
+- writes an audit log entry when an admin views a user's login security activity
+- falls back to an unordered query if the project does not yet have the Firestore composite index for ordered login history
+- keeps `/admin/users` focused on account identity, access, billing snapshots, support actions, and account status controls
+
+Signal thresholds:
+
+- Normal: no unusual pattern found in the reviewed login history
+- Watch: three unique IP hashes or three device profiles in 30 days
+- Review: four or more unique IP hashes, four or more device profiles, multiple countries, or repeated 24-hour switching
+- High Attention: six or more unique IP hashes or three or more countries in 30 days
+
+The UI explains that shared Wi-Fi, VPNs, mobile networks, work networks, and travel can produce legitimate IP, device, or location changes.
+
+Stored snapshot:
+
+```text
+users/{uid}.login_security.status
+users/{uid}.login_security.unique_ip_hashes_24h
+users/{uid}.login_security.unique_ip_hashes_7d
+users/{uid}.login_security.unique_ip_hashes_30d
+users/{uid}.login_security.unique_devices_24h
+users/{uid}.login_security.unique_devices_7d
+users/{uid}.login_security.unique_devices_30d
+users/{uid}.login_security.unique_locations_30d
+users/{uid}.login_security.unique_countries_30d
+users/{uid}.login_security.recent_ip_switches_24h
+users/{uid}.login_security.recent_device_switches_24h
+users/{uid}.login_security.last_switch_at
+users/{uid}.login_security.reasons
+users/{uid}.login_security.recommendation
+users/{uid}.login_security.last_evaluated_at
+```
+
+Still deferred:
+
+- automatic suspicious sharing decisions
+- impossible-travel detection
+- failed-login tracking
 
 ### Change-log entry
 

@@ -34,6 +34,10 @@ function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function identifier(value: unknown) {
+  return text(value).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
 function numberOrNull(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -61,8 +65,8 @@ export async function listAdminEmailJobs(input: AdminEmailJobListInput = {}) {
     .limit(limit)
     .get();
 
-  const templateId = text(input.templateId);
-  const status = text(input.status);
+  const templateId = identifier(input.templateId);
+  const status = identifier(input.status);
   const recipient = text(input.recipient).toLowerCase();
 
   return snapshot.docs.map((doc) => {
