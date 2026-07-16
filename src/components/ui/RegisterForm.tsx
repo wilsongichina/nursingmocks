@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { PROGRAM_TYPE_OPTIONS } from "@/lib/program-type";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -20,6 +21,8 @@ export default function RegisterForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -44,7 +47,7 @@ export default function RegisterForm() {
         !formData.confirmPassword ||
         !formData.program
       ) {
-        setError("Please fill in all fields, including program type");
+        setError("Please fill in all fields, including exam type");
         setIsSubmitting(false);
         return;
       }
@@ -130,7 +133,7 @@ export default function RegisterForm() {
   const handleGoogleSignUp = async () => {
     setError("");
     if (!formData.program) {
-      setError("Please select your program type before continuing with Google");
+      setError("Please select your exam type before continuing with Google");
       return;
     }
     const termsEl = document.getElementById("terms") as HTMLInputElement | null;
@@ -333,15 +336,24 @@ export default function RegisterForm() {
             </svg>
           </div>
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
             placeholder="Create a password (min. 8 characters)"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-500 transition hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
         <p className="mt-1 text-xs text-gray-500">
           Password must be at least 8 characters long
@@ -372,15 +384,24 @@ export default function RegisterForm() {
             </svg>
           </div>
           <input
-            type="password"
+            type={showConfirmPassword ? "text" : "password"}
             id="confirmPassword"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
             required
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
             placeholder="Confirm your password"
           />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((value) => !value)}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-500 transition hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+            aria-pressed={showConfirmPassword}
+          >
+            {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 
@@ -389,7 +410,7 @@ export default function RegisterForm() {
           htmlFor="program"
           className="block text-sm font-semibold text-gray-700 mb-2"
         >
-          Program type <span className="text-red-600">*</span>
+          Exam Type <span className="text-red-600">*</span>
         </label>
         <select
           id="program"
@@ -400,7 +421,7 @@ export default function RegisterForm() {
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
         >
           <option value="" disabled>
-            Select program type
+            Select exam type
           </option>
           {PROGRAM_TYPE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>

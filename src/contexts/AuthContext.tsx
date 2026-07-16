@@ -9,7 +9,6 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
-  sendPasswordResetEmail,
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
@@ -127,25 +126,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
-  function resetPassword(email: string) {
-    // Get the current domain (works for both development and production)
-    const getActionCodeSettings = () => {
-      if (typeof window !== 'undefined') {
-        // Use the current origin (works for both localhost and production)
-        const baseUrl = window.location.origin;
-        return {
-          url: `${baseUrl}/reset-password`,
-          handleCodeInApp: false,
-        };
-      }
-      // Fallback for SSR
-      return {
-        url: 'https://teasgurus.com/reset-password',
-        handleCodeInApp: false,
-      };
-    };
+  async function resetPassword(email: string) {
+    const response = await fetch("/api/auth/password-reset", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
 
-    return sendPasswordResetEmail(auth, email, getActionCodeSettings());
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.error || "Could not send password reset email");
+    }
   }
 
   useEffect(() => {

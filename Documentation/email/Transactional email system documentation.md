@@ -22,14 +22,17 @@ Implemented:
 - `delivery_uncertain` status for ambiguous provider/network outcomes.
 - Protected worker endpoint.
 - Welcome email trigger from registration.
+- Password reset email trigger from `/forgot-password`.
+- Admin-triggered email verification support action.
+- Admin-triggered account disabled and enabled notifications.
 - Contact acknowledgement and internal notification jobs.
 - Admin-only test email endpoint.
+- Admin email monitoring UI at `/admin/email-jobs`.
 - Firestore rules that deny normal client access to email-related private collections.
 - Structured local change-log page at `/change-log`.
 
 Not implemented yet:
 
-- Admin email monitoring UI.
 - Firestore-editable email template overrides.
 - Production scheduler or Vercel Cron configuration.
 - Automatic production deployment.
@@ -50,6 +53,81 @@ Firestore job is updated with delivery status
 ```
 
 The browser never calls Resend directly.
+
+## Password reset email flow
+
+Password reset uses Firebase Authentication for the secure action code and the NursingMocks email queue for delivery.
+
+Flow:
+
+```text
+User submits email on /forgot-password
+POST /api/auth/password-reset validates and rate-limits the request
+Firebase Admin generates a password reset action link
+Server extracts the Firebase oobCode and builds a NursingMocks /reset-password URL
+emailJobs stores a password_reset job
+Worker sends the branded NursingMocks email through Resend
+User opens /reset-password?mode=resetPassword&oobCode=...
+Client verifies and completes the reset through Firebase Authentication
+```
+
+Security behavior:
+
+- The browser does not call Firebase's client-side `sendPasswordResetEmail`.
+- Unknown accounts receive the same generic success response as known accounts.
+- The route rate-limits by submitted email and client IP.
+- Reset permissions remain controlled by Firebase's single-use action code.
+- The application does not store passwords or create its own reset-token system.
+
+## Admin email verification flow
+
+Admins can send a verification email from `/admin/users` when a selected user's email is not verified.
+
+Flow:
+
+```text
+Admin selects a user on /admin/users
+Admin clicks Send Email Verification
+POST /api/admin/users/[uid]/support-actions verifies admin claim
+Server loads the target user by UID through Firebase Admin
+Firebase Admin generates an email verification action link
+emailJobs stores an email_verification job
+Worker sends the branded NursingMocks email through Resend
+Admin audit log records user.email_verification.send
+```
+
+Security behavior:
+
+- Admins cannot provide arbitrary recipients.
+- The target email comes from Firebase Authentication.
+- The browser never receives email-provider credentials.
+- The action does not mark the email verified; Firebase verifies only when the user opens the action link.
+- The support action writes an admin audit log.
+
+## Admin account status notification flow
+
+When an admin disables or enables a user from `/admin/users`, the system sends a controlled account-status email if the target user has an email address.
+
+Flow:
+
+```text
+Admin selects a user on /admin/users
+Admin enters a plain-text reason
+Admin clicks Disable Account or Enable Account
+POST /api/admin/users/[uid]/account-status verifies admin claim
+Server updates the Firebase Auth disabled state
+emailJobs stores an account_disabled or account_enabled job with the validated message
+Worker sends the branded NursingMocks email through Resend
+Admin audit log records user.account.disable or user.account.enable and whether email queueing succeeded
+```
+
+Security behavior:
+
+- Admins cannot provide arbitrary recipients.
+- The target email comes from Firebase Authentication.
+- The admin message is plain text and limited to 10 to 500 characters.
+- The email template is code-controlled; admins cannot write custom HTML.
+- If the email cannot be queued after the account status change, the account status change remains in place and the audit log records `emailQueued: false`.
 
 ## Main Firestore collections
 
@@ -96,8 +174,11 @@ Sensitive data policy:
 - Does not store Firebase ID tokens.
 - Does not store passwords.
 - Does not store card details.
-- Does not store password-reset tokens.
 - Does not store rendered email bodies.
+- Password reset jobs store the Firebase-generated reset URL in `data.resetUrl` so the worker can render and send the email.
+- Email verification jobs store the Firebase-generated verification URL in `data.verificationUrl` so the worker can render and send the email.
+- Account disabled and enabled jobs store the admin's validated plain-text message in `data.message` so the worker can render the controlled notification templates.
+- Treat action-link jobs as sensitive server-only records and retain them only as long as operationally needed.
 
 ### contactSubmissions
 
@@ -130,6 +211,52 @@ Normal client access:
 Raw email/IP values:
 
 - Not stored in document IDs. Rate-limit document IDs are SHA-256 hashes.
+
+## Admin email monitoring UI
+
+Admins can inspect recent email queue records at:
+
+```text
+/admin/email-jobs
+```
+
+The page is read-only in this phase.
+
+Visible fields:
+
+- template ID
+- recipient
+- status
+- attempts and maximum attempts
+- provider name
+- provider message ID
+- created, updated, sent, and next-attempt timestamps
+- last error category
+- last error message
+- idempotency key
+- template data keys
+
+Hidden fields:
+
+- rendered email HTML
+- rendered email text
+- password reset URLs
+- email verification URLs
+- account action message values
+- API keys and provider secrets
+
+Supported filters:
+
+- template ID
+- status
+- recipient text
+
+Current limitations:
+
+- filters apply to the latest 50 jobs to avoid Firestore composite index requirements
+- retry actions are not available yet
+- delete actions are not available
+- full email body rendering is intentionally unavailable from the admin UI
 
 ### emailTemplates
 
@@ -676,4 +803,3 @@ Deleted:
 - Keep `EMAIL_WORKER_SECRET` strong in production.
 - Keep the worker endpoint protected.
 - Deploy Firestore rules before relying on production email jobs.
-

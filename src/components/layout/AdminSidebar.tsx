@@ -91,6 +91,18 @@ export default function AdminSidebar() {
       icon: "payments",
       color: "blue",
     },
+    {
+      label: "Audit Logs",
+      href: "/admin/audit-logs",
+      icon: "audit",
+      color: "orange",
+    },
+    {
+      label: "Email Jobs",
+      href: "/admin/email-jobs",
+      icon: "email",
+      color: "green",
+    },
   ];
 
   // Icon component with rounded square background
@@ -195,6 +207,38 @@ export default function AdminSidebar() {
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              />
+            </svg>
+          );
+        case "audit":
+          return (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.25-2.25A9.75 9.75 0 0112 21.75 9.75 9.75 0 013.75 7.75L12 3l8.25 4.75z"
+              />
+            </svg>
+          );
+        case "email":
+          return (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 0a2 2 0 012-2h14a2 2 0 012 2m-18 0v8a2 2 0 002 2h14a2 2 0 002-2V8"
               />
             </svg>
           );

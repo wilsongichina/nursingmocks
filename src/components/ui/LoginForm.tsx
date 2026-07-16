@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -125,28 +127,22 @@ export default function LoginForm() {
 
   if (success) {
     return (
-      <div className="text-center">
-        <div className="mb-4">
-          <svg
-            className="mx-auto h-16 w-16 text-green-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+      <div className="user-card p-5 text-center">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-[rgba(43,170,96,0.22)] bg-[rgba(43,170,96,0.1)] text-sm font-black text-[#15803d]">
+          ok
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Login Successful! 🎉
-        </h2>
-        <p className="text-gray-600 mb-4">
-          Welcome back! Redirecting to dashboard...
+        <p className="user-eyebrow mt-4">Signed in</p>
+        <h2 className="user-section-title mt-2">Login successful</h2>
+        <p className="user-body-sm mt-2">
+          Welcome back. We are taking you to your dashboard now.
         </p>
+        <div className="user-alert user-alert-success mt-5 text-left" role="status">
+          <span className="user-alert-icon" aria-hidden="true">ok</span>
+          <div>
+            <p className="user-card-title">Account verified</p>
+            <p className="user-helper mt-1">Your study dashboard will open automatically.</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -219,15 +215,24 @@ export default function LoginForm() {
             </svg>
           </div>
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
             placeholder="Enter your password"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-500 transition hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 

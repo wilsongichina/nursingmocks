@@ -1798,3 +1798,343 @@ Validation run:
 ```text
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
+
+## Follow-up: hide Tawk chat on logged-in pages
+
+Updated the global Tawk chat loader so authenticated users do not see the public chat widget inside logged-in app pages.
+
+Behavior:
+
+- signed-out visitors can still load the Tawk chat widget
+- once Firebase Auth has a current user, the Tawk component does not inject the script
+- if Tawk was already injected before login, the component removes Tawk scripts, iframes, widget containers, and the local positioning style
+- no dashboard, profile, payments, or other authenticated page needs local Tawk handling
+
+Files changed:
+
+- `src/components/ui/TawkToChat.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: login success state styling
+
+Updated the login success confirmation to match the shared user-page visual system.
+
+Behavior:
+
+- the active `/login` success screen now uses `user-page`, `user-card`, `user-page-title`, and `user-alert-success`
+- the reusable `LoginForm` success state uses the same card and alert pattern
+- removed the old standalone SVG/emoji success treatment
+- redirect behavior after successful email or Google login remains unchanged
+
+Files changed:
+
+- `src/app/login/LoginPageClient.tsx`
+- `src/components/ui/LoginForm.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: login page typography redesign
+
+Redesigned `/login` to match the shared user-page typography system.
+
+Behavior:
+
+- replaced the old one-off login layout with `user-page`, `user-page-container`, `user-page-header`, `user-card`, `user-detail-surface`, `user-field`, `user-button-primary`, and `user-button-secondary`
+- added a cleaner left-side summary for `My Exams`, `Progress`, and `Payments`
+- updated loading, error, and success states to use shared skeletons and alert patterns
+- preserved email/password login, Google login, remember-me behavior, safe `returnTo` redirect handling, and success redirect timing
+- removed corrupted decorative characters from the login UI
+
+Files changed:
+
+- `src/app/login/LoginPageClient.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: register page typography redesign
+
+Redesigned `/register` to match the shared user-page typography system.
+
+Behavior:
+
+- replaced the old one-off register layout with `user-page`, `user-page-container`, `user-page-header`, `user-card`, `user-detail-surface`, `user-field`, `user-button-primary`, and `user-button-secondary`
+- added a cleaner left-side summary for focus selection, progress tracking, and access management
+- updated loading, error, and success states to use shared skeletons and alert patterns
+- preserved email/password registration, Google registration, program type selection, terms validation, welcome-email call, and dashboard redirect timing
+- removed corrupted decorative characters from the active register UI
+
+Files changed:
+
+- `src/app/register/RegisterPageClient.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: register page exam naming cleanup
+
+Updated `/register` copy for correct exam names and capitalization.
+
+Behavior:
+
+- changed `Pick a focus` to `Pick an Exam Focus`
+- changed the focus helper to use `ATI TEAS 7`, `HESI A2`, `Nursing Test Bank`, and `Nursing Exit Exams`
+- standardized visible labels such as `Sign Up`, `Full Name`, `Email Address`, `Confirm Password`, and `Program Type`
+- updated register validation copy to use `Program Type`
+
+Files changed:
+
+- `src/app/register/RegisterPageClient.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: forgot password typography redesign
+
+Redesigned `/forgot-password` to match the shared user-page typography system.
+
+Behavior:
+
+- replaced the old one-off forgot-password layout with `user-page`, `user-page-container`, `user-page-header`, `user-card`, `user-detail-surface`, `user-field`, and `user-button-primary`
+- updated loading, error, and success states to use shared skeletons and alert patterns
+- corrected exam naming to `ATI TEAS 7`, `HESI A2`, `Nursing Test Bank`, and `Nursing Exit Exams`
+- removed corrupted decorative characters from the active forgot-password UI
+- preserved password reset validation, Firebase reset email behavior, and redirect behavior for already-authenticated users
+
+Files changed:
+
+- `src/app/forgot-password/ForgotPasswordPageClient.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: register exam type wording
+
+Updated register-page wording from `Program Type` to `Exam Type`.
+
+Behavior:
+
+- active `/register` page now labels the focus selector as `Exam Type`
+- validation messages now ask users to select an `Exam Type`
+- reusable legacy `RegisterForm` user-facing text was updated for consistency
+- internal state and auth parameters still use existing `program` / `programType` names to preserve data flow
+
+Files changed:
+
+- `src/app/register/RegisterPageClient.tsx`
+- `src/components/ui/RegisterForm.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: password visibility controls
+
+Added view/hide controls to password-entry fields where users need to confirm what they typed.
+
+Behavior:
+
+- `/login` now lets users show or hide the password before signing in
+- `/register` now lets users show or hide both password and confirm-password fields
+- reset-password form now lets users show or hide both new-password and confirm-password fields
+- reusable legacy login/register form components were updated so alternate render paths stay consistent
+- visibility controls use button elements with `aria-label` and `aria-pressed`; submit behavior and validation are unchanged
+
+Files changed:
+
+- `src/app/login/LoginPageClient.tsx`
+- `src/app/register/RegisterPageClient.tsx`
+- `src/components/ui/LoginForm.tsx`
+- `src/components/ui/RegisterForm.tsx`
+- `src/components/ui/ResetPasswordForm.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: forgot-password and reset-password flow review
+
+Reviewed the password recovery flow and aligned the reset step with the shared user-page typography system.
+
+Behavior:
+
+- `/forgot-password` still validates email format and sends Firebase password reset email through the existing auth context
+- Firebase reset links continue to target the current browser origin plus `/reset-password` during local testing
+- non-browser fallback reset URL now uses `NEXT_PUBLIC_SITE_URL` when available and falls back to the NursingMocks domain
+- `/reset-password` now uses the same `user-page`, `user-page-container`, `user-card`, alert, field, skeleton, and button patterns as the other user auth pages
+- reset-password form keeps Firebase `oobCode` verification, password length validation, password match validation, success redirect to `/login`, and view/hide password controls
+- forgot-password and reset-password metadata was updated from the old TEAS Gurus copy to NursingMocks
+
+Files changed:
+
+- `src/app/forgot-password/page.tsx`
+- `src/app/reset-password/page.tsx`
+- `src/app/reset-password/ResetPasswordPageClient.tsx`
+- `src/components/ui/ResetPasswordForm.tsx`
+- `src/contexts/AuthContext.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: NursingMocks password reset email delivery
+
+Moved password reset email delivery from Firebase's default email sender to the NursingMocks transactional email queue.
+
+Behavior:
+
+- `/forgot-password` now calls `POST /api/auth/password-reset` through the auth context instead of Firebase client-side `sendPasswordResetEmail`
+- the server route validates and rate-limits the request, generates the Firebase password reset action link with Firebase Admin, queues a `password_reset` email job, and processes due jobs through the existing Resend worker
+- users see a generic success message so the UI does not reveal whether an email address exists
+- the reset email uses a new NursingMocks `password_reset` template in the code-controlled template registry
+- `/reset-password` now accepts password reset action links even if the browser already has an authenticated session
+- reset-password validation now requires at least 8 characters, matching registration
+- reset-password verifies the Firebase action mode before processing the `oobCode`
+
+Files changed:
+
+- `src/app/api/auth/password-reset/route.ts`
+- `src/app/api/auth/password-reset/__tests__/route.test.ts`
+- `src/app/forgot-password/ForgotPasswordPageClient.tsx`
+- `src/app/reset-password/ResetPasswordPageClient.tsx`
+- `src/components/ui/ResetPasswordForm.tsx`
+- `src/contexts/AuthContext.tsx`
+- `src/lib/email/jobs.ts`
+- `src/lib/email/template-registry.ts`
+- `src/lib/email/__tests__/template-registry.test.ts`
+- `Documentation/email/Transactional email system documentation.md`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm test -- src/app/api/auth/password-reset/__tests__/route.test.ts src/lib/email/__tests__/template-registry.test.ts
+```
+
+## Follow-up: reset-password field icon cleanup
+
+Removed the left lock icons from the reset-password inputs so typed password text remains fully clear.
+
+Behavior:
+
+- new-password and confirm-password fields no longer show decorative left-side lock icons
+- input text now uses the normal field padding with no left-side visual obstruction
+- password visibility toggles and reset validation behavior are unchanged
+
+Files changed:
+
+- `src/components/ui/ResetPasswordForm.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: mobile auth form optimization
+
+Optimized the active authentication forms for small screens while preserving the desktop typography layout.
+
+Behavior:
+
+- login, register, forgot-password, and reset-password now use `100svh`-aware mobile layouts
+- login, register, and forgot-password show the form card before the supporting hero copy on mobile
+- supporting feature tiles are hidden on small screens and restored from the `sm` breakpoint upward
+- mobile card padding is slightly tighter, while desktop spacing remains unchanged
+- reset-password aligns near the top on mobile so the form is visible sooner
+
+Files changed:
+
+- `src/app/login/LoginPageClient.tsx`
+- `src/app/register/RegisterPageClient.tsx`
+- `src/app/forgot-password/ForgotPasswordPageClient.tsx`
+- `src/app/reset-password/ResetPasswordPageClient.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: mobile Google button icon
+
+Replaced the remote Google sign-in icon on active auth pages with a local inline SVG component.
+
+Behavior:
+
+- login and register Google buttons no longer depend on loading `https://www.gstatic.com/.../google.svg`
+- the icon renders consistently on mobile and desktop
+- Google sign-in/sign-up behavior is unchanged
+
+Files changed:
+
+- `src/components/ui/GoogleMark.tsx`
+- `src/app/login/LoginPageClient.tsx`
+- `src/app/register/RegisterPageClient.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: favicon route conflict
+
+Resolved the Next.js `/favicon.ico` conflict.
+
+Behavior:
+
+- removed the duplicate App Router favicon file
+- kept `public/favicon.ico` as the single `/favicon.ico` source
+- root layout metadata continues to reference `/favicon.ico` and `/favicon.png`
+
+Files changed:
+
+- `src/app/favicon.ico`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```

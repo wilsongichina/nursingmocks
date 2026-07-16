@@ -122,6 +122,106 @@ function AdminPageContent() {
             </div>
           </Link>
 
+          {/* Audit Logs Card */}
+          <Link
+            href="/admin/audit-logs"
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+          >
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-orange-200 transition-colors">
+                <svg
+                  className="w-6 h-6 text-orange-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.25-2.25A9.75 9.75 0 0112 21.75 9.75 9.75 0 013.75 7.75L12 3l8.25 4.75z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
+                  Audit Logs
+                </h3>
+                <p className="text-sm text-gray-600">Review admin activity</p>
+              </div>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Inspect server-created admin audit records before enabling
+              account-changing user-management actions.
+            </p>
+            <div className="mt-4 flex items-center text-orange-600 group-hover:text-orange-700 transition-colors">
+              <span className="text-sm font-medium">View Logs</span>
+              <svg
+                className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </Link>
+
+          {/* Email Jobs Card */}
+          <Link
+            href="/admin/email-jobs"
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+          >
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-green-200 transition-colors">
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 0a2 2 0 012-2h14a2 2 0 012 2m-18 0v8a2 2 0 002 2h14a2 2 0 002-2V8"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">
+                  Email Jobs
+                </h3>
+                <p className="text-sm text-gray-600">Monitor email queue</p>
+              </div>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Review transactional email queue status, attempts, delivery
+              metadata, and safe template data keys.
+            </p>
+            <div className="mt-4 flex items-center text-green-600 group-hover:text-green-700 transition-colors">
+              <span className="text-sm font-medium">View Jobs</span>
+              <svg
+                className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </Link>
+
           {/* Nursing Entrance Exam Card */}
           <Link
             href="/admin/nursing-entrance-exam"

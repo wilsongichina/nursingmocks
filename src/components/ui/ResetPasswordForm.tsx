@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { CheckCircle2, Eye, EyeOff, XCircle } from "lucide-react";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -16,12 +17,22 @@ export default function ResetPasswordForm() {
   const [success, setSuccess] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const [isValidCode, setIsValidCode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     // Verify the action code from the URL
     const verifyCode = async () => {
+      const mode = searchParams.get("mode");
       const oobCode = searchParams.get("oobCode");
       
+      if (mode && mode !== "resetPassword") {
+        setError("This reset page can only process password reset links.");
+        setIsVerifying(false);
+        setIsValidCode(false);
+        return;
+      }
+
       if (!oobCode) {
         setError("Invalid or missing reset link. Please request a new password reset.");
         setIsVerifying(false);
@@ -33,15 +44,16 @@ export default function ResetPasswordForm() {
         // Verify the password reset code
         await verifyPasswordResetCode(auth, oobCode);
         setIsValidCode(true);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const authError = err as { code?: string; message?: string };
         let errorMessage = "Invalid or expired reset link. Please request a new password reset.";
         
-        if (err.code === "auth/expired-action-code") {
+        if (authError.code === "auth/expired-action-code") {
           errorMessage = "This password reset link has expired. Please request a new one.";
-        } else if (err.code === "auth/invalid-action-code") {
+        } else if (authError.code === "auth/invalid-action-code") {
           errorMessage = "Invalid reset link. Please request a new password reset.";
-        } else if (err.message) {
-          errorMessage = err.message;
+        } else if (authError.message) {
+          errorMessage = authError.message;
         }
         
         setError(errorMessage);
@@ -65,8 +77,8 @@ export default function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
       return;
     }
 
@@ -86,25 +98,24 @@ export default function ResetPasswordForm() {
         return;
       }
 
-      // Confirm the password reset
       await confirmPasswordReset(auth, oobCode, password);
       setSuccess(true);
 
-      // Redirect to login after 3 seconds
       setTimeout(() => {
         router.push("/login");
       }, 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const authError = err as { code?: string; message?: string };
       let errorMessage = "An error occurred. Please try again.";
       
-      if (err.code === "auth/expired-action-code") {
+      if (authError.code === "auth/expired-action-code") {
         errorMessage = "This password reset link has expired. Please request a new one.";
-      } else if (err.code === "auth/invalid-action-code") {
+      } else if (authError.code === "auth/invalid-action-code") {
         errorMessage = "Invalid reset link. Please request a new password reset.";
-      } else if (err.code === "auth/weak-password") {
+      } else if (authError.code === "auth/weak-password") {
         errorMessage = "Password is too weak. Please choose a stronger password.";
-      } else if (err.message) {
-        errorMessage = err.message;
+      } else if (authError.message) {
+        errorMessage = authError.message;
       }
       
       setError(errorMessage);
@@ -114,44 +125,27 @@ export default function ResetPasswordForm() {
     }
   };
 
-  // Show loading state while verifying code
   if (isVerifying) {
     return (
-      <div className="text-center py-8">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-gray-600">Verifying reset link...</p>
+      <div className="mt-6 grid gap-3">
+        <p className="user-card-title">Verifying reset link</p>
+        <div className="user-skeleton h-12 w-full" />
+        <div className="user-skeleton h-12 w-full" />
       </div>
     );
   }
 
-  // Show error if code is invalid
   if (!isValidCode) {
     return (
-      <div className="text-center">
-        <div className="mb-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-            <svg
-              className="w-8 h-8 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </div>
+      <div className="mt-6 text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-[rgba(220,38,38,0.22)] bg-[rgba(220,38,38,0.08)] text-[#b91c1c]">
+          <XCircle className="h-7 w-7" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Invalid Reset Link
-        </h2>
-        <p className="text-gray-600 mb-6">{error}</p>
+        <h2 className="user-section-title mt-4">Invalid Reset Link</h2>
+        <p className="user-body-sm mt-2">{error}</p>
         <Link
           href="/forgot-password"
-          className="inline-block gradient-button text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
+          className="user-button-primary mt-5 w-full"
         >
           Request New Reset Link
         </Link>
@@ -159,77 +153,43 @@ export default function ResetPasswordForm() {
     );
   }
 
-  // Show success message
   if (success) {
     return (
-      <div className="text-center">
-        <div className="mb-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
+      <div className="mt-6 text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-[rgba(43,170,96,0.22)] bg-[rgba(43,170,96,0.1)] text-[#15803d]">
+          <CheckCircle2 className="h-7 w-7" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Password Reset Successful!
-        </h2>
-        <p className="text-gray-600 mb-4">
+        <h2 className="user-section-title mt-4">Password Reset Successful</h2>
+        <p className="user-body-sm mt-2">
           Your password has been successfully reset. You will be redirected to the login page shortly.
         </p>
         <Link
           href="/login"
-          className="inline-block gradient-button text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
+          className="user-button-primary mt-5 w-full"
         >
-          Go to Login
+          Go to Sign In
         </Link>
       </div>
     );
   }
 
-  // Show reset password form
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+        <div className="user-alert user-alert-error" role="alert">
+          <span className="user-alert-icon" aria-hidden="true">x</span>
+          <div>
+            <p className="user-card-title">Reset Issue</p>
+            <p className="user-helper mt-1">{error}</p>
+          </div>
         </div>
       )}
 
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-semibold text-gray-700 mb-2"
-        >
-          New Password
-        </label>
+      <label className="user-control" htmlFor="password">
+        <span className="user-label mb-1">New Password</span>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg
-              className="h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-          </div>
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="password"
             name="password"
             value={password}
@@ -238,41 +198,30 @@ export default function ResetPasswordForm() {
               setError("");
             }}
             required
-            minLength={6}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
+            minLength={8}
+            className="user-field pr-12"
             placeholder="Enter your new password"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#64748b] transition hover:text-[#4338ca] focus:outline-none focus:ring-2 focus:ring-[#6a5cff]/30"
+            aria-label={showPassword ? "Hide new password" : "Show new password"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
-        <p className="mt-2 text-sm text-gray-500">
-          Password must be at least 6 characters long.
-        </p>
-      </div>
+        <span className="user-feedback mt-1">
+          Password must be at least 8 characters long.
+        </span>
+      </label>
 
-      <div>
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-semibold text-gray-700 mb-2"
-        >
-          Confirm New Password
-        </label>
+      <label className="user-control" htmlFor="confirmPassword">
+        <span className="user-label mb-1">Confirm New Password</span>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg
-              className="h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-          </div>
           <input
-            type="password"
+            type={showConfirmPassword ? "text" : "password"}
             id="confirmPassword"
             name="confirmPassword"
             value={confirmPassword}
@@ -281,56 +230,40 @@ export default function ResetPasswordForm() {
               setError("");
             }}
             required
-            minLength={6}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
+            minLength={8}
+            className="user-field pr-12"
             placeholder="Confirm your new password"
           />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((value) => !value)}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#64748b] transition hover:text-[#4338ca] focus:outline-none focus:ring-2 focus:ring-[#6a5cff]/30"
+            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+            aria-pressed={showConfirmPassword}
+          >
+            {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
-      </div>
+      </label>
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full gradient-button text-white px-6 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+        className="user-button-primary w-full gap-2"
       >
-        {isSubmitting ? (
-          <span className="flex items-center justify-center">
-            <svg
-              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            Resetting Password...
-          </span>
-        ) : (
-          "Reset Password"
-        )}
+        {isSubmitting ? "Resetting Password..." : "Reset Password"}
       </button>
 
-      <div className="text-center">
-        <p className="text-sm text-gray-600">
+      <div className="user-detail-surface p-3 text-center">
+        <p className="user-helper">
           Remember your password?{" "}
           <Link
             href="/login"
-            className="font-medium text-blue-600 hover:text-blue-500"
+            className="font-bold text-[#4338ca] hover:underline"
           >
-            Sign in here
+            Back to Sign In
           </Link>
+          .
         </p>
       </div>
     </form>

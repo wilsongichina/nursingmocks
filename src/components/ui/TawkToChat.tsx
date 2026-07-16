@@ -1,9 +1,26 @@
 "use client";
 
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TawkToChat = () => {
+  const { currentUser } = useAuth();
+
   useEffect(() => {
+    const removeTawk = () => {
+      document
+        .querySelectorAll(
+          'script[src*="embed.tawk.to"], iframe[src*="tawk.to"], #tawk-bubble-container, #tawkchat-container, #tawkchat-minified-container, style[data-nursingmocks-tawk-style="true"]'
+        )
+        .forEach((element) => element.remove());
+    };
+
+    if (currentUser) {
+      removeTawk();
+      return;
+    }
+
+    removeTawk();
     const script = document.createElement("script");
     script.type = "text/javascript";
     script.async = true;
@@ -13,6 +30,7 @@ const TawkToChat = () => {
     document.body.appendChild(script);
 
     const style = document.createElement("style");
+    style.setAttribute("data-nursingmocks-tawk-style", "true");
     style.innerHTML = `
       #tawk-bubble-container {
         bottom: 0 !important;
@@ -23,10 +41,10 @@ const TawkToChat = () => {
     document.head.appendChild(style);
 
     return () => {
-      document.body.removeChild(script);
-      document.head.removeChild(style);
+      script.remove();
+      style.remove();
     };
-  }, []);
+  }, [currentUser]);
 
   return null;
 };

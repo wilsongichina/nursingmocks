@@ -16,7 +16,7 @@ Audit and proposed implementation structure completed. Core implementation is in
 - No Firebase Cloud Functions folder exists in the repository.
 - `firebase.json` currently configures only Firestore and Storage rules.
 - No existing background job queue pattern was found.
-- Password reset uses Firebase Authentication through `sendPasswordResetEmail`.
+- Password reset now uses Firebase Authentication for secure action-link generation and the NursingMocks `emailJobs` queue for branded delivery.
 - Welcome email behavior currently starts from browser-side registration code, which calls a server API route.
 - Contact form behavior currently calls a server API route.
 - Payment behavior appears mostly page/link based; payment pricing and payment flow were not modified.

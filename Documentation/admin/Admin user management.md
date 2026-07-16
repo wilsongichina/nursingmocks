@@ -35,12 +35,16 @@ Implemented:
 - Admin custom-claim enforcement on API routes.
 - Admin dashboard card.
 - Admin sidebar navigation item.
+- Admin audit-log foundation.
+- Admin audit-log viewer.
+- Audited user-detail view events.
+- Audited support email actions.
+- Audited account disable/enable actions.
 - Change-log documentation.
 
 Not implemented yet:
 
 - User edits.
-- Account disable/enable.
 - User deletion.
 - Admin claim changes.
 - Entitlement changes.
@@ -49,7 +53,6 @@ Not implemented yet:
 - Quiz progress edits.
 - User impersonation.
 - User export.
-- Admin audit logs.
 
 ## Why this phase is read-only
 
@@ -66,7 +69,7 @@ The system currently displays private account information but does not allow wri
 - Quiz progress.
 - Subscription records.
 
-Before write actions are added, the project should add a reliable admin audit-log system.
+Before write actions are added, every account-changing route must use the admin audit-log system.
 
 ## Files created
 
@@ -180,6 +183,9 @@ Main UI features:
 - User table.
 - Search input.
 - Pagination controls.
+- Current-page summary cards.
+- Search mode explanation.
+- Read-only phase notice.
 - User detail panel.
 - Firebase Auth status badges.
 - Admin claim indicator.
@@ -187,6 +193,212 @@ Main UI features:
 - Loading state.
 - Empty state.
 - Error state.
+
+## Follow-up: management visibility improvements
+
+The `/admin/users` page was updated to make Firebase Auth pagination and search behavior clearer for admins.
+
+Behavior:
+
+- shows the number of users currently visible from the loaded Firebase Auth page
+- shows the current page position based on Firebase Auth page-token navigation
+- explains whether search is global exact-email lookup or current-page filtering
+- adds a clear read-only phase notice before future account-changing actions are added
+- table footer now states that Firebase Auth is paginated and exact email search is the global lookup path
+
+Files changed:
+
+- `src/app/admin/users/page.tsx`
+- `Documentation/admin/Admin user management.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: full-width typography alignment
+
+The `/admin/users` page was aligned with the shared typography visual system while preserving the full-width admin workspace standard.
+
+Behavior:
+
+- uses shared typography classes for page title, body copy, cards, detail surfaces, labels, fields, buttons, alerts, status pills, and helper text
+- keeps the admin workspace full width after the sidebar and avoids centered width caps such as `mx-auto max-w-7xl`
+- keeps compact header controls, such as user search, visually constrained so admin pages do not create awkward full-width form bars
+- adds native autocomplete suggestions from the currently loaded Firebase Auth page using email, UID, display name, and Firestore full name values
+- searches automatically as the admin types, with a short debounce to avoid firing a request on every keystroke
+- keeps exact email lookup global when a full Firebase Auth email matches, then falls back to current-page filtering for partial email input
+- keeps the dense table layout appropriate for admin management screens
+- preserves read-only behavior, Firebase Auth pagination, exact-email lookup, and user detail loading behavior
+
+Files changed:
+
+- `src/app/admin/users/page.tsx`
+- `Documentation/admin/Admin user management.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: structured user detail panel
+
+The `/admin/users` detail panel was reorganized for easier account review while keeping the page read-only.
+
+Behavior:
+
+- replaces the primary raw-detail view with named management sections
+- adds Identity, Access, Billing, Activity, and Account State sections
+- keeps status badges visible at the top of the selected-user panel
+- keeps billing as a snapshot and entitlements/access as the source of access truth
+- keeps raw custom-claim and Firestore payloads inside a collapsed Technical Records area for troubleshooting
+- preserves the existing Firebase Auth and Firestore read flow without adding write actions
+
+Files changed:
+
+- `src/app/admin/users/page.tsx`
+- `Documentation/admin/Admin user management.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: admin audit logging foundation
+
+The admin user-management audit foundation was implemented before account-changing actions are added.
+
+Behavior:
+
+- adds the `adminAuditLogs` collection contract for general admin actions
+- adds a server-only audit helper with request IDs, actor details, target details, before/after summaries, reason, status, error message, user agent, and hashed IP metadata
+- adds `/api/admin/audit-logs` for protected admin reads
+- adds `/admin/audit-logs` as a full-width admin typography page
+- adds Audit Logs to the admin sidebar and admin dashboard
+- records `user.detail.view` audit events whenever an admin opens a user detail record
+- keeps the user-management page read-only and does not add account-changing actions yet
+
+Files changed:
+
+- `src/lib/admin/audit.ts`
+- `src/app/api/admin/audit-logs/route.ts`
+- `src/app/api/admin/users/[uid]/route.ts`
+- `src/app/admin/audit-logs/page.tsx`
+- `src/components/layout/AdminSidebar.tsx`
+- `src/app/admin/page.tsx`
+- `Documentation/admin/Admin user management.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: audited support email actions
+
+The first low-risk support actions were added to `/admin/users`.
+
+Behavior:
+
+- adds `Send Password Reset` to the selected-user detail panel
+- adds `Send Email Verification` only when the selected user email is not verified
+- uses protected server route `/api/admin/users/[uid]/support-actions`
+- verifies the caller has `admin: true`
+- loads the target user server-side by UID
+- generates Firebase Authentication action links on the server
+- queues branded NursingMocks emails through `emailJobs`
+- runs the email worker for immediate delivery attempts
+- writes `user.password_reset.send` and `user.email_verification.send` audit logs
+- writes failure audit logs when a support action fails after admin verification
+- does not expose passwords, change account state, or let admins provide arbitrary recipients
+
+Files changed:
+
+- `src/app/admin/users/page.tsx`
+- `src/app/api/admin/users/[uid]/support-actions/route.ts`
+- `src/app/api/admin/users/[uid]/support-actions/__tests__/route.test.ts`
+- `src/lib/email/template-registry.ts`
+- `src/lib/email/jobs.ts`
+- `src/lib/email/__tests__/template-registry.test.ts`
+- `Documentation/admin/Admin user management.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm test -- src/app/api/admin/users/[uid]/support-actions/__tests__/route.test.ts src/lib/email/__tests__/template-registry.test.ts
+```
+
+## Follow-up: audited account status actions
+
+Reversible account status controls were added to `/admin/users`.
+
+Behavior:
+
+- adds an Account Controls section to the selected-user detail panel
+- requires a 10 to 500 character reason before disable/enable can run
+- disables Firebase Auth users through a protected server route
+- enables Firebase Auth users through a protected server route
+- queues a controlled `account_disabled` email when an account is disabled and the target has an email
+- queues a controlled `account_enabled` email when an account is enabled and the target has an email
+- records whether the account-status email was queued in the audit log
+- prevents admins from disabling their own account
+- prevents no-op disable/enable requests when the target account is already in that state
+- writes `user.account.disable` and `user.account.enable` audit logs with before/after summaries
+- writes failure audit logs when an account status action fails after admin verification
+- refreshes the selected user detail and current user list after a successful status change
+- does not delete users, edit entitlements, edit billing, or change admin claims
+
+Files changed:
+
+- `src/app/admin/users/page.tsx`
+- `src/app/api/admin/users/[uid]/account-status/route.ts`
+- `src/app/api/admin/users/[uid]/account-status/__tests__/route.test.ts`
+- `src/lib/email/template-registry.ts`
+- `src/lib/email/jobs.ts`
+- `src/lib/email/__tests__/template-registry.test.ts`
+- `Documentation/admin/Admin user management.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm test -- src/app/api/admin/users/[uid]/account-status/__tests__/route.test.ts src/app/api/admin/users/[uid]/support-actions/__tests__/route.test.ts src/lib/email/__tests__/template-registry.test.ts
+```
+
+## Follow-up: admin email jobs monitor
+
+A read-only admin email queue monitor was added so support actions can be verified without exposing sensitive template data.
+
+Behavior:
+
+- adds `/admin/email-jobs`
+- adds `/api/admin/email-jobs`
+- adds Email Jobs to the admin sidebar and dashboard
+- lists recent `emailJobs` records
+- supports template, status, and recipient filters across the latest 50 jobs
+- shows status, attempts, provider metadata, timestamps, error details, idempotency key, and safe template data keys
+- hides sensitive template values such as reset URLs, verification URLs, and account-status messages
+- does not add retry, delete, or manual edit actions
+
+Files changed:
+
+- `src/lib/admin/email-jobs.ts`
+- `src/app/api/admin/email-jobs/route.ts`
+- `src/app/admin/email-jobs/page.tsx`
+- `src/components/layout/AdminSidebar.tsx`
+- `src/app/admin/page.tsx`
+- `Documentation/admin/Admin user management.md`
+- `Documentation/email/Transactional email system documentation.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
 
 ### Change-log entry
 
@@ -604,7 +816,7 @@ Do not let the browser write privileged user-management changes directly to Fire
 
 ## Admin audit logs
 
-Before adding write actions, create:
+Before adding write actions, use:
 
 ```text
 adminAuditLogs
@@ -614,6 +826,7 @@ Recommended fields:
 
 ```ts
 type AdminAuditLog = {
+  auditLogId: string;
   action: string;
   actorUid: string;
   actorEmail: string | null;
@@ -624,8 +837,10 @@ type AdminAuditLog = {
   reason: string | null;
   requestId: string;
   createdAt: Timestamp;
-  ipHash?: string;
-  userAgent?: string;
+  ipHash: string | null;
+  userAgent: string | null;
+  status: "success" | "failure";
+  errorMessage: string | null;
 };
 ```
 
@@ -657,24 +872,41 @@ Includes:
 
 ### Phase 2: Audit logging foundation
 
-Add:
+Status:
+
+```text
+Implemented
+```
+
+Includes:
 
 - `adminAuditLogs` collection
 - server-side audit helper
 - request IDs
 - action naming convention
 - audit viewer for admins
+- hashed IP metadata when available
+- `user.detail.view` audit writes when admins open user details
 
-Do this before account-changing actions.
+Use this before adding account-changing actions.
 
 ### Phase 3: Safe support actions
 
-Add low-risk actions:
+Status:
+
+```text
+Partially implemented
+```
+
+Implemented low-risk actions:
 
 - send Firebase password reset email
+- send Firebase email verification email
+
+Still deferred:
+
 - resend welcome email
 - revoke refresh tokens
-- refresh user detail
 
 Rules:
 
@@ -686,16 +918,24 @@ Rules:
 
 ### Phase 4: Account status actions
 
-Add:
+Status:
+
+```text
+Partially implemented
+```
+
+Implemented:
 
 - disable Firebase Auth user
 - enable Firebase Auth user
+
+Still deferred:
+
 - mark Firestore account state as locked if needed
 - unlock account if needed
 
 Requirements:
 
-- confirmation modal
 - reason field
 - audit log
 - prevent admins from disabling themselves accidentally
@@ -883,8 +1123,8 @@ Supported safe patterns include:
 
 ## Remaining limitations
 
-- Page is read-only.
-- No audit log exists yet.
+- User detail data remains read-only except for audited support email and account status actions.
+- Audit logs exist, but only user-detail views, audit-log views, support email actions, and account status actions are wired so far.
 - No separate support role exists yet.
 - Exact email search is the only cross-auth search.
 - General search filters the currently loaded page only.

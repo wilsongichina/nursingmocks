@@ -104,6 +104,48 @@ export async function createWelcomeEmailJob(input: {
   });
 }
 
+export async function createPasswordResetEmailJob(input: {
+  email: string;
+  resetUrl: string;
+  requestId: string;
+}) {
+  return createEmailJob({
+    templateId: "password_reset",
+    to: input.email,
+    data: { resetUrl: input.resetUrl },
+    idempotencyKey: `password_reset:${input.requestId}`,
+    maxAttempts: 3,
+  });
+}
+
+export async function createEmailVerificationJob(input: {
+  email: string;
+  verificationUrl: string;
+  requestId: string;
+}) {
+  return createEmailJob({
+    templateId: "email_verification",
+    to: input.email,
+    data: { verificationUrl: input.verificationUrl },
+    idempotencyKey: `email_verification:${input.requestId}`,
+    maxAttempts: 3,
+  });
+}
+
+export async function createAccountDisabledEmailJob(input: {
+  email: string;
+  message: string;
+  requestId: string;
+}) {
+  return createEmailJob({
+    templateId: "account_disabled",
+    to: input.email,
+    data: { message: input.message },
+    idempotencyKey: `account_disabled:${input.requestId}`,
+    maxAttempts: 3,
+  });
+}
+
 export async function createContactEmailJobs(input: {
   submissionId: string;
   name: string;

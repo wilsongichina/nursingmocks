@@ -149,7 +149,7 @@ export async function listAdminUsers(options: { limit?: number; pageToken?: stri
         nextPageToken: undefined,
       };
     } catch {
-      return { users: [], nextPageToken: undefined };
+      // While admins type an email, keep partial values useful by falling back to current-page filtering.
     }
   }
 
