@@ -880,35 +880,36 @@ Visual system changes:
 - changed support links to profile-style rounded pill rows
 - kept dashboard data behavior unchanged
 
-## User Account Theme Reference
+## User Page UI Design Source Of Truth
 
-The shared user account theme now applies to `/dashboard`, `/profile`, and `/payments`.
+All authenticated user-page UI design must be based on the shared typography standard, not page-specific visual experiments.
 
-Use this theme for authenticated user management pages:
-
-- page background: radial violet accents over `#f5f6fb`
-- page container: centered `max-w-[1220px]` with compact responsive padding
-- primary text: `#202437`
-- secondary text: `#7a819c`
-- muted label text: `#a0a5bf`
-- primary accent: `#6a5cff`
-- action hover/accent: `#4f46e5`
-- panels: white `rounded-2xl` cards with `shadow-[0_18px_45px_rgba(23,35,79,.08)]`
-- status pills: rounded full, dashed borders, compact text, no wrapping
-- detail rows and stat tiles: dashed violet-tinted borders with subtle `rgba(106,92,255,.045)` backgrounds
-- primary buttons: rounded full violet gradient buttons with subtle lift on hover
-- secondary buttons: rounded full white buttons with dashed or soft border and violet hover state
-
-Do not introduce a dark hero or a separate standalone visual system for normal authenticated user management pages unless the product explicitly creates a new user theme.
-
-Typography reference:
+Primary reference:
 
 ```text
 /typography
 Documentation/user-dashboard/User typography standards.md
 ```
 
-The global typography standard lives in `src/app/globals.css` and should be used for authenticated user pages before adding page-specific text classes.
+Shared implementation:
+
+```text
+src/app/globals.css
+```
+
+Required rule:
+
+- Start every authenticated user page from `/typography`.
+- Use the shared `user-*` classes in `src/app/globals.css` before adding page-specific Tailwind utilities.
+- Use `user-page` as the outer page wrapper.
+- Use `user-page-container` for the page width and padding.
+- Use the standard `1360px` maximum width from `--user-page-max-width`.
+- Use the shared page header pattern for page hero/header areas.
+- Use the shared components for cards, forms, buttons, alerts, badges, pills, tabs, search filters, pagination, modals, loading states, empty states, summary tiles, and progress indicators.
+- Keep page-specific styling limited to layout decisions or truly unique page needs.
+- If a new pattern is useful across multiple user pages, add it to `/typography` and document it before using it broadly.
+
+Do not introduce a dark hero, a separate standalone visual system, or one-off page theme for normal authenticated user management pages unless the product explicitly creates a new user theme and updates `/typography` first.
 
 Visual source update:
 
@@ -975,6 +976,25 @@ Profile readability follow-up:
 - increased section titles to `text-xl`
 - increased profile summary values and tab labels for easier scanning
 - kept compact badges and field labels smaller so the page still feels organized
+
+Profile typography standard follow-up:
+
+- updated `/profile` to use the shared `/typography` user-page standard
+- replaced the local radial background and max-width wrapper with `user-page` and `user-page-container`
+- replaced the custom profile header with the shared `user-page-header` structure
+- replaced local buttons with `user-button-primary` and `user-button-secondary`
+- replaced local panels with `user-card`
+- replaced local field, helper, and detail-row styling with `user-field`, `user-control`, `user-detail-surface`, `user-label`, and `user-helper`
+- replaced local tab styling with `user-tabs` and `user-tab`
+- replaced local alerts with `user-alert` variants
+- kept the existing profile data flow, tab behavior, save/reset actions, and password update logic unchanged
+
+Profile action feedback visibility follow-up:
+
+- moved account, preferences, and password update feedback above the active profile tab content
+- removed duplicate below-form feedback placement so users see save and validation messages immediately
+- kept the shared `user-alert` feedback styling
+- kept profile persistence, preference save behavior, and password update logic unchanged
 
 Validation:
 

@@ -120,14 +120,14 @@ const TIMEZONE_OPTIONS = [
 ] as const;
 
 const primaryButtonClass =
-  "inline-flex min-h-[38px] items-center justify-center rounded-full bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(106,92,255,.28)] transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60";
+  "user-button-primary";
 
 const secondaryButtonClass =
-  "inline-flex min-h-[38px] items-center justify-center rounded-full border border-[#e0e3f0] bg-[rgba(255,255,255,.85)] px-4 text-sm font-semibold text-[#7a819c] transition hover:-translate-y-px hover:border-[rgba(106,92,255,.32)] hover:bg-[rgba(106,92,255,.08)] hover:text-[#6a5cff] disabled:cursor-not-allowed disabled:opacity-60";
+  "user-button-secondary";
 
-const panelClass = "rounded-2xl bg-white shadow-[0_18px_45px_rgba(23,35,79,.08)]";
-const fieldClass = "mt-2 w-full rounded-xl border border-[#e0e3f0] bg-white px-3 py-[10px] text-sm outline-none transition focus:border-[#6a5cff] focus:shadow-[0_0_0_3px_rgba(106,92,255,.12)]";
-const readOnlyFieldClass = `${fieldClass} bg-[rgba(106,92,255,.03)]`;
+const panelClass = "user-card";
+const fieldClass = "user-field mt-2";
+const readOnlyFieldClass = `${fieldClass}`;
 const tabLabels: Record<TabKey, string> = {
   account: "Account",
   preferences: "Preferences",
@@ -136,16 +136,12 @@ const tabLabels: Record<TabKey, string> = {
 
 function Badge({ children, tone = "gray" }: { children: React.ReactNode; tone?: "green" | "purple" | "amber" | "gray" }) {
   const tones = {
-    green: "border-[rgba(43,170,96,.45)] bg-[rgba(43,170,96,.10)] text-[#2baa60]",
-    purple: "border-[rgba(106,92,255,.38)] bg-[rgba(106,92,255,.08)] text-[#4f46e5]",
-    amber: "border-[rgba(245,158,11,.45)] bg-[rgba(245,158,11,.12)] text-[#b45309]",
-    gray: "border-[#e0e3f0] bg-[rgba(255,255,255,.65)] text-[#7a819c]",
+    green: "user-pill-green",
+    purple: "user-pill-purple",
+    amber: "user-pill-amber",
+    gray: "",
   };
-  return (
-    <span className={`inline-flex items-center rounded-full border border-dashed px-[10px] py-[6px] text-xs font-semibold ${tones[tone]}`}>
-      {children}
-    </span>
-  );
+  return <span className={`user-pill ${tones[tone]}`}>{children}</span>;
 }
 
 function FormField({
@@ -160,10 +156,10 @@ function FormField({
   wide?: boolean;
 }) {
   return (
-    <div className={`${wide ? "sm:col-span-2" : ""} rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3`}>
-      <label className="text-xs font-semibold text-[#a0a5bf]">{label}</label>
+    <div className={`${wide ? "sm:col-span-2" : ""} user-control user-detail-surface p-3`}>
+      <label className="user-label">{label}</label>
       {children}
-      {hint && <div className="mt-2 text-[13px] leading-5 text-[#7a819c]">{hint}</div>}
+      {hint && <div className="user-helper mt-2">{hint}</div>}
     </div>
   );
 }
@@ -182,27 +178,20 @@ function ToggleRow({
   onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-3">
+    <div className="user-choice items-center justify-between">
       <div>
-        <b className="text-sm font-semibold">{label}</b>
-        <span className="mt-[2px] block text-[13px] leading-5 text-[#7a819c]">{hint}</span>
+        <b className="user-card-title block">{label}</b>
+        <span className="user-helper mt-1 block">{hint}</span>
       </div>
       <button
         type="button"
         aria-label={label}
+        aria-pressed={value}
         disabled={disabled}
         onClick={onToggle}
-        className={`relative h-7 w-[50px] shrink-0 rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${
-          value
-            ? "border-[rgba(106,92,255,.55)] bg-gradient-to-b from-[#6a5cff] to-[#4f46e5] shadow-[0_0_0_3px_rgba(106,92,255,.12)]"
-            : "border-[rgba(210,217,245,.95)] bg-[#dfe4fb]"
-        }`}
+        className="disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <span
-          className={`absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_10px_18px_rgba(23,35,79,.18)] transition ${
-            value ? "left-[25px]" : "left-[3px]"
-          }`}
-        />
+        <span className="user-toggle" data-state={value ? "on" : "off"} aria-hidden="true" />
       </button>
     </div>
   );
@@ -482,10 +471,16 @@ export default function ProfilePage() {
   if (loading || (!hasSnapshot && !docError && currentUser)) {
     return (
       <Layout>
-        <div className="flex min-h-[90vh] items-center justify-center">
-          <div className="text-center text-[#7a819c]">
-            <div className="mx-auto mb-3 h-11 w-11 animate-spin rounded-full border-4 border-[rgba(106,92,255,0.2)] border-t-[#6a5cff]" />
-            <p>Loading profile...</p>
+        <div className="user-page">
+          <div className="user-page-container">
+            <div className="user-card mx-auto mt-12 max-w-xl p-5">
+              <p className="user-card-title">Loading profile</p>
+              <div className="mt-4 grid gap-3">
+                <div className="user-skeleton h-5 w-2/3" />
+                <div className="user-skeleton h-4 w-full" />
+                <div className="user-skeleton h-4 w-3/4" />
+              </div>
+            </div>
           </div>
         </div>
       </Layout>
@@ -494,29 +489,46 @@ export default function ProfilePage() {
 
   if (!currentUser || !view) return null;
 
+  const activeNotice =
+    activeTab === "account" && accountSaveMessage
+      ? { text: accountSaveMessage, success: accountSaveMessage === "Saved." }
+      : activeTab === "preferences" && (prefError || prefSaveMessage)
+        ? { text: prefError ?? prefSaveMessage ?? "", success: !prefError }
+        : activeTab === "security" && securityMessage
+          ? { text: securityMessage, success: securityMessage === "Password updated." }
+          : null;
+
   return (
     <Layout>
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(106,92,255,0.08),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(79,70,229,0.05),transparent_55%),#f5f6fb]">
-        <div className="mx-auto max-w-[1360px] px-4 pb-14 pt-[18px] text-[#202437] max-[560px]:px-[14px] max-[560px]:pb-[46px] max-[560px]:pt-[14px]">
+      <div className="user-page">
+        <div className="user-page-container">
           {docError && (
-            <p className="mb-3 rounded-xl border border-[rgba(239,68,68,0.45)] bg-[#fee2e2] px-3 py-2.5 text-sm font-medium text-[#991b1b]" role="alert">
-              Profile data: {docError}
-            </p>
+            <div className="user-alert user-alert-error mb-3" role="alert">
+              <span className="user-alert-icon" aria-hidden="true">x</span>
+              <div>
+                <p className="user-card-title">Profile data</p>
+                <p className="user-helper mt-1">{docError}</p>
+              </div>
+            </div>
           )}
 
-          <header className="pb-[14px] pt-[18px]">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="flex flex-wrap gap-2">
+          <header className="user-page-header">
+            <div className="user-page-header-row">
+              <div className="user-page-header-copy">
+                <p className="user-eyebrow inline-flex items-center gap-2">
+                  <span className="user-accent-dot" />
+                  Account Settings
+                </p>
+                <h1 className="user-page-title mt-2">Profile Settings</h1>
+                <p className="user-body-sm mt-3">
+                  Manage your identity, study preferences, and sign-in security. Payments and referrals have their own pages.
+                </p>
+                <div className="user-page-header-meta mt-4">
                   <Badge tone="green">{view.accountStatusLabel}</Badge>
                   <Badge tone="purple">Role: {view.roleLabel}</Badge>
                 </div>
-                <h1 className="mt-3 text-[30px] font-extrabold tracking-[-0.03em] max-[560px]:text-2xl">Profile Settings</h1>
-                <p className="mt-2 max-w-[86ch] text-[15px] font-medium leading-6 text-[#7a819c]">
-                  Manage your identity, study preferences, and sign-in security. Payments and referrals have their own pages.
-                </p>
               </div>
-              <div className="mt-1 flex flex-wrap items-center justify-end gap-[10px] max-[720px]:justify-start">
+              <div className="user-page-header-actions">
                 <Link href="/dashboard" className={secondaryButtonClass}>Dashboard</Link>
                 <Link href="/payments" className={primaryButtonClass}>Manage payments</Link>
               </div>
@@ -524,8 +536,8 @@ export default function ProfilePage() {
           </header>
 
           <div className="mt-2 grid grid-cols-[340px_1fr] items-start gap-[18px] max-[980px]:grid-cols-1">
-            <aside className={`${panelClass} overflow-hidden`}>
-              <div className="px-4 pb-4 pt-[14px]">
+            <aside className={`${panelClass} overflow-hidden p-4`}>
+              <div>
                 <div className="flex items-center gap-3">
                   <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,.35),transparent_55%),linear-gradient(180deg,#6a5cff,#4f46e5)] font-semibold text-white shadow-[0_12px_26px_rgba(106,92,255,.25)]">
                     {view.photoURL ? (
@@ -535,8 +547,8 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <div className="truncate text-2xl font-semibold tracking-[-0.025em]">{view.displayName}</div>
-                    <p className="mt-1 truncate text-sm text-[#7a819c]">{view.email}</p>
+                    <div className="user-section-title truncate">{view.displayName}</div>
+                    <p className="user-helper mt-1 truncate">{view.email}</p>
                   </div>
                 </div>
 
@@ -555,24 +567,28 @@ export default function ProfilePage() {
             </aside>
 
             <main>
-              <nav className="mb-3 flex gap-[10px] overflow-x-auto border-t border-dashed border-[rgba(224,227,240,.7)] pb-[10px] pt-[14px]">
+              {activeNotice && (
+                <div className="mb-5">
+                  <AlertMessage text={activeNotice.text} success={activeNotice.success} />
+                </div>
+              )}
+
+              <nav className="user-tabs mb-3" role="tablist" aria-label="Profile sections">
                 {(["account", "preferences", "security"] as TabKey[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-[10px] text-sm font-semibold transition ${
-                      activeTab === tab
-                        ? "border-[rgba(106,92,255,.40)] bg-gradient-to-b from-[rgba(106,92,255,.10)] to-[rgba(255,255,255,.86)] text-[#4f46e5] shadow-[0_12px_26px_rgba(106,92,255,.12)]"
-                        : "border-[rgba(224,227,240,.9)] bg-[rgba(255,255,255,.82)] text-[#202437]"
-                    }`}
+                    className="user-tab"
                   >
                     {tabLabels[tab]}
                   </button>
                 ))}
               </nav>
 
-              <section className={`${panelClass} p-4`}>
+              <section className={`${panelClass} p-5`}>
                 {activeTab === "account" && (
                   <div>
                     <PanelHeader
@@ -637,7 +653,6 @@ export default function ProfilePage() {
                         <textarea className={`${fieldClass} min-h-[90px] resize-y`} value={accountBio} onChange={(event) => setAccountBio(event.target.value)} disabled={!userDoc} placeholder="Short bio (optional)" />
                       </FormField>
                     </div>
-                    {accountSaveMessage && <AlertMessage text={accountSaveMessage} success={accountSaveMessage === "Saved."} />}
                   </div>
                 )}
 
@@ -657,7 +672,6 @@ export default function ProfilePage() {
                         </>
                       }
                     />
-                    {prefError && <AlertMessage text={prefError} success={false} />}
                     <div className="mt-4 grid gap-3">
                       <ToggleRow label="Dark mode" hint="Choose your preferred theme for the dashboard." value={prefDarkMode} disabled={!userDoc} onToggle={() => setPrefDarkMode((value) => !value)} />
                       <ToggleRow label="Email updates" hint="Receive product updates and occasional study reminders." value={prefEmailUpdates} disabled={!userDoc} onToggle={() => setPrefEmailUpdates((value) => !value)} />
@@ -672,7 +686,6 @@ export default function ProfilePage() {
                         </select>
                       </FormField>
                     </div>
-                    {prefSaveMessage && <AlertMessage text={prefSaveMessage} success />}
                   </div>
                 )}
 
@@ -684,7 +697,7 @@ export default function ProfilePage() {
                           title="Change Password"
                           description="Update your account password. Keep it private and use a password you do not use elsewhere."
                         />
-                        <div className="mt-4 rounded-2xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(245,246,251,.65)] p-4">
+                        <div className="user-detail-surface mt-4 p-4">
                           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
                             <div className="grid gap-3">
                               <FormField label="Current password">
@@ -718,9 +731,9 @@ export default function ProfilePage() {
                               </div>
                             </div>
 
-                            <aside className="rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-white p-4">
-                              <p className="text-sm font-semibold text-[#202437]">Password requirements</p>
-                              <ul className="mt-3 grid gap-2 text-[13px] leading-5 text-[#7a819c]">
+                            <aside className="user-card p-4">
+                              <p className="user-card-title">Password requirements</p>
+                              <ul className="user-helper mt-3 grid gap-2">
                                 <li>Use at least 8 characters.</li>
                                 <li>Use a password unique to this account.</li>
                                 <li>You may be asked to sign in again if your session is old.</li>
@@ -735,7 +748,6 @@ export default function ProfilePage() {
                               </button>
                             </aside>
                           </div>
-                          {securityMessage && <AlertMessage text={securityMessage} success={securityMessage === "Password updated."} />}
                         </div>
                       </div>
                     ) : (
@@ -744,8 +756,11 @@ export default function ProfilePage() {
                           title="Change Password"
                           description="Password changes are managed by your sign-in provider for this account."
                         />
-                        <div className="mt-4 rounded-2xl border border-dashed border-[#e0e3f0] bg-[rgba(245,246,251,.65)] p-4 text-sm leading-6 text-[#7a819c]">
+                        <div className="user-alert user-alert-info mt-4" role="note">
+                          <span className="user-alert-icon" aria-hidden="true">i</span>
+                          <p className="user-helper">
                           Use your sign-in provider account settings to update your password.
+                          </p>
                         </div>
                       </div>
                     )}
@@ -762,9 +777,9 @@ export default function ProfilePage() {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-[10px] rounded-xl border border-dashed border-[rgba(106,92,255,.22)] bg-[rgba(106,92,255,.045)] p-3">
-      <b className="block text-sm font-semibold">{label}</b>
-      <span className="min-w-0 break-words text-right text-sm font-semibold text-[#202437]">{value}</span>
+    <div className="user-detail-surface flex items-start justify-between gap-3 p-3">
+      <b className="user-label block">{label}</b>
+      <span className="user-body-sm min-w-0 break-words text-right font-semibold text-[#0f172a]">{value}</span>
     </div>
   );
 }
@@ -773,8 +788,8 @@ function PanelHeader({ title, description, actions }: { title: string; descripti
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h2 className="text-xl font-semibold tracking-[-0.02em]">{title}</h2>
-        <p className="mt-2 max-w-[78ch] text-sm leading-6 text-[#7a819c]">{description}</p>
+        <h2 className="user-section-title">{title}</h2>
+        <p className="user-body-sm mt-2 max-w-[78ch]">{description}</p>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -784,14 +799,14 @@ function PanelHeader({ title, description, actions }: { title: string; descripti
 function AlertMessage({ text, success }: { text: string; success: boolean }) {
   return (
     <div
-      className={`mt-3 rounded-xl border px-3 py-2.5 text-sm font-medium ${
-        success
-          ? "border-[rgba(34,197,94,0.45)] bg-[#dcfce7] text-[#166534]"
-          : "border-[rgba(239,68,68,0.45)] bg-[#fee2e2] text-[#991b1b]"
-      }`}
+      className={`user-alert ${success ? "user-alert-success" : "user-alert-error"}`}
       role={success ? "status" : "alert"}
     >
-      {text}
+      <span className="user-alert-icon" aria-hidden="true">{success ? "ok" : "x"}</span>
+      <div>
+        <p className="user-card-title">{success ? "Saved" : "Action needed"}</p>
+        <p className="user-helper mt-1">{text}</p>
+      </div>
     </div>
   );
 }
