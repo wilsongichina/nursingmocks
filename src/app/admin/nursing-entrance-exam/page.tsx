@@ -1021,17 +1021,23 @@ function NursingEntranceExamAdminPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white overflow-x-hidden">
+      <div className="min-h-screen overflow-x-hidden bg-white">
         <AdminSidebar />
         <div
           className={`transition-all duration-300 ${
             isCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading sub-pages...</p>
+          <div className="user-page flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
+            <div className="user-card p-6 text-center">
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-indigo-600"></div>
+              <p className="user-card-title">Loading nursing entrance exam content</p>
+              <p className="user-helper mt-2">Preparing sub pages, nested pages, KB articles, and quizzes.</p>
+              <div className="mt-5 grid gap-3 text-left">
+                <div className="user-skeleton h-5 w-3/4" />
+                <div className="user-skeleton h-4 w-full" />
+                <div className="user-skeleton h-4 w-2/3" />
+              </div>
             </div>
           </div>
         </div>
@@ -1040,7 +1046,7 @@ function NursingEntranceExamAdminPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-white">
       <AdminSidebar />
       <div
         className={`transition-all duration-300 ${
@@ -1048,20 +1054,13 @@ function NursingEntranceExamAdminPageContent() {
         }`}
       >
         {/* Desktop: Show header bar with breadcrumbs - same as pillar pages */}
-        <div
-          className="hidden md:block h-16"
-          style={{
-            background: "rgba(255, 255, 255, 0.95)",
-            borderBottom: "1px solid #d9def3",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <div className="flex justify-between items-center px-8 h-full">
+        <div className="hidden h-16 border-b border-gray-200 bg-white md:block">
+          <div className="flex h-full items-center justify-between px-8">
             {/* Breadcrumbs */}
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Link
                 href="/"
-                className="hover:text-blue-600 transition-colors font-medium"
+                className="font-medium transition-colors hover:text-indigo-700"
               >
                 Home
               </Link>
@@ -1080,7 +1079,7 @@ function NursingEntranceExamAdminPageContent() {
               </svg>
               <Link
                 href="/admin"
-                className="hover:text-blue-600 transition-colors font-medium"
+                className="font-medium transition-colors hover:text-indigo-700"
               >
                 Admin Dashboard
               </Link>
@@ -1108,13 +1107,13 @@ function NursingEntranceExamAdminPageContent() {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/login"
-                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  className="font-medium text-gray-700 transition-colors hover:text-indigo-700"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                  className="user-button-primary px-4 py-2 text-sm"
                 >
                   Register
                 </Link>
@@ -1123,18 +1122,12 @@ function NursingEntranceExamAdminPageContent() {
           </div>
         </div>
 
-        <div
-          className="min-h-screen"
-          style={{
-            background:
-              "radial-gradient(circle at top left, #eef2ff 0, #f4f5fb 55%, #f9fafb 100%)",
-          }}
-        >
+        <div className="user-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
           {/* Main Content */}
-          <div style={{ padding: "24px 32px 32px" }}>
+          <div className="w-full">
             {/* Alerts */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="user-alert user-alert-error mb-6" role="alert">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
@@ -1152,14 +1145,14 @@ function NursingEntranceExamAdminPageContent() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-red-800">{error}</p>
+                    <p className="user-helper">{error}</p>
                   </div>
                 </div>
               </div>
             )}
 
             {success && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="user-alert user-alert-success mb-6" role="status">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
@@ -1177,24 +1170,19 @@ function NursingEntranceExamAdminPageContent() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-green-800">{success}</p>
+                    <p className="user-helper">{success}</p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Page Header */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: "16px",
-                marginBottom: "20px",
-              }}
-            >
-              <div>
+            <div className="user-page-header mb-6">
+              <div className="user-page-header-row">
+              <div className="user-page-header-copy">
+                <p className="user-eyebrow">Admin Content</p>
                 <h1
+                  className="user-page-title mt-1"
                   style={{
                     fontSize: "24px",
                     fontWeight: 700,
@@ -1207,6 +1195,7 @@ function NursingEntranceExamAdminPageContent() {
                   Nursing Entrance Exam – Admin
                 </h1>
                 <p
+                  className="user-body mt-2 max-w-4xl"
                   style={{
                     fontSize: "14px",
                     color: "#6b7280",
@@ -1221,40 +1210,20 @@ function NursingEntranceExamAdminPageContent() {
                   NursingMocks.
                 </p>
               </div>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <div className="user-page-header-actions sm:pt-7">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  style={{
-                    borderRadius: "999px",
-                    padding: "8px 14px",
-                    fontSize: "13px",
-                    border: "1px solid #4f46e5",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    background: "#4f46e5",
-                    color: "#ffffff",
-                    fontFamily:
-                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    fontWeight: 500,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#4338ca";
-                    e.currentTarget.style.borderColor = "#4338ca";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#4f46e5";
-                    e.currentTarget.style.borderColor = "#4f46e5";
-                  }}
+                  className="user-button-primary"
                 >
                   + New Sub Page
                 </button>
+              </div>
               </div>
             </div>
 
             {/* Overview Grid */}
             <div
+              className="mb-6 grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1.2fr)]"
               style={{
                 display: "grid",
                 gridTemplateColumns: "2fr 1.2fr",
@@ -1264,6 +1233,7 @@ function NursingEntranceExamAdminPageContent() {
             >
               {/* Structure Overview Card */}
               <div
+                className="user-card !rounded-[1.125rem] !bg-white/95 !p-5 !shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
                 style={{
                   background: "#ffffff",
                   borderRadius: "18px",
@@ -1280,6 +1250,7 @@ function NursingEntranceExamAdminPageContent() {
                   }}
                 >
                   <h2
+                    className="user-section-title !text-[#0f172a]"
                     style={{
                       fontSize: "16px",
                       fontWeight: 600,
@@ -1291,6 +1262,7 @@ function NursingEntranceExamAdminPageContent() {
                     Structure overview
                   </h2>
                   <span
+                    className="user-helper"
                     style={{
                       fontSize: "12px",
                       color: "#9ca3af",
@@ -1302,6 +1274,7 @@ function NursingEntranceExamAdminPageContent() {
                   </span>
                 </div>
                 <div
+                  className="user-body-sm"
                   style={{
                     fontSize: "13px",
                     color: "#4b5563",
@@ -1372,6 +1345,7 @@ function NursingEntranceExamAdminPageContent() {
                     </li>
                   </ul>
                   <div
+                    className="user-detail-surface mt-4 flex flex-wrap gap-2 p-4"
                     style={{
                       display: "flex",
                       flexWrap: "wrap",
@@ -1384,6 +1358,7 @@ function NursingEntranceExamAdminPageContent() {
                         sp.pageName || sp.hero?.title || sp.title || sp.id;
                       return (
                         <span
+                          className="user-pill user-pill-purple"
                           key={sp.id}
                           style={{
                             fontSize: "11px",
@@ -1404,6 +1379,7 @@ function NursingEntranceExamAdminPageContent() {
                         nsp.pageName || nsp.hero?.title || nsp.title || nsp.id;
                       return (
                         <span
+                          className="user-pill user-pill-purple"
                           key={nsp.id}
                           style={{
                             fontSize: "11px",
@@ -1421,6 +1397,7 @@ function NursingEntranceExamAdminPageContent() {
                     })}
                     {kbArticlesCount > 0 && (
                       <span
+                        className="user-pill user-pill-purple"
                         style={{
                           fontSize: "11px",
                           padding: "3px 8px",
@@ -1436,6 +1413,7 @@ function NursingEntranceExamAdminPageContent() {
                     )}
                     {quizzesCount > 0 && (
                       <span
+                        className="user-pill user-pill-purple"
                         style={{
                           fontSize: "11px",
                           padding: "3px 8px",
@@ -1456,6 +1434,7 @@ function NursingEntranceExamAdminPageContent() {
 
               {/* Content Stats Card */}
               <div
+                className="user-card !rounded-[1.125rem] !bg-white/95 !p-5 !shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
                 style={{
                   background: "#ffffff",
                   borderRadius: "18px",
@@ -1472,6 +1451,7 @@ function NursingEntranceExamAdminPageContent() {
                   }}
                 >
                   <h2
+                    className="user-section-title !text-[#0f172a]"
                     style={{
                       fontSize: "16px",
                       fontWeight: 600,
@@ -1483,6 +1463,7 @@ function NursingEntranceExamAdminPageContent() {
                     Content stats
                   </h2>
                   <span
+                    className="user-helper"
                     style={{
                       fontSize: "12px",
                       color: "#9ca3af",
@@ -1501,6 +1482,7 @@ function NursingEntranceExamAdminPageContent() {
                   }}
                 >
                   <div
+                    className="user-detail-surface !rounded-xl !bg-slate-950/[0.02] !p-4"
                     style={{
                       padding: "12px 12px",
                       borderRadius: "14px",
@@ -1510,6 +1492,7 @@ function NursingEntranceExamAdminPageContent() {
                     }}
                   >
                     <div
+                      className="user-label"
                       style={{
                         fontSize: "11px",
                         textTransform: "uppercase",
@@ -1523,6 +1506,7 @@ function NursingEntranceExamAdminPageContent() {
                       Sub pages
                     </div>
                     <div
+                      className="user-stat-value"
                       style={{
                         fontSize: "16px",
                         fontWeight: 600,
@@ -1535,6 +1519,7 @@ function NursingEntranceExamAdminPageContent() {
                       {subPages.length}
                     </div>
                     <div
+                      className="user-helper"
                       style={{
                         fontSize: "11px",
                         color: "#6b7280",
@@ -1556,6 +1541,7 @@ function NursingEntranceExamAdminPageContent() {
                     </div>
                   </div>
                   <div
+                    className="user-detail-surface !rounded-xl !bg-slate-950/[0.02] !p-4"
                     style={{
                       padding: "12px 12px",
                       borderRadius: "14px",
@@ -1565,6 +1551,7 @@ function NursingEntranceExamAdminPageContent() {
                     }}
                   >
                     <div
+                      className="user-label"
                       style={{
                         fontSize: "11px",
                         textTransform: "uppercase",
@@ -1578,6 +1565,7 @@ function NursingEntranceExamAdminPageContent() {
                       Nested sub pages
                     </div>
                     <div
+                      className="user-stat-value"
                       style={{
                         fontSize: "16px",
                         fontWeight: 600,
@@ -1590,6 +1578,7 @@ function NursingEntranceExamAdminPageContent() {
                       {nestedSubPages.length}
                     </div>
                     <div
+                      className="user-helper"
                       style={{
                         fontSize: "11px",
                         color: "#6b7280",
@@ -1613,6 +1602,7 @@ function NursingEntranceExamAdminPageContent() {
                     </div>
                   </div>
                   <div
+                    className="user-detail-surface !rounded-xl !bg-slate-950/[0.02] !p-4"
                     style={{
                       padding: "12px 12px",
                       borderRadius: "14px",
@@ -1622,6 +1612,7 @@ function NursingEntranceExamAdminPageContent() {
                     }}
                   >
                     <div
+                      className="user-label"
                       style={{
                         fontSize: "11px",
                         textTransform: "uppercase",
@@ -1635,6 +1626,7 @@ function NursingEntranceExamAdminPageContent() {
                       KB articles
                     </div>
                     <div
+                      className="user-stat-value"
                       style={{
                         fontSize: "16px",
                         fontWeight: 600,
@@ -1647,6 +1639,7 @@ function NursingEntranceExamAdminPageContent() {
                       {kbArticlesCount}
                     </div>
                     <div
+                      className="user-helper"
                       style={{
                         fontSize: "11px",
                         color: "#6b7280",
@@ -1658,6 +1651,7 @@ function NursingEntranceExamAdminPageContent() {
                     </div>
                   </div>
                   <div
+                    className="user-detail-surface !rounded-xl !bg-slate-950/[0.02] !p-4"
                     style={{
                       padding: "12px 12px",
                       borderRadius: "14px",
@@ -1667,6 +1661,7 @@ function NursingEntranceExamAdminPageContent() {
                     }}
                   >
                     <div
+                      className="user-label"
                       style={{
                         fontSize: "11px",
                         textTransform: "uppercase",
@@ -1680,6 +1675,7 @@ function NursingEntranceExamAdminPageContent() {
                       Linked quizzes
                     </div>
                     <div
+                      className="user-stat-value"
                       style={{
                         fontSize: "16px",
                         fontWeight: 600,
@@ -1692,6 +1688,7 @@ function NursingEntranceExamAdminPageContent() {
                       {quizzesCount}
                     </div>
                     <div
+                      className="user-helper"
                       style={{
                         fontSize: "11px",
                         color: "#6b7280",
@@ -1712,6 +1709,7 @@ function NursingEntranceExamAdminPageContent() {
 
             {/* Tabs Row */}
             <div
+              className="user-page-controls mb-4 !flex !flex-wrap !items-center !gap-2"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -1721,6 +1719,8 @@ function NursingEntranceExamAdminPageContent() {
             >
               <button
                 onClick={() => setActiveTab("sub-pages")}
+                className="user-page-button !min-h-10 !px-4 !py-2"
+                aria-current={activeTab === "sub-pages" ? "page" : undefined}
                 style={{
                   fontSize: "13px",
                   padding: "6px 10px",
@@ -1742,6 +1742,8 @@ function NursingEntranceExamAdminPageContent() {
               </button>
               <button
                 onClick={() => setActiveTab("nested")}
+                className="user-page-button !min-h-10 !px-4 !py-2"
+                aria-current={activeTab === "nested" ? "page" : undefined}
                 style={{
                   fontSize: "13px",
                   padding: "6px 10px",
@@ -1763,6 +1765,8 @@ function NursingEntranceExamAdminPageContent() {
               </button>
               <button
                 onClick={() => setActiveTab("kb")}
+                className="user-page-button !min-h-10 !px-4 !py-2"
+                aria-current={activeTab === "kb" ? "page" : undefined}
                 style={{
                   fontSize: "13px",
                   padding: "6px 10px",
@@ -1783,6 +1787,8 @@ function NursingEntranceExamAdminPageContent() {
               </button>
               <button
                 onClick={() => setActiveTab("quizzes")}
+                className="user-page-button !min-h-10 !px-4 !py-2"
+                aria-current={activeTab === "quizzes" ? "page" : undefined}
                 style={{
                   fontSize: "13px",
                   padding: "6px 10px",
@@ -1804,6 +1810,8 @@ function NursingEntranceExamAdminPageContent() {
               </button>
               <button
                 onClick={() => setActiveTab("settings")}
+                className="user-page-button !min-h-10 !px-4 !py-2"
+                aria-current={activeTab === "settings" ? "page" : undefined}
                 style={{
                   fontSize: "13px",
                   padding: "6px 10px",
@@ -1827,6 +1835,7 @@ function NursingEntranceExamAdminPageContent() {
 
             {/* Sub Pages Table Card */}
             <div
+              className="user-card p-5"
               style={{
                 background: "#ffffff",
                 borderRadius: "18px",
@@ -1837,6 +1846,7 @@ function NursingEntranceExamAdminPageContent() {
             >
               {/* Toolbar */}
               <div
+                className="user-search-panel !mb-4 !grid !gap-4 !rounded-2xl !p-4 xl:!grid-cols-[minmax(0,1fr)_auto] xl:!items-end"
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -1846,6 +1856,7 @@ function NursingEntranceExamAdminPageContent() {
                 }}
               >
                 <div
+                  className="user-search-row !grid w-full lg:grid-cols-[minmax(260px,1fr)_220px_180px]"
                   style={{
                     display: "flex",
                     gap: "10px",
@@ -1854,6 +1865,7 @@ function NursingEntranceExamAdminPageContent() {
                   }}
                 >
                   <input
+                    className="user-field !min-h-[44px] !w-full !rounded-xl !px-4"
                     type="text"
                     placeholder={
                       activeTab === "nested"
@@ -1879,6 +1891,7 @@ function NursingEntranceExamAdminPageContent() {
                     }}
                   />
                   <select
+                    className="user-field !min-h-[44px] !w-full !rounded-xl !px-4"
                     value={examFilter}
                     onChange={(e) => setExamFilter(e.target.value)}
                     style={{
@@ -1901,6 +1914,7 @@ function NursingEntranceExamAdminPageContent() {
                     ))}
                   </select>
                   <select
+                    className="user-field !min-h-[44px] !w-full !rounded-xl !px-4"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     style={{
@@ -1922,6 +1936,7 @@ function NursingEntranceExamAdminPageContent() {
                   </select>
                 </div>
                 <div
+                  className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end"
                   style={{
                     display: "flex",
                     gap: "10px",
@@ -1932,58 +1947,14 @@ function NursingEntranceExamAdminPageContent() {
                   {activeTab === "kb" ? (
                     <button
                       onClick={() => setShowCreateKbModal(true)}
-                      style={{
-                        borderRadius: "999px",
-                        padding: "8px 14px",
-                        fontSize: "13px",
-                        border: "1px solid #e5e7eb",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "#ffffff",
-                        color: "#111827",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        fontWeight: 500,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#f3f4ff";
-                        e.currentTarget.style.borderColor = "#c7d2fe";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.borderColor = "#e5e7eb";
-                      }}
+                      className="user-button-secondary !min-h-[44px] w-full !px-4 sm:w-auto"
                     >
                       + New KB Article
                     </button>
                   ) : (
                     <button
                       onClick={() => setShowCreateModal(true)}
-                      style={{
-                        borderRadius: "999px",
-                        padding: "8px 14px",
-                        fontSize: "13px",
-                        border: "1px solid #e5e7eb",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "#ffffff",
-                        color: "#111827",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        fontWeight: 500,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#f3f4ff";
-                        e.currentTarget.style.borderColor = "#c7d2fe";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.borderColor = "#e5e7eb";
-                      }}
+                      className="user-button-secondary !min-h-[44px] w-full !px-4 sm:w-auto"
                     >
                       {activeTab === "nested"
                         ? "+ New Nested Sub-page"
@@ -1997,6 +1968,7 @@ function NursingEntranceExamAdminPageContent() {
 
               {/* Table */}
               <div
+                className="user-detail-surface"
                 style={{
                   borderRadius: "14px",
                   border: "1px solid #e5e7eb",
@@ -2006,6 +1978,7 @@ function NursingEntranceExamAdminPageContent() {
                 }}
               >
                 <table
+                  className="min-w-full divide-y divide-gray-200"
                   style={{
                     width: "100%",
                     borderCollapse: "collapse",
@@ -4075,11 +4048,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Delete Confirmation Modal */}
           {showDeleteModal && subPageToDelete && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[460px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -4118,6 +4091,7 @@ function NursingEntranceExamAdminPageContent() {
                   </div>
                 </div>
                 <h2
+                  className="user-card-title"
                   style={{
                     fontSize: "20px",
                     fontWeight: 700,
@@ -4128,6 +4102,7 @@ function NursingEntranceExamAdminPageContent() {
                   Delete Sub-page
                 </h2>
                 <p
+                  className="user-helper"
                   style={{
                     fontSize: "14px",
                     color: "#6b7280",
@@ -4158,6 +4133,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteCancel}
                     disabled={deleting}
+                    className="user-button-cancel"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -4190,6 +4166,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteConfirm}
                     disabled={deleting}
+                    className="user-button-danger"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -4259,11 +4236,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Delete Nested Sub-page Modal */}
           {showDeleteNestedModal && nestedSubPageToDelete && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[460px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -4302,6 +4279,7 @@ function NursingEntranceExamAdminPageContent() {
                   </div>
                 </div>
                 <h2
+                  className="user-card-title"
                   style={{
                     fontSize: "20px",
                     fontWeight: 700,
@@ -4312,6 +4290,7 @@ function NursingEntranceExamAdminPageContent() {
                   Delete Nested Sub-page
                 </h2>
                 <p
+                  className="user-helper"
                   style={{
                     fontSize: "14px",
                     color: "#6b7280",
@@ -4342,6 +4321,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteNestedCancel}
                     disabled={deletingNested}
+                    className="user-button-cancel"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -4374,6 +4354,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteNestedConfirm}
                     disabled={deletingNested}
+                    className="user-button-danger"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -4443,11 +4424,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Delete Quiz Modal */}
           {showDeleteQuizModal && quizToDelete && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[460px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -4486,6 +4467,7 @@ function NursingEntranceExamAdminPageContent() {
                   </div>
                 </div>
                 <h2
+                  className="user-card-title"
                   style={{
                     fontSize: "20px",
                     fontWeight: 700,
@@ -4496,6 +4478,7 @@ function NursingEntranceExamAdminPageContent() {
                   Delete Quiz
                 </h2>
                 <p
+                  className="user-helper"
                   style={{
                     fontSize: "14px",
                     color: "#6b7280",
@@ -4527,6 +4510,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteQuizCancel}
                     disabled={deletingQuiz}
+                    className="user-button-cancel"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -4559,6 +4543,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteQuizConfirm}
                     disabled={deletingQuiz}
+                    className="user-button-danger"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -4628,11 +4613,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Create Sub-page Modal */}
           {showCreateModal && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[520px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -4654,8 +4639,9 @@ function NursingEntranceExamAdminPageContent() {
                 </div>
                 <form onSubmit={handleCreateSubPage}>
                   {validationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">{validationError}</p>
+                    <div className="user-alert user-alert-error mb-4" role="alert">
+                      <span className="user-alert-icon" aria-hidden="true">!</span>
+                      <p className="user-helper">{validationError}</p>
                     </div>
                   )}
                   <div style={{ marginBottom: "18px" }}>
@@ -4828,6 +4814,7 @@ function NursingEntranceExamAdminPageContent() {
                         setNewSubPageName("");
                         setValidationError("");
                       }}
+                      className="user-button-cancel"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid #e5e7eb",
@@ -4854,6 +4841,7 @@ function NursingEntranceExamAdminPageContent() {
                     <button
                       type="submit"
                       disabled={saving}
+                      className="user-button-primary"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid transparent",
@@ -4893,11 +4881,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Delete KB Article Modal */}
           {showDeleteKbModal && kbArticleToDelete && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[460px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -4975,6 +4963,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteKbCancel}
                     disabled={deletingKb}
+                    className="user-button-cancel"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -5007,6 +4996,7 @@ function NursingEntranceExamAdminPageContent() {
                   <button
                     onClick={handleDeleteKbArticle}
                     disabled={deletingKb}
+                    className="user-button-danger"
                     style={{
                       minWidth: "120px",
                       borderRadius: "999px",
@@ -5076,11 +5066,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Create KB Article Modal */}
           {showCreateKbModal && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[520px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -5090,6 +5080,7 @@ function NursingEntranceExamAdminPageContent() {
               >
                 <div style={{ marginBottom: "18px" }}>
                   <h2
+                    className="user-card-title"
                     style={{
                       fontSize: "20px",
                       fontWeight: 700,
@@ -5102,8 +5093,9 @@ function NursingEntranceExamAdminPageContent() {
                 </div>
                 <form onSubmit={handleCreateKbArticle}>
                   {kbValidationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">
+                    <div className="user-alert user-alert-error mb-4" role="alert">
+                      <span className="user-alert-icon" aria-hidden="true">!</span>
+                      <p className="user-helper">
                         {kbValidationError}
                       </p>
                     </div>
@@ -5356,6 +5348,7 @@ function NursingEntranceExamAdminPageContent() {
                         setSelectedSubPageForKb("");
                         setKbValidationError("");
                       }}
+                      className="user-button-cancel"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid #e5e7eb",
@@ -5382,6 +5375,7 @@ function NursingEntranceExamAdminPageContent() {
                     <button
                       type="submit"
                       disabled={savingKb}
+                      className="user-button-primary"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid transparent",
@@ -5421,11 +5415,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Create Nested Sub-page Modal */}
           {showCreateNestedModal && selectedSubPageForNested && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[520px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -5435,6 +5429,7 @@ function NursingEntranceExamAdminPageContent() {
               >
                 <div style={{ marginBottom: "18px" }}>
                   <h2
+                    className="user-card-title"
                     style={{
                       fontSize: "20px",
                       fontWeight: 700,
@@ -5447,8 +5442,9 @@ function NursingEntranceExamAdminPageContent() {
                 </div>
                 <form onSubmit={handleCreateNestedSubPage}>
                   {nestedValidationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">
+                    <div className="user-alert user-alert-error mb-4" role="alert">
+                      <span className="user-alert-icon" aria-hidden="true">!</span>
+                      <p className="user-helper">
                         {nestedValidationError}
                       </p>
                     </div>
@@ -5626,6 +5622,7 @@ function NursingEntranceExamAdminPageContent() {
                         setNewNestedSubPageName("");
                         setNestedValidationError("");
                       }}
+                      className="user-button-cancel"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid #e5e7eb",
@@ -5652,6 +5649,7 @@ function NursingEntranceExamAdminPageContent() {
                     <button
                       type="submit"
                       disabled={savingNested}
+                      className="user-button-primary"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid transparent",
@@ -5691,11 +5689,11 @@ function NursingEntranceExamAdminPageContent() {
           {/* Create Quiz Modal */}
           {showCreateQuizModal && selectedNestedSubPageForQuiz && (
             <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
+              className="user-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4"
               style={{ background: "rgba(15, 23, 42, 0.45)" }}
             >
               <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
+                className="user-modal mx-auto my-auto w-full max-w-[520px] bg-white"
                 style={{
                   borderRadius: "20px",
                   boxShadow:
@@ -5705,6 +5703,7 @@ function NursingEntranceExamAdminPageContent() {
               >
                 <div style={{ marginBottom: "18px" }}>
                   <h2
+                    className="user-card-title"
                     style={{
                       fontSize: "20px",
                       fontWeight: 700,
@@ -5717,8 +5716,9 @@ function NursingEntranceExamAdminPageContent() {
                 </div>
                 <form onSubmit={handleCreateQuiz}>
                   {quizValidationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">
+                    <div className="user-alert user-alert-error mb-4" role="alert">
+                      <span className="user-alert-icon" aria-hidden="true">!</span>
+                      <p className="user-helper">
                         {quizValidationError}
                       </p>
                     </div>
@@ -5933,6 +5933,7 @@ function NursingEntranceExamAdminPageContent() {
                         setNewQuizSetNumber("");
                         setQuizValidationError("");
                       }}
+                      className="user-button-cancel"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid #e5e7eb",
@@ -5959,6 +5960,7 @@ function NursingEntranceExamAdminPageContent() {
                     <button
                       type="submit"
                       disabled={savingQuiz}
+                      className="user-button-primary"
                       style={{
                         borderRadius: "999px",
                         border: "1px solid transparent",
@@ -5994,9 +5996,9 @@ function NursingEntranceExamAdminPageContent() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
-    </div>
   );
 }
 

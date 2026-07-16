@@ -17,6 +17,24 @@ Branch:
 feature/admin-user-management
 ```
 
+## Follow-up: nursing entrance admin typography alignment
+
+Updated `/admin/nursing-entrance-exam` to better follow the shared `/typography` system without changing the page logic.
+
+Behavior:
+
+- keeps the existing Firestore loading, filtering, tab state, create actions, delete actions, and navigation behavior unchanged
+- keeps the page full width for admin data management
+- applies `user-page` to the main admin workspace background
+- applies shared typography classes to loading state, alerts, page header, primary action, overview cards, stat/detail surfaces, tabs, search/filter fields, toolbar actions, and table shell
+- corrected the management card/search area so the visible cards, stats, search fields, filters, tab buttons, and create buttons use the shared `/typography` sizing and surface rules instead of the older compact inline styles
+- applies the shared `/typography` loading, modal, validation, and destructive-state classes to the existing Nursing Entrance admin loading screen and modal flows without changing the submit/delete handlers or data flow
+- keeps the existing modal and CRUD flow intact for a later lower-risk modal-specific cleanup pass
+
+Validation:
+
+- `.\node_modules\.bin\tsc.cmd --noEmit`
+
 Main admin route:
 
 ```text
