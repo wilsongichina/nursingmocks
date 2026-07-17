@@ -154,6 +154,25 @@ The new page:
 - does not query other users
 - does not write billing, entitlement, subscription, role, or admin fields
 
+## Responsive Dashboard Update
+
+The dashboard was refined for mobile, tablet, and desktop management without changing data flow or dashboard logic.
+
+Updated behavior:
+
+- The desktop sidebar layout now collapses earlier on tablet widths so account, subscription, recommendation, referral, and support cards do not squeeze the main study area.
+- Dashboard action buttons become full width on narrow mobile screens for easier tapping.
+- Exam cards, Add Exam cards, and modal option cards drop fixed-height pressure on mobile so longer package names, badges, and actions do not overflow.
+- The Add Exam modal uses three columns on desktop, two columns on tablet, and one column on mobile.
+- Account detail rows stack on narrow screens so labels and values remain readable.
+- Recent activity and completed exam sections remain full-width within the main dashboard flow.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
 ## Implementation details
 
 ### Authentication behavior

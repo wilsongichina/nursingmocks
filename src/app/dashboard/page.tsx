@@ -44,10 +44,10 @@ function badgeClasses(tone: "green" | "purple" | "amber" | "red" | "gray") {
 }
 
 const primaryActionClass =
-  "user-button-primary gap-2";
+  "user-button-primary gap-2 max-[560px]:w-full";
 
 const secondaryActionClass =
-  "user-button-secondary gap-2";
+  "user-button-secondary gap-2 max-[560px]:w-full";
 
 const textActionClass =
   "inline-flex items-center gap-2 text-sm font-bold text-[#4338ca] underline-offset-2 hover:underline";
@@ -165,7 +165,7 @@ function MetricCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="user-stat-tile flex min-h-24 items-center gap-3">
+    <div className="user-stat-tile flex min-h-24 items-center gap-3 max-[420px]:items-start">
       <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(79,70,229,.18)] bg-[rgba(79,70,229,.06)] text-[#4338ca]">
         {icon}
       </div>
@@ -188,12 +188,12 @@ function InfoRow({
   value: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-start justify-between gap-3 ${detailRowClass}`}>
+    <div className={`flex items-start justify-between gap-3 max-[520px]:grid ${detailRowClass}`}>
       <div className="min-w-0">
         <b className="user-card-title block text-sm">{label}</b>
         {helper && <span className="user-helper mt-1 block">{helper}</span>}
       </div>
-      <div className="shrink-0 text-right text-sm font-semibold text-[#0f172a]">{value}</div>
+      <div className="min-w-0 shrink-0 text-right text-sm font-semibold text-[#0f172a] max-[520px]:text-left">{value}</div>
     </div>
   );
 }
@@ -226,9 +226,9 @@ function PackageCard({
   const isStrong = hasActiveExamAccess(pkg.status);
   return (
     <div
-      className={`flex min-h-[248px] flex-col p-4 transition ${isStrong ? "user-feature-surface" : "user-detail-surface"}`}
+      className={`flex min-h-[248px] flex-col p-4 transition max-[560px]:min-h-0 ${isStrong ? "user-feature-surface" : "user-detail-surface"}`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 max-[420px]:grid">
         <div className="min-w-0">
           <p className="user-label">Exam access</p>
           <h3 className="user-card-title mt-1">{pkg.name}</h3>
@@ -248,7 +248,7 @@ function PackageCard({
       {pkg.accessEndsAt && (
         <p className="user-helper mt-3">Access through {formatDashboardDate(pkg.accessEndsAt)}</p>
       )}
-      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4 max-[560px]:grid">
         <Link
           href={pkg.status === "locked" || pkg.status === "expired" || pkg.status === "payment_issue" ? "/pricing" : pkg.href}
           className={isStrong ? primaryActionClass : secondaryActionClass}
@@ -261,7 +261,7 @@ function PackageCard({
             type="button"
             onClick={onRemove}
             disabled={isRemoving}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[#fecaca] bg-white px-4 py-2 text-sm font-bold text-[#b91c1c] transition hover:bg-[#fff1f2] focus:outline-none focus:ring-2 focus:ring-[#ef4444]/20 disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[#fecaca] bg-white px-4 py-2 text-sm font-bold text-[#b91c1c] transition hover:bg-[#fff1f2] focus:outline-none focus:ring-2 focus:ring-[#ef4444]/20 disabled:cursor-not-allowed disabled:opacity-70 max-[560px]:w-full"
           >
             <Trash2 className="h-4 w-4" />
             {isRemoving ? "Removing..." : "Remove"}
@@ -274,7 +274,7 @@ function PackageCard({
 
 function AddExamCard({ onOpen }: { onOpen: () => void }) {
   return (
-    <div className="flex min-h-[248px] flex-col rounded-[18px] border-2 border-dashed border-[#c7d2fe] bg-[#f8f7ff] p-4 transition hover:border-[#8b7cff] hover:bg-white">
+    <div className="flex min-h-[248px] flex-col rounded-[18px] border-2 border-dashed border-[#c7d2fe] bg-[#f8f7ff] p-4 transition hover:border-[#8b7cff] hover:bg-white max-[560px]:min-h-0">
       <div className="grid h-12 w-12 place-items-center rounded-full bg-[#6a5cff] text-white shadow-sm shadow-[#6a5cff]/20">
         <PlusCircle className="h-6 w-6" />
       </div>
@@ -383,12 +383,12 @@ function AddExamModal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm max-[560px]:items-end max-[560px]:p-2">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-exam-modal-title"
-        className="user-card max-h-[90vh] w-full max-w-3xl overflow-y-auto p-5 shadow-2xl"
+        className="user-card max-h-[90vh] w-full max-w-3xl overflow-y-auto p-5 shadow-2xl max-[560px]:max-h-[92vh] max-[560px]:rounded-[1rem] max-[560px]:p-4"
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#edf0f7] pb-4">
           <div>
@@ -416,15 +416,15 @@ function AddExamModal({
             <p className="user-helper mt-1">Your dashboard currently includes every available exam area.</p>
           </div>
         ) : (
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {options.map((option) => {
               const statusPackage = examOptionStatus(option, packages);
               const status = statusPackage?.status ?? "free";
               const saving = savingExamId === option.id;
 
               return (
-                <article key={option.id} className="user-detail-surface flex min-h-[230px] flex-col p-4">
-                  <div className="flex items-start justify-between gap-3">
+                <article key={option.id} className="user-detail-surface flex min-h-[230px] flex-col p-4 max-[560px]:min-h-0">
+                  <div className="flex items-start justify-between gap-3 max-[420px]:grid">
                     <h3 className="user-card-title">{option.name}</h3>
                     <span className={badgeClasses(packageTone(status))}>{packageStatusLabel(status)}</span>
                   </div>
@@ -522,7 +522,7 @@ function DashboardContent({
         <div className="user-page-container">
           <header className="user-page-header">
             <div className="user-page-header-row">
-            <div className="user-page-header-copy">
+              <div className="user-page-header-copy">
               <p className="user-eyebrow inline-flex items-center gap-2">
                 <span className="user-accent-dot" />
                 Student Dashboard
@@ -551,16 +551,16 @@ function DashboardContent({
                   </span>
                 )}
               </div>
-            </div>
-            <div className="user-page-header-actions">
-              <Link href="/profile" className={secondaryActionClass}>
-                <Settings className="h-4 w-4" />
-                Account settings
-              </Link>
-              <Link href="/contact" className={primaryActionClass}>
-                Contact support
-              </Link>
-            </div>
+              </div>
+              <div className="user-page-header-actions">
+                <Link href="/profile" className={secondaryActionClass}>
+                  <Settings className="h-4 w-4" />
+                  Account settings
+                </Link>
+                <Link href="/contact" className={primaryActionClass}>
+                  Contact support
+                </Link>
+              </div>
             </div>
           </header>
 
@@ -576,10 +576,10 @@ function DashboardContent({
             </div>
           )}
 
-          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-[18px] max-[980px]:grid-cols-1">
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-[18px] max-[1180px]:grid-cols-1">
             <div className="space-y-[18px]">
               <Card id="my-exams" className="p-4">
-                <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between max-[560px]:gap-4">
                   <div>
                     <div className="grid h-11 w-11 place-items-center rounded-full border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.06)] text-[#4338ca]">
                       <Target className="h-6 w-6" />
@@ -604,7 +604,7 @@ function DashboardContent({
                 </div>
               </Card>
 
-              <section className="grid grid-cols-4 gap-3 max-[1100px]:grid-cols-2 max-[560px]:grid-cols-1">
+              <section className="grid grid-cols-4 gap-3 max-[1180px]:grid-cols-2 max-[560px]:grid-cols-1">
                 <MetricCard
                   label="Completed attempts"
                   value={String(view.performance.completedExams)}
@@ -644,7 +644,7 @@ function DashboardContent({
                   title="My Exams"
                   subtitle="Your dashboard shows the exam you selected or currently have access to. Use Add exam to manage other exam areas."
                 />
-                <div className="grid gap-3 lg:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   {featuredExams.length > 0 ? (
                     featuredExams.map((exam) => {
                       const optionId = examOptionIdForPackageId(exam.id);
