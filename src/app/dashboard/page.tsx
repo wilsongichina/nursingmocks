@@ -525,7 +525,7 @@ function DashboardContent({
               <div className="user-page-header-copy">
                 <p className="user-eyebrow inline-flex items-center gap-2">
                   <span className="user-accent-dot" />
-                  Student dashboard
+                  Student Dashboard
                 </p>
                 <h1 className="user-page-title mt-2">
                   Welcome back, {view.user.firstName}
@@ -641,7 +641,7 @@ function DashboardContent({
 
               <Card className="p-4">
                 <SectionHeader
-                  title="My exams"
+                  title="My Exams"
                   subtitle="Your dashboard shows the exam you selected or currently have access to. Use Add exam to manage other exam areas."
                 />
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -701,7 +701,7 @@ function DashboardContent({
               </Card>
 
               <Card className="p-4">
-                <SectionHeader title="Completed exams" subtitle="Recent completed exams will appear here when result records are available." />
+                <SectionHeader title="Completed Exams" subtitle="Recent completed exams will appear here when result records are available." />
                 {view.completedExams.length ? (
                   <div className="space-y-3">
                     {view.completedExams.map((exam) => (
@@ -727,7 +727,7 @@ function DashboardContent({
                 <div className="space-y-3">
                   <InfoRow
                     label="Recommended focus"
-                    helper="Change this from Profile > account"
+                    helper="Change this from Profile > Account"
                     value={
                       <Link href={focusHref} className={textActionClass}>
                         {focusLabel}
@@ -816,7 +816,7 @@ function DashboardContent({
                   </Link>
                   <Link href="/knowledge-base" className={supportLinkClass}>
                     <BookOpen className="h-4 w-4 text-[#4338ca]" />
-                    Knowledge base
+                    Knowledge Base
                   </Link>
                   <Link href="/terms-and-conditions" className={supportLinkClass}>
                     <ShieldCheck className="h-4 w-4 text-[#4338ca]" />
