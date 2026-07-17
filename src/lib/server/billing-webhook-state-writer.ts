@@ -123,6 +123,87 @@ function entitlementDocId(uid: string, packageId: string, planId: string) {
   return `${uid}_${packageId}_${planId}`.toLowerCase().replace(/[^a-z0-9]+/g, "_");
 }
 
+function dateFromFirestoreValue(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "string") {
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? new Date(timestamp) : null;
+  }
+  if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate();
+  }
+  return null;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function packageIdsForPlan(plan: BillingPlan) {
+  if (plan.examId) return [plan.examId];
+  return plan.packageIds;
+}
+
+async function resolveFixedAccessPeriod(input: BillingWebhookStateWriteInput, uid: string, packageId: string, plan: BillingPlan) {
+  const now = new Date();
+  const durationDays = plan.durationDays ?? null;
+
+  if (!durationDays) {
+    return {
+      accessStartsAt: FieldValue.serverTimestamp(),
+      accessEndsAt: null,
+      durationDaysSnapshot: null,
+      extendedFrom: null,
+    };
+  }
+
+  const query = input.db
+    .collection(BILLING_ENTITLEMENTS_COLLECTION)
+    .where("uid", "==", uid)
+    .where("packageId", "==", packageId)
+    .where("status", "==", "active")
+    .limit(25);
+  const snapshot = await input.transaction.get(query as never) as unknown as {
+    docs?: Array<{ data: () => Record<string, unknown> }>;
+  };
+
+  let latestActiveEnd: Date | null = null;
+  let hasLifetimeAccess = false;
+
+  for (const doc of snapshot.docs ?? []) {
+    const data = doc.data();
+    const accessEnd = dateFromFirestoreValue(data.accessEndsAt);
+    if (data.accessEndsAt === null || data.accessEndsAt === undefined) {
+      hasLifetimeAccess = true;
+      continue;
+    }
+    if (accessEnd && accessEnd.getTime() > now.getTime() && (!latestActiveEnd || accessEnd.getTime() > latestActiveEnd.getTime())) {
+      latestActiveEnd = accessEnd;
+    }
+  }
+
+  // Do not shorten an older lifetime/manual grant if a fixed-duration purchase is processed later.
+  if (hasLifetimeAccess) {
+    return {
+      accessStartsAt: now,
+      accessEndsAt: null,
+      durationDaysSnapshot: durationDays,
+      extendedFrom: null,
+    };
+  }
+
+  const baseDate = latestActiveEnd && latestActiveEnd.getTime() > now.getTime() ? latestActiveEnd : now;
+  return {
+    accessStartsAt: now,
+    accessEndsAt: addDays(baseDate, durationDays),
+    durationDaysSnapshot: durationDays,
+    extendedFrom: latestActiveEnd,
+  };
+}
+
 export async function writeBillingWebhookState(
   input: BillingWebhookStateWriteInput
 ): Promise<BillingWebhookStateWriteResult> {
@@ -160,6 +241,7 @@ export async function writeBillingWebhookState(
     ? `${input.provider}_${providerSubscription}`.toLowerCase().replace(/[^a-z0-9]+/g, "_")
     : null;
   const providerPriceId = mapping?.externalPriceId ?? null;
+  const grantPackageIds = packageIdsForPlan(plan);
 
   if (input.plannedEffects.some((effect) => ["record_transaction", "mark_invoice_paid", "mark_invoice_failed"].includes(effect))) {
     const transactionRef = input.db
@@ -178,7 +260,9 @@ export async function writeBillingWebhookState(
         amount: amountFromStripeObject(object) || plan.price,
         currency: currencyFromStripeObject(object, plan.currency),
         billingIntervalSnapshot: plan.billingInterval,
-        packageIdsSnapshot: plan.packageIds,
+        examIdSnapshot: plan.examId ?? null,
+        durationDaysSnapshot: plan.durationDays ?? null,
+        packageIdsSnapshot: grantPackageIds,
         gatewayId: input.gateway.gatewayId,
         provider: input.provider,
         providerCustomerId: providerCustomerId(object),
@@ -236,13 +320,20 @@ export async function writeBillingWebhookState(
   }
 
   if (input.plannedEffects.includes("grant_entitlements")) {
-    for (const packageId of plan.packageIds) {
+    let latestAccessEnd: Date | null = null;
+    for (const packageId of grantPackageIds) {
+      const accessPeriod = await resolveFixedAccessPeriod(input, uid, packageId, plan);
+      const accessEndDate = accessPeriod.accessEndsAt instanceof Date ? accessPeriod.accessEndsAt : null;
+      if (accessEndDate && (!latestAccessEnd || accessEndDate.getTime() > latestAccessEnd.getTime())) {
+        latestAccessEnd = accessEndDate;
+      }
       const entitlementRef = input.db.collection(BILLING_ENTITLEMENTS_COLLECTION).doc(entitlementDocId(uid, packageId, planId));
       input.transaction.set(
         entitlementRef,
         {
           entitlementId: entitlementRef.id,
           uid,
+          examId: plan.examId ?? packageId,
           packageId,
           status: "active",
           source: plan.purchaseType === "subscription" ? "subscription" : "one_time_purchase",
@@ -252,8 +343,10 @@ export async function writeBillingWebhookState(
           gatewayId: input.gateway.gatewayId,
           provider: input.provider,
           grantedAt: FieldValue.serverTimestamp(),
-          accessStartsAt: FieldValue.serverTimestamp(),
-          accessEndsAt: null,
+          accessStartsAt: accessPeriod.accessStartsAt,
+          accessEndsAt: accessPeriod.accessEndsAt,
+          durationDaysSnapshot: accessPeriod.durationDaysSnapshot,
+          extendedFromAccessEndsAt: accessPeriod.extendedFrom,
           revokedAt: null,
           revokedBy: null,
           manualGrantReason: null,
@@ -266,13 +359,13 @@ export async function writeBillingWebhookState(
     input.transaction.set(
       userRef,
       {
-        entitlements: entitlementPatchForPackageIds(plan.packageIds, true),
+        entitlements: entitlementPatchForPackageIds(grantPackageIds, true),
         billing: {
           subscription_status: plan.purchaseType === "subscription" ? "active" : null,
           plan_id: planId,
           interval: plan.billingInterval === "monthly" || plan.billingInterval === "yearly" ? plan.billingInterval : null,
-          current_period_start: null,
-          current_period_end: null,
+          current_period_start: plan.durationDays ? new Date() : null,
+          current_period_end: plan.durationDays ? latestAccessEnd : null,
           cancel_at_period_end: false,
           active_provider: input.provider,
           active_subscription_ref: subscriptionId,
@@ -289,7 +382,7 @@ export async function writeBillingWebhookState(
   }
 
   if (input.plannedEffects.includes("revoke_or_expire_entitlements")) {
-    for (const packageId of plan.packageIds) {
+    for (const packageId of grantPackageIds) {
       const entitlementRef = input.db.collection(BILLING_ENTITLEMENTS_COLLECTION).doc(entitlementDocId(uid, packageId, planId));
       input.transaction.set(
         entitlementRef,
@@ -310,7 +403,7 @@ export async function writeBillingWebhookState(
     input.transaction.set(
       userRef,
       {
-        entitlements: entitlementPatchForPackageIds(plan.packageIds, false),
+        entitlements: entitlementPatchForPackageIds(grantPackageIds, false),
         billing: {
           subscription_status: "canceled",
           plan_id: planId,

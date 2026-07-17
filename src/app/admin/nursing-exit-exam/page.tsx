@@ -26,6 +26,7 @@ import {
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSiteUrl } from "@/lib/config";
+import { contentAccessProductLabel } from "@/lib/content-access-products";
 
 interface SubPage {
   id: string;
@@ -36,6 +37,7 @@ interface SubPage {
   lastUpdated?: string;
   version?: string;
   status?: string;
+  examAccessProductId?: string | null;
   hero?: {
     title: string;
   };
@@ -973,6 +975,7 @@ function NursingExitExamAdminPageContent() {
       const defaultSubPageContent = {
         pageName: newSubPageName,
         slug: normalizedSubPageId,
+        examAccessProductId: "nursing_exit_exams",
         status: "Published",
         heading: "",
         description: "",
@@ -4400,6 +4403,34 @@ function NursingExitExamAdminPageContent() {
                       >
                         The display name for this sub-page.
                       </p>
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#111827",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Exam Access Product
+                      </label>
+                      <div
+                        style={{
+                          borderRadius: "14px",
+                          border: "1px solid #e5e7eb",
+                          background: "#f8fafc",
+                          padding: "12px 14px",
+                        }}
+                      >
+                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>
+                          {contentAccessProductLabel("nursing_exit_exams")}
+                        </p>
+                        <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                          All Nursing Exit Exam content is unlocked by the Nursing Exit Exams access product.
+                        </p>
+                      </div>
                     </div>
                     <div style={{ marginBottom: "16px" }}>
                       <div

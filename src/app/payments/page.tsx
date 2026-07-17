@@ -17,6 +17,7 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeUserDocument } from "@/lib/user-document-firestore";
 import type { BillingPlan, PaymentGatewayConfig, ProviderPriceMapping } from "@/lib/billing/models";
+import { entitlementKeysForPackageIds } from "@/lib/user-entitlements";
 import type { UserDocument } from "@/types/user-document";
 
 type Serialized<T> = {
@@ -34,6 +35,34 @@ type BillingHistoryResponse = {
   transactions: Record<string, unknown>[];
   entitlements: Record<string, unknown>[];
 };
+
+type BillingHistoryUser = {
+  getIdToken: () => Promise<string>;
+};
+
+type PlanGroup = {
+  examId: string;
+  label: string;
+  plans: Serialized<BillingPlan>[];
+};
+
+type ActiveAccessGroup = {
+  examId: string;
+  label: string;
+  records: Record<string, unknown>[];
+  accessEndsAt: unknown;
+};
+
+async function fetchBillingHistory(user: BillingHistoryUser) {
+  const token = await user.getIdToken();
+  const response = await fetch("/api/billing/history", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error("Could not load billing history");
+  return (await response.json()) as BillingHistoryResponse;
+}
 
 function formatDate(value: unknown) {
   if (!value) return "Not set";
@@ -65,6 +94,10 @@ function isCurrentAccessPeriod(value: unknown) {
   return accessEnd === null || accessEnd.getTime() > Date.now();
 }
 
+function isActiveAccessGrant(record: Record<string, unknown>) {
+  return String(record.status ?? "").toLowerCase() === "active" && isCurrentAccessPeriod(record.accessEndsAt);
+}
+
 function formatMoney(amount: unknown, currency: unknown) {
   const numericAmount = typeof amount === "number" ? amount : Number(amount);
   const currencyCode = typeof currency === "string" && currency ? currency.toUpperCase() : "USD";
@@ -78,18 +111,36 @@ function packageLabel(packageId: string) {
     hesi_a2: "HESI A2",
     nursing_test_bank: "Nursing Test Bank",
     nursing_exit_exams: "Nursing Exit Exams",
-    all_access: "All Access",
   };
   return labels[packageId] ?? packageId;
 }
 
-function entitlementLabel(entitlementId: string) {
-  return entitlementId
-    .replace(/^exam:/, "")
-    .replace(/^bundle:/, "")
-    .replace(/^feature:/, "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+function isLegacyAllAccessPlan(plan: Serialized<BillingPlan>) {
+  return plan.packageIds.includes("all_access") || /(^|[^a-z])all access([^a-z]|$)/i.test(plan.name);
+}
+
+function examIdForPlan(plan: Serialized<BillingPlan>) {
+  return String(plan.examId || plan.packageIds[0] || plan.planId);
+}
+
+function examIdForRecord(record: Record<string, unknown>) {
+  return textValue(record.examId, textValue(record.packageId, "unknown"));
+}
+
+function durationLabel(plan: Serialized<BillingPlan>) {
+  if (plan.durationDays === 30) return "1 Month Access";
+  if (plan.durationDays === 90) return "3 Months Access";
+  if (typeof plan.durationDays === "number" && plan.durationDays > 0) return `${plan.durationDays} Days Access`;
+  return plan.purchaseType === "one_time" ? "One-Time Access" : statusText(plan.purchaseType);
+}
+
+function durationSortValue(plan: Serialized<BillingPlan>) {
+  return typeof plan.durationDays === "number" ? plan.durationDays : Number.MAX_SAFE_INTEGER;
+}
+
+function accessEndSortValue(value: unknown) {
+  const date = dateFromValue(value);
+  return date ? date.getTime() : Number.MAX_SAFE_INTEGER;
 }
 
 function statusText(value: unknown) {
@@ -202,14 +253,7 @@ export default function PaymentsPage() {
     async function loadHistory() {
       setHistoryLoading(true);
       try {
-        const token = await user.getIdToken();
-        const response = await fetch("/api/billing/history", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) throw new Error("Could not load billing history");
-        const data = (await response.json()) as BillingHistoryResponse;
+        const data = await fetchBillingHistory(user);
         if (!cancelled) setHistory(data);
       } catch {
         if (!cancelled) setError("Could not load your billing history.");
@@ -262,18 +306,80 @@ export default function PaymentsPage() {
     };
   }, []);
 
-  const activeEntitlements = useMemo(
-    () =>
-      Object.entries(userDoc?.entitlements ?? {})
-        .filter(([, enabled]) => enabled)
-        .map(([key]) => key),
-    [userDoc]
-  );
+  const activeEntitlements = useMemo(() => {
+    const userEntitlements = Object.entries(userDoc?.entitlements ?? {})
+      .filter(([, enabled]) => enabled)
+      .map(([key]) => key);
+    const billingEntitlements = (history?.entitlements ?? [])
+      .filter(isActiveAccessGrant)
+      .map((record) => textValue(record.packageId, ""))
+      .filter(Boolean);
+
+    return Array.from(new Set([...userEntitlements, ...entitlementKeysForPackageIds(billingEntitlements)]));
+  }, [history?.entitlements, userDoc]);
   const billing = userDoc?.billing;
-  const activePlan = useMemo(
-    () => catalog?.plans.find((plan) => plan.planId === billing?.plan_id) ?? null,
-    [billing?.plan_id, catalog?.plans]
+  const latestActiveAccessGrant = useMemo(
+    () => (history?.entitlements ?? []).find(isActiveAccessGrant) ?? null,
+    [history?.entitlements]
   );
+  const activePlanId = billing?.plan_id || textValue(latestActiveAccessGrant?.sourcePlanId, "") || null;
+  const activePlan = useMemo(
+    () => catalog?.plans.find((plan) => plan.planId === activePlanId) ?? null,
+    [activePlanId, catalog?.plans]
+  );
+  const availablePlans = useMemo(
+    () => (catalog?.plans ?? []).filter((plan) => !isLegacyAllAccessPlan(plan)),
+    [catalog?.plans]
+  );
+  const availablePlanGroups = useMemo<PlanGroup[]>(() => {
+    const groups = new Map<string, PlanGroup>();
+    for (const plan of availablePlans) {
+      const examId = examIdForPlan(plan);
+      const group = groups.get(examId) ?? {
+        examId,
+        label: packageLabel(examId),
+        plans: [],
+      };
+      group.plans.push(plan);
+      groups.set(examId, group);
+    }
+
+    return Array.from(groups.values())
+      .map((group) => ({
+        ...group,
+        plans: [...group.plans].sort((left, right) => durationSortValue(left) - durationSortValue(right) || left.price - right.price),
+      }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }, [availablePlans]);
+  const activeAccessGroups = useMemo<ActiveAccessGroup[]>(() => {
+    const groups = new Map<string, ActiveAccessGroup>();
+    for (const record of (history?.entitlements ?? []).filter(isActiveAccessGrant)) {
+      const examId = examIdForRecord(record);
+      const group = groups.get(examId) ?? {
+        examId,
+        label: packageLabel(examId),
+        records: [],
+        accessEndsAt: record.accessEndsAt ?? null,
+      };
+      group.records.push(record);
+      const currentEnd = accessEndSortValue(group.accessEndsAt);
+      const nextEnd = accessEndSortValue(record.accessEndsAt);
+      if (nextEnd > currentEnd) group.accessEndsAt = record.accessEndsAt ?? null;
+      groups.set(examId, group);
+    }
+
+    for (const entitlement of activeEntitlements) {
+      if (groups.has(entitlement)) continue;
+      groups.set(entitlement, {
+        examId: entitlement,
+        label: packageLabel(entitlement),
+        records: [],
+        accessEndsAt: null,
+      });
+    }
+
+    return Array.from(groups.values()).sort((left, right) => left.label.localeCompare(right.label));
+  }, [activeEntitlements, history?.entitlements]);
   const planNameById = useMemo(() => {
     const names = new Map<string, string>();
     catalog?.plans.forEach((plan) => names.set(plan.planId, plan.name));
@@ -284,19 +390,46 @@ export default function PaymentsPage() {
     billing?.plan_id &&
       activeEntitlements.length > 0 &&
       isCurrentAccessPeriod(billing.current_period_end)
-  );
-  const testCheckoutAvailable = Boolean(
-    catalog?.plans.some((plan) => {
-      const assignedGateways = catalog.gateways.filter(
-        (gateway) => plan.gatewayIds.includes(gateway.gatewayId) && gateway.environment === "test"
-      );
-      const mappings = catalog.providerPriceMappings.filter((mapping) =>
-        assignedGateways.some((gateway) => mapping.planId === plan.planId && mapping.gatewayId === gateway.gatewayId)
-      );
-      return assignedGateways.length > 0 && mappings.length > 0;
-    })
-  );
-  const activeAccessCountLabel = `${activeEntitlements.length} active access grant${activeEntitlements.length === 1 ? "" : "s"}`;
+  ) || Boolean(latestActiveAccessGrant);
+  const currentPlanLabel = activePlan?.name ?? activePlanId ?? "No Paid Plan";
+  const activeAccessEnd = billing?.current_period_end ?? latestActiveAccessGrant?.accessEndsAt ?? null;
+  const shouldShowBillingAccessEnd = Boolean(hasActiveBillingPlan || activeAccessEnd);
+  const activeAccessCountLabel =
+    activeEntitlements.length > 0
+      ? `${activeEntitlements.length} active access grant${activeEntitlements.length === 1 ? "" : "s"}`
+      : "No active paid access";
+
+  useEffect(() => {
+    if (!currentUser || checkoutNotice !== "success") return;
+    if (activeEntitlements.length > 0) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const refreshHistory = async () => {
+      attempts += 1;
+      try {
+        const data = await fetchBillingHistory(currentUser);
+        if (!cancelled) setHistory(data);
+      } catch {
+        // The normal page-level billing error already covers persistent history failures.
+      }
+    };
+
+    const interval = window.setInterval(() => {
+      if (attempts >= 8) {
+        window.clearInterval(interval);
+        return;
+      }
+      void refreshHistory();
+    }, 2500);
+
+    void refreshHistory();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [activeEntitlements.length, checkoutNotice, currentUser]);
 
   async function startCheckout(plan: Serialized<BillingPlan>, gatewayId: string | null) {
     if (!currentUser) return;
@@ -374,9 +507,6 @@ export default function PaymentsPage() {
                   <StatusPill tone={activeEntitlements.length > 0 ? "green" : "amber"}>
                     {activeEntitlements.length > 0 ? "Access active" : "No paid access"}
                   </StatusPill>
-                  <StatusPill tone={testCheckoutAvailable ? "purple" : "amber"}>
-                    {testCheckoutAvailable ? "Checkout ready" : "Checkout not ready"}
-                  </StatusPill>
                 </div>
               </div>
 
@@ -387,18 +517,20 @@ export default function PaymentsPage() {
                   </div>
                   <div>
                     <p className="user-label">Current Plan</p>
-                    <p className="user-card-title mt-1">{activePlan?.name ?? billing?.plan_id ?? "No paid plan"}</p>
+                    <p className="user-card-title mt-1">{currentPlanLabel}</p>
                   </div>
                 </div>
                 <div className="mt-4 grid gap-2">
                   <div className="user-detail-surface flex items-center justify-between gap-3 px-3 py-2">
                     <span>Payment provider</span>
-                    <span className="font-semibold text-[#0f172a]">{billing?.active_provider ?? "Not set"}</span>
+                    <span className="font-semibold text-[#0f172a]">{billing?.active_provider ?? textValue(latestActiveAccessGrant?.provider, "Not set")}</span>
                   </div>
-                  <div className="user-detail-surface flex items-center justify-between gap-3 px-3 py-2">
-                    <span>Access ends</span>
-                    <span className="font-semibold text-[#0f172a]">{formatDate(billing?.current_period_end)}</span>
-                  </div>
+                  {shouldShowBillingAccessEnd && (
+                    <div className="user-detail-surface flex items-center justify-between gap-3 px-3 py-2">
+                      <span>Access ends</span>
+                      <span className="font-semibold text-[#0f172a]">{formatDate(activeAccessEnd)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -418,10 +550,21 @@ export default function PaymentsPage() {
             <div className="user-alert user-alert-success mb-5" role="status">
               <span className="user-alert-icon" aria-hidden="true">ok</span>
               <div>
-                <p className="user-card-title">Checkout returned successfully</p>
-                <p className="user-helper mt-1">
-                  Access updates after the payment provider sends a verified webhook. Refresh this page after a moment if access is not visible yet.
-                </p>
+                {activeEntitlements.length > 0 ? (
+                  <>
+                    <p className="user-card-title">Access updated successfully</p>
+                    <p className="user-helper mt-1">
+                      Your exam access is active. You can continue from your dashboard or open My Exams.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="user-card-title">Checkout returned successfully</p>
+                    <p className="user-helper mt-1">
+                      Access updates after Stripe sends a verified webhook. Refresh this page after a moment if access is not visible yet.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -436,7 +579,7 @@ export default function PaymentsPage() {
             </div>
           )}
 
-          <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <section className={`mb-6 grid gap-4 md:grid-cols-2 ${shouldShowBillingAccessEnd ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
             <SummaryTile
               label="Access Status"
               value={activeEntitlements.length > 0 ? "Active" : "Not active"}
@@ -444,8 +587,8 @@ export default function PaymentsPage() {
               icon={<PackageCheck className="h-5 w-5" />}
             />
             <SummaryTile
-              label="Paid Plan"
-              value={activePlan?.name ?? billing?.plan_id ?? "No paid plan"}
+              label="Current Plan"
+              value={currentPlanLabel}
               helper={activeEntitlements.length > 0 ? "Manual or payment-granted access can exist without a paid plan." : "Based on your account billing snapshot"}
               icon={<Sparkles className="h-5 w-5" />}
             />
@@ -455,12 +598,14 @@ export default function PaymentsPage() {
               helper={latestTransaction ? `Status: ${statusText(latestTransaction.status)}` : "Transactions appear after provider confirmation"}
               icon={<ReceiptText className="h-5 w-5" />}
             />
-            <SummaryTile
-              label="Billing Access End"
-              value={formatDate(billing?.current_period_end)}
-              helper={activeEntitlements.length > 0 && !billing?.current_period_end ? "No end date is set for this access grant." : "One-time access may show lifetime or no end date"}
-              icon={<Clock3 className="h-5 w-5" />}
-            />
+            {shouldShowBillingAccessEnd && (
+              <SummaryTile
+                label="Access End"
+                value={formatDate(activeAccessEnd)}
+                helper={activeEntitlements.length > 0 && !activeAccessEnd ? "No end date is set for this access grant." : "One-time access may show lifetime or no end date"}
+                icon={<Clock3 className="h-5 w-5" />}
+              />
+            )}
           </section>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.55fr)]">
@@ -469,7 +614,7 @@ export default function PaymentsPage() {
                 <div className="border-b border-[#edf0f7] p-5">
                   <SectionHeader
                     title="Available Plans"
-                    subtitle="Choose a one-time access plan. Checkout stays disabled when payment setup is incomplete or the same plan is already active on your account."
+                    subtitle="Choose a one-time access plan. Plans become available when payment setup is complete and your current access period is not already active."
                   />
                 </div>
 
@@ -481,84 +626,73 @@ export default function PaymentsPage() {
                       <div className="user-skeleton h-4 w-3/4" />
                     </div>
                   </div>
-                ) : !catalog || catalog.plans.length === 0 ? (
+                ) : !catalog || availablePlans.length === 0 ? (
                   <div className="p-5">
                     <EmptyState
                       icon={<LockKeyhole className="h-5 w-5" />}
                       title="No plans available"
-                      text="Public billing plans will appear here after they are configured by the admin team."
+                      text="Exam access plans will appear here after they are configured by the admin team."
                     />
                   </div>
                 ) : (
-                  <div className="grid gap-4 p-5 lg:grid-cols-2">
-                    {catalog.plans.map((plan) => {
-                      const mappings = catalog.providerPriceMappings.filter((mapping) => mapping.planId === plan.planId);
-                      const assignedGateways = catalog.gateways.filter((gateway) => plan.gatewayIds.includes(gateway.gatewayId));
-                      const testGateway = assignedGateways.find((gateway) =>
-                        gateway.environment === "test" &&
-                        mappings.some((mapping) => mapping.gatewayId === gateway.gatewayId)
-                      );
-                      const ready = Boolean(testGateway);
-                      const checkingOut = checkoutPlanId === plan.planId;
-                      const alreadyActive = hasActiveBillingPlan && billing?.plan_id === plan.planId;
-                      const canCheckout = ready && !alreadyActive;
-
-                      return (
-                        <article
-                          key={plan.planId}
-                          className={`flex min-h-[300px] flex-col p-4 ${ready ? "user-feature-surface" : "user-detail-surface"}`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="user-label">One-time access</p>
-                              <h3 className="user-card-title mt-1 text-lg">{plan.name}</h3>
-                              <p className="user-helper mt-2">
-                                {plan.shortDescription || plan.description || "NursingMocks access plan"}
-                              </p>
-                            </div>
-                            <StatusPill tone={ready ? "green" : "amber"}>{ready ? "Ready" : "Incomplete"}</StatusPill>
+                  <div className="grid gap-4 p-5">
+                    {availablePlanGroups.map((group) => (
+                      <article key={group.examId} className="user-detail-surface p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#edf0f7] pb-3">
+                          <div>
+                            <p className="user-label">Exam Access</p>
+                            <h3 className="user-card-title mt-1">{group.label}</h3>
                           </div>
+                          <StatusPill tone="purple">{`${group.plans.length} option${group.plans.length === 1 ? "" : "s"}`}</StatusPill>
+                        </div>
+                        <div className="mt-3 grid gap-3">
+                          {group.plans.map((plan) => {
+                            const mappings = catalog.providerPriceMappings.filter((mapping) => mapping.planId === plan.planId);
+                            const assignedGateways = catalog.gateways.filter((gateway) => plan.gatewayIds.includes(gateway.gatewayId));
+                            const testGateway = assignedGateways.find((gateway) =>
+                              gateway.environment === "test" &&
+                              mappings.some((mapping) => mapping.gatewayId === gateway.gatewayId)
+                            );
+                            const ready = Boolean(testGateway);
+                            const checkingOut = checkoutPlanId === plan.planId;
+                            const alreadyActive = hasActiveBillingPlan && activePlanId === plan.planId;
+                            const canCheckout = ready && !alreadyActive;
 
-                          <div className="mt-5">
-                            <p className="user-stat-value">
-                              {plan.currency} {plan.price}
-                            </p>
-                            <p className="user-helper mt-1">
-                              {plan.purchaseType === "one_time" ? "One payment for access" : statusText(plan.purchaseType)}
-                            </p>
-                          </div>
-
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {plan.packageIds.map((packageId) => (
-                              <StatusPill key={packageId} tone="purple">{packageLabel(packageId)}</StatusPill>
-                            ))}
-                          </div>
-
-                          <div className="mt-auto pt-5">
-                            <button
-                              type="button"
-                              disabled={!canCheckout || checkingOut}
-                              onClick={() => void startCheckout(plan, testGateway?.gatewayId ?? null)}
-                              className={`${canCheckout && !checkingOut ? "user-button-primary" : "user-button-secondary"} w-full gap-2`}
-                            >
-                              {checkingOut
-                                ? "Starting checkout..."
-                                : alreadyActive
-                                  ? "Already active"
-                                  : ready
-                                    ? "Continue to checkout"
-                                    : "Configuration incomplete"}
-                              {canCheckout && !checkingOut && <ArrowRight className="h-4 w-4" />}
-                            </button>
-                            {alreadyActive && (
-                              <p className="user-helper mt-2 text-center">
-                                This plan can be purchased again after your current access period ends.
-                              </p>
-                            )}
-                          </div>
-                        </article>
-                      );
-                    })}
+                            return (
+                              <div key={plan.planId} className="rounded-2xl border border-[#edf0f7] bg-white p-3">
+                                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <p className="user-card-title">{durationLabel(plan)}</p>
+                                      <StatusPill tone={ready ? "green" : "amber"}>{ready ? "Ready" : "Incomplete"}</StatusPill>
+                                    </div>
+                                    <p className="user-helper mt-1">One payment. Access ends after the selected duration.</p>
+                                  </div>
+                                  <div className="grid gap-2 sm:min-w-[190px]">
+                                    <p className="user-stat-value text-left text-xl sm:text-right">{formatMoney(plan.price, plan.currency)}</p>
+                                    <button
+                                      type="button"
+                                      disabled={!canCheckout || checkingOut}
+                                      onClick={() => void startCheckout(plan, testGateway?.gatewayId ?? null)}
+                                      className={`${canCheckout && !checkingOut ? "user-button-primary" : "user-button-secondary"} w-full gap-2`}
+                                    >
+                                      {checkingOut
+                                        ? "Starting checkout..."
+                                        : alreadyActive
+                                          ? "Already active"
+                                          : ready
+                                            ? "Continue to checkout"
+                                            : "Configuration incomplete"}
+                                      {canCheckout && !checkingOut && <ArrowRight className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </article>
+                    ))}
                   </div>
                 )}
               </Card>
@@ -599,34 +733,35 @@ export default function PaymentsPage() {
             </div>
 
             <aside className="grid content-start gap-6">
-              <Card>
-                <div className="border-b border-[#edf0f7] p-5">
-                  <SectionHeader
-                    title="Active Access"
-                    subtitle="Access grants currently enabled on your account."
-                  />
-                </div>
-                <div className="p-5">
-                  {activeEntitlements.length === 0 ? (
-                    <EmptyState
-                      icon={<LockKeyhole className="h-5 w-5" />}
-                      title="No active paid access"
-                      text="Choose a plan to unlock My Exams and study materials."
+              {activeAccessGroups.length > 0 && (
+                <Card>
+                  <div className="border-b border-[#edf0f7] p-5">
+                    <SectionHeader
+                      title="Active Access"
+                      subtitle="Exam access currently enabled on your account."
                     />
-                  ) : (
+                  </div>
+                  <div className="p-5">
                     <div className="grid gap-3">
-                      {activeEntitlements.map((entitlement) => (
-                        <div key={entitlement} className="user-detail-surface flex items-center gap-3 p-3">
+                      {activeAccessGroups.map((access) => (
+                        <div key={access.examId} className="user-detail-surface p-3">
+                          <div className="flex items-start gap-3">
                           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[rgba(43,170,96,.10)] text-[#15803d]">
                             <CheckCircle2 className="h-5 w-5" />
                           </div>
-                          <p className="user-card-title min-w-0">{entitlementLabel(entitlement)}</p>
+                            <div className="min-w-0">
+                              <p className="user-card-title">{access.label}</p>
+                              <p className="user-helper mt-1">
+                                {access.accessEndsAt ? `Access ends ${formatDate(access.accessEndsAt)}` : "No access end date set"}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              </Card>
+                  </div>
+                </Card>
+              )}
 
               <Card>
                 <div className="border-b border-[#edf0f7] p-5">
@@ -640,7 +775,7 @@ export default function PaymentsPage() {
                   unavailable={!history}
                   emptyIcon={<PackageCheck className="h-5 w-5" />}
                   emptyTitle="No access grant records"
-                  emptyMessage="Access grant records will appear after checkout or admin updates."
+                  emptyMessage="Your access history will appear here after checkout is confirmed or your access is updated."
                   records={history?.entitlements ?? []}
                   renderRecord={(record) => (
                     <div>

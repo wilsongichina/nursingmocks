@@ -33,8 +33,15 @@ export interface MyExamItem {
   completedAt?: string;
   latestAttemptId?: string;
   href: string;
+  accessEndsAt?: Date | null;
+  previewPercentage?: number;
   previewQuestionCount?: number;
 }
+
+export type MyExamsDynamicExamInput = Omit<MyExamItem, "accessState" | "progressStatus"> & {
+  previewEnabled: boolean;
+  requiredPackageIds: string[];
+};
 
 export interface MyExamLockedPackage {
   id: string;
@@ -51,4 +58,10 @@ export interface MyExamsViewModel {
   continueAttempts: MyExamItem[];
   lockedPackages: MyExamLockedPackage[];
   hasPaidAccess: boolean;
+}
+
+export type MyExamsBillingHistoryRecord = Record<string, unknown>;
+
+export interface MyExamsBillingHistory {
+  entitlements?: MyExamsBillingHistoryRecord[];
 }

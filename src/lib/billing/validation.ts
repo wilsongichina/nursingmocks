@@ -67,6 +67,18 @@ export function validateBillingPlan(
     issues.push(issue("purchaseType", "Lifetime plans must use one-time purchase."));
   }
 
+  if (plan.durationDays !== undefined && plan.durationDays !== null) {
+    if (!Number.isInteger(plan.durationDays) || plan.durationDays <= 0) {
+      issues.push(issue("durationDays", "Duration days must be a positive whole number."));
+    }
+    if (plan.purchaseType !== "one_time") {
+      issues.push(issue("purchaseType", "Fixed-term access plans must use one-time purchase."));
+    }
+    if (plan.renewsAutomatically === true) {
+      issues.push(issue("renewsAutomatically", "Fixed-term access plans cannot renew automatically."));
+    }
+  }
+
   const duplicateName = existingPlans.some(
     (existing) =>
       existing.planId !== plan.planId &&
@@ -86,8 +98,8 @@ export function validateBillingPlan(
   }
 
   const isActive = plan.status === "active";
-  if (isActive && plan.isPublic && plan.packageIds.length === 0) {
-    issues.push(issue("packageIds", "Active public plans must include at least one package."));
+  if (isActive && plan.isPublic && plan.packageIds.length === 0 && !plan.examId) {
+    issues.push(issue("packageIds", "Active public plans must include at least one package or exam."));
   }
 
   if (isActive && plan.gatewayIds.length === 0) {

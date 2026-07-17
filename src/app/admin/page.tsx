@@ -34,6 +34,7 @@ const managementGroups: Array<{ title: string; description: string; links: Manag
     title: "Billing",
     description: "Plans, gateways, provider mappings, transactions, access grants, and checkout readiness.",
     links: [
+      { title: "Exam Access Catalog", href: "/admin/exam-access", action: "Manage Exams", description: "Manage exam products that billing plans can sell independently." },
       { title: "Billing Configuration", href: "/admin/billing", action: "Manage Billing", description: "Manage billing plans, gateways, provider mappings, and billing records." },
     ],
   },

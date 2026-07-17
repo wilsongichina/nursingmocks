@@ -83,7 +83,7 @@ describe("admin billing gateway configuration input", () => {
 
 describe("admin billing plan configuration input", () => {
   it("normalizes plan slugs", () => {
-    expect(normalizeBillingSlug(" All Access Monthly ")).toBe("all-access-monthly");
+    expect(normalizeBillingSlug(" ATI TEAS 7 1 Month Access ")).toBe("ati-teas-7-1-month-access");
   });
 
   it("normalizes plan names to title case without separators or punctuation", () => {
@@ -93,15 +93,15 @@ describe("admin billing plan configuration input", () => {
   it("accepts a valid draft plan assigned to packages and gateways", () => {
     const result = validateCreateBillingPlanInput(
       {
-        planId: "all_access_monthly",
-        name: "all-access.monthly_plan!",
-        slug: "all-access-monthly",
+        planId: "ati_teas_7_1_month",
+        name: "ati-teas.7_1_month_access!",
+        slug: "ati-teas-7-1-month-access",
         status: "draft",
-        purchaseType: "subscription",
-        billingInterval: "monthly",
+        purchaseType: "one_time",
+        billingInterval: "lifetime",
         price: "49",
         currency: "usd",
-        packageIds: ["all_access"],
+        packageIds: ["ati_teas_7"],
         gatewayIds: ["stripe_us_test"],
       },
       { gatewayIds: ["stripe_us_test"], adminUid: "admin_1" }
@@ -109,7 +109,7 @@ describe("admin billing plan configuration input", () => {
 
     expect(result.valid).toBe(true);
     if (result.valid) {
-      expect(result.plan.name).toBe("All Access Monthly Plan");
+      expect(result.plan.name).toBe("Ati Teas 7 1 Month Access");
       expect(result.plan.currency).toBe("USD");
       expect(result.plan.price).toBe(49);
       expect(result.plan.createdBy).toBe("admin_1");
@@ -142,6 +142,57 @@ describe("admin billing plan configuration input", () => {
 
     expect(teasResult.valid).toBe(true);
     expect(hesiResult.valid).toBe(true);
+  });
+
+  it("accepts fixed-term exam access plans", () => {
+    const result = validateCreateBillingPlanInput({
+      planId: "ati_teas_7_1_month",
+      name: "ATI TEAS 7 1 Month Access",
+      slug: "ati-teas-7-1-month-access",
+      status: "draft",
+      purchaseType: "one_time",
+      billingInterval: "",
+      examId: "ati_teas_7",
+      durationDays: 30,
+      renewsAutomatically: false,
+      price: "49",
+      currency: "USD",
+      packageIds: ["ati_teas_7"],
+    });
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.plan.examId).toBe("ati_teas_7");
+      expect(result.plan.durationDays).toBe(30);
+      expect(result.plan.renewsAutomatically).toBe(false);
+    }
+  });
+
+  it("rejects recurring fixed-term exam access plans", () => {
+    const result = validateCreateBillingPlanInput({
+      planId: "future_exam_1_month",
+      name: "Future Exam 1 Month Access",
+      slug: "future-exam-1-month-access",
+      status: "draft",
+      purchaseType: "subscription",
+      billingInterval: "monthly",
+      examId: "future_exam",
+      durationDays: 30,
+      renewsAutomatically: true,
+      price: "49",
+      currency: "USD",
+      packageIds: [],
+    });
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.issues).toEqual(
+        expect.arrayContaining([
+          "Fixed-term access plans must use one-time purchase.",
+          "Fixed-term access plans cannot renew automatically.",
+        ])
+      );
+    }
   });
 
   it("rejects active plans without packages or gateways", () => {

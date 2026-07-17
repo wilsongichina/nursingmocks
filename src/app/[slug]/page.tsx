@@ -4,8 +4,7 @@ import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import ContentRenderer from "@/components/ui/ContentRenderer";
 import TiptapContentRenderer from "@/components/editor/TiptapContentRenderer";
-import QuestionCard from "@/components/quiz/QuestionCard";
-import QuizCTACard from "@/components/quiz/QuizCTACard";
+import DynamicQuizQuestions from "@/components/quiz/DynamicQuizQuestions";
 import FAQAccordion from "@/components/ui/FAQAccordion";
 import KbArticleViewer from "@/components/knowledge-base/KbArticleViewer";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
@@ -32,6 +31,10 @@ import {
   countQuizQuestions,
   countExitEntranceQuizQuestions,
 } from "@/lib/firestore-operations";
+import {
+  buildQuizPreviewState,
+  resolveRequiredExamAccessProduct,
+} from "@/lib/content-access-state";
 
 // Icon components for dashboard-style cards
 const LaptopIcon = ({ className }: { className?: string }) => (
@@ -479,8 +482,9 @@ export async function generateStaticParams() {
   return params;
 }
 
-// Enable static generation at build time
-export const dynamicParams = false; // Disable dynamic params - all routes must be pre-generated
+// Admin-created content can add new route mappings after a build has already
+// happened, so dynamic slugs must be allowed to resolve through Firestore.
+export const dynamicParams = true;
 export const dynamic = "force-static"; // Force static generation
 export const revalidate = 3600; // Revalidate every hour
 
@@ -644,14 +648,6 @@ export default async function DynamicPage({
         ? questionTypesResult.data
         : [];
 
-    const getQuestionTypeName = (questionTypeId: number) => {
-      if (!questionTypeId) return "Unknown";
-      const type = questionTypes.find(
-        (t: any) => t.questionTypeId === questionTypeId.toString()
-      );
-      return type?.questionTypeName || `Type ${questionTypeId}`;
-    };
-
     // Filter questions to only show types 1, 2, 3, and 7
     const allowedQuestionTypes = [1, 2, 3, 7];
     const allQuestions =
@@ -665,8 +661,13 @@ export default async function DynamicPage({
       return allowedQuestionTypes.includes(questionTypeId);
     });
 
-    // Only show the last 10 questions
-    const questions = filteredQuestions.slice(-10);
+    const requiredProductId = resolveRequiredExamAccessProduct({ ...mapping, slug }, pageData);
+    const previewState = buildQuizPreviewState(filteredQuestions.length, requiredProductId);
+    // Public dynamic quiz pages are statically generated, so they render the configured free preview.
+    // Full paid access is loaded after hydration through the authenticated quiz API.
+    const questions = previewState.previewEnabled
+      ? filteredQuestions.slice(0, previewState.previewLimit)
+      : [];
 
     // Get nested page slug for back button
     let nestedPageSlug = "";
@@ -972,88 +973,14 @@ export default async function DynamicPage({
 
         {/* Questions */}
         <main id="questions-start" className="mt-2.5 px-5 sm:px-[14px]">
-          {questions.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-slate-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                No questions available
-              </h3>
-              <p className="text-slate-600">
-                Questions for this quiz are not available yet.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4.5">
-              {questions.map((question: any, index: number) => {
-                const questionTypeId =
-                  question.questionTypeId || question.question_type_id || 1;
-
-                let options: string[] = [];
-                if (question.options) {
-                  if (Array.isArray(question.options)) {
-                    options = question.options;
-                  } else if (typeof question.options === "string") {
-                    try {
-                      const parsed = JSON.parse(question.options);
-                      options = Array.isArray(parsed) ? parsed : [parsed];
-                    } catch {
-                      options = [question.options];
-                    }
-                  }
-                }
-
-                const correctAnswer = question.correctAnswer || "";
-                let correctAnswers: string[] = [];
-                if (questionTypeId === 2) {
-                  try {
-                    const parsed =
-                      typeof correctAnswer === "string"
-                        ? JSON.parse(correctAnswer)
-                        : correctAnswer;
-                    correctAnswers = Array.isArray(parsed) ? parsed : [];
-                  } catch {
-                    correctAnswers = [];
-                  }
-                } else if (questionTypeId === 7) {
-                  correctAnswers = Array.isArray(correctAnswer)
-                    ? correctAnswer
-                    : [correctAnswer];
-                } else {
-                  correctAnswers = [correctAnswer];
-                }
-
-                return (
-                  <div key={question.id || index}>
-                    <QuestionCard
-                      question={question}
-                      index={index}
-                      questionTypeId={questionTypeId}
-                      options={options}
-                      correctAnswers={correctAnswers}
-                      questionTypeName={getQuestionTypeName(questionTypeId)}
-                      totalQuestions={questions.length}
-                    />
-                    {/* CTA Band after question 2 */}
-                    {index === 1 && questions.length > 2 && <QuizCTACard />}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <DynamicQuizQuestions
+            slug={slug}
+            previewQuestions={questions}
+            totalQuestionCount={filteredQuestions.length}
+            hiddenQuestionCount={previewState.hiddenQuestionCount}
+            productLabel={previewState.productLabel}
+            questionTypes={questionTypes}
+          />
         </main>
 
         {/* Related Sets Section */}

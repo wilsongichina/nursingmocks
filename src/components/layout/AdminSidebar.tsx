@@ -76,6 +76,12 @@ export default function AdminSidebar() {
       color: "blue",
     },
     {
+      label: "Exam Access Catalog",
+      href: "/admin/exam-access",
+      icon: "entrance-exam",
+      color: "indigo",
+    },
+    {
       label: "Audit Logs",
       href: "/admin/audit-logs",
       icon: "audit",

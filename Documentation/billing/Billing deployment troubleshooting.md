@@ -1,5 +1,29 @@
 # Billing Deployment Troubleshooting
 
+## Webhook Access Diagnostic
+
+Added a read-only diagnostic script:
+
+```text
+node scripts/check-billing-webhooks.js
+node scripts/check-billing-webhooks.js user@example.com
+```
+
+The script reports recent `billing_webhook_events` without printing raw webhook payloads or secrets.
+
+Use it when checkout returns successfully but access does not update.
+
+Key fields:
+
+- `eventType`: must include `checkout.session.completed` for one-time checkout access.
+- `normalizedEventType`: should be `checkout_completed`.
+- `effectsEnabled`: must be `true`.
+- `processed`: must be `true`.
+- `effectExecutionStatus`: should be `ready`.
+- `effectExecutionMessage`: should say verified billing state was written.
+
+If recent events only show Stripe account events such as `balance.available`, `payout.created`, or `payout.updated`, the checkout-completion webhook is not reaching the app. Check the Stripe webhook endpoint event selection, endpoint URL, gateway ID query string, and signing secret for the same Stripe mode used by checkout.
+
 ## Purpose
 
 This document records production deployment issues that affect billing routes and the checks needed before assuming billing configuration data is wrong.

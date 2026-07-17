@@ -155,6 +155,16 @@ Use these classes on authenticated user pages:
 - The examples on `/typography` should use neutral labels such as `Learning Center`, `Recommended Actions`, `Status`, or `Recent Activity`.
 - Avoid example text that makes the standard page look like it belongs only to one screen.
 
+## UX Copy Rules
+
+- Empty states, alerts, helper text, and notices must speak to the user using the system, not to developers or maintainers.
+- Do not expose implementation status in user-facing copy. Avoid wording like `the codebase does not currently expose`, `model is connected`, `records are unavailable`, or similar engineering language.
+- Use direct, helpful next-step copy. A good empty-state structure is: clear title, one short sentence explaining what will happen, and one useful action.
+- For dashboard-style empty states inside content cards, prefer the reference structure: left-aligned title, left-aligned helper sentence, and a left-aligned secondary CTA. Avoid centered icon-heavy empty states when the surrounding page is a management dashboard.
+- For activity and results sections, use student-facing language such as `Your activity will show up here`, `Complete a practice set to start tracking your history and scores.`, and `Start ATI TEAS 7 practice`.
+- If a feature depends on future data, describe the user's next action instead of describing the missing data source.
+- Keep CTA capitalization readable and natural. Product and exam names keep official capitalization, while action wording can stay sentence-style, for example `Start ATI TEAS 7 practice`.
+
 ## Layout Rules
 
 - Use `user-page` as the outer wrapper on authenticated user pages.

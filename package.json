@@ -11,6 +11,11 @@
     "lint": "next lint",
     "test": "vitest run",
     "generate:sidebar": "node scripts/generate-sidebar-data.js",
+    "billing:exam-access:migrate:dry-run": "node scripts/migrate-billing-exam-access.js",
+    "billing:exam-access:migrate:apply": "node scripts/migrate-billing-exam-access.js --apply",
+    "billing:exam-access:set-user": "node scripts/set-user-exam-access.js",
+    "content:entrance-quiz-metadata:dry-run": "node scripts/backfill-entrance-quiz-metadata.js",
+    "content:entrance-quiz-metadata:apply": "node scripts/backfill-entrance-quiz-metadata.js --apply",
     "users:clean:dry-run": "node scripts/clean-users-collection.js",
     "users:clean:apply": "node scripts/clean-users-collection.js --apply"
   },

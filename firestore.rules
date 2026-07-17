@@ -69,6 +69,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /exam_subject_catalog/{subjectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

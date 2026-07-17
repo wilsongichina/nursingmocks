@@ -18,6 +18,189 @@ import {
 } from "firebase/storage";
 import { mathPageContent } from "./math-page-content";
 import { getSiteUrl } from "./config";
+import { normalizeContentExamAccessProductId } from "./content-access-products";
+
+const EXAM_SUBJECT_CATALOG_COLLECTION = "exam_subject_catalog";
+
+function contentExamAccessProductFor(pillarId: string, content: Record<string, any>, fallback?: unknown) {
+  return normalizeContentExamAccessProductId(pillarId, content.examAccessProductId, fallback);
+}
+
+function textMetadataValue(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function numberMetadataValue(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+    if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
+  }
+  return 0;
+}
+
+function slugMetadataValue(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/practice test/g, "")
+    .replace(/ati|teas|hesi|a2/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function entranceQuizMetadataFor({
+  content,
+  parentData,
+  nestedData,
+  existingQuestionCount,
+}: {
+  content: Record<string, any>;
+  parentData?: Record<string, any> | null;
+  nestedData?: Record<string, any> | null;
+  existingQuestionCount?: unknown;
+}) {
+  const pillarId = "nursing-entrance-exam";
+  const subjectName = textMetadataValue(
+    content.subjectName,
+    nestedData?.pageName,
+    nestedData?.title,
+    nestedData?.heading,
+    nestedData?.slug
+  );
+  const questionCount = numberMetadataValue(content.questionCount, existingQuestionCount);
+
+  return {
+    examAccessProductId: contentExamAccessProductFor(
+      pillarId,
+      content,
+      [
+        nestedData?.examAccessProductId,
+        parentData?.examAccessProductId,
+        content.pageName,
+        content.title,
+        content.quizName,
+        content.slug,
+        nestedData?.pageName,
+        nestedData?.title,
+        nestedData?.slug,
+        parentData?.pageName,
+        parentData?.title,
+        parentData?.slug,
+      ].join(" ")
+    ),
+    examFamilyId: "nursing_entrance_exams",
+    subjectName,
+    subjectId: slugMetadataValue(subjectName || textMetadataValue(content.slug, content.pageName)),
+    questionCount,
+    previewPercentage: numberMetadataValue(content.previewPercentage, 20),
+    active: content.active !== false,
+  };
+}
+
+function entranceQuizMetadataChanged(current: Record<string, any>, next: Record<string, any>) {
+  return Object.entries(next).some(([key, value]) => current[key] !== value);
+}
+
+function isFullLengthEntranceMetadata(...values: unknown[]) {
+  const text = values.map((value) => String(value ?? "").toLowerCase()).join(" ");
+  return text.includes("full-length") || text.includes("full length") || text.includes("full_exam") || text.includes("full exam");
+}
+
+function entranceSubjectCatalogDocId(quizId: string) {
+  return `nursing_entrance_exam_${quizId}`;
+}
+
+async function upsertEntranceQuizSubjectCatalog({
+  quizId,
+  contentPath,
+  content,
+  parentData,
+  nestedData,
+  existingQuestionCount,
+}: {
+  quizId: string;
+  contentPath: string;
+  content: Record<string, any>;
+  parentData?: Record<string, any> | null;
+  nestedData?: Record<string, any> | null;
+  existingQuestionCount?: unknown;
+}) {
+  const metadata = entranceQuizMetadataFor({ content, parentData, nestedData, existingQuestionCount });
+  const slug = textMetadataValue(content.slug);
+  const title = textMetadataValue(content.pageName, content.title, content.quizName, slug, quizId);
+  const subjectName = textMetadataValue(metadata.subjectName, title);
+  const catalogRef = doc(db, EXAM_SUBJECT_CATALOG_COLLECTION, entranceSubjectCatalogDocId(quizId));
+
+  // Keep full-length rows out of My Exams because TEAS/HESI are subject-based.
+  if (isFullLengthEntranceMetadata(title, subjectName, slug)) {
+    await deleteDoc(catalogRef);
+    return;
+  }
+
+  if (!metadata.examAccessProductId || (metadata.examAccessProductId !== "ati_teas_7" && metadata.examAccessProductId !== "hesi_a2")) {
+    await deleteDoc(catalogRef);
+    return;
+  }
+
+  await setDoc(
+    catalogRef,
+    {
+      ...metadata,
+      active: metadata.active,
+      id: quizId,
+      quizId,
+      slug,
+      title,
+      pageName: textMetadataValue(content.pageName, title),
+      quizName: textMetadataValue(content.quizName, title),
+      setNumber: numberMetadataValue(content.setNumber) || null,
+      contentPath,
+      sourcePillarId: "nursing-entrance-exam",
+      sourceUpdatedAt: new Date().toISOString(),
+      type: "entrance_quiz_subject",
+    },
+    { merge: true }
+  );
+}
+
+async function deleteEntranceQuizSubjectCatalog(quizId: string) {
+  await deleteDoc(doc(db, EXAM_SUBJECT_CATALOG_COLLECTION, entranceSubjectCatalogDocId(quizId)));
+}
+
+async function ensureEntranceQuizSubjectCatalog({
+  quizId,
+  quiz,
+  parentData,
+  nestedData,
+  contentPath,
+}: {
+  quizId: string;
+  quiz: Record<string, any>;
+  parentData?: Record<string, any> | null;
+  nestedData?: Record<string, any> | null;
+  contentPath: string;
+}) {
+  const metadata = entranceQuizMetadataFor({
+    content: quiz,
+    parentData,
+    nestedData,
+    existingQuestionCount: quiz.questionCount,
+  });
+  await upsertEntranceQuizSubjectCatalog({
+    quizId,
+    contentPath,
+    content: { ...quiz, ...metadata },
+    parentData,
+    nestedData,
+    existingQuestionCount: metadata.questionCount,
+  });
+  return metadata;
+}
 
 // Upload math page content to Firestore
 export const uploadMathPageContent = async () => {
@@ -959,11 +1142,13 @@ export const uploadNursingEntranceExamSubPage = async (
 
       // Remove unnecessary keys: content, hero, image
       const { content: _, hero: __, image: ___, ...cleanContent } = content;
+      const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
 
       const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
       const newDocRef = await addDoc(subPagesRef, {
         ...cleanContent,
         slug: normalizedNewSlug,
+        examAccessProductId,
         status: cleanContent.status || "Published", // Default to Published for new pages
         type: "sub",
         parentId: pillarId, // Parent is the pillar page
@@ -993,6 +1178,7 @@ export const uploadNursingEntranceExamSubPage = async (
         topicId: null,
         quizId: null,
         refPath: contentPath,
+        examAccessProductId,
       });
 
       return {
@@ -1036,6 +1222,7 @@ export const uploadNursingEntranceExamSubPage = async (
 
     // Remove unnecessary keys: content, hero, image
     const { content: _, hero: __, image: ___, ...cleanContent } = content;
+    const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
 
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
@@ -1044,6 +1231,7 @@ export const uploadNursingEntranceExamSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
+        examAccessProductId,
         type: "sub",
         parentId: pillarId,
         pillarId: pillarId,
@@ -1064,6 +1252,7 @@ export const uploadNursingEntranceExamSubPage = async (
       topicId: null,
       quizId: null,
       refPath: contentPath,
+      examAccessProductId,
     });
 
     return {
@@ -2215,11 +2404,13 @@ export const uploadNursingExitExamSubPage = async (
 
       // Remove unnecessary keys: content, hero, image
       const { content: _, hero: __, image: ___, ...cleanContent } = content;
+      const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
 
       const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
       const newDocRef = await addDoc(subPagesRef, {
         ...cleanContent,
         slug: normalizedNewSlug,
+        examAccessProductId,
         status: cleanContent.status || "Published", // Default to Published for new pages
         type: "sub",
         parentId: pillarId, // Parent is the pillar page
@@ -2249,6 +2440,7 @@ export const uploadNursingExitExamSubPage = async (
         topicId: null,
         quizId: null,
         refPath: contentPath,
+        examAccessProductId,
       });
 
       return {
@@ -2261,6 +2453,7 @@ export const uploadNursingExitExamSubPage = async (
     // Document exists, update it (document ID stays the same, only slug field updates)
     // Remove unnecessary keys: content, hero, image
     const { content: _, hero: __, image: ___, ...cleanContent } = content;
+    const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
 
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
@@ -2269,6 +2462,7 @@ export const uploadNursingExitExamSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
+        examAccessProductId,
         type: "sub",
         parentId: pillarId,
         pillarId: pillarId,
@@ -2289,6 +2483,7 @@ export const uploadNursingExitExamSubPage = async (
       topicId: null,
       quizId: null,
       refPath: contentPath,
+      examAccessProductId,
     });
 
     return {
@@ -2728,10 +2923,12 @@ export const uploadNursingExitExamNestedSubPage = async (
         faq: _faq,
         ...cleanContent
       } = content;
+      const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
 
       const newDocRef = await addDoc(nestedSubPagesRef, {
         ...cleanContent,
         slug: normalizedNewSlug,
+        examAccessProductId,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
@@ -2768,6 +2965,7 @@ export const uploadNursingExitExamNestedSubPage = async (
         topicId: null,
         quizId: null,
         refPath: contentPath,
+        examAccessProductId,
       });
 
       return {
@@ -3091,11 +3289,13 @@ export const uploadNursingTestBankSubPage = async (
 
       // Remove unnecessary keys: content, hero, image
       const { content: _, hero: __, image: ___, ...cleanContent } = content;
+      const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
 
       const subPagesRef = collection(db, "pillarPages", pillarId, "subPages");
       const newDocRef = await addDoc(subPagesRef, {
         ...cleanContent,
         slug: normalizedNewSlug,
+        examAccessProductId,
         status: cleanContent.status || "Published", // Default to Published for new pages
         type: "sub",
         parentId: pillarId, // Parent is the pillar page
@@ -3125,6 +3325,7 @@ export const uploadNursingTestBankSubPage = async (
         topicId: null,
         quizId: null,
         refPath: contentPath,
+        examAccessProductId,
       });
 
       return {
@@ -3168,6 +3369,7 @@ export const uploadNursingTestBankSubPage = async (
 
     // Remove unnecessary keys: content, hero, image
     const { content: _, hero: __, image: ___, ...cleanContent } = content;
+    const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
 
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
@@ -3176,6 +3378,7 @@ export const uploadNursingTestBankSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
+        examAccessProductId,
         type: "sub",
         parentId: pillarId,
         pillarId: pillarId,
@@ -3196,6 +3399,7 @@ export const uploadNursingTestBankSubPage = async (
       topicId: null,
       quizId: null,
       refPath: contentPath,
+      examAccessProductId,
     });
 
     return {
@@ -4651,13 +4855,13 @@ export const getNursingTestBankQuizzes = async (
     );
     const quizzes: any[] = [];
 
-    querySnapshot.forEach((doc) => {
+    for (const docSnap of querySnapshot.docs) {
       quizzes.push({
-        id: doc.id,
-        quizId: doc.id,
-        ...doc.data(),
+        id: docSnap.id,
+        quizId: docSnap.id,
+        ...docSnap.data(),
       });
-    });
+    }
 
     return {
       success: true,
@@ -5063,6 +5267,7 @@ export const uploadNursingTestBankQuiz = async (
 
     // Find quiz by slug (or document ID for backward compatibility)
     let quizDocId: string | null = null;
+    let existingQuizData: Record<string, any> | null = null;
     const quizzesRef = collection(
       db,
       "pillarPages",
@@ -5083,6 +5288,7 @@ export const uploadNursingTestBankQuiz = async (
 
     if (!quizSlugSnapshot.empty) {
       quizDocId = quizSlugSnapshot.docs[0].id;
+      existingQuizData = quizSlugSnapshot.docs[0].data();
     } else {
       // Fallback: try by document ID
       const quizDocRef = doc(
@@ -5101,8 +5307,20 @@ export const uploadNursingTestBankQuiz = async (
       const quizDocSnap = await getDoc(quizDocRef);
       if (quizDocSnap.exists()) {
         quizDocId = quizDocSnap.id;
+        existingQuizData = quizDocSnap.data();
       }
     }
+
+    const parentDocSnap = await getDoc(doc(db, "pillarPages", pillarId, "subPages", resolvedParentId));
+    const nestedDocSnap = await getDoc(
+      doc(db, "pillarPages", pillarId, "subPages", resolvedParentId, "nestedSubPages", resolvedNestedId)
+    );
+    const entranceQuizMetadata = entranceQuizMetadataFor({
+      content,
+      parentData: parentDocSnap.exists() ? parentDocSnap.data() : null,
+      nestedData: nestedDocSnap.exists() ? nestedDocSnap.data() : null,
+      existingQuestionCount: existingQuizData?.questionCount,
+    });
 
     if (!quizDocId) {
       // Document doesn't exist, create new one with auto-generated ID
@@ -5119,6 +5337,7 @@ export const uploadNursingTestBankQuiz = async (
 
       const newDocRef = await addDoc(quizzesRef, {
         ...content,
+        ...entranceQuizMetadata,
         slug: normalizedNewSlug,
         type: "quiz",
         parentId: resolvedParentId,
@@ -5190,6 +5409,7 @@ export const uploadNursingTestBankQuiz = async (
       docRef,
       {
         ...content,
+        ...entranceQuizMetadata,
         slug: normalizedNewSlug, // Update slug field
         type: "quiz",
         parentId: resolvedParentId,
@@ -5923,7 +6143,8 @@ export const deleteNestedSubPage = async (
 // Get all quizzes under a nested sub-page (for entrance exam)
 export const getNursingEntranceExamQuizzes = async (
   parentSubPageId: string,
-  nestedSubPageId: string
+  nestedSubPageId: string,
+  options: { repairMyExamsCatalog?: boolean } = {}
 ) => {
   try {
     const pillarId = "nursing-entrance-exam";
@@ -6020,14 +6241,46 @@ export const getNursingEntranceExamQuizzes = async (
       )
     );
     const quizzes: any[] = [];
+    let parentData: Record<string, any> | null = null;
+    let nestedData: Record<string, any> | null = null;
 
-    querySnapshot.forEach((doc) => {
+    if (options.repairMyExamsCatalog) {
+      const parentDocSnap = await getDoc(doc(db, "pillarPages", pillarId, "subPages", resolvedParentId));
+      const nestedDocSnap = await getDoc(
+        doc(db, "pillarPages", pillarId, "subPages", resolvedParentId, "nestedSubPages", resolvedNestedId)
+      );
+      parentData = parentDocSnap.exists() ? parentDocSnap.data() : null;
+      nestedData = nestedDocSnap.exists() ? nestedDocSnap.data() : null;
+    }
+
+    for (const docSnap of querySnapshot.docs) {
+      const quizData = docSnap.data();
+      let metadata: Record<string, any> = {};
+      if (options.repairMyExamsCatalog) {
+        const contentPath =
+          typeof quizData.contentPath === "string" && quizData.contentPath
+            ? quizData.contentPath
+            : `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${docSnap.id}`;
+        // Admin quiz list loads are a safe place to repair the display index so
+        // newly-created sets appear in My Exams without a manual backfill script.
+        metadata = await ensureEntranceQuizSubjectCatalog({
+          quizId: docSnap.id,
+          quiz: { ...quizData, contentPath },
+          parentData,
+          nestedData,
+          contentPath,
+        });
+        if (entranceQuizMetadataChanged(quizData, metadata)) {
+          await setDoc(docSnap.ref, metadata, { merge: true });
+        }
+      }
       quizzes.push({
-        id: doc.id,
-        quizId: doc.id,
-        ...doc.data(),
+        id: docSnap.id,
+        quizId: docSnap.id,
+        ...quizData,
+        ...metadata,
       });
-    });
+    }
 
     return {
       success: true,
@@ -6315,6 +6568,7 @@ export const uploadNursingEntranceExamQuiz = async (
 
     // Find quiz by slug (or document ID for backward compatibility)
     let quizDocId: string | null = null;
+    let existingQuizData: any = null;
     const quizzesRef = collection(
       db,
       "pillarPages",
@@ -6333,6 +6587,7 @@ export const uploadNursingEntranceExamQuiz = async (
 
     if (!quizSlugSnapshot.empty) {
       quizDocId = quizSlugSnapshot.docs[0].id;
+      existingQuizData = quizSlugSnapshot.docs[0].data();
     } else {
       // Fallback: try by document ID
       const quizDocRef = doc(
@@ -6349,8 +6604,22 @@ export const uploadNursingEntranceExamQuiz = async (
       const quizDocSnap = await getDoc(quizDocRef);
       if (quizDocSnap.exists()) {
         quizDocId = quizDocSnap.id;
+        existingQuizData = quizDocSnap.data();
       }
     }
+
+    const parentDocSnap = await getDoc(doc(db, "pillarPages", pillarId, "subPages", resolvedParentId));
+    const nestedDocSnap = await getDoc(
+      doc(db, "pillarPages", pillarId, "subPages", resolvedParentId, "nestedSubPages", resolvedNestedId)
+    );
+    const parentData = parentDocSnap.exists() ? parentDocSnap.data() : null;
+    const nestedData = nestedDocSnap.exists() ? nestedDocSnap.data() : null;
+    const entranceQuizMetadata = entranceQuizMetadataFor({
+      content,
+      parentData,
+      nestedData,
+      existingQuestionCount: existingQuizData?.questionCount,
+    });
 
     if (!quizDocId) {
       // Document doesn't exist, create new one with auto-generated ID
@@ -6368,6 +6637,7 @@ export const uploadNursingEntranceExamQuiz = async (
       // nestedSubPageId should be the document ID of the parent nested sub-page (the page that contains this quiz)
       const newDocRef = await addDoc(quizzesRef, {
         ...content,
+        ...entranceQuizMetadata,
         slug: normalizedNewSlug,
         type: "quiz",
         parentId: resolvedParentId, // Document ID of the parent sub-page
@@ -6397,6 +6667,15 @@ export const uploadNursingEntranceExamQuiz = async (
         },
         { merge: true }
       );
+
+      await upsertEntranceQuizSubjectCatalog({
+        quizId: newDocRef.id,
+        contentPath,
+        content: { ...content, ...entranceQuizMetadata, slug: normalizedNewSlug },
+        parentData,
+        nestedData,
+        existingQuestionCount: entranceQuizMetadata.questionCount,
+      });
 
       // Create route mapping
       await createRouteMapping({
@@ -6465,6 +6744,7 @@ export const uploadNursingEntranceExamQuiz = async (
       docRef,
       {
         ...content,
+        ...entranceQuizMetadata,
         slug: normalizedNewSlug, // Update slug field
         type: "quiz",
         parentId: resolvedParentId, // Document ID of the parent sub-page
@@ -6476,6 +6756,15 @@ export const uploadNursingEntranceExamQuiz = async (
       },
       { merge: true }
     );
+
+    await upsertEntranceQuizSubjectCatalog({
+      quizId: quizDocId,
+      contentPath,
+      content: { ...content, ...entranceQuizMetadata, slug: normalizedNewSlug },
+      parentData,
+      nestedData,
+      existingQuestionCount: entranceQuizMetadata.questionCount,
+    });
 
     // Update route mapping
     await createRouteMapping({
@@ -6616,6 +6905,7 @@ export const deleteNursingEntranceExamQuiz = async (
       actualQuizId
     );
     await deleteDoc(docRef);
+    await deleteEntranceQuizSubjectCatalog(actualQuizId);
 
     // Delete route mapping
     await deleteRouteMappingByRefPath(refPath);
@@ -8066,6 +8356,55 @@ export const getNursingEntranceExamQuizQuestion = async (
 };
 
 // Upload/update question content (for entrance exam quiz)
+const refreshNursingEntranceExamQuizQuestionCount = async (
+  resolvedPillarId: string,
+  resolvedParentId: string,
+  resolvedNestedId: string,
+  actualQuizId: string
+) => {
+  if (resolvedPillarId !== "nursing-entrance-exam") return;
+
+  const questionCount = await countQuestionsInQuiz([
+    "pillarPages",
+    resolvedPillarId,
+    "subPages",
+    resolvedParentId,
+    "nestedSubPages",
+    resolvedNestedId,
+    "quizzes",
+    actualQuizId,
+  ]);
+
+  const quizRef = doc(db, "pillarPages", resolvedPillarId, "subPages", resolvedParentId, "nestedSubPages", resolvedNestedId, "quizzes", actualQuizId);
+  const quizSnap = await getDoc(quizRef);
+  const quizData = quizSnap.exists() ? quizSnap.data() : null;
+
+  await setDoc(
+    quizRef,
+    {
+      questionCount,
+      lastQuestionCountUpdatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
+
+  if (quizData) {
+    const parentDocSnap = await getDoc(doc(db, "pillarPages", resolvedPillarId, "subPages", resolvedParentId));
+    const nestedDocSnap = await getDoc(
+      doc(db, "pillarPages", resolvedPillarId, "subPages", resolvedParentId, "nestedSubPages", resolvedNestedId)
+    );
+
+    await upsertEntranceQuizSubjectCatalog({
+      quizId: actualQuizId,
+      contentPath: `pillarPages/${resolvedPillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}`,
+      content: { ...quizData, questionCount },
+      parentData: parentDocSnap.exists() ? parentDocSnap.data() : null,
+      nestedData: nestedDocSnap.exists() ? nestedDocSnap.data() : null,
+      existingQuestionCount: questionCount,
+    });
+  }
+};
+
 export const uploadNursingEntranceExamQuizQuestion = async (
   parentSubPageId: string,
   nestedSubPageId: string,
@@ -8189,6 +8528,12 @@ export const uploadNursingEntranceExamQuizQuestion = async (
       lastUpdated: new Date().toISOString(),
       version: content.version || "1.0",
     });
+    await refreshNursingEntranceExamQuizQuestionCount(
+      resolvedPillarId,
+      resolvedParentId,
+      resolvedNestedId,
+      actualQuizId
+    );
 
     return {
       success: true,
@@ -8595,6 +8940,15 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
       total: questions.length,
     });
 
+    if (resolvedPillarId && resolvedParentId && resolvedNestedId && actualQuizId) {
+      await refreshNursingEntranceExamQuizQuestionCount(
+        resolvedPillarId,
+        resolvedParentId,
+        resolvedNestedId,
+        actualQuizId
+      );
+    }
+
     return {
       success: errors.length === 0,
       message: `Uploaded ${results.length} questions successfully${
@@ -8627,6 +8981,8 @@ export const deleteNursingEntranceExamQuizQuestion = async (
   try {
     // First, resolve the quiz document ID from the slug if needed
     let actualQuizId = quizId;
+    let resolvedParentId = parentSubPageId;
+    let resolvedNestedId = nestedSubPageId;
 
     // Try to get the quiz to resolve the document ID
     const quizResult = await getNursingEntranceExamQuiz(
@@ -8642,6 +8998,8 @@ export const deleteNursingEntranceExamQuizQuestion = async (
       if (quizData.id) {
         actualQuizId = quizData.id;
       }
+      resolvedParentId = quizData.parentId || resolvedParentId;
+      resolvedNestedId = quizData.nestedSubPageId || resolvedNestedId;
     }
 
     const docRef = doc(
@@ -8649,15 +9007,21 @@ export const deleteNursingEntranceExamQuizQuestion = async (
       "pillarPages",
       "nursing-entrance-exam",
       "subPages",
-      parentSubPageId,
+      resolvedParentId,
       "nestedSubPages",
-      nestedSubPageId,
+      resolvedNestedId,
       "quizzes",
       actualQuizId,
       "questions",
       questionId
     );
     await deleteDoc(docRef);
+    await refreshNursingEntranceExamQuizQuestionCount(
+      "nursing-entrance-exam",
+      resolvedParentId,
+      resolvedNestedId,
+      actualQuizId
+    );
 
     return {
       success: true,
@@ -11277,6 +11641,7 @@ export const createRouteMapping = async (mappingData: {
   topicId?: string | null;
   quizId?: string | null;
   refPath: string;
+  examAccessProductId?: string | null;
 }) => {
   try {
     const normalizedSlug = mappingData.slug.toLowerCase().replace(/\s+/g, "-");
@@ -11299,6 +11664,8 @@ export const createRouteMapping = async (mappingData: {
       topicId: mappingData.topicId || null,
       quizId: mappingData.quizId || null,
       refPath: mappingData.refPath,
+      examAccessProductId:
+        normalizeContentExamAccessProductId(mappingData.pillarId, mappingData.examAccessProductId) || null,
       lastUpdated: new Date().toISOString(),
     };
 

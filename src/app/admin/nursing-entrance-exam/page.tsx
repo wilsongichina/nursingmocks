@@ -26,6 +26,11 @@ import {
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSiteUrl } from "@/lib/config";
+import {
+  CONTENT_ACCESS_PRODUCTS,
+  CONTENT_ACCESS_PRODUCTS_BY_PILLAR,
+  validateContentExamAccessProductId,
+} from "@/lib/content-access-products";
 
 interface SubPage {
   id: string;
@@ -36,6 +41,7 @@ interface SubPage {
   lastUpdated?: string;
   version?: string;
   status?: string;
+  examAccessProductId?: string | null;
   hero?: {
     title: string;
   };
@@ -131,6 +137,7 @@ function NursingEntranceExamAdminPageContent() {
   const [showCreateKbModal, setShowCreateKbModal] = useState(false);
   const [newSubPageId, setNewSubPageId] = useState("");
   const [newSubPageName, setNewSubPageName] = useState("");
+  const [newSubPageExamAccessProductId, setNewSubPageExamAccessProductId] = useState("ati_teas_7");
   const [validationError, setValidationError] = useState("");
   const [saving, setSaving] = useState(false);
   const [newKbArticleId, setNewKbArticleId] = useState("");
@@ -326,7 +333,8 @@ function NursingEntranceExamAdminPageContent() {
           try {
             const quizzesResult = await getNursingEntranceExamQuizzes(
               parentInfo.subPageId,
-              nestedSubPageId
+              nestedSubPageId,
+              { repairMyExamsCatalog: true }
             );
 
             if (
@@ -958,6 +966,14 @@ function NursingEntranceExamAdminPageContent() {
     }
 
     const normalizedSubPageId = newSubPageId.toLowerCase().replace(/\s+/g, "-");
+    const accessValidation = validateContentExamAccessProductId(
+      "nursing-entrance-exam",
+      newSubPageExamAccessProductId
+    );
+    if (!accessValidation.valid) {
+      setValidationError(accessValidation.message);
+      return;
+    }
 
     // Check if slug is taken across all levels
     const slugCheck = isSlugTaken(normalizedSubPageId);
@@ -976,6 +992,7 @@ function NursingEntranceExamAdminPageContent() {
 
       const defaultSubPageContent = {
         pageName: newSubPageName,
+        examAccessProductId: newSubPageExamAccessProductId,
         status: "Published",
         heading: "",
         description: "",
@@ -1005,6 +1022,7 @@ function NursingEntranceExamAdminPageContent() {
         setShowCreateModal(false);
         setNewSubPageId("");
         setNewSubPageName("");
+        setNewSubPageExamAccessProductId("ati_teas_7");
         setValidationError("");
         loadSubPages();
         setTimeout(() => setSuccess(""), 3000);
@@ -4705,6 +4723,52 @@ function NursingEntranceExamAdminPageContent() {
                         }}
                       >
                         The display name for this sub-page.
+                      </p>
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#111827",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Exam Access Product
+                        <span style={{ color: "#ef4444", marginLeft: "2px" }}>
+                          *
+                        </span>
+                      </label>
+                      <select
+                        value={newSubPageExamAccessProductId}
+                        onChange={(e) => setNewSubPageExamAccessProductId(e.target.value)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "999px",
+                          border: "1px solid #e5e7eb",
+                          padding: "11px 13px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          background: "#f9fafb",
+                          outline: "none",
+                        }}
+                        required
+                      >
+                        {CONTENT_ACCESS_PRODUCTS_BY_PILLAR["nursing-entrance-exam"].map((productId) => (
+                          <option key={productId} value={productId}>
+                            {CONTENT_ACCESS_PRODUCTS[productId].label}
+                          </option>
+                        ))}
+                      </select>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          marginTop: "5px",
+                        }}
+                      >
+                        Nursing Entrance Exams is a category. ATI TEAS 7 and HESI A2 are separate exam access products.
                       </p>
                     </div>
                     <div style={{ marginBottom: "16px" }}>

@@ -146,14 +146,14 @@ describe("buildDashboardViewModel", () => {
     expect(view.access.planName).toBe("All Access Monthly");
     expect(view.packages[0].status).toBe("active");
     expect(view.packages[0].family).toBe("Nursing Entrance Exams");
-    expect(view.packages[0].name).toBe("ATI TEAS");
+    expect(view.packages[0].name).toBe("ATI TEAS 7");
   });
 
   it("uses the approved package families and sidebar package names", () => {
     const view = buildDashboardViewModel(userDoc(), authUser());
 
     expect(view.packages.map((pkg) => `${pkg.family}: ${pkg.name}`)).toEqual([
-      "Nursing Entrance Exams: ATI TEAS",
+      "Nursing Entrance Exams: ATI TEAS 7",
       "Nursing Entrance Exams: HESI A2",
       "Nursing Exit Exams: LPN Exam",
       "Nursing Exit Exams: RN Exams",
@@ -185,7 +185,78 @@ describe("buildDashboardViewModel", () => {
       new Set(["Nursing Entrance Exams", "Nursing Test Bank", "Nursing Exit Exams"])
     );
     expect(view.packages.every((pkg) => pkg.status === "free")).toBe(true);
-    expect(view.packages.every((pkg) => pkg.actionLabel === "Start")).toBe(true);
+    expect(view.packages.every((pkg) => pkg.actionLabel === "Start Preview")).toBe(true);
+  });
+
+  it("uses active billing entitlement records when the user billing snapshot has not caught up", () => {
+    const view = buildDashboardViewModel(
+      userDoc({
+        billing: {
+          ...userDoc().billing,
+          subscription_status: null,
+          plan_id: null,
+          current_period_start: null,
+          current_period_end: null,
+        },
+        entitlements: {
+          ati_teas_7: false,
+          hesi_a2: false,
+          nursing_test_bank: false,
+          nursing_exit_exams: false,
+        },
+      }),
+      authUser(),
+      {
+        entitlements: [
+          {
+            packageId: "hesi_a2",
+            status: "active",
+            sourcePlanId: "hesi_a2_one_time",
+            accessEndsAt: null,
+          },
+        ],
+      }
+    );
+
+    expect(view.access.status).toBe("active");
+    expect(view.access.planName).toBe("Hesi A2 One Time");
+    expect(view.packages.find((pkg) => pkg.id === "hesi_a2")?.status).toBe("active");
+  });
+
+  it("expands all access billing entitlement records into active dashboard exam cards", () => {
+    const view = buildDashboardViewModel(
+      userDoc({
+        billing: {
+          ...userDoc().billing,
+          subscription_status: null,
+          plan_id: null,
+          current_period_start: null,
+          current_period_end: null,
+        },
+        entitlements: {
+          ati_teas_7: false,
+          hesi_a2: false,
+          nursing_test_bank: false,
+          nursing_exit_exams: false,
+        },
+      }),
+      authUser(),
+      {
+        entitlements: [
+          {
+            packageId: "all_access",
+            status: "active",
+            sourcePlanId: "all_access_one_time",
+            accessEndsAt: null,
+          },
+        ],
+      }
+    );
+
+    expect(view.packages.find((pkg) => pkg.id === "ati_teas")?.status).toBe("active");
+    expect(view.packages.find((pkg) => pkg.id === "hesi_a2")?.status).toBe("active");
+    expect(view.packages.find((pkg) => pkg.id === "nursing_test_bank_rn")?.status).toBe("active");
+    expect(view.packages.find((pkg) => pkg.id === "nursing_exit_exam_rn")?.status).toBe("active");
   });
 
   it("shows honest empty attempt sections when no attempt collection is connected", () => {
@@ -193,6 +264,25 @@ describe("buildDashboardViewModel", () => {
 
     expect(view.recentActivity).toEqual([]);
     expect(view.completedExams).toEqual([]);
+  });
+
+  it("does not show zero accuracy as a real score before any attempt activity", () => {
+    const view = buildDashboardViewModel(
+      userDoc({
+        stats: {
+          ...userDoc().stats,
+          total_attempts: 0,
+          total_questions_answered: 0,
+          accuracy_overall: 0,
+          streak_days: 0,
+          last_attempt_at: null,
+        },
+      }),
+      authUser()
+    );
+
+    expect(view.performance.accuracy).toBeNull();
+    expect(view.performance.hasStats).toBe(false);
   });
 
   it("builds profile tasks for missing profile and unverified email", () => {
@@ -204,6 +294,21 @@ describe("buildDashboardViewModel", () => {
     expect(tasksById.has("verify-email")).toBe(true);
     expect(tasksById.get("exam-focus")?.href).toBe("/profile?tab=account");
     expect(view.recommendations.find((item) => item.id === "choose-focus")?.href).toBe("/profile?tab=account");
+  });
+
+  it("hides email verification tasks when Firebase Auth is verified but Firestore is stale", () => {
+    const view = buildDashboardViewModel(
+      userDoc({
+        auth: {
+          ...userDoc().auth,
+          email_verified: false,
+        },
+      }),
+      authUser({ emailVerified: true })
+    );
+
+    expect(view.user.emailVerified).toBe(true);
+    expect(view.profileTasks.some((task) => task.id === "verify-email")).toBe(false);
   });
 
   it("handles cancelling subscriptions with future access", () => {

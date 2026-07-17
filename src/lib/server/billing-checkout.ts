@@ -144,7 +144,8 @@ export async function createCheckoutSessionDraft(
   }
 
   const existingAccess = await findActiveSamePlanAccess(uid, readiness.plan.planId);
-  if (existingAccess.active) {
+  const canExtendFixedTermAccess = Boolean(readiness.plan.durationDays && readiness.plan.durationDays > 0);
+  if (existingAccess.active && !canExtendFixedTermAccess) {
     const message =
       "Checkout is blocked because this plan is already active on your account. You can buy it again after the current access period ends.";
     const attemptId = await logCheckoutAttempt({
@@ -226,12 +227,15 @@ export async function createCheckoutSessionDraft(
     cancelUrl: input.cancelUrl,
     customerEmail: input.customerEmail,
     liveModeApproved,
-    metadata: {
-      uid,
-      planId: readiness.plan.planId,
-      gatewayId: readiness.selectedGateway.gatewayId,
-      mappingId: readiness.selectedProviderPriceMapping.mappingId,
-    },
+      metadata: {
+        uid,
+        planId: readiness.plan.planId,
+        gatewayId: readiness.selectedGateway.gatewayId,
+        mappingId: readiness.selectedProviderPriceMapping.mappingId,
+        accessType: readiness.plan.durationDays ? "fixed_term" : "standard",
+        examId: readiness.plan.examId ?? "",
+        durationDays: readiness.plan.durationDays ? String(readiness.plan.durationDays) : "",
+      },
   });
   const attemptId = await logCheckoutAttempt({
     uid,

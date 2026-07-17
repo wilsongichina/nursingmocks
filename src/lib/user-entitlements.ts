@@ -17,6 +17,7 @@ export const USER_ENTITLEMENT_LABELS: Record<UserEntitlementKey, string> = {
 };
 
 const LEGACY_ENTITLEMENT_MAP: Record<string, UserEntitlementKey[]> = {
+  ati_teas: ["ati_teas_7"],
   "exam:ati_teas_7": ["ati_teas_7"],
   "exam:hesi_a2": ["hesi_a2"],
   "bundle:all_access": [...USER_ENTITLEMENT_KEYS],
@@ -53,9 +54,26 @@ export function normalizeUserEntitlements(entitlements: UserDocumentEntitlements
   return normalized;
 }
 
+export function entitlementKeysForPackageIds(packageIds: string[]) {
+  const canonicalKeys = new Set<UserEntitlementKey>();
+
+  for (const packageId of packageIds) {
+    if (USER_ENTITLEMENT_KEYS.includes(packageId as UserEntitlementKey)) {
+      canonicalKeys.add(packageId as UserEntitlementKey);
+      continue;
+    }
+    for (const key of LEGACY_ENTITLEMENT_MAP[packageId] ?? []) {
+      canonicalKeys.add(key);
+    }
+  }
+
+  return Array.from(canonicalKeys);
+}
+
 export function entitlementPatchForPackageIds(packageIds: string[], enabled: boolean) {
+  const canonicalKeys = new Set(entitlementKeysForPackageIds(packageIds));
   return Object.fromEntries(
-    USER_ENTITLEMENT_KEYS.map((key) => [key, packageIds.includes(key) ? enabled : undefined]).filter(
+    USER_ENTITLEMENT_KEYS.map((key) => [key, canonicalKeys.has(key) ? enabled : undefined]).filter(
       (entry): entry is [UserEntitlementKey, boolean] => entry[1] !== undefined
     )
   );

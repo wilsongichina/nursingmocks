@@ -104,6 +104,63 @@ Result:
 - billing tests passed
 - TypeScript passed
 
+## Follow-up: Billing Quick Start Modal And Documentation Page
+
+Moved the detailed billing explanation out of the `How It Works` modal and into a dedicated admin documentation page.
+
+Changed:
+
+- kept the `/admin/billing` modal focused on the billing setup guide only
+- added a modal link to `/admin/billing/documentation` for full field and operations reference
+- created `/admin/billing/documentation` as a full admin documentation page
+- added a left-side `Main Headers` section index for easier scanning
+- moved detailed references for plans, gateways, provider mappings, editable fields, validation rules, operations views, readiness, and current billing stage into the documentation page
+- reused the existing admin shell, sidebar offset, user profile badge, and typography classes
+
+Reason:
+
+- the modal should work as a fast setup guide
+- detailed operational documentation is easier to read, scan, and maintain on a dedicated page
+- admins can keep the billing page focused on management tasks while still having full reference material nearby
+
+## Follow-up: How It Works Billing Setup Guide
+
+Updated the `/admin/billing` top `How it works` modal so it starts with a practical first-time setup guide.
+
+Changed:
+
+- replaced the generic opening flow with `Start With Billing Setup`
+- added `Step 1` through `Step 7`
+- Step 1 starts in the payment provider dashboard by creating the product and price
+- Step 2 explains gateway creation and secret reference names
+- Step 3 explains internal plan creation as one exam and duration per plan
+- Step 4 explains assigning a gateway to the plan
+- Step 5 explains provider price mappings and matching amount/currency/interval/purchase type
+- Step 6 points admins to readiness checks before checkout testing
+- Step 7 explains localhost webhook testing and expected checkout results
+
+Scope:
+
+- admin documentation copy only
+- no billing persistence, checkout, webhook, or validation logic changed
+
+## Follow-up: Documentation-Style How It Works Modal
+
+Updated the same modal into a wider documentation-style viewer.
+
+Changed:
+
+- increased modal width from a narrow documentation panel to a `max-w-7xl` workspace
+- added anchor IDs to every main documentation section
+- added a sticky left-side `Main Headers` index for desktop
+- kept content sections on the right for easier reading and scrolling
+- added a note that the better long-term option is a dedicated admin documentation page with this modal acting as a quick-start summary
+
+Scope:
+
+- admin help/documentation UI only
+- no billing configuration logic changed
+
 ## Follow-up: Billing How It Works Modal
 
 Added an admin education modal to `/admin/billing`.
@@ -515,15 +572,36 @@ ati-teas.monthly_plan!! -> Ati Teas Monthly Plan
   - `hesi_a2`: HESI A2 entrance exam package
   - `nursing_test_bank`: Nursing Test Bank package
   - `nursing_exit_exams`: Nursing Exit Exams package
-  - `all_access`: broad bundle marker
 
 Important package rule:
 
 - ATI TEAS and HESI are separate Nursing Entrance Exam packages
 - do not use one broad `nursing_entrance_exams` package for both
+- do not create new `all_access` package plans
 - this matches existing user entitlement keys:
   - `exam:ati_teas_7`
   - `exam:hesi_a2`
+
+## Follow-up: Remove All Access From Active Billing Setup
+
+Removed All Access from active billing setup and customer-facing plan discovery.
+
+Changed:
+
+- removed `all_access` from new billing package validation
+- removed `All Access` from `/admin/billing` package options
+- changed admin billing placeholders to individual exam fixed-term plan examples
+- updated the billing setup guide to describe one exam and one duration per plan
+- filtered legacy All Access plans out of `/pricing`
+- filtered legacy All Access plans out of `/payments`
+- removed the All Access locked package card from My Exams
+- kept legacy entitlement normalization for old records during migration
+
+Reason:
+
+- each exam is now intended to be purchased independently
+- students should not be offered a broad bundle they are unlikely to need
+- future billing stages will use `examId` and fixed duration access instead of bundle-style package plans
 
 `Assigned Gateways`
 

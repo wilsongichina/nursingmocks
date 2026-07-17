@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document describes the current user dashboard My Exams taxonomy, recommended focus behavior, and free preview access rules.
+This document describes the current user dashboard My Exams taxonomy, Primary Exam behavior, and free preview access rules.
 
 ## My Exams Families
 
@@ -53,9 +53,9 @@ Expired and past-due accounts do not fall back to free preview:
 - expired access displays `Expired`
 - past-due access displays `Payment issue`
 
-## Recommended Focus
+## Primary Exam
 
-The editable source of truth for recommended focus is the Profile Account tab:
+The editable source of truth for Primary Exam is the Profile Account tab:
 
 ```text
 /profile?tab=account
@@ -144,7 +144,7 @@ profile.primary_exam_id
 profile.focus_areas
 ```
 
-to display the current recommended focus and to choose relevant recommendations.
+to display the current Primary Exam and to choose relevant recommendations.
 
 ## Tests
 

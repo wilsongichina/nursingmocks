@@ -14,6 +14,7 @@ import type {
   BillingTransaction,
   PaymentGatewayConfig,
   ProviderPriceMapping,
+  ExamAccessProduct,
 } from "@/lib/billing/models";
 import type { BillingLiveCapability, BillingLiveControls } from "@/lib/billing/live-controls";
 import { normalizePlanName } from "@/lib/billing/admin-config";
@@ -34,6 +35,10 @@ type BillingConfigResponse = {
   operationReviews: Record<string, unknown>[];
   auditLogs: Serialized<BillingAuditLogEntry>[];
   liveControls: Serialized<BillingLiveControls>;
+};
+
+type ExamAccessResponse = {
+  products: Serialized<ExamAccessProduct>[];
 };
 
 type GatewayForm = {
@@ -65,6 +70,9 @@ type PlanForm = {
   status: BillingPlan["status"];
   purchaseType: BillingPlan["purchaseType"];
   billingInterval: string;
+  examId: string;
+  durationDays: string;
+  renewsAutomatically: boolean;
   price: string;
   currency: string;
   packageIds: string[];
@@ -196,7 +204,6 @@ const packageOptions = [
   { id: "hesi_a2", label: "HESI A2" },
   { id: "nursing_test_bank", label: "Nursing Test Bank" },
   { id: "nursing_exit_exams", label: "Nursing Exit Exams" },
-  { id: "all_access", label: "All Access" },
 ];
 
 const initialPlanForm: PlanForm = {
@@ -208,6 +215,9 @@ const initialPlanForm: PlanForm = {
   status: "draft",
   purchaseType: "one_time",
   billingInterval: "lifetime",
+  examId: "",
+  durationDays: "30",
+  renewsAutomatically: false,
   price: "",
   currency: "USD",
   packageIds: [],
@@ -217,6 +227,29 @@ const initialPlanForm: PlanForm = {
   isPublic: true,
   displayOrder: "100",
 };
+
+const fixedAccessDurations = [
+  { label: "1 Month Access", durationDays: "30", slug: "1-month" },
+  { label: "3 Months Access", durationDays: "90", slug: "3-months" },
+];
+
+function slugFromText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function planNameFor(examName: string, durationDays: string) {
+  const duration = fixedAccessDurations.find((item) => item.durationDays === durationDays);
+  return `${examName} ${duration?.label ?? "Access"}`.trim();
+}
+
+function planIdFor(examId: string, durationDays: string) {
+  const suffix = durationDays === "90" ? "3_months" : "1_month";
+  return `${examId}_${suffix}`;
+}
 
 const initialProviderPriceMappingForm: ProviderPriceMappingForm = {
   mappingId: "",
@@ -608,6 +641,7 @@ function AdminBillingContent() {
       portal: { approved: false, approvedBy: null, approvedAt: null, reason: null },
     },
   });
+  const [examProducts, setExamProducts] = useState<Serialized<ExamAccessProduct>[]>([]);
   const [form, setForm] = useState<GatewayForm>(initialGatewayForm);
   const [planForm, setPlanForm] = useState<PlanForm>(initialPlanForm);
   const [mappingForm, setMappingForm] = useState<ProviderPriceMappingForm>(
@@ -635,11 +669,19 @@ function AdminBillingContent() {
 
     try {
       const token = await currentUser.getIdToken();
-      const response = await fetch("/api/admin/billing", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Could not load billing configuration");
-      setConfig((await response.json()) as BillingConfigResponse);
+      const [billingResponse, examResponse] = await Promise.all([
+        fetch("/api/admin/billing", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/admin/exam-access", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      if (!billingResponse.ok) throw new Error("Could not load billing configuration");
+      if (!examResponse.ok) throw new Error("Could not load exam access catalog");
+      setConfig((await billingResponse.json()) as BillingConfigResponse);
+      const examData = (await examResponse.json()) as ExamAccessResponse;
+      setExamProducts(examData.products ?? []);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load billing configuration");
     } finally {
@@ -663,16 +705,26 @@ function AdminBillingContent() {
     });
   };
 
-  const togglePlanPackage = (packageId: string) => {
-    setPlanForm((current) => {
-      const exists = current.packageIds.includes(packageId);
-      return {
-        ...current,
-        packageIds: exists
-          ? current.packageIds.filter((item) => item !== packageId)
-          : [...current.packageIds, packageId],
-      };
-    });
+  const applyPlanCatalogSelection = (examId: string, durationDays: string) => {
+    const product = examProducts.find((item) => item.examId === examId);
+    const nextName = product ? planNameFor(product.name, durationDays) : "";
+    const nextPlanId = examId ? planIdFor(examId, durationDays) : "";
+
+    setPlanForm((current) => ({
+      ...current,
+      examId,
+      durationDays,
+      renewsAutomatically: false,
+      purchaseType: "one_time",
+      billingInterval: "lifetime",
+      trialDays: "0",
+      packageIds: examId ? [examId] : [],
+      planId: nextPlanId,
+      slug: nextName ? slugFromText(nextName) : "",
+      name: nextName,
+      shortDescription: product?.shortDescription ?? current.shortDescription,
+      description: product?.description ?? current.description,
+    }));
   };
 
   const togglePlanGateway = (gatewayId: string) => {
@@ -1254,34 +1306,42 @@ function AdminBillingContent() {
                     <span className="mt-1 block text-xs text-gray-500">Creates an internal billing plan without enabling checkout.</span>
                   </summary>
                   <form onSubmit={submitPlan} className="grid gap-4 p-4">
-                    <div className="grid gap-4">
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Plan ID
-                        <input value={planForm.planId} onChange={(event) => setPlanForm({ ...planForm, planId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="all_access_monthly" />
-                      </label>
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Slug
-                        <input value={planForm.slug} onChange={(event) => setPlanForm({ ...planForm, slug: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="all-access-monthly" />
-                      </label>
+                    <div className="rounded-lg border border-purple-100 bg-purple-50 px-3 py-2 text-xs font-medium text-purple-900">
+                      Plans are created from one exam product and one fixed access duration. Purchase type is always one-time and renewal is not automatic.
                     </div>
-
-                    <label className="grid gap-1 text-sm font-medium text-gray-700">
-                      Name
-                      <input value={planForm.name} onBlur={() => setPlanForm((current) => ({ ...current, name: normalizePlanName(current.name) }))} onChange={(event) => setPlanForm({ ...planForm, name: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="All Access Monthly" />
-                    </label>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Short Description
-                        <input value={planForm.shortDescription} onChange={(event) => setPlanForm({ ...planForm, shortDescription: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
+                        Exam Product
+                        <select value={planForm.examId} onChange={(event) => applyPlanCatalogSelection(event.target.value, planForm.durationDays)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
+                          <option value="">Select exam product</option>
+                          {examProducts.filter((product) => product.active).map((product) => (
+                            <option key={product.examId} value={product.examId}>{product.name}</option>
+                          ))}
+                        </select>
                       </label>
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Description
-                        <input value={planForm.description} onChange={(event) => setPlanForm({ ...planForm, description: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
+                        Duration
+                        <select value={planForm.durationDays} onChange={(event) => applyPlanCatalogSelection(planForm.examId, event.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
+                          {fixedAccessDurations.map((duration) => (
+                            <option key={duration.durationDays} value={duration.durationDays}>{duration.label}</option>
+                          ))}
+                        </select>
                       </label>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Plan ID
+                        <input value={planForm.planId} readOnly className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 outline-none" placeholder="Generated after selecting exam" />
+                      </label>
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Plan Name
+                        <input value={planForm.name} readOnly className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 outline-none" placeholder="Generated after selecting exam" />
+                      </label>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
                         Status
                         <select value={planForm.status} onChange={(event) => setPlanForm({ ...planForm, status: event.target.value as PlanForm["status"] })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
@@ -1292,25 +1352,12 @@ function AdminBillingContent() {
                         </select>
                       </label>
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Purchase Type
-                        <select value={planForm.purchaseType} onChange={(event) => setPlanForm({ ...planForm, purchaseType: event.target.value as PlanForm["purchaseType"] })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
-                          <option value="one_time">One-time</option>
-                          <option value="manual_access">Manual</option>
-                        </select>
-                      </label>
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Interval
-                        <select value={planForm.billingInterval} onChange={(event) => setPlanForm({ ...planForm, billingInterval: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
-                          <option value="">None</option>
-                          <option value="monthly">Monthly</option>
-                          <option value="quarterly">Quarterly</option>
-                          <option value="yearly">Yearly</option>
-                          <option value="lifetime">Lifetime</option>
-                        </select>
+                        Renewal
+                        <input value="No automatic renewal" readOnly className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 outline-none" />
                       </label>
                     </div>
 
-                    <div className="grid gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
                         Price
                         <input value={planForm.price} onChange={(event) => setPlanForm({ ...planForm, price: event.target.value })} className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="49" />
@@ -1319,26 +1366,17 @@ function AdminBillingContent() {
                         Currency
                         <input value={planForm.currency} onChange={(event) => setPlanForm({ ...planForm, currency: event.target.value })} className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
                       </label>
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Trial Days
-                        <input value={planForm.trialDays} onChange={(event) => setPlanForm({ ...planForm, trialDays: event.target.value })} className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
-                      </label>
-                      <label className="grid gap-1 text-sm font-medium text-gray-700">
-                        Display Order
-                        <input value={planForm.displayOrder} onChange={(event) => setPlanForm({ ...planForm, displayOrder: event.target.value })} className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
-                      </label>
                     </div>
 
-                    <div className="grid gap-2 text-sm font-medium text-gray-700">
-                      Packages
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {packageOptions.map((option) => (
-                          <label key={option.id} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                            <input type="checkbox" checked={planForm.packageIds.includes(option.id)} onChange={() => togglePlanPackage(option.id)} />
-                            {option.label}
-                          </label>
-                        ))}
-                      </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Short Description
+                        <input value={planForm.shortDescription} onChange={(event) => setPlanForm({ ...planForm, shortDescription: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
+                      </label>
+                      <label className="grid gap-1 text-sm font-medium text-gray-700">
+                        Description
+                        <input value={planForm.description} onChange={(event) => setPlanForm({ ...planForm, description: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" />
+                      </label>
                     </div>
 
                     <div className="grid gap-2 text-sm font-medium text-gray-700">
@@ -2288,121 +2326,31 @@ function AdminBillingContent() {
 
             <div className="grid gap-4 px-5 py-5 text-sm text-gray-700">
               <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Billing Configuration Flow</h3>
-                <p className="mt-1">Billing is configured in three layers. Create a plan first, create one or more gateways, then create provider price mappings that connect the internal plan to the provider price.</p>
-                <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p><span className="font-semibold text-gray-800">Plans</span> define what access is sold and the internal billing contract.</p>
-                  <p><span className="font-semibold text-gray-800">Gateways</span> define which payment provider can process the payment.</p>
-                  <p><span className="font-semibold text-gray-800">Provider mappings</span> connect internal records to provider IDs such as Stripe price IDs.</p>
+                <h3 className="font-semibold text-gray-950">Start With Billing Setup</h3>
+                <p className="mt-1">Use this order when setting up billing for the first time. Each step prepares the next one, so avoid jumping straight to checkout until the provider, gateway, plan, mapping, and webhook pieces agree.</p>
+                <div className="mt-3 grid gap-3 text-xs text-gray-600">
+                  <p><span className="font-semibold text-gray-800">Step 1. Create the payment provider objects first.</span> In Stripe, create the product and price in the same mode you want to test. Use test mode for localhost and sandbox testing. Copy the provider price ID, such as a Stripe `price_...` ID, because checkout uses that value.</p>
+                  <p><span className="font-semibold text-gray-800">Step 2. Add or verify the gateway.</span> Create a gateway for the provider and environment, for example `stripe_us_test`. Enter secret reference names such as `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`; do not paste raw secret values into admin fields.</p>
+                  <p><span className="font-semibold text-gray-800">Step 3. Create the internal plan.</span> The plan defines what the student buys, the price, currency, purchase type, duration, and which exam access is granted. Create one plan per exam and duration, such as ATI TEAS 7 1 Month Access or HESI A2 3 Months Access.</p>
+                  <p><span className="font-semibold text-gray-800">Step 4. Assign the gateway to the plan.</span> The plan must include at least one enabled gateway before checkout can use it.</p>
+                  <p><span className="font-semibold text-gray-800">Step 5. Create the provider price mapping.</span> Link the internal plan to the gateway and provider price ID. The amount, currency, interval, and purchase type must match the internal plan and the provider price.</p>
+                  <p><span className="font-semibold text-gray-800">Step 6. Check readiness.</span> Open the Readiness tab and fix blockers before testing checkout. Checkout will be blocked when the plan, gateway, mapping, or secrets are incomplete.</p>
+                  <p><span className="font-semibold text-gray-800">Step 7. Test checkout and webhook processing.</span> For localhost, run Stripe CLI forwarding to `/api/webhooks/stripe?gatewayId=...`. A successful purchase should create a transaction, an access grant, and updated user entitlements after `checkout.session.completed` is verified.</p>
                 </div>
               </section>
 
-              <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Plans Section</h3>
-                <p className="mt-1">Use plans to define the products students can buy or receive access to.</p>
-                <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p><span className="font-semibold text-gray-800">Plan ID</span> is the stable internal identifier. It is created once and should not change.</p>
-                  <p><span className="font-semibold text-gray-800">Slug</span> is the URL/admin-safe identifier derived from the plan name or entered manually.</p>
-                  <p><span className="font-semibold text-gray-800">Name</span> is automatically cleaned into title case and removes separators or unusual punctuation.</p>
-                  <p><span className="font-semibold text-gray-800">Description and Short Description</span> describe the plan for admin review and future display surfaces.</p>
-                  <p><span className="font-semibold text-gray-800">Status</span> controls lifecycle: draft, active, inactive, or archived.</p>
-                  <p><span className="font-semibold text-gray-800">Purchase Type</span> is kept focused on one-time or manual access for now.</p>
-                  <p><span className="font-semibold text-gray-800">Interval</span> should normally be lifetime for one-time access plans.</p>
-                  <p><span className="font-semibold text-gray-800">Price and Currency</span> define the internal billing amount that provider mappings must match.</p>
-                  <p><span className="font-semibold text-gray-800">Trial Days</span> should remain 0 for the current one-time access flow.</p>
-                  <p><span className="font-semibold text-gray-800">Packages</span> define which exam/product access the plan grants.</p>
-                  <p><span className="font-semibold text-gray-800">Assigned Gateways</span> define which payment gateways are allowed to process the plan.</p>
-                  <p><span className="font-semibold text-gray-800">Public, Featured, and Display Order</span> control future visibility and ordering.</p>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Gateways Section</h3>
-                <p className="mt-1">Use gateways to manage payment providers without storing provider secrets in this admin screen.</p>
-                <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p><span className="font-semibold text-gray-800">Gateway ID</span> is the stable internal gateway identifier.</p>
-                  <p><span className="font-semibold text-gray-800">Provider</span> identifies the payment provider, such as Stripe, PayPal, or Authorize.Net.</p>
-                  <p><span className="font-semibold text-gray-800">Environment</span> separates test and live gateway records.</p>
-                  <p><span className="font-semibold text-gray-800">Display Name</span> is the admin-friendly gateway label.</p>
-                  <p><span className="font-semibold text-gray-800">Publishable Key Ref</span> stores the environment variable or secret reference name for a public provider key.</p>
-                  <p><span className="font-semibold text-gray-800">Secret Key Ref</span> stores the environment variable or secret reference name for the server-side provider secret key.</p>
-                  <p><span className="font-semibold text-gray-800">Webhook Secret Ref</span> stores the environment variable or secret reference name used to verify webhook signatures.</p>
-                  <p><span className="font-semibold text-gray-800">Currencies and Countries</span> define where and how this gateway can be used.</p>
-                  <p><span className="font-semibold text-gray-800">Payment Types</span> should stay focused on one-time purchases for the current billing flow.</p>
-                  <p><span className="font-semibold text-gray-800">Min Amount and Max Amount</span> define planned checkout eligibility limits.</p>
-                  <p><span className="font-semibold text-gray-800">Priority</span> controls preferred gateway order when multiple gateways can process a plan.</p>
-                  <p><span className="font-semibold text-gray-800">Enabled</span> allows the gateway to be considered by later checkout stages.</p>
-                  <p><span className="font-semibold text-gray-800">Default Gateway</span> marks the preferred gateway when more than one option is available.</p>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Provider Price Mappings Section</h3>
-                <p className="mt-1">Use mappings to connect an internal plan to a provider product and price.</p>
-                <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p><span className="font-semibold text-gray-800">Mapping ID</span> is the stable internal mapping identifier.</p>
-                  <p><span className="font-semibold text-gray-800">Plan</span> selects the internal billing plan.</p>
-                  <p><span className="font-semibold text-gray-800">Gateway</span> selects the provider gateway assigned to that plan.</p>
-                  <p><span className="font-semibold text-gray-800">External Product ID</span> stores the provider product reference when available.</p>
-                  <p><span className="font-semibold text-gray-800">External Price ID</span> stores the provider price reference, such as a Stripe price ID.</p>
-                  <p><span className="font-semibold text-gray-800">Amount, Currency, Interval, and Purchase Type</span> are copied from the plan and must match it.</p>
-                  <p><span className="font-semibold text-gray-800">Provider and Environment</span> are copied from the selected gateway.</p>
-                  <p><span className="font-semibold text-gray-800">Active Mapping</span> controls whether this mapping can be used by later checkout stages.</p>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <h3 className="font-semibold text-amber-900">Editable And Locked Fields</h3>
-                <p className="mt-1 text-amber-800">Some fields can be edited safely. Fields that affect checkout contracts or linked records are locked after creation.</p>
-                <div className="mt-3 grid gap-2 text-xs text-amber-800">
-                  <p><span className="font-semibold">Safe plan edits:</span> name, descriptions, status, public, featured, and display order.</p>
-                  <p><span className="font-semibold">Locked plan fields:</span> price, currency, interval, purchase type, trial days, packages, and assigned gateways.</p>
-                  <p><span className="font-semibold">Safe gateway edits:</span> display name, enabled, default, and priority.</p>
-                  <p><span className="font-semibold">Locked gateway fields:</span> provider, environment, coverage, payment types, support flags, and amount limits.</p>
-                  <p><span className="font-semibold">Safe mapping edits:</span> external provider IDs and active status.</p>
-                  <p><span className="font-semibold">Locked mapping fields:</span> linked plan, linked gateway, provider, environment, amount, currency, interval, and purchase type.</p>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Validation Rules</h3>
-                <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p>Active plans must have at least one package and one assigned gateway.</p>
-                  <p>Provider mappings must use a gateway assigned to the selected plan.</p>
-                  <p>Mapping amount, currency, interval, and purchase type must match the selected plan.</p>
-                  <p>Mapping provider and environment must match the selected gateway.</p>
-                  <p>Gateway minimum amount cannot be greater than maximum amount.</p>
-                  <p>Direct API attempts to update locked relationship fields are rejected.</p>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Operations Views</h3>
-                <p className="mt-1">The admin tables also include read-only operational records for future billing activity.</p>
-                <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p><span className="font-semibold text-gray-800">Access Grants</span> show package access grants and revocations.</p>
-                  <p><span className="font-semibold text-gray-800">Transactions</span> show payment records. These stay visible because they are payment history, not recurring subscriptions.</p>
-                  <p><span className="font-semibold text-gray-800">Webhook Events</span> shows recorded provider webhook intake records.</p>
-                  <p><span className="font-semibold text-gray-800">Checkout Attempts</span> shows blocked or unavailable checkout draft attempts.</p>
-                  <p><span className="font-semibold text-gray-800">Audit Logs</span> shows admin billing configuration changes.</p>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Live Readiness View</h3>
-                <p className="mt-1">The readiness tab summarizes why billing is still not live and which configuration items need attention.</p>
-                <div className="mt-3 grid gap-2 text-xs text-gray-600">
-                  <p>Checkout and webhook effects must remain disabled until explicit approval.</p>
-                  <p>Gateways should have secret and webhook references before real provider operations are tested.</p>
-                  <p>Active plans need active provider mappings before checkout can be considered ready.</p>
-                  <p>Gateway readiness must be reviewed before any provider checkout or webhook processing is enabled.</p>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-950">Current Billing Stage</h3>
-                <p className="mt-1">This screen manages configuration and operational review. Live checkout remains blocked until explicit approval.</p>
-              </section>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-purple-100 bg-purple-50 p-4">
+                <p className="text-sm font-medium text-purple-900">
+                  Need field definitions, validation rules, and operations details?
+                </p>
+                <Link
+                  href="/admin/billing/documentation"
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700"
+                  onClick={() => setShowHowItWorks(false)}
+                >
+                  Open Full Documentation
+                </Link>
+              </div>
             </div>
           </div>
         </div>

@@ -3,7 +3,13 @@ export const BILLING_PACKAGE_IDS = [
   "hesi_a2",
   "nursing_test_bank",
   "nursing_exit_exams",
-  "all_access",
+] as const;
+
+export const BILLING_EXAM_ACCESS_IDS = [
+  "ati_teas_7",
+  "hesi_a2",
+  "nursing_test_bank",
+  "nursing_exit_exams",
 ] as const;
 
 export const BILLING_PROVIDERS = ["stripe", "paypal", "authorize_net"] as const;
@@ -46,6 +52,7 @@ export const ENTITLEMENT_SOURCES = [
 ] as const;
 
 export type BillingPackageId = (typeof BILLING_PACKAGE_IDS)[number] | string;
+export type BillingExamAccessId = (typeof BILLING_EXAM_ACCESS_IDS)[number] | string;
 export type BillingProvider = (typeof BILLING_PROVIDERS)[number];
 export type BillingEnvironment = (typeof BILLING_ENVIRONMENTS)[number];
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
@@ -56,6 +63,23 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 export type EntitlementStatus = (typeof ENTITLEMENT_STATUSES)[number];
 export type EntitlementSource = (typeof ENTITLEMENT_SOURCES)[number];
 
+export interface ExamAccessProduct {
+  examId: BillingExamAccessId;
+  name: string;
+  category: string;
+  shortDescription: string;
+  description: string;
+  active: boolean;
+  previewEnabled: boolean;
+  previewPercentage: number;
+  previewQuestionCount?: number;
+  displayOrder: number;
+  createdAt: Date | null;
+  createdBy: string | null;
+  updatedAt: Date | null;
+  updatedBy: string | null;
+}
+
 export interface BillingPlan {
   planId: string;
   name: string;
@@ -65,8 +89,12 @@ export interface BillingPlan {
   status: PlanStatus;
   purchaseType: PurchaseType;
   billingInterval: BillingInterval | null;
+  examId?: BillingExamAccessId | null;
+  durationDays?: number | null;
+  renewsAutomatically?: boolean;
   price: number;
   currency: string;
+  // Keep packageIds while billing pages migrate to examId. Current checkout and dashboards still read it.
   packageIds: BillingPackageId[];
   gatewayIds: string[];
   trialDays: number;
@@ -86,6 +114,8 @@ export interface BillingPlanPriceVersion {
   currency: string;
   billingInterval: BillingInterval | null;
   purchaseType: PurchaseType;
+  examIdSnapshot?: BillingExamAccessId | null;
+  durationDaysSnapshot?: number | null;
   packageIdsSnapshot: BillingPackageId[];
   active: boolean;
   createdAt: Date | null;
@@ -152,6 +182,8 @@ export interface BillingTransaction {
   amount: number;
   currency: string;
   billingIntervalSnapshot: BillingInterval | null;
+  examIdSnapshot?: BillingExamAccessId | null;
+  durationDaysSnapshot?: number | null;
   packageIdsSnapshot: BillingPackageId[];
   gatewayId: string;
   provider: BillingProvider;
@@ -193,6 +225,7 @@ export interface BillingSubscription {
 export interface BillingEntitlement {
   entitlementId: string;
   uid: string;
+  examId?: BillingExamAccessId | null;
   packageId: BillingPackageId;
   status: EntitlementStatus;
   source: EntitlementSource;

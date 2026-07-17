@@ -15,6 +15,7 @@ import {
   type ProviderPriceMapping,
   type PurchaseType,
 } from "@/lib/billing/models";
+import { normalizeExamAccessId } from "@/lib/exam-access-catalog";
 
 export type CreatePaymentGatewayInput = {
   gatewayId?: unknown;
@@ -49,6 +50,9 @@ export type CreateBillingPlanInput = {
   status?: unknown;
   purchaseType?: unknown;
   billingInterval?: unknown;
+  examId?: unknown;
+  durationDays?: unknown;
+  renewsAutomatically?: unknown;
   price?: unknown;
   currency?: unknown;
   packageIds?: unknown;
@@ -268,6 +272,10 @@ export function validateCreateBillingPlanInput(
   const purchaseType = text(input.purchaseType) || "subscription";
   const rawBillingInterval = text(input.billingInterval);
   const billingInterval = rawBillingInterval || null;
+  const examId = normalizeExamAccessId(text(input.examId));
+  const durationDaysValue = optionalNumber(input.durationDays);
+  const durationDays = durationDaysValue === null ? null : durationDaysValue;
+  const renewsAutomatically = booleanValue(input.renewsAutomatically, false);
   const price = Number(input.price ?? 0);
   const currency = text(input.currency).toUpperCase() || "USD";
   const packageIds = stringList(input.packageIds);
@@ -293,6 +301,19 @@ export function validateCreateBillingPlanInput(
   }
   if (billingInterval === "lifetime" && purchaseType !== "one_time") {
     issues.push("Lifetime plans must use one-time purchase.");
+  }
+  if (examId && examId.length > 80) issues.push("Exam ID must be 80 characters or fewer.");
+  if (Number.isNaN(durationDays)) {
+    issues.push("Duration days must be a number.");
+  }
+  if (durationDays !== null && (!Number.isInteger(durationDays) || durationDays <= 0)) {
+    issues.push("Duration days must be a positive whole number.");
+  }
+  if (durationDays !== null && purchaseType !== "one_time") {
+    issues.push("Fixed-term access plans must use one-time purchase.");
+  }
+  if (durationDays !== null && renewsAutomatically) {
+    issues.push("Fixed-term access plans cannot renew automatically.");
   }
   if (!Number.isFinite(price) || price < 0) issues.push("Price must be a non-negative number.");
   if (!currency) issues.push("Currency is required.");
@@ -332,6 +353,9 @@ export function validateCreateBillingPlanInput(
       status,
       purchaseType,
       billingInterval,
+      examId: examId || null,
+      durationDays,
+      renewsAutomatically,
       price,
       currency,
       packageIds,

@@ -183,6 +183,78 @@ Validation:
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
 
+## Header Action Cleanup
+
+The top dashboard header now keeps only the account settings action. Contact support remains available in the lower support links section so the first dashboard view stays focused on study actions.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Actionable Email Verification Notice
+
+Unverified users now see an amber dashboard notice below the header actions. The notice uses the shared user typography system and includes:
+
+- the user's email address when available
+- a resend verification action using Firebase Authentication
+- an "I Verified" action that refreshes the Firebase user and hides the notice when verification is complete
+
+The passive email-not-verified pill was removed from the header metadata so the warning appears in one actionable place.
+
+The dashboard view model now treats live Firebase Auth verification as authoritative if the Firestore user document is stale. This prevents the verification notice and profile task from remaining visible after the user has verified their email.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+.\node_modules\.bin\vitest.cmd run src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+```
+
+## Activity Empty States
+
+The Recent Activity and Completed Exams sections now use student-facing empty copy instead of technical implementation language. Until real attempt and result history are connected, they explain what the student needs to do next and provide a direct ATI TEAS practice CTA.
+
+This follows the shared user typography rule that empty states must speak to the user, not to the developer. User-facing sections should explain the next useful student action instead of describing missing implementation details.
+
+The empty-state CTA now follows the user's selected Primary Exam and routes through the same continue action used by the top practice card, so the action changes when the Primary Exam changes.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Simplified Student Dashboard Layout
+
+The dashboard was simplified to match the sample management direction while keeping the shared user typography system.
+
+Updated behavior:
+
+- The first main card is now a direct practice-start card instead of a generic continue card.
+- The first main card says `Start your first practice set` until the user has at least one attempt, and reserves `Continue your practice set` for users with attempt history.
+- The metric row stays compact and shows Study Streak, Attempts, Questions, and Accuracy without adding a separate empty performance card.
+- Accuracy uses a `Not started` zero state until the user has at least one attempt or answered question. A stored `accuracy_overall: 0` is not treated as a real score when attempt activity is still empty.
+- The exam area keeps the real exam card and the dashed Add Exam slot so the add action reads as an empty dashboard slot, not a competing package card.
+- Preview access now uses `Free Preview` and `Start Preview` language so unpaid access does not imply full access.
+- The sidebar now focuses on Account and Access, Knowledge Base, Referral Summary, and Support links.
+- Account and Access keeps only the primary View Plans action so Primary Exam and Manage Payments actions do not compete with the main study actions.
+- Access End only appears when the user has a paid/current plan record or a real access end date, so free-preview users do not see a distracting `Not available` row.
+- Duplicate recommendation/profile task cards were removed from the sidebar to keep the first dashboard view focused.
+- The header no longer repeats the account access badge, so `Free Preview` is shown only where it has clearer account or exam-card context.
+- Referral Summary is visually muted and marked as unlocking after the first attempt.
+- Support links no longer duplicate Knowledge Base because Knowledge Base has its own card.
+- Support links use a compact local row style instead of the roomier shared subnav link style, keeping the small support card scannable without excess whitespace.
+- ATI TEAS is consistently displayed as ATI TEAS 7 in the dashboard package and practice CTAs.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+.\node_modules\.bin\vitest.cmd run src/lib/dashboard/__tests__/dashboard-view-model.test.ts
+```
+
 ## Implementation details
 
 ### Authentication behavior
@@ -327,7 +399,7 @@ Because no confirmed owner-scoped attempt/result model exists yet, the implement
 2. selected ATI TEAS 7 primary exam
 3. selected HESI A2 primary exam
 4. Nursing Test Bank focus
-5. Nursing Exit Exam focus
+5. Nursing Exit Exam Primary Exam
 6. browse entrance exams fallback
 
 No fake resumable attempt is created.
@@ -446,7 +518,7 @@ Responsibilities:
 Shows:
 
 - first name
-- primary exam focus when available
+- Primary Exam when available
 - account status badge
 - access status badge
 - email verification warning when unverified
@@ -483,7 +555,7 @@ Current logic:
 2. Selected ATI TEAS 7 primary exam.
 3. Selected HESI A2 primary exam.
 4. Nursing Test Bank focus.
-5. Nursing Exit Exam focus.
+5. Nursing Exit Exam Primary Exam.
 6. Browse entrance exams fallback.
 
 Data sources:
@@ -600,7 +672,7 @@ Signals:
 
 - active packages
 - selected primary exam ID
-- missing exam focus
+- missing Primary Exam
 
 Data sources:
 
@@ -645,7 +717,7 @@ Possible tasks:
 
 - verify email
 - add display name
-- select exam focus
+- select Primary Exam
 - set timezone
 - set preferences
 
@@ -976,7 +1048,7 @@ Decision:
 
 Profile structure:
 
-- `Account`: display name, full name, email, country, phone, timezone, program type, recommended focus, locale, and bio.
+- `Account`: display name, full name, email, country, phone, timezone, program type, Primary Exam, locale, and bio.
 - `Preferences`: notification choices, quiz mode, and explanation default.
 - `Manage Password`: password update for email/password users only.
 
@@ -990,7 +1062,7 @@ Removed from the normal profile page:
 - unfinished MFA action button
 - user-facing subscription wording
 
-The left profile summary now shows only identity, study focus, current plan, access end, and links to the dedicated payments and referral pages.
+The left profile summary now shows only identity, Primary Exam, current plan, access end, and links to the dedicated payments and referral pages.
 
 Manage Password tab follow-up:
 
@@ -1025,6 +1097,18 @@ Profile action feedback visibility follow-up:
 - removed duplicate below-form feedback placement so users see save and validation messages immediately
 - kept the shared `user-alert` feedback styling
 - kept profile persistence, preference save behavior, and password update logic unchanged
+
+Profile display consistency follow-up:
+
+- aligned the profile side summary with dashboard and payments empty-state wording
+- profile package access now shows `Free Preview` for users without paid entitlements instead of `No exam access`
+- profile paid plan now shows `No Paid Plan` instead of a bare dash
+- missing profile dates and billing access dates now show `Not set`
+- the Account tab now uses `Exam Type` for the editable selection and keeps `Primary Exam` as the derived read-only result
+- locale now displays as a readable label such as `English` instead of raw values such as `en`
+- timezone and locale stay blank when no country is selected, avoiding mismatched country/timezone defaults
+- phone placeholders now use a neutral international format instead of a US-specific example
+- password inputs now use explicit empty placeholders instead of appearing pre-filled with masked characters
 
 Dashboard typography standard follow-up:
 
@@ -1355,14 +1439,14 @@ Result:
 
 - TypeScript passed.
 
-## Follow-up: easier recommended focus changes
+## Follow-up: easier Primary Exam changes
 
-Updated the dashboard and profile flow so users can change the recommended focus with fewer clicks.
+Updated the dashboard and profile flow so users can change the Primary Exam with fewer clicks.
 
 Changes:
 
-- added a `Recommended focus` row to the dashboard account/subscription panel
-- added a direct `Change focus` dashboard button
+- added a `Primary Exam` row to the dashboard account/subscription panel
+- added a direct `Primary Exam` dashboard button
 - changed focus-related dashboard recommendations and profile tasks to link to `/profile?tab=account`
 - updated the profile page so `?tab=account` opens the editable Account tab automatically
 - centralized primary-focus recommendation metadata in the dashboard view model
@@ -1380,7 +1464,7 @@ Result:
 - Dashboard view-model tests passed.
 - TypeScript passed.
 
-## Follow-up: shared recommended focus labels
+## Follow-up: shared Primary Exam labels
 
 Cleaned up the recommended-focus display logic so it is not locally hardcoded in the profile page.
 
@@ -1411,7 +1495,7 @@ Result:
 - Dashboard view-model tests passed.
 - TypeScript passed.
 
-## Follow-up: persist recommended focus primary exam
+## Follow-up: persist Primary Exam
 
 Fixed the profile save path so changing `Program type` updates the database fields the dashboard uses.
 
@@ -1504,7 +1588,7 @@ Documented:
 - approved dashboard package families and two-card grouping
 - free preview behavior across all package families
 - subscribed/full-access behavior
-- recommended focus edit flow through `/profile?tab=account`
+- Primary Exam edit flow through `/profile?tab=account`
 - Firestore fields updated on profile save
 - shared focus helper exports
 - dashboard live read flow
@@ -1728,11 +1812,11 @@ Behavior:
 
 - the dashboard now shows one primary exam card instead of all exam access areas
 - if the user has an active exam entitlement, the dashboard shows one active exam card
-- if the active entitlement matches the signup-selected exam focus, that selected active exam is preferred
-- if the user has no active entitlement, the dashboard shows the signup-selected exam focus when available
+- if the active entitlement matches the signup-selected Primary Exam, that selected active exam is preferred
+- if the user has no active entitlement, the dashboard shows the signup-selected Primary Exam when available
 - Nursing Test Bank and Nursing Exit Exam signup choices are family-level, so the dashboard uses one representative card while the full list remains available from `My Exams`
 - a second `Add exam` card links to `/dashboard/my-exams` so users can browse or add other exam areas
-- if no focus exists, the dashboard shows a `Choose exam focus` card linked to profile account settings
+- if no Primary Exam exists, the dashboard shows a `Choose Primary Exam` card linked to profile account settings
 
 Files changed:
 
@@ -1781,6 +1865,7 @@ Behavior:
 - saved dashboard exams render as additional exam cards beside the original exam card
 - the add modal excludes every exam area already shown on the dashboard
 - if all four top-level exam areas are already visible, the modal shows an empty state instead of duplicate options
+- the `Add exam` card is hidden when all available exam areas are already shown on the dashboard
 - this is a dashboard display preference only; it does not grant paid access, change entitlements, or overwrite `profile.focus_areas`
 
 Data fields:
@@ -1788,6 +1873,26 @@ Data fields:
 - `profile.focus_areas`: original signup/profile focus
 - `profile.primary_exam_id`: primary ATI TEAS 7 or HESI A2 focus when applicable
 - `profile.dashboard_exam_ids`: optional user-managed dashboard card list
+
+## Follow-up: dashboard billing access fallback
+
+Updated `/dashboard` so billing and access display does not depend only on the live `users/{uid}` billing snapshot.
+
+Changes:
+
+- `/dashboard` now reads authenticated billing history through `/api/billing/history`
+- dashboard access state and exam cards use active `billing_entitlements` records as a fallback when the user document billing snapshot has not caught up
+- active billing entitlement records can now move the dashboard from `Free Preview` to `Active`
+- the dashboard plan display can derive a readable plan name from the active entitlement `sourcePlanId`
+- `all_access` billing entitlement records expand to all dashboard exam cards so individual cards do not remain in `Free Preview`
+- shared entitlement helpers now expand `all_access` into the four canonical user entitlements: `ati_teas_7`, `hesi_a2`, `nursing_test_bank`, and `nursing_exit_exams`
+- future billing webhook writes use the same shared expansion, so an All Access purchase updates all user entitlement flags instead of behaving like a separate fifth user entitlement
+- billing history remains scoped to the signed-in Firebase user token
+- added a dashboard view-model test for stale user billing data with an active billing entitlement record
+
+Reason:
+
+Stripe webhook processing writes billing records and the user billing summary. If the user document listener lags behind the entitlement write, the dashboard should still reflect access from authenticated billing history instead of showing stale `No Paid Plan` or free-preview states.
 
 Files changed:
 
@@ -1944,7 +2049,7 @@ Updated `/register` copy for correct exam names and capitalization.
 
 Behavior:
 
-- changed `Pick a focus` to `Pick an Exam Focus`
+- changed `Pick a focus` to `Pick a Primary Exam`
 - changed the focus helper to use `ATI TEAS 7`, `HESI A2`, `Nursing Test Bank`, and `Nursing Exit Exams`
 - standardized visible labels such as `Sign Up`, `Full Name`, `Email Address`, `Confirm Password`, and `Program Type`
 - updated register validation copy to use `Program Type`
@@ -2185,4 +2290,102 @@ Validation run:
 
 ```text
 .\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Deferred Follow-up: Start Exam Flow Alignment
+
+Saved for later implementation after the current billing/access migration work.
+
+Goal:
+
+- align My Exams, dashboard exam cards, pricing, and quiz preview CTAs around one exam-start path
+- avoid duplicating quiz-taking logic inside dashboard or My Exams
+- use entitlement state to decide whether the action reads `Start`, `Continue`, `Review`, `Start Free Preview`, or `View Package`
+- keep preview users on the preview route and paid users on the full-access route
+- document the intended route behavior so links are not patched page by page
+
+Scope when implemented:
+
+- `/dashboard`
+- `/dashboard/my-exams`
+- `/payments`
+- `/pricing`
+- dynamic quiz pages such as `/hesi-a2-math-practice-test-set-1`
+
+Keep this stage small: routing and button behavior only, with no new analytics or exam engine features.
+
+## Follow-up: My Exams Entrance And Bank Interfaces
+
+Updated `/dashboard/my-exams` so exam families can use different management interfaces.
+
+Behavior:
+
+- ATI TEAS 7 and HESI A2 use an entrance-exam set interface.
+- My Exams is a personal library and should show only exams the user actively owns.
+- Users with active paid access should not see unsubscribed exams mixed into the main My Exams list.
+- Users with no paid access should see the exam they chose during registration as limited preview access.
+- My Exams must not show `No active exams found` for a user who selected an exam during registration.
+- Locked/unsubscribed exams belong in access option cards, not the main exam library.
+- the entrance-exam set interface should follow the TEAS design reference from `C:\Users\wilso\OneDrive\Desktop\Nursing Mocks Designs\User Dashboard\teas.html`.
+- `/dashboard/my-exams` was rebuilt from scratch from that reference instead of continuing the old catalog/filter layout.
+- the entrance interface uses a left set selector and a right subject/mode panel.
+- Entrance exam practice is subject-first for now.
+- Do not show a full-set or full-exam start action for ATI TEAS 7 or HESI A2 on My Exams.
+- ATI TEAS 7 and HESI A2 are subject-based experiences; subject cards should be the primary start point.
+- Subject cards should use `Exam Mode` and `Review Mode` action labels and center those actions inside the card.
+- Subject cards should show progress-oriented status such as `Not Started`, `In Progress`, `Completed`, or `Preview`; avoid repeating `Active` on every subject card.
+- Subject subtitles should avoid repeating the subject title. Prefer concise metadata such as `Set 1 • 38 questions`.
+- the page should avoid a catalog-style search/filter interface when the user only has active subscribed exams to manage.
+- Entrance exam sets are loaded from Nursing Entrance Exam Firestore quizzes.
+- Entrance exam grouping uses the quiz document `setNumber` field as the source of truth.
+- Slugs are used only for routing and must not be used to derive set numbers.
+- If entrance quiz data is loaded from Firestore, it replaces the old hardcoded TEAS/HESI fallback items.
+- Dynamic entrance quiz catalog loading must not block the full My Exams page.
+- The page should render from the authenticated user document and billing/access history first, then refresh the entrance set list when Firestore quiz catalog reads finish.
+- My Exams must not show hardcoded fallback TEAS/HESI subject rows while the Firestore entrance catalog is loading.
+- If the dynamic entrance catalog is connected but still loading, show no entrance subject cards until the actual Firestore subjects arrive.
+- If the user selected ATI TEAS 7 or HESI A2 during registration, keep the page in a loading state until the dynamic entrance catalog returns instead of showing an empty active-access message.
+- Do not show TEAS/HESI full-length exam cards in My Exams; TEAS and HESI are subject-based experiences.
+- My Exams should read entrance quiz `questionCount` from quiz metadata and must not count quiz question documents on page load.
+- My Exams should read entrance quiz cards from the top-level `exam_subject_catalog` index, not by walking entrance sub-pages, nested pages, or the `quizzes` collection group on page load.
+- Nested entrance quiz documents remain the source of truth; the `exam_subject_catalog` collection is a fast public display index maintained by admin quiz create, edit, delete, and question-count refresh actions.
+- The `exam_subject_catalog` collection may contain only display-safe catalog fields such as exam ID, exam family, subject, slug, question count, preview percentage, set number, and source path. Do not store user, payment, secret, or admin-only data there.
+- Admin-created quiz slugs must be allowed to resolve dynamically through the top-level `[slug]` route. Do not set `dynamicParams = false` for `src/app/[slug]/page.tsx`, because that requires every new quiz slug to be known at build time.
+- Entrance quiz documents should store lightweight metadata for My Exams: `examAccessProductId`, `examFamilyId`, `subjectName`, `subjectId`, `questionCount`, `previewPercentage`, and `active`.
+- Entrance quiz `questionCount` and the My Exams catalog index are maintained when admin users create or edit entrance quizzes, add one question, bulk upload questions, or delete questions.
+- The Nursing Entrance Exam admin quiz list calls `getNursingEntranceExamQuizzes(..., { repairMyExamsCatalog: true })` so missing My Exams catalog rows are repaired automatically from the admin UI without requiring a backfill command.
+- The Nursing Entrance Exam bulk upload page also calls `/api/admin/entrance-exam/catalog-repair` after a successful upload. This server-side repair recounts quiz questions with Firebase Admin SDK and updates both the quiz metadata and `exam_subject_catalog`, then reports the updated question count in the success message.
+- Entrance catalog repair must infer `ati_teas_7` from TEAS/ATI quiz, parent, nested-page names, or slugs and `hesi_a2` from HESI/Hessi names when `examAccessProductId` is missing. This prevents admin-created TEAS/HESI sets from being uploaded successfully but hidden from My Exams.
+- Confirmed automatic sync after the server-side repair and TEAS/HESI inference changes: recent sets were added through the admin flow, `npm run content:entrance-quiz-metadata:dry-run` scanned 10 entrance quizzes, and reported `updatesNeeded: 0`, `catalogUpdatesNeeded: 0`, and `unchanged: 10`.
+
+Login security follow-up:
+
+- Admin login security reads `user_login_events` by `uid` and `login_at desc`.
+- Firestore requires the composite index in `firestore.indexes.json`: `user_login_events` with `uid ASCENDING` and `login_at DESCENDING`.
+- The fallback unordered query is only a resilience path; deploy the Firestore index so login activity loads in the intended order without warnings.
+- Existing entrance quizzes may need a one-time metadata/count backfill if they were created before this metadata rule.
+- Existing entrance quiz metadata and the My Exams catalog index can be checked with `npm run content:entrance-quiz-metadata:dry-run`.
+- Existing entrance quiz metadata and the My Exams catalog index can be written with `npm run content:entrance-quiz-metadata:apply` after reviewing the dry-run output.
+- Nursing Test Bank and Nursing Exit Exams do not use a set interface.
+- Nursing Test Bank and Nursing Exit Exams appear in a separate bank-style section with no set grouping.
+- The My Exams page uses the shared authenticated-user typography classes for the page header, cards, detail surfaces, badges, pills, buttons, breadcrumbs, loading state, and empty states.
+- Avoid page-specific card shadows, raw color typography, or one-off header structures on My Exams unless the shared `/typography` standard is updated first.
+- My Exams should not show a separate breadcrumb strip above the page header because it is a top-level dashboard page.
+- Primary My Exams learning panels should use the brighter `user-feature-surface` and `user-card` patterns from `/typography`; reserve muted `user-detail-surface` for secondary details only.
+- The `More exams available` package cards should auto-fit across the row instead of forcing four columns when only three package cards are visible.
+- Package count labels must use correct singular/plural wording, for example `1 exam included` and `2 exams included`.
+
+Files changed:
+
+- `src/app/dashboard/my-exams/page.tsx`
+- `src/lib/my-exams/get-my-exams.ts`
+- `src/lib/my-exams/types.ts`
+- `src/lib/my-exams/__tests__/get-my-exams.test.ts`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm test -- src/lib/my-exams/__tests__/get-my-exams.test.ts
 ```

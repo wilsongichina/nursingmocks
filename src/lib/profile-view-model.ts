@@ -49,27 +49,34 @@ function isTimestamp(value: unknown): value is Timestamp {
 }
 
 export function formatFirestoreDate(value: unknown): string {
-  if (!value) return "-";
+  if (!value) return "Not set";
   if (isTimestamp(value)) {
     return value.toDate().toLocaleString(undefined, {
       dateStyle: "medium",
       timeStyle: "short",
     });
   }
-  return "-";
+  return "Not set";
 }
 
 function formatDateShort(value: unknown): string {
-  if (!value) return "-";
+  if (!value) return "Not set";
   if (isTimestamp(value)) {
     return value.toDate().toLocaleDateString(undefined, { dateStyle: "medium" });
   }
-  return "-";
+  return "Not set";
 }
 
 function roleLabel(role: string | undefined): string {
   if (!role) return "Student";
   return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function planName(planId: string | null | undefined): string {
+  if (!planId?.trim()) return "No Paid Plan";
+  return planId
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 /** UI-facing snapshot: Firestore `users/{uid}` + Firebase Auth fallbacks */
@@ -146,11 +153,6 @@ export function buildProfileView(
     ? PROGRAM_TYPE_LABELS[firstFocusArea] ?? firstFocusArea
     : "Not set";
 
-  const sub = doc?.billing?.subscription_status;
-  const accessStatusLabel = sub
-    ? ACCESS_STATUS_LABELS[sub] ?? sub
-    : "None";
-
   const acct = doc?.account_state?.status;
   const accountStatusLabel = acct
     ? ACCOUNT_STATUS_LABELS[acct] ?? acct
@@ -162,10 +164,9 @@ export function buildProfileView(
       ? "Monthly"
       : interval === "yearly"
         ? "Yearly"
-        : "-";
+        : "Not set";
 
-  const planId = doc?.billing?.plan_id?.trim();
-  const planLabel = planId || "-";
+  const planLabel = planName(doc?.billing?.plan_id);
 
   const periodEnd = doc?.billing?.current_period_end;
   const accessUntilLabel = formatDateShort(periodEnd);
@@ -181,7 +182,13 @@ export function buildProfileView(
   const activePackageLabels = USER_ENTITLEMENT_KEYS
     .filter((key) => normalizedEntitlements[key])
     .map((key) => USER_ENTITLEMENT_LABELS[key]);
-  const packageAccessLabel = activePackageLabels.length > 0 ? activePackageLabels.join(", ") : "No exam access";
+  const packageAccessLabel = activePackageLabels.length > 0 ? activePackageLabels.join(", ") : "Free Preview";
+  const sub = doc?.billing?.subscription_status;
+  const accessStatusLabel = activePackageLabels.length > 0
+    ? "Active"
+    : sub
+      ? ACCESS_STATUS_LABELS[sub] ?? sub
+      : "Free Preview";
   const entitlements = USER_ENTITLEMENT_KEYS.map((key) => {
     return {
       key,
@@ -216,9 +223,9 @@ export function buildProfileView(
     email,
     phone: doc?.phone_e164 ?? "",
     roleLabel: roleLabel(doc?.access?.role),
-    timezone: doc?.profile?.timezone ?? "-",
-    locale: doc?.profile?.locale ?? "-",
-    country: doc?.profile?.country ?? "-",
+    timezone: doc?.profile?.timezone ?? "Not set",
+    locale: doc?.profile?.locale ?? "Not set",
+    country: doc?.profile?.country ?? "Not set",
     programTypeLabel,
     primaryExamLabel,
     accessStatusLabel,
@@ -227,7 +234,7 @@ export function buildProfileView(
     packageAccessLabel,
     billingIntervalLabel,
     accessUntilLabel,
-    referralCode: code || "-",
+    referralCode: code || "Not set",
     referralLink,
     createdAt: formatFirestoreDate(doc?.created_at),
     updatedAt: formatFirestoreDate(doc?.updated_at),

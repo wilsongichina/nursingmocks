@@ -6,6 +6,263 @@ Build a dynamic, secure, provider-agnostic billing system for NursingMocks.
 
 The billing system should support dynamic admin-managed plans, dynamic trusted payment gateway configuration, Stripe as the first implemented provider, future providers through server-side adapters, webhook-confirmed access, audit logging, admin protection, and responsive customer/admin billing pages.
 
+## Fixed-Term Exam Access Direction
+
+The next billing model treats each exam as its own purchasable access product. All Access should not be used for new billing configuration because a student normally prepares for one exam path at a time.
+
+Full planning reference:
+
+```text
+Documentation/billing/Billing fixed-term exam access full plan.md
+```
+
+Stage 1 foundation:
+
+- added an exam access catalog model for admin-managed exam products
+- added default exam access products for `ATI TEAS 7`, `HESI A2`, `Nursing Test Bank`, and `Nursing Exit Exams`
+- added fixed access durations for `1 Month Access` and `3 Months Access`
+- added additive billing plan fields: `examId`, `durationDays`, and `renewsAutomatically`
+- kept `packageIds` as a compatibility mirror while existing checkout, dashboard, and profile code are migrated
+- added validation that fixed-term plans must use one-time purchase and cannot renew automatically
+
+Implementation rule:
+
+- future billing work should use `examId` as the product relationship and keep `packageIds` only as a temporary compatibility field until all dependent pages are migrated
+
+## Stage 3 Fixed-Term Access Behavior
+
+Fixed-term exam access plans are one-time purchases with a defined access period.
+
+Rules:
+
+- `durationDays: 30` grants 1 Month Access
+- `durationDays: 90` grants 3 Months Access
+- fixed-term plans must use `purchaseType: one_time`
+- fixed-term plans must not renew automatically
+- successful webhook processing writes `accessStartsAt` and `accessEndsAt`
+- if the user already has active access for the same exam, the new purchase extends from the current active `accessEndsAt`
+- if the user has expired access, the new purchase starts from the webhook processing time
+- if a legacy/manual lifetime grant exists, a fixed-term purchase must not shorten that lifetime access
+- checkout duplicate blocking still applies to lifetime/no-duration plans, but fixed-term plans can be purchased again to extend access
+
+Trusted checkout metadata now includes server-derived fixed-term context:
+
+- `accessType`
+- `examId`
+- `durationDays`
+
+These values are written by the server from the selected billing plan. They must not be accepted from client input.
+
+## Stage 4 Admin Exam Access Catalog
+
+Exam access products now have an admin-managed catalog.
+
+Admin route:
+
+- `/admin/exam-access`
+
+API route:
+
+- `GET /api/admin/exam-access`
+- `POST /api/admin/exam-access`
+- `PATCH /api/admin/exam-access`
+
+Catalog behavior:
+
+- default products are provided for `ATI TEAS 7`, `HESI A2`, `Nursing Test Bank`, and `Nursing Exit Exams`
+- Firestore records in `exam_access_products` override or extend the default catalog
+- admins can add future exams without adding new React constants
+- admins can edit name, category, descriptions, active state, preview settings, and preview percentage
+- preview question counts should be derived from `previewPercentage` and the exam's total question count rather than stored as a fixed number
+- the admin catalog sorts recently updated exams first, with created date as fallback
+- the exam ID is stable and becomes the billing relationship key
+
+Important content relationship note:
+
+- `/admin/exam-access` is a billing/access catalog, not a content creation tool
+- `/admin/nursing-entrance-exam`, `/admin/nursing-test-bank`, and `/admin/nursing-exit-exam` remain the source for content pages, quizzes, KB articles, and questions
+- creating an exam access product must not automatically create content pages or quizzes
+- future work on the content admin pages should add an explicit relationship field, such as `examAccessProductId`, so content can be mapped to a billing/access product deliberately
+- access checks should use the relationship between content and `examAccessProductId`, then verify the user's active entitlement for that same exam access product
+- this keeps billing products, content structure, and access enforcement connected without making any one admin page responsible for all three
+
+Billing validation note:
+
+- billing plan validation accepts normalized future `examId` values so later stages can connect plans to admin-created catalog records
+- UI should still guide admins to select from the catalog instead of typing arbitrary IDs once the billing page is migrated
+
+## Stage 5 Admin Billing UI Migration
+
+The `/admin/billing` Add Plan flow now uses the exam access catalog instead of asking admins to manually choose package IDs.
+
+Plan creation behavior:
+
+- admins select one active exam product from `/api/admin/exam-access`
+- admins select one fixed duration: `1 Month Access` or `3 Months Access`
+- the form generates `planId`, plan name, slug, `examId`, `durationDays`, and compatibility `packageIds`
+- purchase type is locked to one-time access
+- billing interval remains `lifetime` for provider mapping compatibility until the rest of billing is fully duration-based
+- renewal is shown as `No automatic renewal`
+- trial days remain `0`
+- package checkboxes are hidden from plan creation so admins do not create broad bundle-style plans
+
+Generated examples:
+
+- `ati_teas_7_1_month` / `ATI TEAS 7 1 Month Access`
+- `ati_teas_7_3_months` / `ATI TEAS 7 3 Months Access`
+- `hesi_a2_1_month` / `HESI A2 1 Month Access`
+
+The existing provider price mapping flow is unchanged in this stage. After the plan is created, admins still create the provider mapping against the plan, gateway, amount, currency, interval, and purchase type.
+
+## Stage 6 Pricing Page Migration
+
+The public `/pricing` page now presents fixed-term exam access by exam product instead of showing every billing plan as an unrelated card.
+
+Pricing behavior:
+
+- plans are grouped by `examId`, falling back to the first compatibility package ID for older records
+- each exam card shows the available duration options, such as `1 Month Access` and `3 Months Access`
+- each duration row keeps its own price, readiness status, and checkout action
+- checkout still uses the existing server-side checkout session endpoint
+- legacy All Access plans remain hidden
+- subscription and recurring copy is not used for the current fixed-term access flow
+- the duplicate package summary section was removed because exam cards now contain the relevant package context
+
+This stage changes presentation only. It does not change checkout creation, provider mappings, webhook processing, or access grant writing.
+
+## Stage 7 Payments Page Migration
+
+The authenticated `/payments` page now matches the fixed-term exam access model.
+
+Payments behavior:
+
+- available plans are grouped by exam product
+- each exam group lists available duration options, such as `1 Month Access` and `3 Months Access`
+- each duration row keeps its own price, readiness status, and checkout action
+- active access is grouped by exam and shows the access end date when available
+- payment transactions remain visible as the user's payment history
+- access grant history remains visible as read-only access history
+- legacy All Access plans remain hidden
+- subscription management remains hidden because recurring subscriptions are not part of the current product flow
+
+This stage changes presentation only. It does not change checkout payloads, billing history loading, webhook processing, or access grant writing.
+
+## Stage 8 Dashboard And Profile Access Summary Migration
+
+The user dashboard and profile summaries now use exam access wording instead of centering the UI on paid plan language.
+
+Dashboard behavior:
+
+- account summary shows `Exam Access`, `Access Status`, and `Access Ends`
+- active exam names are derived from the user's visible active exam cards
+- users with no paid access see `Free Preview`
+- `Access Ends` appears only when a real access end date exists
+- the existing exam cards, add exam modal, and remove exam behavior are unchanged
+
+Profile behavior:
+
+- sidebar summary shows `Active Exams`, `Access Status`, and `Access Ends`
+- `Current Plan` is shown only when a real paid/internal plan exists
+- empty dates use `Not set`
+- access status is derived from active exam entitlements first, then billing status fallback
+
+This stage changes copy and view-model consistency only. It does not change entitlement writes, checkout, or profile update behavior.
+
+## Stage 9 My Exams Access Migration
+
+The `/dashboard/my-exams` page now reads the fixed-term exam access model.
+
+My Exams behavior:
+
+- the view model accepts the user document and billing history
+- active access can come from normalized user entitlements or active billing entitlement records
+- billing entitlement records use `examId` first, with compatibility fallback through `packageId`
+- expired billing entitlement records do not unlock exams
+- exam cards can show the active access end date when the webhook-confirmed grant includes one
+- preview-enabled exams use `previewPercentage` and derive the approximate preview question count from the exam question count
+- visible copy uses exam/access wording instead of package or subscription wording
+- locked exam options remain compact in the `More exams available` section
+
+This stage changes the My Exams presentation and access adapter only. It does not add attempt history, change exam-taking routes, or alter checkout/webhook behavior.
+
+## Stage 10 Content Access Relationship Preparation
+
+Content admin now has a prepared relationship between content records and billing exam access products.
+
+Access mapping:
+
+- `nursing-entrance-exam` is a content category, not a billing product
+- Nursing Entrance Exam content must map to either `ati_teas_7` or `hesi_a2`
+- Nursing Test Bank content maps to `nursing_test_bank`
+- Nursing Exit Exam content maps to `nursing_exit_exams`
+
+Implementation behavior:
+
+- added a shared content access product helper for labels, defaults, allowed products, and validation
+- new Nursing Entrance Exam sub pages require admins to select `ATI TEAS 7` or `HESI A2`
+- new Nursing Test Bank sub pages save `nursing_test_bank` automatically
+- new Nursing Exit Exam sub pages save `nursing_exit_exams` automatically
+- sub page write operations persist `examAccessProductId` on the content document
+- route mappings can also store `examAccessProductId` so future access checks can resolve the needed product from the route lookup
+
+This stage does not enforce access blocking. It prepares content relationships so the next stage can safely check whether the logged-in user has active access for the content's `examAccessProductId`.
+
+## Stage 11 Dynamic Route Preview Enforcement Foundation
+
+Dynamic quiz pages now resolve exam access from the shared dynamic route instead of requiring every generated quiz page to be edited separately.
+
+Dynamic route behavior:
+
+- `[slug]` reads `routeMappings.examAccessProductId` first
+- if the route mapping does not include a product, it falls back to the loaded content document's `examAccessProductId`
+- if no product is assigned, the content remains public during this preparation stage
+- assigned quiz content uses the exam access product preview percentage to calculate the visible preview question count
+- the old fixed `10 questions` rule is no longer used in the dynamic quiz route
+- preview CTAs use the resolved exam product name and show how many questions remain locked
+
+Current limitation:
+
+- `[slug]` is statically generated, so it cannot reliably know the currently authenticated Firebase user at render time
+- this stage does not expose full paid quiz content from the static route
+- full paid access should be handled next through a server-readable auth/session path or an authenticated quiz delivery API that verifies active `billing_entitlements`
+
+## Stage 12 Authenticated Full Quiz Access
+
+Dynamic quiz pages now keep the public preview as the default render and upgrade to the full question set only after an authenticated access check.
+
+Full access behavior:
+
+- `[slug]` still renders the configured preview percentage first, so public and unauthenticated visitors see the safe preview state
+- the quiz question list is wrapped by a client component that requests full quiz content only when a Firebase user is signed in
+- `GET /api/quiz/full?slug=...` verifies the Firebase ID token server-side before reading protected question data
+- the API resolves the route mapping and required `examAccessProductId` using the same content access resolver as the preview route
+- full access can come from normalized `users/{uid}.entitlements` or active `billing_entitlements` records
+- expired billing entitlement records do not unlock the full quiz
+- the API returns full questions only for active access and returns a preview status for users without access
+- unauthenticated users, users without matching access, and failed checks remain on the preview question set and CTA
+
+This stage does not edit individual quiz pages. It preserves the dynamic route, Firestore content structure, preview percentage rule, and provider-confirmed access model.
+
+## Stage 13 Exam Access Migration Tooling
+
+Added a controlled migration script for legacy package and All Access cleanup.
+
+Migration behavior:
+
+- `npm run billing:exam-access:migrate:dry-run` scans users and billing entitlement records without writing
+- `npm run billing:exam-access:migrate:apply` applies the migration intentionally
+- user entitlement objects are normalized to the four canonical exam IDs
+- billing entitlement records can backfill `examId` from legacy package, source plan, or document identifiers
+- active All Access-style billing entitlement records can be expanded into individual exam access records
+- original legacy billing entitlement records are kept for audit
+- the script supports `--uid <uid>` and `--limit <number>` for smaller checks
+
+Stage 13 slice document:
+
+```text
+Documentation/billing/Billing stage 29 exam access migration tooling.md
+```
+
 ## Architecture Decision
 
 Use a provider-agnostic billing architecture.
@@ -18,8 +275,8 @@ Admins may configure, enable, disable, prioritize, and assign payment gateways t
 
 Use separate models for:
 
-- `Plan`: what is sold, price, interval, purchase type, included packages, allowed gateways
-- `Package`: NursingMocks content or exam collection
+- `Plan`: what is sold, price, duration, purchase type, linked exam, compatibility packages, allowed gateways
+- `Exam Access Product`: NursingMocks exam collection that can be sold independently
 - `Entitlement`: what a specific user can access
 - `Payment Gateway`: how payment is processed
 - `Provider Price Mapping`: provider-specific product, price, or subscription plan reference
@@ -43,7 +300,7 @@ nursing_test_bank
 nursing_exit_exams
 ```
 
-Billing plans use these package IDs. Webhook writers and manual admin entitlement operations must write only these keys into the user document. If an All Access plan is purchased or manually granted, set all four keys to `true` rather than storing `bundle:all_access`.
+Billing plans should use one exam access product per plan. Webhook writers and manual admin entitlement operations must write only these keys into the user document.
 
 Legacy keys may still be normalized by user-facing readers during migration, but new billing writes must not create `exam:ati_teas_7`, `exam:hesi_a2`, `bundle:all_access`, `feature:analytics`, `feature:review_mode`, or `feature:timed_mode`.
 
@@ -57,7 +314,8 @@ Suggested package IDs:
 - `hesi_a2`
 - `nursing_test_bank`
 - `nursing_exit_exams`
-- `all_access`
+
+Do not create new `all_access` billing plans. Legacy readers may still normalize older All Access records during migration, but the active catalog should sell exams individually.
 
 Do not alter the existing dynamically generated exam catalog or sidebar generation logic.
 
@@ -73,8 +331,6 @@ Suggested initial plans:
   - packages: `nursing_test_bank`
 - `Nursing Exit Exams`
   - packages: `nursing_exit_exams`
-- `All Access`
-  - packages: `ati_teas_7`, `hesi_a2`, `nursing_test_bank`, `nursing_exit_exams`
 
 Plans must be stored dynamically and managed from admin pages. Do not hardcode pricing cards or package access in React components.
 

@@ -6,7 +6,7 @@ import {
   PRIMARY_EXAM_LABELS,
   PROGRAM_TYPE_LABELS,
 } from "@/lib/program-type";
-import { normalizeUserEntitlements } from "@/lib/user-entitlements";
+import { entitlementKeysForPackageIds, normalizeUserEntitlements } from "@/lib/user-entitlements";
 
 export type DashboardAccessStatus =
   | "active"
@@ -33,7 +33,7 @@ export type DashboardPackage = {
   description: string;
   href: string;
   status: DashboardPackageStatus;
-  actionLabel: "Continue" | "Start" | "View Exams" | "View Plans";
+  actionLabel: "Continue" | "Start Preview" | "View Exams" | "View Plans";
   modes: string[];
   accessEndsAt: Date | null;
   progressPercent: number | null;
@@ -71,6 +71,12 @@ export type DashboardProfileTask = {
   title: string;
   description: string;
   href: string;
+};
+
+export type DashboardBillingHistoryRecord = Record<string, unknown>;
+
+export type DashboardBillingHistory = {
+  entitlements?: DashboardBillingHistoryRecord[];
 };
 
 export interface DashboardViewModel {
@@ -143,8 +149,8 @@ const PACKAGE_CATALOG: Omit<DashboardPackage, "status" | "actionLabel" | "access
   {
     id: "ati_teas",
     family: "Nursing Entrance Exams",
-    name: "ATI TEAS",
-    description: "Entrance exam practice for ATI TEAS reading, math, science, and English.",
+    name: "ATI TEAS 7",
+    description: "Entrance exam practice for ATI TEAS 7 reading, math, science, and English.",
     href: "/teas-7-practice",
     modes: ["Timed mode", "Review mode"],
   },
@@ -242,6 +248,17 @@ function planName(planId: string | null | undefined) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function isActiveBillingEntitlement(record: DashboardBillingHistoryRecord) {
+  const status = String(record.status ?? "").toLowerCase();
+  if (status !== "active") return false;
+  const accessEnd = toDate(record.accessEndsAt);
+  return accessEnd === null || accessEnd.getTime() > Date.now();
+}
+
+function activeBillingEntitlements(history?: DashboardBillingHistory | null) {
+  return (history?.entitlements ?? []).filter(isActiveBillingEntitlement);
+}
+
 function getPrimaryExam(doc: UserDocument | null) {
   const focusArea = doc?.profile?.focus_areas?.find((area) => area?.trim()) ?? "";
   const inferred = inferPrimaryExamIdFromProgramType(focusArea);
@@ -253,11 +270,15 @@ function getPrimaryExam(doc: UserDocument | null) {
   };
 }
 
-function deriveAccess(doc: UserDocument | null): DashboardViewModel["access"] {
+function deriveAccess(doc: UserDocument | null, history?: DashboardBillingHistory | null): DashboardViewModel["access"] {
   const billing = doc?.billing;
   const periodEnd = toDate(billing?.current_period_end);
   const now = new Date();
   const hasActiveEntitlement = Object.values(normalizeUserEntitlements(doc?.entitlements)).some(Boolean);
+  const latestBillingEntitlement = activeBillingEntitlements(history)[0] ?? null;
+  const billingEntitlementPlanId =
+    typeof latestBillingEntitlement?.sourcePlanId === "string" ? latestBillingEntitlement.sourcePlanId : null;
+  const billingEntitlementAccessEnd = toDate(latestBillingEntitlement?.accessEndsAt);
   const hasFutureAccess = Boolean(periodEnd && periodEnd.getTime() > now.getTime());
 
   if (billing?.cancel_at_period_end && hasFutureAccess) {
@@ -270,12 +291,12 @@ function deriveAccess(doc: UserDocument | null): DashboardViewModel["access"] {
     };
   }
 
-  if (billing?.subscription_status === "active" || hasActiveEntitlement) {
+  if (billing?.subscription_status === "active" || hasActiveEntitlement || latestBillingEntitlement) {
     return {
       status: "active",
       label: "Active",
-      planName: planName(billing?.plan_id),
-      accessEndsAt: periodEnd,
+      planName: planName(billing?.plan_id) ?? planName(billingEntitlementPlanId),
+      accessEndsAt: periodEnd ?? billingEntitlementAccessEnd,
       cancelAtPeriodEnd: Boolean(billing?.cancel_at_period_end),
     };
   }
@@ -302,16 +323,22 @@ function deriveAccess(doc: UserDocument | null): DashboardViewModel["access"] {
 
   return {
     status: "free",
-    label: "Free access",
+    label: "Free Preview",
     planName: null,
     accessEndsAt: null,
     cancelAtPeriodEnd: false,
   };
 }
 
-function activePackageIds(doc: UserDocument | null) {
+function activePackageIds(doc: UserDocument | null, history?: DashboardBillingHistory | null) {
   const active = new Set<string>();
   const entitlements = normalizeUserEntitlements(doc?.entitlements);
+  const billingPackageIds = activeBillingEntitlements(history)
+    .map((record) => (typeof record.packageId === "string" ? record.packageId : ""))
+    .filter(Boolean);
+  for (const key of entitlementKeysForPackageIds(billingPackageIds)) {
+    entitlements[key] = true;
+  }
   if (entitlements.ati_teas_7) active.add("ati_teas");
   if (entitlements.hesi_a2) active.add("hesi_a2");
   if (entitlements.nursing_test_bank) {
@@ -325,8 +352,12 @@ function activePackageIds(doc: UserDocument | null) {
   return active;
 }
 
-function buildPackages(doc: UserDocument | null, access: DashboardViewModel["access"]): DashboardPackage[] {
-  const active = activePackageIds(doc);
+function buildPackages(
+  doc: UserDocument | null,
+  access: DashboardViewModel["access"],
+  history?: DashboardBillingHistory | null
+): DashboardPackage[] {
+  const active = activePackageIds(doc, history);
   const defaultStatus: DashboardPackageStatus =
     access.status === "past_due" ? "payment_issue" : access.status === "expired" ? "expired" : "locked";
 
@@ -345,7 +376,7 @@ function buildPackages(doc: UserDocument | null, access: DashboardViewModel["acc
       status === "active" || status === "cancelling" || status === "lifetime"
         ? "Continue"
         : status === "free"
-          ? "Start"
+          ? "Start Preview"
           : "View Plans";
 
     return {
@@ -379,7 +410,7 @@ function buildContinueAction(
   if (primaryExamId === "ati_teas_7") {
     return {
       title: "Start ATI TEAS 7 practice",
-      description: "Use your selected exam focus to begin with TEAS practice.",
+      description: "Use your selected Primary Exam to begin with TEAS practice.",
       href: "/teas-7-practice",
     };
   }
@@ -387,7 +418,7 @@ function buildContinueAction(
   if (primaryExamId === "hesi_a2") {
     return {
       title: "Start HESI A2 practice",
-      description: "Use your selected exam focus to begin with HESI A2 practice.",
+      description: "Use your selected Primary Exam to begin with HESI A2 practice.",
       href: "/hesi-a2-practice-test",
     };
   }
@@ -411,7 +442,7 @@ function buildContinueAction(
 
   return {
     title: primaryExamName ? `Start ${primaryExamName}` : "Choose your first practice area",
-    description: "Select an exam focus or browse available NursingMocks practice options.",
+    description: "Select a Primary Exam or browse available NursingMocks practice options.",
     href: "/nursing-entrance-exam",
   };
 }
@@ -438,15 +469,15 @@ function buildRecommendations(
   if (primaryFocus) {
     recommendations.push({
       ...primaryFocus,
-      description: "Matches your selected primary exam focus.",
+      description: "Matches your selected Primary Exam.",
     });
   }
 
   if (!doc?.profile?.primary_exam_id && !doc?.profile?.focus_areas?.length) {
     recommendations.push({
       id: "choose-focus",
-      title: "Choose an exam focus",
-      description: "Set your primary focus so NursingMocks can put the right practice areas first.",
+      title: "Choose a Primary Exam",
+      description: "Set your Primary Exam so NursingMocks can put the right practice areas first.",
       href: PROFILE_FOCUS_HREF,
       actionLabel: "Update profile",
     });
@@ -465,7 +496,8 @@ function buildRecommendations(
 
 function buildProfileTasks(doc: UserDocument | null, authUser: User): DashboardProfileTask[] {
   const tasks: DashboardProfileTask[] = [];
-  if (!authUser.emailVerified && doc?.auth?.email_verified !== true) {
+  const emailVerified = authUser.emailVerified || doc?.auth?.email_verified === true;
+  if (!emailVerified) {
     tasks.push({
       id: "verify-email",
       title: "Verify your email",
@@ -484,7 +516,7 @@ function buildProfileTasks(doc: UserDocument | null, authUser: User): DashboardP
   if (!doc?.profile?.primary_exam_id && !doc?.profile?.focus_areas?.length) {
     tasks.push({
       id: "exam-focus",
-      title: "Select your exam focus",
+      title: "Select your Primary Exam",
       description: "Help the dashboard recommend the right practice area.",
       href: PROFILE_FOCUS_HREF,
     });
@@ -508,7 +540,11 @@ function buildProfileTasks(doc: UserDocument | null, authUser: User): DashboardP
   return tasks;
 }
 
-export function buildDashboardViewModel(doc: UserDocument | null, authUser: User): DashboardViewModel {
+export function buildDashboardViewModel(
+  doc: UserDocument | null,
+  authUser: User,
+  history?: DashboardBillingHistory | null
+): DashboardViewModel {
   const email = doc?.email || authUser.email || null;
   const fullName =
     doc?.profile?.display_name?.trim() ||
@@ -517,20 +553,24 @@ export function buildDashboardViewModel(doc: UserDocument | null, authUser: User
     email?.split("@")[0] ||
     "Student";
   const { primaryExamId, primaryExamName, focusAreaLabel } = getPrimaryExam(doc);
-  const access = deriveAccess(doc);
-  const packages = buildPackages(doc, access);
+  const access = deriveAccess(doc, history);
+  const packages = buildPackages(doc, access, history);
   const stats = doc?.stats;
   const totalAttempts = stats?.total_attempts ?? 0;
   const questionsAnswered = stats?.total_questions_answered ?? 0;
   const accuracyValue = stats?.accuracy_overall;
-  const accuracy = typeof accuracyValue === "number" && Number.isFinite(accuracyValue) ? Math.round(accuracyValue) : null;
+  const hasAttemptActivity = totalAttempts > 0 || questionsAnswered > 0;
+  const accuracy =
+    hasAttemptActivity && typeof accuracyValue === "number" && Number.isFinite(accuracyValue)
+      ? Math.round(accuracyValue)
+      : null;
 
   return {
     user: {
       firstName: firstNameFrom(fullName) || "Student",
       fullName,
       email,
-      emailVerified: doc?.auth?.email_verified ?? authUser.emailVerified,
+      emailVerified: authUser.emailVerified || doc?.auth?.email_verified === true,
       primaryExamId,
       primaryExamName,
       focusAreaLabel,
@@ -548,7 +588,7 @@ export function buildDashboardViewModel(doc: UserDocument | null, authUser: User
       accuracy,
       streakDays: stats?.streak_days ?? 0,
       lastAttemptAt: toDate(stats?.last_attempt_at),
-      hasStats: totalAttempts > 0 || questionsAnswered > 0 || accuracy !== null || Boolean(stats?.last_attempt_at),
+      hasStats: hasAttemptActivity || Boolean(stats?.last_attempt_at),
     },
     recentActivity: [],
     completedExams: [],

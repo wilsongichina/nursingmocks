@@ -48,6 +48,28 @@ function normalizeCountryCode(value: string | null | undefined): string {
   return match?.id ?? "";
 }
 
+function formatLocaleLabel(value: string): string {
+  const locale = value.trim();
+  if (!locale) return "Not set";
+
+  try {
+    const localeParts = new Intl.Locale(locale);
+    const languageName =
+      typeof Intl !== "undefined" && "DisplayNames" in Intl
+        ? new Intl.DisplayNames(["en"], { type: "language" }).of(localeParts.language)
+        : null;
+    const regionName =
+      localeParts.region && typeof Intl !== "undefined" && "DisplayNames" in Intl
+        ? new Intl.DisplayNames(["en"], { type: "region" }).of(localeParts.region)
+        : null;
+
+    if (languageName && regionName) return `${languageName} (${regionName})`;
+    return languageName || regionName || locale;
+  } catch {
+    return locale;
+  }
+}
+
 const PREFERRED_COUNTRY_TIMEZONE: Record<string, string> = {
   US: "America/New_York",
   GB: "Europe/London",
@@ -274,12 +296,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!userDoc) return;
+    const normalizedCountry = normalizeCountryCode(userDoc.profile?.country);
     setAccountDisplayName(userDoc.profile?.display_name ?? "");
     setAccountFullName(userDoc.full_name ?? "");
     setAccountPhone(userDoc.phone_e164 ?? "");
-    setAccountTimezone(userDoc.profile?.timezone ?? "America/New_York");
-    setAccountCountry(normalizeCountryCode(userDoc.profile?.country));
-    setAccountLocale(userDoc.profile?.locale ?? "");
+    setAccountCountry(normalizedCountry);
+    setAccountTimezone(normalizedCountry ? userDoc.profile?.timezone ?? "" : "");
+    setAccountLocale(normalizedCountry ? userDoc.profile?.locale ?? "" : "");
     setAccountBio(userDoc.profile?.bio ?? "");
     setAccountProgramType(normalizeProgramTypeFromProfile(userDoc.profile?.focus_areas?.[0]?.trim() ?? ""));
     setPrefDarkMode(!!userDoc.preferences?.dark_mode);
@@ -309,13 +332,15 @@ export default function ProfilePage() {
   }, [accountTimezone]);
 
   const accountPhonePlaceholder = useMemo(() => {
-    if (!accountCountry) return "eg +15551234567";
+    if (!accountCountry) return "eg + country code and phone number";
     try {
       return `eg +${getCountryCallingCode(accountCountry as CountryCode)}555123456`;
     } catch {
-      return "eg +15551234567";
+      return "eg + country code and phone number";
     }
   }, [accountCountry]);
+
+  const accountLocaleLabel = useMemo(() => formatLocaleLabel(accountLocale), [accountLocale]);
 
   const accountPrimaryExamPreview = useMemo(
     () => recommendedFocusLabelFromProgramType(accountProgramType),
@@ -324,12 +349,13 @@ export default function ProfilePage() {
 
   const resetAccountForm = useCallback(() => {
     if (!userDoc) return;
+    const normalizedCountry = normalizeCountryCode(userDoc.profile?.country);
     setAccountDisplayName(userDoc.profile?.display_name ?? "");
     setAccountFullName(userDoc.full_name ?? "");
     setAccountPhone(userDoc.phone_e164 ?? "");
-    setAccountTimezone(userDoc.profile?.timezone ?? "America/New_York");
-    setAccountCountry(normalizeCountryCode(userDoc.profile?.country));
-    setAccountLocale(userDoc.profile?.locale ?? "");
+    setAccountCountry(normalizedCountry);
+    setAccountTimezone(normalizedCountry ? userDoc.profile?.timezone ?? "" : "");
+    setAccountLocale(normalizedCountry ? userDoc.profile?.locale ?? "" : "");
     setAccountBio(userDoc.profile?.bio ?? "");
     setAccountProgramType(normalizeProgramTypeFromProfile(userDoc.profile?.focus_areas?.[0]?.trim() ?? ""));
     setAccountSaveMessage(null);
@@ -338,7 +364,11 @@ export default function ProfilePage() {
   const handleCountryChange = useCallback((value: string) => {
     const nextCode = normalizeCountryCode(value);
     setAccountCountry(nextCode);
-    if (!nextCode) return;
+    if (!nextCode) {
+      setAccountTimezone("");
+      setAccountLocale("");
+      return;
+    }
     const country = ct.getCountry(nextCode);
     const preferredTimezone = PREFERRED_COUNTRY_TIMEZONE[nextCode];
     const timezone =
@@ -363,9 +393,9 @@ export default function ProfilePage() {
         full_name: accountFullName.trim(),
         display_name: accountDisplayName.trim(),
         phone_e164: accountPhone.trim() || null,
-        timezone: accountTimezone || "America/New_York",
+        timezone: accountCountry ? accountTimezone || null : null,
         country: accountCountry.trim() || null,
-        locale: accountLocale.trim() || null,
+        locale: accountCountry ? accountLocale.trim() || null : null,
         bio: accountBio.trim() || null,
         program_type: accountProgramType,
       });
@@ -554,10 +584,11 @@ export default function ProfilePage() {
 
                 <div className="mt-4 grid gap-[10px]">
                   <InfoRow label="Program" value={view.programTypeLabel} />
-                  <InfoRow label="Recommended focus" value={view.primaryExamLabel} />
-                  <InfoRow label="Exam access" value={view.packageAccessLabel} />
-                  <InfoRow label="Paid plan" value={view.planLabel} />
-                  <InfoRow label="Billing access ends" value={view.accessUntilLabel} />
+                  <InfoRow label="Primary Exam" value={view.primaryExamLabel} />
+                  <InfoRow label="Active Exams" value={view.packageAccessLabel} />
+                  <InfoRow label="Access Status" value={view.accessStatusLabel} />
+                  <InfoRow label="Access Ends" value={view.accessUntilLabel} />
+                  {view.planLabel !== "No Paid Plan" && <InfoRow label="Current Plan" value={view.planLabel} />}
                 </div>
 
                 <div className="mt-4 grid gap-2">
@@ -636,19 +667,19 @@ export default function ProfilePage() {
                           ))}
                         </select>
                       </FormField>
-                      <FormField label="Program type" hint="This also updates your recommended focus.">
+                      <FormField label="Exam Type" hint="Choose the exam area that should guide your Primary Exam.">
                         <select className={fieldClass} value={accountProgramType} onChange={(event) => setAccountProgramType(event.target.value)} disabled={!userDoc} required>
-                          <option value="" disabled>Select program type</option>
+                          <option value="" disabled>Select exam type</option>
                           {PROGRAM_TYPE_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                           ))}
                         </select>
                       </FormField>
-                      <FormField label="Recommended focus">
+                      <FormField label="Primary Exam" hint="This is derived from your selected Exam Type.">
                         <input className={readOnlyFieldClass} value={accountPrimaryExamPreview} readOnly />
                       </FormField>
                       <FormField label="Locale">
-                        <input className={readOnlyFieldClass} value={accountLocale} readOnly />
+                        <input className={readOnlyFieldClass} value={accountLocaleLabel} readOnly />
                       </FormField>
                       <FormField label="Bio" wide>
                         <textarea className={`${fieldClass} min-h-[90px] resize-y`} value={accountBio} onChange={(event) => setAccountBio(event.target.value)} disabled={!userDoc} placeholder="Short bio (optional)" />
@@ -707,6 +738,7 @@ export default function ProfilePage() {
                                   autoComplete="current-password"
                                   className={fieldClass}
                                   value={securityCurrentPassword}
+                                  placeholder="Enter current password"
                                   onChange={(event) => setSecurityCurrentPassword(event.target.value)}
                                 />
                               </FormField>
@@ -717,6 +749,7 @@ export default function ProfilePage() {
                                     autoComplete="new-password"
                                     className={fieldClass}
                                     value={securityNewPassword}
+                                    placeholder="Enter new password"
                                     onChange={(event) => setSecurityNewPassword(event.target.value)}
                                   />
                                 </FormField>
@@ -726,6 +759,7 @@ export default function ProfilePage() {
                                     autoComplete="new-password"
                                     className={fieldClass}
                                     value={securityConfirmPassword}
+                                    placeholder="Confirm new password"
                                     onChange={(event) => setSecurityConfirmPassword(event.target.value)}
                                   />
                                 </FormField>

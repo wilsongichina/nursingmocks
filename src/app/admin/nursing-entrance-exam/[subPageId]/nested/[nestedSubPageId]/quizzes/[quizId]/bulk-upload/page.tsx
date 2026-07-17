@@ -32,6 +32,7 @@ export default function BulkUploadQuestions({
   }>;
 }) {
   const router = useRouter();
+  const { currentUser } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
@@ -175,7 +176,35 @@ export default function BulkUploadQuestions({
       );
 
       if (result.success) {
-        setSuccess(result.message || "Questions uploaded successfully!");
+        let catalogRepairMessage = "";
+        try {
+          const token = await currentUser?.getIdToken();
+          if (!token) throw new Error("Admin session is not available.");
+
+          const repairResponse = await fetch("/api/admin/entrance-exam/catalog-repair", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              subPageId: resolvedParams.subPageId,
+              nestedSubPageId: resolvedParams.nestedSubPageId,
+              quizId: resolvedParams.quizId,
+            }),
+          });
+          const repairResult = await repairResponse.json();
+          if (!repairResponse.ok) {
+            throw new Error(repairResult?.error || "Catalog repair failed.");
+          }
+          catalogRepairMessage = ` My Exams catalog updated with ${repairResult.questionCount ?? parsedQuestions.length} questions.`;
+        } catch (repairError) {
+          catalogRepairMessage = ` Questions uploaded, but My Exams catalog was not updated: ${
+            repairError instanceof Error ? repairError.message : "Unknown error"
+          }`;
+        }
+
+        setSuccess(`${result.message || "Questions uploaded successfully!"}${catalogRepairMessage}`);
         setTimeout(() => {
           router.push(
             `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
@@ -235,7 +264,6 @@ export default function BulkUploadQuestions({
 
   function LayoutShell({ children }: { children: React.ReactNode }) {
     const { isCollapsed } = useSidebar();
-    const { currentUser } = useAuth();
 
     return (
       <div className="min-h-screen bg-white overflow-x-hidden">

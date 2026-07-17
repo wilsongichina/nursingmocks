@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
-  FileText,
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
@@ -36,6 +35,14 @@ type PlanReadiness = {
   label: string;
 };
 
+type PricingExamGroup = {
+  examId: string;
+  label: string;
+  summary: string;
+  features: string[];
+  plans: Serialized<BillingPlan>[];
+};
+
 const PACKAGE_DETAILS: Record<string, { label: string; summary: string; features: string[] }> = {
   ati_teas_7: {
     label: "ATI TEAS 7",
@@ -56,11 +63,6 @@ const PACKAGE_DETAILS: Record<string, { label: string; summary: string; features
     label: "Nursing Exit Exams",
     summary: "Exit exam preparation for RN and LPN students preparing for final readiness checks.",
     features: ["RN Exit Exams", "LPN Exit Exams", "Timed exam practice"],
-  },
-  all_access: {
-    label: "All Access",
-    summary: "Broad NursingMocks access when your admin catalog includes a complete bundle.",
-    features: ["Multiple exam families", "One access grant", "Best for broad preparation"],
   },
 };
 
@@ -84,6 +86,25 @@ const VALUE_POINTS = [
 
 function packageLabel(packageId: string) {
   return PACKAGE_DETAILS[packageId]?.label ?? titleCase(packageId.replace(/_/g, " "));
+}
+
+function isLegacyAllAccessPlan(plan: Serialized<BillingPlan>) {
+  return plan.packageIds.includes("all_access") || /(^|[^a-z])all access([^a-z]|$)/i.test(plan.name);
+}
+
+function examIdForPlan(plan: Serialized<BillingPlan>) {
+  return String(plan.examId || plan.packageIds[0] || plan.planId);
+}
+
+function durationLabel(plan: Serialized<BillingPlan>) {
+  if (plan.durationDays === 30) return "1 Month Access";
+  if (plan.durationDays === 90) return "3 Months Access";
+  if (typeof plan.durationDays === "number" && plan.durationDays > 0) return `${plan.durationDays} Days Access`;
+  return plan.purchaseType === "one_time" ? "One-Time Access" : intervalLabel(plan);
+}
+
+function durationSortValue(plan: Serialized<BillingPlan>) {
+  return typeof plan.durationDays === "number" ? plan.durationDays : Number.MAX_SAFE_INTEGER;
 }
 
 function titleCase(value: string) {
@@ -205,15 +226,36 @@ export default function PricingPage() {
   }, []);
 
   const plans = useMemo(
-    () => [...(catalog?.plans ?? [])].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)),
+    () =>
+      [...(catalog?.plans ?? [])]
+        .filter((plan) => !isLegacyAllAccessPlan(plan))
+        .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)),
     [catalog?.plans]
   );
 
-  const packageSummaries = useMemo(() => {
-    const ids = new Set(plans.flatMap((plan) => plan.packageIds));
-    return Array.from(ids)
-      .map((id) => ({ id, detail: PACKAGE_DETAILS[id] }))
-      .filter((item): item is { id: string; detail: NonNullable<(typeof PACKAGE_DETAILS)[string]> } => Boolean(item.detail));
+  const examGroups = useMemo(() => {
+    const groups = new Map<string, PricingExamGroup>();
+
+    for (const plan of plans) {
+      const examId = examIdForPlan(plan);
+      const detail = PACKAGE_DETAILS[examId];
+      const group = groups.get(examId) ?? {
+        examId,
+        label: detail?.label ?? packageLabel(examId),
+        summary: detail?.summary ?? plan.shortDescription ?? plan.description ?? "NursingMocks exam access plan.",
+        features: detail?.features ?? ["Exam practice access", "Progress-friendly study flow", "Dashboard access"],
+        plans: [],
+      };
+      group.plans.push(plan);
+      groups.set(examId, group);
+    }
+
+    return Array.from(groups.values())
+      .map((group) => ({
+        ...group,
+        plans: [...group.plans].sort((left, right) => durationSortValue(left) - durationSortValue(right) || left.price - right.price),
+      }))
+      .sort((left, right) => left.label.localeCompare(right.label));
   }, [plans]);
 
   async function startCheckout(plan: Serialized<BillingPlan>, gatewayId: string | null) {
@@ -355,7 +397,7 @@ export default function PricingPage() {
               <PlanSkeleton />
               <PlanSkeleton />
             </div>
-          ) : plans.length === 0 ? (
+          ) : examGroups.length === 0 ? (
             <div className="rounded-[22px] border border-[#e5e7eb] bg-white p-[22px] text-center shadow-[0_18px_45px_rgba(15,23,42,0.09)]">
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.06)] text-[#4338ca]">
                 <LockKeyhole className="h-5 w-5" />
@@ -366,121 +408,87 @@ export default function PricingPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-3">
-              {plans.map((plan) => {
-                const readiness = planReadiness(plan, catalog?.gateways ?? [], catalog?.providerPriceMappings ?? []);
-                const checkingOut = checkoutPlanId === plan.planId;
-                const primaryLabel = checkingOut
-                  ? "Starting checkout..."
-                  : readiness.ready
-                    ? currentUser
-                      ? "Continue to checkout"
-                      : "Sign in to continue"
-                    : "Checkout pending";
-
-                return (
-                  <article
-                    key={plan.planId}
-                    className={`flex flex-col overflow-hidden rounded-[22px] border bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.09)] transition hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.12)] sm:p-[18px] lg:min-h-[430px] ${
-                      plan.isFeatured ? "border-[#c7d2fe] bg-gradient-to-br from-white to-[#eef2ff]" : "border-[#e5e7eb]"
-                    }`}
-                  >
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
-                          {intervalLabel(plan)}
-                        </p>
-                        <h3 className="mt-2 break-words text-[18px] font-semibold text-[#111827]">{plan.name}</h3>
-                      </div>
-                      {plan.isFeatured && (
-                        <span className="w-fit shrink-0 rounded-full border border-[#c7d2fe] bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold text-[#4338ca]">
-                          Featured
-                        </span>
-                      )}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {examGroups.map((group) => (
+                <article
+                  key={group.examId}
+                  className="flex flex-col overflow-hidden rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.09)] sm:p-[18px]"
+                >
+                  <div className="flex flex-col gap-3 border-b border-[#edf0f7] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6d28d9]">Exam Access</p>
+                      <h3 className="mt-2 break-words text-[20px] font-semibold text-[#111827]">{group.label}</h3>
+                      <p className="mt-2 text-[13px] leading-[1.6] text-[#6b7280]">{group.summary}</p>
                     </div>
+                    <span className="w-fit shrink-0 rounded-full border border-[#c7d2fe] bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold text-[#4338ca]">
+                      {group.plans.length} option{group.plans.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
 
-                    <p className="mt-3 text-[13px] leading-[1.6] text-[#6b7280] lg:min-h-[44px]">
-                      {plan.shortDescription || plan.description || "NursingMocks exam access plan."}
-                    </p>
+                  <ul className="mt-4 grid gap-2 text-[13px] text-[#4b5563]">
+                    {group.features.slice(0, 3).map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
 
-                    <div className="mt-5">
-                      <p className="break-words text-[28px] font-bold tracking-[-0.03em] text-[#111827] sm:text-[30px]">
-                        {formatMoney(plan.price, plan.currency)}
-                      </p>
-                      <p className="mt-1 text-[12px] leading-[1.45] text-[#6b7280]">{plan.purchaseType === "one_time" ? "One payment. Access follows the configured plan period." : intervalLabel(plan)}</p>
-                    </div>
+                  <div className="mt-5 grid gap-3">
+                    {group.plans.map((plan) => {
+                      const readiness = planReadiness(plan, catalog?.gateways ?? [], catalog?.providerPriceMappings ?? []);
+                      const checkingOut = checkoutPlanId === plan.planId;
+                      const primaryLabel = checkingOut
+                        ? "Starting..."
+                        : readiness.ready
+                          ? currentUser
+                            ? "Start"
+                            : "Sign In"
+                          : "Pending";
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {plan.packageIds.map((packageId) => (
-                        <span
-                          key={packageId}
-                          className="max-w-full break-words rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-2.5 py-1 text-[11px] font-semibold leading-[1.35] text-[#4b5563]"
-                        >
-                          {packageLabel(packageId)}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="my-4 h-px bg-gradient-to-r from-transparent via-[rgba(148,163,184,0.4)] to-transparent" />
-
-                    <ul className="grid gap-2 text-[13px] text-[#4b5563]">
-                      {(plan.packageIds.length > 0 ? plan.packageIds : ["all_access"]).slice(0, 2).flatMap((packageId) => {
-                        const detail = PACKAGE_DETAILS[packageId];
-                        return detail?.features ?? ["Exam practice access", "Progress-friendly study flow", "Dashboard access"];
-                      }).slice(0, 4).map((feature) => (
-                        <li key={feature} className="flex items-start gap-2">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="mt-auto pt-5">
-                      <button
-                        type="button"
-                        disabled={!readiness.ready || checkingOut}
-                        onClick={() => void startCheckout(plan, readiness.gatewayId)}
-                        className={`inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border px-4 py-[10px] text-center text-[14px] transition-all sm:py-[9px] ${
-                          readiness.ready && !checkingOut
-                            ? "border-[#6366f1] bg-[#6366f1] text-white hover:border-[#4f46e5] hover:bg-[#4f46e5]"
-                            : "cursor-not-allowed border-[#e5e7eb] bg-[#f3f4f6] text-[#6b7280]"
-                        }`}
-                      >
-                        {primaryLabel}
-                        {readiness.ready && !checkingOut && <ArrowRight className="h-4 w-4" />}
-                      </button>
-                      <p className="mt-2 text-center text-[11px] text-[#6b7280]">{readiness.label}</p>
-                    </div>
-                  </article>
-                );
-              })}
+                      return (
+                        <div key={plan.planId} className="rounded-[16px] border border-[#e5e7eb] bg-[#f9fafb] p-3">
+                          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="text-[15px] font-semibold text-[#111827]">{durationLabel(plan)}</h4>
+                                {plan.isFeatured && (
+                                  <span className="rounded-full border border-[#c7d2fe] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#4338ca]">Featured</span>
+                                )}
+                              </div>
+                              <p className="mt-1 text-[12px] leading-[1.45] text-[#6b7280]">
+                                One payment. Access ends after the selected duration.
+                              </p>
+                              <p className="mt-1 text-[11px] text-[#6b7280]">{readiness.label}</p>
+                            </div>
+                            <div className="grid gap-2 sm:min-w-[170px]">
+                              <p className="text-left text-[24px] font-bold tracking-[-0.03em] text-[#111827] sm:text-right">
+                                {formatMoney(plan.price, plan.currency)}
+                              </p>
+                              <button
+                                type="button"
+                                disabled={!readiness.ready || checkingOut}
+                                onClick={() => void startCheckout(plan, readiness.gatewayId)}
+                                className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border px-4 py-[9px] text-center text-[13px] transition-all ${
+                                  readiness.ready && !checkingOut
+                                    ? "border-[#6366f1] bg-[#6366f1] text-white hover:border-[#4f46e5] hover:bg-[#4f46e5]"
+                                    : "cursor-not-allowed border-[#e5e7eb] bg-[#f3f4f6] text-[#6b7280]"
+                                }`}
+                              >
+                                {primaryLabel}
+                                {readiness.ready && !checkingOut && <ArrowRight className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </section>
-
-        {packageSummaries.length > 0 && (
-          <div className="border-y border-[#e5e7eb] bg-gradient-to-br from-[#e5e7ff] via-[#f9fafb] to-[#f9fafb]">
-          <section className="public-page-container py-7 pb-9 sm:py-8">
-            <div className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.09)] sm:p-[18px]">
-              <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[#6d28d9]">What is included</p>
-                  <h2 className="mt-1 text-[20px] font-semibold text-[#111827] sm:text-[22px]">Exam packages in current plans</h2>
-                </div>
-                <FileText className="hidden h-8 w-8 text-[#4338ca] sm:block" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {packageSummaries.map(({ id, detail }) => (
-                  <article key={id} className="rounded-[18px] border border-[#d9e0ff] bg-gradient-to-br from-white to-[#eef2ff] p-3.5 shadow-[0_14px_30px_rgba(129,140,248,0.16)]">
-                    <h3 className="text-[16px] font-semibold text-[#111827]">{detail.label}</h3>
-                    <p className="mt-1 text-[13px] leading-[1.6] text-[#6b7280]">{detail.summary}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-          </div>
-        )}
 
         <section className="public-page-container py-7 pb-14 sm:py-8 sm:pb-16">
           <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
@@ -493,7 +501,7 @@ export default function PricingPage() {
                 </div>
                 <div>
                   <h3 className="text-[14px] font-semibold text-[#111827]">Do plans renew automatically?</h3>
-                  <p className="mt-1 text-[13px] leading-[1.6] text-[#6b7280]">Only plans configured as recurring should renew. Current checkout copy is focused on one-time exam access.</p>
+                  <p className="mt-1 text-[13px] leading-[1.6] text-[#6b7280]">No. Current NursingMocks exam access plans are fixed-term, one-time purchases. You can buy access again when you need more time.</p>
                 </div>
                 <div>
                   <h3 className="text-[14px] font-semibold text-[#111827]">When does exam access update?</h3>
