@@ -523,34 +523,34 @@ function DashboardContent({
           <header className="user-page-header">
             <div className="user-page-header-row">
               <div className="user-page-header-copy">
-              <p className="user-eyebrow inline-flex items-center gap-2">
-                <span className="user-accent-dot" />
-                Student Dashboard
-              </p>
-              <h1 className="user-page-title mt-2">
-                Welcome back, {view.user.firstName}
-              </h1>
-              <p className="user-body-sm mt-3">
-                {view.user.primaryExamName
-                  ? `Primary focus: ${view.user.primaryExamName}`
-                  : view.user.focusAreaLabel
-                    ? `Study focus: ${view.user.focusAreaLabel}`
-                    : "Choose a study focus to make your dashboard more personal."}
-              </p>
-              <div className="user-page-header-meta mt-4">
-                <span className={badgeClasses(view.access.status === "past_due" ? "amber" : view.access.status === "expired" ? "red" : view.access.status === "free" ? "purple" : "green")}>
-                  {view.access.label}
-                </span>
-                <span className={badgeClasses(view.user.accountStatusLabel === "Active" ? "green" : "amber")}>
-                  Account {view.user.accountStatusLabel}
-                </span>
-                {!view.user.emailVerified && (
-                  <span className={badgeClasses("amber")}>
-                    <AlertCircle className="mr-1 h-3.5 w-3.5" />
-                    Email not verified
+                <p className="user-eyebrow inline-flex items-center gap-2">
+                  <span className="user-accent-dot" />
+                  Student dashboard
+                </p>
+                <h1 className="user-page-title mt-2">
+                  Welcome back, {view.user.firstName}
+                </h1>
+                <p className="user-body-sm mt-3">
+                  {view.user.primaryExamName
+                    ? `Primary focus: ${view.user.primaryExamName}`
+                    : view.user.focusAreaLabel
+                      ? `Study focus: ${view.user.focusAreaLabel}`
+                      : "Choose a study focus to make your dashboard more personal."}
+                </p>
+                <div className="user-page-header-meta mt-4">
+                  <span className={badgeClasses(view.access.status === "past_due" ? "amber" : view.access.status === "expired" ? "red" : view.access.status === "free" ? "purple" : "green")}>
+                    {view.access.label}
                   </span>
-                )}
-              </div>
+                  <span className={badgeClasses(view.user.accountStatusLabel === "Active" ? "green" : "amber")}>
+                    Account {view.user.accountStatusLabel}
+                  </span>
+                  {!view.user.emailVerified && (
+                    <span className={badgeClasses("amber")}>
+                      <AlertCircle className="mr-1 h-3.5 w-3.5" />
+                      Email not verified
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="user-page-header-actions">
                 <Link href="/profile" className={secondaryActionClass}>
@@ -641,7 +641,7 @@ function DashboardContent({
 
               <Card className="p-4">
                 <SectionHeader
-                  title="My Exams"
+                  title="My exams"
                   subtitle="Your dashboard shows the exam you selected or currently have access to. Use Add exam to manage other exam areas."
                 />
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -701,7 +701,7 @@ function DashboardContent({
               </Card>
 
               <Card className="p-4">
-                <SectionHeader title="Completed Exams" subtitle="Recent completed exams will appear here when result records are available." />
+                <SectionHeader title="Completed exams" subtitle="Recent completed exams will appear here when result records are available." />
                 {view.completedExams.length ? (
                   <div className="space-y-3">
                     {view.completedExams.map((exam) => (
@@ -727,7 +727,7 @@ function DashboardContent({
                 <div className="space-y-3">
                   <InfoRow
                     label="Recommended focus"
-                    helper="Change this from Profile > Account"
+                    helper="Change this from Profile > account"
                     value={
                       <Link href={focusHref} className={textActionClass}>
                         {focusLabel}
@@ -816,7 +816,7 @@ function DashboardContent({
                   </Link>
                   <Link href="/knowledge-base" className={supportLinkClass}>
                     <BookOpen className="h-4 w-4 text-[#4338ca]" />
-                    Knowledge Base
+                    Knowledge base
                   </Link>
                   <Link href="/terms-and-conditions" className={supportLinkClass}>
                     <ShieldCheck className="h-4 w-4 text-[#4338ca]" />

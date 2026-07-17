@@ -92,7 +92,7 @@ Because a reliable attempt/result data model was not confirmed, the new dashboar
 Instead:
 
 - Recent activity shows a real empty state.
-- Completed Exams shows a real empty state.
+- Completed exams shows a real empty state.
 - Performance uses only `users/{uid}.stats`.
 
 ## Files created
@@ -154,7 +154,7 @@ The new page:
 - does not query other users
 - does not write billing, entitlement, subscription, role, or admin fields
 
-## Responsive Dashboard Update
+## Responsive dashboard update
 
 The dashboard was refined for mobile, tablet, and desktop management without changing data flow or dashboard logic.
 
@@ -162,8 +162,18 @@ Updated behavior:
 
 - The desktop sidebar layout now collapses earlier on tablet widths so account, subscription, recommendation, referral, and support cards do not squeeze the main study area.
 - Dashboard action buttons become full width on narrow mobile screens for easier tapping.
-- Exam cards, Add Exam cards, and modal option cards drop fixed-height pressure on mobile so longer package names, badges, and actions do not overflow.
-- The Add Exam modal uses three columns on desktop, two columns on tablet, and one column on mobile.
+- Exam cards, Add exam cards, and modal option cards drop fixed-height pressure on mobile so longer package names, badges, and actions do not overflow.
+- The Add exam modal uses three columns on desktop, two columns on tablet, and one column on mobile.
+
+## Capitalization update
+
+Dashboard headings and support labels now follow sentence case unless the copy is a product, exam, or brand name such as ATI TEAS 7, HESI A2, Firebase, or Firestore.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
 - Account detail rows stack on narrow screens so labels and values remain readable.
 - Recent activity and completed exam sections remain full-width within the main dashboard flow.
 
