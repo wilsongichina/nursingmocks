@@ -103,7 +103,7 @@ export default function TeasExamsBrowser({ dataUrl }: TeasExamsBrowserProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-950">
-      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
+      <div className="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
         <div className="mx-auto max-w-4xl">
           <div className="space-y-3">
             <label className="block">
@@ -165,7 +165,7 @@ export default function TeasExamsBrowser({ dataUrl }: TeasExamsBrowserProps) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-4xl px-4 py-5">
+      <main className="mx-auto max-w-4xl px-4 pb-5 pt-56 sm:pt-52">
         {loading ? (
           <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
             Loading TEAS questions.
@@ -226,7 +226,7 @@ function QuestionGroups({
                   ref={(element) => {
                     questionRefs.current[question.id] = element;
                   }}
-                  className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt-36"
+                  className="scroll-mt-56 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:scroll-mt-52"
                 >
                   <h4 className="mb-3 text-sm font-bold text-gray-950">
                     <HighlightedText
