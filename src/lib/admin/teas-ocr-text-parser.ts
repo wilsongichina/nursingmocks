@@ -4,13 +4,6 @@ import {
   type TeasBulkUploadQuestion,
 } from "@/lib/admin/teas-bulk-upload-schema";
 
-type ParsedTextQuestion = {
-  passage: string;
-  question: string;
-  choices: Record<string, { choice: string }>;
-  answer: string;
-};
-
 export type TeasOcrTextParseResult = {
   payload: TeasBulkUploadPayload;
   warnings: string[];

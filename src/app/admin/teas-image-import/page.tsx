@@ -17,7 +17,6 @@ import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext"
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  inlineImageReferencesForQuestion,
   type TeasBulkUploadPayload,
   validateTeasBulkUploadPayload,
 } from "@/lib/admin/teas-bulk-upload-schema";
@@ -111,12 +110,8 @@ function TeasImageImportContent() {
 
   const questions = parsed.payload?.questions || [];
   const ocrLogText = (ocrJob?.stdout || ocrJob?.stderr || "Waiting for OCR output...").trim();
-  const inlineImages = questions.flatMap((question, index) =>
-    inlineImageReferencesForQuestion(question, `$.questions[${index}]`)
-  );
   const ready = !parsed.parseError && parsed.validation.valid;
   const warningCount = parsed.validation.warnings.length;
-  const errorCount = parsed.parseError ? 1 : parsed.validation.errors.length;
   const normalizedJson = parsed.payload ? JSON.stringify(parsed.payload, null, 2) : "";
 
   const loadFolders = useCallback(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AdminAlert,
   AdminCard,
@@ -121,12 +121,7 @@ function TeasDocImportContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!currentUser) return;
-    void loadDocFiles();
-  }, [currentUser]);
-
-  const loadDocFiles = async () => {
+  const loadDocFiles = useCallback(async () => {
     if (!currentUser) return;
     setLoadingFiles(true);
     setError("");
@@ -140,13 +135,22 @@ function TeasDocImportContent() {
       setDocFiles(payload.files || []);
       setDocRoot(payload.root || "");
       const firstAvailable = payload.files?.find((file: DocxFileSummary) => file.exists) || payload.files?.[0];
-      if (firstAvailable && docxPath === DEFAULT_DOCX_PATH) setDocxPath(firstAvailable.path);
+      if (firstAvailable) {
+        setDocxPath((currentPath) =>
+          currentPath === DEFAULT_DOCX_PATH ? firstAvailable.path : currentPath
+        );
+      }
     } catch (filesError) {
       setError(filesError instanceof Error ? filesError.message : "Could not load DOCX files.");
     } finally {
       setLoadingFiles(false);
     }
-  };
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    void loadDocFiles();
+  }, [currentUser, loadDocFiles]);
 
   const parseDocx = async () => {
     if (!currentUser) {

@@ -751,13 +751,6 @@ function orderedResponseCorrectAnswerList(
   return answerLabels;
 }
 
-function correctAnswerListToMap(options: Array<{ label: string; html: string }>, answer: unknown) {
-  const answers = parseCorrectAnswerList(answer).map((item) => item.toUpperCase());
-  return Object.fromEntries(
-    options.map((option, index) => [option.label, answers[index] ? [answers[index]] : []])
-  );
-}
-
 function increment(map: Record<string, number>, key: string, amount = 1) {
   map[key] = (map[key] || 0) + amount;
 }

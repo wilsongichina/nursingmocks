@@ -118,13 +118,6 @@ function scanTitle(record: SavedScanRecord | null, fallbackId: string) {
   return record.questionNumber || record.sourceFileName || record.id.slice(0, 8);
 }
 
-function textPreview(html: string) {
-  return normalizeTeasDisplayHtml(html)
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function optionRowsFromOptions(options: SavedScanRecord["options"]): OptionRow[] {
   if (!options || typeof options !== "object") return [];
   return Object.entries(options).map(([label, option]) => ({
@@ -878,11 +871,15 @@ function ScanRecordContent({ scanId, mode }: { scanId: string; mode: "view" | "e
                           <p><strong>Alt:</strong> {exhibit.alt || "Not recorded"}</p>
                           <p className="break-all"><strong>Image path:</strong> {exhibit.imagePath || "Not added yet"}</p>
                           {exhibit.imagePath && (
-                            <img
-                              src={exhibit.imagePath}
-                              alt={exhibit.alt || exhibit.title || `Exhibit ${index + 1}`}
-                              className="mt-3 max-h-56 max-w-full border border-gray-200 bg-white object-contain"
-                            />
+                            <>
+                              {/* Uploaded exhibit files live in public storage paths controlled by the admin tool. */}
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={exhibit.imagePath}
+                                alt={exhibit.alt || exhibit.title || `Exhibit ${index + 1}`}
+                                className="mt-3 max-h-56 max-w-full border border-gray-200 bg-white object-contain"
+                              />
+                            </>
                           )}
                           <label className="mt-3 block">
                             <FieldLabel>Upload Image</FieldLabel>

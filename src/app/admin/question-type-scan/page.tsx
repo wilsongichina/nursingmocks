@@ -1,6 +1,7 @@
 "use client";
 
 import type { DragEvent, MouseEvent } from "react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AdminAlert,
@@ -552,13 +553,6 @@ function QuestionTypeRenderPreview({
     return { groupLabel, optionLabel };
   };
 
-  const dropDragDropOption = (event: DragEvent<HTMLElement>, groupLabel: string) => {
-    event.preventDefault();
-    const { groupLabel: sourceGroupLabel, optionLabel } = readDragDropPayload(event);
-    if (!optionLabel || sourceGroupLabel !== groupLabel) return;
-    selectDragDropOption(groupLabel, optionLabel);
-  };
-
   const dropDragDropOptionIntoSlot = (
     event: DragEvent<HTMLElement>,
     groupLabel: string,
@@ -593,58 +587,6 @@ function QuestionTypeRenderPreview({
       .filter(Boolean)
       .map(textFromHtml)
       .join("; ");
-  };
-
-  const renderClozeDropdown = (group: NaxlexQuestionTypeRenderSample["dropdownGroups"][number]) => {
-    const selected = dropdownSelections[group.label] || "";
-    const selectedText = selected ? dropdownOptionText(group.label, selected) : "";
-    const correct = (sample.correctAnswerMap[group.label] || [])[0] || "";
-    const isCorrect = selected === correct;
-    const isReview = Boolean(dropdownChecked && selected && !isCorrect);
-
-    return (
-      <span key={group.label} className="relative mx-1 inline-block align-baseline">
-        <button
-          type="button"
-          onClick={() =>
-            setOpenDropdownLabel((current) => (current === group.label ? "" : group.label))
-          }
-          className={`inline-flex min-w-[180px] items-center justify-between gap-3 border-b-2 border-dashed bg-transparent px-1 pb-0.5 text-left text-sm font-semibold leading-7 outline-none transition ${
-            dropdownChecked
-              ? isCorrect
-                ? "border-emerald-500 text-emerald-700"
-                : isReview
-                ? "border-amber-500 text-amber-700"
-                : "border-gray-400 text-gray-700"
-              : "border-purple-300 text-gray-900 hover:border-purple-500"
-          }`}
-          aria-expanded={openDropdownLabel === group.label}
-          aria-label={group.displayLabel}
-        >
-          <span className={selectedText ? "truncate" : "text-purple-700"}>
-            {selectedText || "Select..."}
-          </span>
-          <span className="h-0 w-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-500" />
-        </button>
-        {openDropdownLabel === group.label && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-[320px] overflow-hidden rounded-lg border border-gray-200 bg-white text-sm leading-6 shadow-xl">
-            <div className="border-b border-gray-200 bg-purple-50 px-4 py-3 font-semibold text-purple-700">Select...</div>
-            <div className="max-h-[340px] overflow-auto bg-white">
-              {group.options.map((option) => (
-                <button
-                  key={option.label}
-                  type="button"
-                  onClick={() => selectDropdownOption(group.label, option.label)}
-                  className="block w-full px-4 py-3 text-left text-gray-800 hover:bg-purple-50"
-                >
-                  {textFromHtml(option.html)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </span>
-    );
   };
 
   const toggleOption = (label: string) => {
@@ -968,6 +910,8 @@ function QuestionTypeRenderPreview({
               <div className="mt-4 flex min-h-64 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white text-center">
                 {hotSpotArtworkUrl ? (
                   <div className="relative inline-block max-w-full">
+                    {/* Admin hot spot previews use local/generated image URLs that Next Image cannot size upfront. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={hotSpotArtworkUrl}
                       alt="Hot spot artwork"
@@ -2836,14 +2780,14 @@ function QuestionTypeScanContent() {
               actions={
                 <div className="flex flex-wrap gap-2">
                   {isRenderPage && (
-                    <a href="/admin/question-type-scan" className="admin-button-secondary">
+                    <Link href="/admin/question-type-scan" className="admin-button-secondary">
                       Back to Scan
-                    </a>
+                    </Link>
                   )}
                   {!isRenderPage && (
-                    <a href="/admin/image-sources" className="admin-button-secondary">
+                    <Link href="/admin/image-sources" className="admin-button-secondary">
                       Image Sources
-                    </a>
+                    </Link>
                   )}
                   <button
                     type="button"
