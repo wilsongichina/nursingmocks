@@ -23,7 +23,7 @@ type ContentBlock = {
   text: string;
 };
 
-export function firestoreSafeForTeasScan(value: unknown): unknown {
+function firestoreSafeForTeasScan(value: unknown): unknown {
   if (value === undefined) return null;
   if (value === null) return null;
   if (typeof value === "string" || typeof value === "boolean") return value;
