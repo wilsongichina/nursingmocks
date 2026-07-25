@@ -19,6 +19,24 @@ import {
 } from "@/lib/firestore-operations";
 import { QuizCardRenderer } from "./QuizCardRenderer";
 
+const SUPPORTED_QUIZ_CARD_QUESTION_TYPES = new Set([1, 2, 3, 7]);
+const DEFAULT_QUIZ_CARD_QUESTION_COUNT = 5;
+
+const isSupportedQuizCardQuestion = (question: any) => {
+  const typeId = question.questionTypeId || question.question_type_id;
+  return SUPPORTED_QUIZ_CARD_QUESTION_TYPES.has(Number(typeId));
+};
+
+const getQuestionId = (question: any) => question.id || question.questionId;
+
+const getDefaultSelectedQuestionIds = (questions: any[]) =>
+  new Set(
+    questions
+      .slice(0, DEFAULT_QUIZ_CARD_QUESTION_COUNT)
+      .map(getQuestionId)
+      .filter(Boolean)
+  );
+
 interface QuizCardModalProps {
   initialData?: {
     pillarId?: string;
@@ -123,13 +141,7 @@ export function QuizCardModal({
           }
 
           if (result.success && result.data) {
-            const filteredQuestions = result.data.filter((q: any) => {
-              const typeId = q.questionTypeId || q.question_type_id;
-              return (
-                q.isCopyRight === true &&
-                (typeId === 1 || typeId === 2 || typeId === 3 || typeId === 7)
-              );
-            });
+            const filteredQuestions = result.data.filter(isSupportedQuizCardQuestion);
 
             if (filteredQuestions.length > 0) {
               setAvailableQuestions(filteredQuestions);
@@ -137,16 +149,19 @@ export function QuizCardModal({
               if (initialData?.selectedQuestionIds && Array.isArray(initialData.selectedQuestionIds)) {
                 const selectedIds = initialData.selectedQuestionIds;
                 setSelectedQuestionIds(new Set(selectedIds));
-                const selected = filteredQuestions.filter((q: any) => 
-                  selectedIds.includes(q.id || q.questionId)
+                const selected = filteredQuestions.filter((q: any) =>
+                  selectedIds.includes(getQuestionId(q))
                 );
                 setQuestions(selected);
                 setStep("quiz");
               } else {
-                // Select all by default
-                const allIds = new Set(filteredQuestions.map((q: any) => q.id || q.questionId));
-                setSelectedQuestionIds(allIds);
-                setQuestions(filteredQuestions);
+                // Quiz cards are previews, so start with a small curated set.
+                const defaultIds = getDefaultSelectedQuestionIds(filteredQuestions);
+                const selected = filteredQuestions.filter((q: any) =>
+                  defaultIds.has(getQuestionId(q))
+                );
+                setSelectedQuestionIds(defaultIds);
+                setQuestions(selected);
                 setStep("quiz");
               }
             }
@@ -328,7 +343,8 @@ export function QuizCardModal({
         (q) => q.id === quizId || q.slug === quizId
       );
       if (selectedQuiz) {
-        setQuizTitle(selectedQuiz.pageName || selectedQuiz.title || quizId);
+        const nextTitle = selectedQuiz.pageName || selectedQuiz.title || quizId;
+        setQuizTitle((currentTitle) => currentTitle || nextTitle);
       }
     }
   }, [quizId, quizzes]);
@@ -339,6 +355,11 @@ export function QuizCardModal({
     nestedSubPageId &&
     (!isTestBank || topicId) &&
     quizId;
+
+  const getFinalQuizTitle = () => {
+    const trimmedTitle = quizTitle.trim();
+    return trimmedTitle || "Practice Questions";
+  };
 
   const handleContinue = async () => {
     if (!canContinue) return;
@@ -375,27 +396,18 @@ export function QuizCardModal({
       }
 
       if (result.success && result.data) {
-        // Filter questions: isCopyRight === true and questionTypeId in [1, 2, 3, 7]
-        const filteredQuestions = result.data.filter((q: any) => {
-          const typeId = q.questionTypeId || q.question_type_id;
-          return (
-            q.isCopyRight === true &&
-            (typeId === 1 || typeId === 2 || typeId === 3 || typeId === 7)
-          );
-        });
+        const filteredQuestions = result.data.filter(isSupportedQuizCardQuestion);
 
         if (filteredQuestions.length === 0) {
           setError(
-            "No copyright-protected questions found for this quiz. Please ensure questions have isCopyRight set to true and are of type 1, 2, 3, or 7."
+            "No supported questions found for this quiz. Quiz cards can display question types 1, 2, 3, and 7."
           );
           setLoading(false);
           return;
         }
 
         setAvailableQuestions(filteredQuestions);
-        // Select all questions by default
-        const allIds = new Set(filteredQuestions.map((q: any) => q.id || q.questionId));
-        setSelectedQuestionIds(allIds);
+        setSelectedQuestionIds(getDefaultSelectedQuestionIds(filteredQuestions));
         setStep("chooseQuestions");
       } else {
         setError(result.message || "Failed to load questions");
@@ -422,7 +434,7 @@ export function QuizCardModal({
     if (selectedQuestionIds.size === availableQuestions.length) {
       setSelectedQuestionIds(new Set());
     } else {
-      const allIds = new Set(availableQuestions.map((q: any) => q.id || q.questionId));
+      const allIds = new Set(availableQuestions.map(getQuestionId).filter(Boolean));
       setSelectedQuestionIds(allIds);
     }
   };
@@ -434,7 +446,7 @@ export function QuizCardModal({
     }
 
     const selected = availableQuestions.filter((q: any) =>
-      selectedQuestionIds.has(q.id || q.questionId)
+      selectedQuestionIds.has(getQuestionId(q))
     );
     setQuestions(selected);
 
@@ -446,7 +458,7 @@ export function QuizCardModal({
         nestedSubPageId,
         topicId: isTestBank ? topicId : undefined,
         quizId,
-        quizTitle,
+        quizTitle: getFinalQuizTitle(),
         selectedQuestionIds: Array.from(selectedQuestionIds),
       });
     }
@@ -459,7 +471,7 @@ export function QuizCardModal({
     return (
       <QuizCardRenderer
         questions={questions}
-        quizTitle={quizTitle}
+        quizTitle={getFinalQuizTitle()}
         isEditable={isEditable}
         onEdit={() => setStep("select")}
       />
@@ -480,32 +492,48 @@ export function QuizCardModal({
 
     return (
       <div 
-        className="quiz-card-modal border border-gray-300 rounded-lg p-4 bg-white"
+        className="quiz-card-modal admin-card p-4"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="admin-card-title mb-2 text-lg">
             Select Questions
           </h3>
-          <p className="text-sm text-gray-600">
-            Choose which questions to include in the quiz. {availableQuestions.length} copyright-protected questions available.
+          <p className="admin-helper max-w-2xl">
+            Name the embedded quiz card and choose the questions students should see. The first {DEFAULT_QUIZ_CARD_QUESTION_COUNT} supported questions are selected by default.
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="admin-alert admin-alert-error mb-4 p-3">
+            <p className="admin-helper">{error}</p>
           </div>
         )}
 
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
+        <label className="admin-control mb-4 block">
+          <span className="admin-field-label mb-2 block">Quiz Card Title</span>
+          <input
+            type="text"
+            value={quizTitle}
+            onChange={(event) => setQuizTitle(event.target.value)}
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+            className="admin-field"
+            placeholder="Example: TEAS Math Quick Practice"
+          />
+          <span className="admin-helper mt-1 block">
+            This title appears at the top of the embedded quiz card.
+          </span>
+        </label>
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="admin-helper">
             {selectedQuestionIds.size} of {availableQuestions.length} selected
           </div>
           <button
             onClick={handleSelectAll}
-            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+            className="admin-button-secondary min-h-[34px] px-3 py-1.5 text-xs"
           >
             {selectedQuestionIds.size === availableQuestions.length
               ? "Deselect All"
@@ -515,7 +543,7 @@ export function QuizCardModal({
 
         <div className="max-h-[400px] overflow-y-auto space-y-2 mb-4">
           {availableQuestions.map((question, index) => {
-            const questionId = question.id || question.questionId;
+            const questionId = getQuestionId(question);
             const isSelected = selectedQuestionIds.has(questionId);
             const questionText = stripHtmlTags(question.question || "");
             const questionTypeId = question.questionTypeId || question.question_type_id || 1;
@@ -538,28 +566,26 @@ export function QuizCardModal({
             return (
               <label
                 key={questionId}
-                className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                  isSelected
-                    ? "border-indigo-500 bg-indigo-50"
-                    : "border-gray-300 bg-white hover:bg-gray-50"
+                className={`admin-info-tile flex cursor-pointer items-start gap-3 p-3 transition ${
+                  isSelected ? "border-[rgba(79,70,229,0.42)] bg-[rgba(79,70,229,0.08)]" : ""
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => handleQuestionToggle(questionId)}
-                  className="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  className="mt-1 h-4 w-4 rounded border-[#e3e5f0] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium text-gray-500">
+                    <span className="admin-helper text-xs font-medium">
                       Question {index + 1}
                     </span>
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                    <span className="admin-status-badge admin-status-badge-gray px-2 py-0.5 text-xs">
                       {getQuestionTypeName(questionTypeId)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-900 line-clamp-2">
+                  <p className="line-clamp-2 text-sm font-medium text-[var(--admin-text)]">
                     {questionText || "No question text"}
                   </p>
                 </div>
@@ -571,14 +597,14 @@ export function QuizCardModal({
         <div className="flex gap-3 justify-end">
           <button
             onClick={() => setStep("select")}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            className="admin-button-cancel"
           >
             Back
           </button>
           <button
             onClick={handleConfirmQuestions}
-            disabled={selectedQuestionIds.size === 0}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
+            disabled={selectedQuestionIds.size === 0 || !getFinalQuizTitle()}
+            className="admin-button-primary"
           >
             Confirm Selection ({selectedQuestionIds.size})
           </button>
@@ -590,30 +616,30 @@ export function QuizCardModal({
   // Show selection form
   return (
     <div 
-      className="quiz-card-modal border border-gray-300 rounded-lg p-4 bg-white"
+      className="quiz-card-modal admin-card p-4"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <h3 className="admin-card-title mb-2 text-lg">
           Select Quiz
         </h3>
-        <p className="text-sm text-gray-600">
-          Choose a quiz to embed. Only copyright-protected questions (types 1, 2,
-          3, 7) will be displayed.
+        <p className="admin-helper max-w-2xl">
+          Choose a quiz to embed. Question types 1, 2, 3, and 7 will be displayed.
+          You can name the card and choose the exact questions before saving it.
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="admin-alert admin-alert-error mb-4 p-3">
+          <p className="admin-helper">{error}</p>
         </div>
       )}
 
       <div className="space-y-4">
         {/* Pillar Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="admin-field-label mb-2 block">
             Pillar Page *
           </label>
               <select
@@ -624,7 +650,7 @@ export function QuizCardModal({
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-4 py-3 text-sm text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                className="admin-field"
               >
             <option value="">Select pillar page</option>
             {pillars.map((pillar) => (
@@ -638,7 +664,7 @@ export function QuizCardModal({
         {/* Sub-Page Selection */}
         {pillarId && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="admin-field-label mb-2 block">
               Sub-Page *
             </label>
             <div className="relative">
@@ -650,7 +676,7 @@ export function QuizCardModal({
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-4 py-3 text-sm text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-300"
+                className="admin-field"
                 disabled={loadingSubPages}
               >
                 <option value="">
@@ -664,7 +690,7 @@ export function QuizCardModal({
               </select>
               {loadingSubPages && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#6a5cff]"></div>
+                  <div className="admin-loading-spinner h-5 w-5"></div>
                 </div>
               )}
             </div>
@@ -674,7 +700,7 @@ export function QuizCardModal({
         {/* Nested Sub-Page Selection */}
         {pillarId && subPageId && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="admin-field-label mb-2 block">
               Nested Sub-Page *
             </label>
             <div className="relative">
@@ -686,7 +712,7 @@ export function QuizCardModal({
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-4 py-3 text-sm text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-300"
+                className="admin-field"
                 disabled={loadingNestedSubPages}
               >
                 <option value="">
@@ -700,7 +726,7 @@ export function QuizCardModal({
               </select>
               {loadingNestedSubPages && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#6a5cff]"></div>
+                  <div className="admin-loading-spinner h-5 w-5"></div>
                 </div>
               )}
             </div>
@@ -710,7 +736,7 @@ export function QuizCardModal({
         {/* Topic Selection (only for test bank) */}
         {isTestBank && pillarId && subPageId && nestedSubPageId && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="admin-field-label mb-2 block">
               Topic *
             </label>
             <div className="relative">
@@ -722,7 +748,7 @@ export function QuizCardModal({
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-4 py-3 text-sm text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-300"
+                className="admin-field"
                 disabled={loadingTopics}
               >
                 <option value="">
@@ -736,7 +762,7 @@ export function QuizCardModal({
               </select>
               {loadingTopics && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#6a5cff]"></div>
+                  <div className="admin-loading-spinner h-5 w-5"></div>
                 </div>
               )}
             </div>
@@ -749,7 +775,7 @@ export function QuizCardModal({
           nestedSubPageId &&
           (!isTestBank || topicId) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="admin-field-label mb-2 block">
                 Quiz *
               </label>
               <div className="relative">
@@ -761,7 +787,7 @@ export function QuizCardModal({
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-4 py-3 text-sm text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-300"
+                  className="admin-field"
                   disabled={loadingQuizzes}
                 >
                   <option value="">
@@ -775,12 +801,33 @@ export function QuizCardModal({
                 </select>
                 {loadingQuizzes && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#6a5cff]"></div>
+                    <div className="admin-loading-spinner h-5 w-5"></div>
                   </div>
                 )}
               </div>
             </div>
           )}
+
+        {quizId && (
+          <label className="admin-control block">
+            <span className="admin-field-label mb-2 block">Quiz Card Title</span>
+            <input
+              type="text"
+              value={quizTitle}
+              onChange={(event) => {
+                event.stopPropagation();
+                setQuizTitle(event.target.value);
+              }}
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
+              className="admin-field"
+              placeholder="Example: Quick Practice Questions"
+            />
+            <span className="admin-helper mt-1 block">
+              Use a short, student-facing title for the embedded quiz card.
+            </span>
+          </label>
+        )}
 
         {/* Continue Button */}
         {canContinue && (
@@ -788,7 +835,7 @@ export function QuizCardModal({
             <button
               onClick={handleContinue}
               disabled={loading}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="admin-button-primary"
             >
               {loading ? (
                 <>
@@ -805,4 +852,5 @@ export function QuizCardModal({
     </div>
   );
 }
+
 

@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Create a structured webpage for reviewing project migration notes before commit.
+Create one structured Documentation webpage for reviewing project notes, implementation decisions, standards, and migration history.
 
 ## Changes made
 
 - Renamed the tracking folder from `Changes Track` to `Documentation`.
-- Added a local webpage at `/change-log`.
+- Added the local Documentation webpage at `/documentation`.
 - The page reads Markdown files from `Documentation` and renders them as structured documents.
 - Added summary counts for documents and sections.
 - Added document navigation.
@@ -31,19 +31,19 @@ Create a structured webpage for reviewing project migration notes before commit.
 - Local page check passed:
 
 ```text
-http://localhost:3000/change-log
+http://localhost:3000/documentation
 HTTP 200
 ```
 
 ## Review URL
 
 ```text
-http://localhost:3000/change-log
+http://localhost:3000/documentation
 ```
 
 ## Follow-up: Document-style reading layout
 
-Updated the `/change-log` page so each Markdown file reads like an independent document instead of a compact app panel.
+Updated the Documentation page so each Markdown file reads like an independent document instead of a compact app panel.
 
 Changed:
 
@@ -61,6 +61,78 @@ Reason:
 - documentation files are not dense admin data
 - each file should feel like a real document page
 - section boundaries should be clear when reviewing long migration notes
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm run build
+```
+
+## Follow-up: Documentation search
+
+Added a search bar to the Documentation page.
+
+Changed:
+
+- added a search form to the top of `/documentation`
+- search supports the `q` query parameter
+- search checks document titles, file names, folder paths, group names, headings, lists, code blocks, and body text
+- document and section counts now reflect the filtered result set
+- added a clear action to return to the full documentation view
+- added a polished empty state when no documents match the search
+
+Reason:
+
+- the documentation library has grown large enough that folder navigation alone is not enough
+- admins should be able to quickly find billing stages, dashboard notes, route names, field names, and implementation decisions
+- search should reuse the existing documentation reader instead of creating another documentation surface
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Dynamic documentation visibility
+
+Updated the Documentation route so newly added Markdown files are read at request time.
+
+Changed:
+
+- marked `/documentation` as dynamic so it reads Markdown at request time
+- kept the page reading Markdown files from `Documentation/`
+- preserved the grouped folder navigation and single-open document behavior
+
+Reason:
+
+- newly created documentation files should appear on the documentation page without requiring a production rebuild
+- planning documents such as `Documentation/user-dashboard/Exam mode simulation plan.md` must be visible from the local documentation viewer
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Single Documentation Route
+
+Merged the visible change-log and documentation concepts into one Documentation page.
+
+Changed:
+
+- moved the full Markdown reader implementation to `/documentation`
+- made `/change-log` redirect to `/documentation` for compatibility with older links
+- updated the search form and clear-search links to use `/documentation`
+- kept all Markdown content under the `Documentation/` folder
+- kept today's Exam Mode simulation plan under `Documentation/user-dashboard/Exam mode simulation plan.md`
+- kept today's Documentation search, request-time visibility, and route consolidation notes in this file
+
+Reason:
+
+- the project uses these files for standards, plans, implementation history, billing stages, migration records, and UI decisions
+- keeping separate visible change-log and documentation pages would duplicate the same source of truth
+- `/documentation` is clearer for long-term use, while `/change-log` remains safe for old bookmarks
 
 Validation run:
 
@@ -106,8 +178,8 @@ Changed:
 - moved user dashboard markdown files into `Documentation/user-dashboard`
 - moved this page documentation into `Documentation/documentation`
 - added `/documentation` as the documentation route
-- kept `/change-log` available as a compatibility route
-- updated `/change-log` to recursively read markdown files from `Documentation`
+- kept `/change-log` available as a compatibility redirect
+- updated the Documentation page to recursively read markdown files from `Documentation`
 - grouped the rendered page by documentation folder
 - added grouped navigation so Billing, Admin, User Dashboard, Email, Migration, and Documentation each have their own section
 - updated repository instructions to reference `Documentation/`

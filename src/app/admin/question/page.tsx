@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { AdminInlineLoading, AdminLoadingState } from "@/components/admin/AdminUi";
 import {
   getAllQuestions,
   getAllPillarPages,
@@ -437,8 +438,8 @@ function QuestionManagementContent() {
           </div>
         )}
         {loading ? (
-          <div className="text-center py-12 text-lg text-gray-500">
-            Loading...
+          <div className="py-12 text-center">
+            <AdminInlineLoading label="Loading Questions" />
           </div>
         ) : isFiltered ? (
           // Show individual questions when filtered
@@ -767,13 +768,11 @@ function QuestionManagementContent() {
 export default function QuestionManagementPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
-          </div>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Question Management"
+          description="Preparing question filters, grouped records, and management actions."
+        />
       </div>
     }>
       <QuestionManagementContent />

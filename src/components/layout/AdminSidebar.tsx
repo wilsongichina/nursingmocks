@@ -24,6 +24,14 @@ export default function AdminSidebar() {
     setExpandedItems((prev) => {
       const newSet = new Set(prev);
       newSet.add("content");
+      if (
+        pathname.startsWith("/admin/question-type-scan") ||
+        pathname.startsWith("/admin/teas-image-import") ||
+        pathname.startsWith("/admin/image-sources")
+      ) {
+        // Keep the active tool visible after refresh or direct navigation.
+        newSet.add("tools");
+      }
 
       return newSet;
     });
@@ -64,6 +72,12 @@ export default function AdminSidebar() {
       color: "purple",
     },
     {
+      label: "Checklist",
+      href: "/admin/check-list",
+      icon: "audit",
+      color: "green",
+    },
+    {
       label: "User Management",
       href: "/admin/users",
       icon: "users",
@@ -98,6 +112,34 @@ export default function AdminSidebar() {
       href: "/admin/email-jobs",
       icon: "email",
       color: "green",
+    },
+  ];
+
+  const toolItems = [
+    {
+      label: "Question Type Scan",
+      href: "/admin/question-type-scan",
+      color: "teal",
+    },
+    {
+      label: "TEAS Image Import",
+      href: "/admin/teas-image-import",
+      color: "indigo",
+    },
+    {
+      label: "TEAS Saved Scans",
+      href: "/admin/teas-image-import/scans",
+      color: "teal",
+    },
+    {
+      label: "TEAS Docs Import",
+      href: "/admin/teas-doc-import",
+      color: "purple",
+    },
+    {
+      label: "Image Sources",
+      href: "/admin/image-sources",
+      color: "orange",
     },
   ];
 
@@ -383,6 +425,14 @@ export default function AdminSidebar() {
     return pathname.startsWith(href);
   };
 
+  const isToolActive = toolItems.some((item) => isActive(item.href));
+  const isToolItemActive = (href: string) => {
+    if (href === "/admin/teas-image-import") {
+      return pathname === href || pathname.startsWith("/admin/teas-image-import/preview");
+    }
+    return isActive(href);
+  };
+
   const toggleExpand = (itemId: string) => {
     setExpandedItems((prev) => {
       const newSet = new Set(prev);
@@ -646,6 +696,100 @@ export default function AdminSidebar() {
                   Admin Tools
                 </li>
               )}
+              <li>
+                {isCollapsed ? (
+                  <div
+                    className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      isToolActive ? "bg-orange-50" : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                    title="Tools"
+                  >
+                    <IconWithBackground icon="audit" color="orange" size="w-8 h-8" />
+                  </div>
+                ) : (
+                  <div>
+                    <div
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                        isToolActive ? "bg-orange-50" : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <IconWithBackground icon="audit" color="orange" size="w-8 h-8" />
+                        <span
+                          className={`text-sm font-medium ${
+                            isToolActive ? "text-orange-600" : "text-gray-700"
+                          }`}
+                        >
+                          Tools
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleExpand("tools");
+                        }}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        aria-label="Toggle tools menu"
+                      >
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            expandedItems.has("tools") ? "rotate-90" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    {expandedItems.has("tools") && (
+                      <ul className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
+                        {toolItems.map((item) => {
+                          const itemActive = isToolItemActive(item.href);
+                          const activeBgColor =
+                            item.color === "indigo"
+                              ? "bg-indigo-50"
+                              : item.color === "teal"
+                              ? "bg-teal-50"
+                              : "bg-orange-50";
+                          const activeTextColor =
+                            item.color === "indigo"
+                              ? "text-indigo-600"
+                              : item.color === "teal"
+                              ? "text-teal-600"
+                              : "text-orange-600";
+
+                          return (
+                            <li key={item.href}>
+                              <Link
+                                href={item.href}
+                                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  itemActive ? activeBgColor : "text-gray-900 hover:bg-gray-50"
+                                }`}
+                              >
+                                <span
+                                  className={`font-medium ${
+                                    itemActive ? activeTextColor : "text-gray-900"
+                                  }`}
+                                >
+                                  {item.label}
+                                </span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </li>
               {adminItems.map((item) => {
                 const itemActive = isActive(item.href);
                 return (

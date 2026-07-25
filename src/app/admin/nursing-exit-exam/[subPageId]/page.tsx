@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   getNursingExitExamSubPage,
   uploadNursingExitExamSubPage,
@@ -8,7 +8,10 @@ import {
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
+import ContentQualityWarnings from "@/components/admin/ContentQualityWarnings";
+import PublicContentPreview from "@/components/admin/PublicContentPreview";
 import Link from "next/link";
+import { AdminLoadingState } from "@/components/admin/AdminUi";
 import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
@@ -55,6 +58,7 @@ function EditSubPageContent({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [slug, setSlug] = useState("");
+  const [savedSnapshot, setSavedSnapshot] = useState("");
   const [status, setStatus] = useState<"Draft" | "Published" | "Archived">(
     "Draft"
   );
@@ -131,6 +135,13 @@ function EditSubPageContent({
         };
 
         setContent(initializedContent);
+        setSavedSnapshot(
+          JSON.stringify({
+            content: initializedContent,
+            slug: loadedSlug,
+            status: loadedStatus,
+          })
+        );
       } else {
         // Initialize with default content structure
         const defaultContent: SubPageContent = {
@@ -158,6 +169,7 @@ function EditSubPageContent({
         };
         setContent(defaultContent);
         setSlug(resolvedParams.subPageId);
+        setSavedSnapshot("__new__");
       }
     } catch (err) {
       setError("Failed to load content");
@@ -171,6 +183,27 @@ function EditSubPageContent({
     loadContent();
   }, [loadContent]);
 
+  const currentSnapshot = useMemo(() => {
+    if (!content) return "";
+    return JSON.stringify({ content, slug, status });
+  }, [content, slug, status]);
+
+  const hasUnsavedChanges = Boolean(
+    savedSnapshot && currentSnapshot && savedSnapshot !== currentSnapshot
+  );
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const handleSave = async () => {
     if (!content || !resolvedParams) return;
 
@@ -180,14 +213,15 @@ function EditSubPageContent({
       setSuccess("");
 
       // Prepare content to be saved with all fields (excluding unnecessary keys: content, hero, image)
+      const savedSlug = slug.trim() || resolvedParams.subPageId;
       const contentToSave: SubPageContent = {
         pageName: content.pageName,
-        slug: slug.trim() || resolvedParams.subPageId,
+        slug: savedSlug,
         status,
         heading: content.heading || "",
         description: content.description || "",
         seoLabel: content.seoLabel || content.pageName || "",
-        seoSlug: content.seoSlug || slug.trim() || resolvedParams.subPageId,
+        seoSlug: content.seoSlug || savedSlug,
         meta: content.meta,
         schema: content.schema,
         hero: content.hero || {
@@ -214,6 +248,15 @@ function EditSubPageContent({
             router.push(`/admin/nursing-exit-exam/${resultData.slug}`);
           }, 1000);
         } else {
+          setContent(contentToSave);
+          setSlug(savedSlug);
+          setSavedSnapshot(
+            JSON.stringify({
+              content: contentToSave,
+              slug: savedSlug,
+              status,
+            })
+          );
           setSuccess("Content updated successfully!");
           setTimeout(() => setSuccess(""), 3000);
         }
@@ -253,11 +296,11 @@ function EditSubPageContent({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6a5cff] mx-auto mb-4"></div>
-          <p className="text-[#7a819c]">Loading content...</p>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Content"
+          description="Preparing admin content, metadata, and editor fields."
+        />
       </div>
     );
   }
@@ -322,6 +365,21 @@ function EditSubPageContent({
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
+                <span
+                  className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                    saving
+                      ? "bg-[#f4f4ff] text-[#5b60a0]"
+                      : hasUnsavedChanges
+                      ? "bg-amber-50 text-amber-800"
+                      : "bg-emerald-50 text-emerald-800"
+                  }`}
+                >
+                  {saving
+                    ? "Saving..."
+                    : hasUnsavedChanges
+                    ? "Unsaved changes"
+                    : "All changes saved"}
+                </span>
                 <Link
                   href="/admin/nursing-exit-exam"
                   className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
@@ -339,10 +397,14 @@ function EditSubPageContent({
                 )}
                 <button
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || !hasUnsavedChanges}
                   className="rounded-full bg-gradient-to-r from-[#6a5cff] to-[#8b5dff] text-white px-3.5 py-2 text-sm font-medium shadow-lg shadow-[#4c3dff]/40 hover:shadow-xl hover:shadow-[#4c3dff]/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {saving ? "Saving..." : "Save Sub-Page"}
+                  {saving
+                    ? "Saving..."
+                    : hasUnsavedChanges
+                    ? "Save Changes"
+                    : "Saved"}
                 </button>
               </div>
             </header>
@@ -859,6 +921,12 @@ function EditSubPageContent({
                   Content
                 </span>
               </div>
+
+              <ContentQualityWarnings bodyContent={content.bodyContent || ""} />
+              <PublicContentPreview
+                content={content.bodyContent || ""}
+                publicPath={content.slug || content.seoSlug}
+              />
 
               <div className="mt-2">
                 <TiptapEditor

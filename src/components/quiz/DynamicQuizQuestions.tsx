@@ -126,8 +126,8 @@ export default function DynamicQuizQuestions({
         showForAuthenticated
       />
     ) : (
-      <div className="py-12 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+      <div className="user-card py-12 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#eef0ff]">
           <svg className="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -137,14 +137,14 @@ export default function DynamicQuizQuestions({
             />
           </svg>
         </div>
-        <h3 className="mb-1 text-lg font-semibold text-slate-900">No questions available</h3>
-        <p className="text-slate-600">Questions for this quiz are not available yet.</p>
+        <h3 className="user-card-title">No questions available</h3>
+        <p className="user-helper mt-2">Questions for this quiz are not available yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4.5">
+    <div className="space-y-4">
       {questions.map((question, index: number) => {
         const questionTypeId = question.questionTypeId || question.question_type_id || 1;
 

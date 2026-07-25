@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { AdminLoadingState } from "@/components/admin/AdminUi";
 import {
   getBlogContent,
   uploadBlogContent,
@@ -357,15 +358,11 @@ export default function EditBlogPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8 shadow-lg">
-          <div className="flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="text-lg font-medium text-gray-700">
-              Loading blog...
-            </span>
-          </div>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Blog"
+          description="Preparing blog content, metadata, and editing fields."
+        />
       </div>
     );
   }

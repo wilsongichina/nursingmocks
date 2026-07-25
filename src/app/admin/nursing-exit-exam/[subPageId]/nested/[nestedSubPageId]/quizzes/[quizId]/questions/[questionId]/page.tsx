@@ -8,6 +8,7 @@ import {
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
@@ -444,11 +445,11 @@ export default function EditQuestion({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Admin Content"
+          description="Preparing admin data and management controls."
+        />
       </div>
     );
   }
@@ -470,7 +471,6 @@ export default function EditQuestion({
   }
 
 const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
 
   function LayoutShell({ children }: { children: React.ReactNode }) {
     const { isCollapsed } = useSidebar();
@@ -483,69 +483,33 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
             isCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <div className="hidden md:block border-b border-gray-200 bg-white h-16">
-            <div className="flex justify-between items-center px-4 h-full">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Link
-                  href="/"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Home
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <Link
-                  href="/admin"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Admin
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <span className="font-medium text-gray-800">Edit Question</span>
-              </div>
-              {currentUser ? (
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Home", href: "/" },
+              { label: "Admin Dashboard", href: "/admin" },
+              { label: "Edit Question" },
+            ]}
+            actions={
+              currentUser ? (
                 <UserProfileBadge />
               ) : (
                 <div className="flex items-center space-x-4">
                   <Link
                     href="/login"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    className="admin-button-secondary px-3 py-1.5 text-sm"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                    className="admin-button-primary px-4 py-2 text-sm"
                   >
                     Register
                   </Link>
                 </div>
-              )}
-            </div>
-          </div>
+              )
+            }
+          />
           <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffffff_0,#f5f6fb_40%,#e8ebff_100%)]">
             {children}
           </div>
@@ -557,15 +521,15 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
   return (
     <SidebarProvider>
       <LayoutShell>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          <header className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex flex-col gap-2 min-w-0">
+        <div className="admin-workspace space-y-6">
+          <header className="admin-header-row flex-wrap">
+            <div className="admin-header-copy flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-slate-900">
+                <h1 className="admin-page-title">
                   Edit Question
                 </h1>
               </div>
-              <div className="text-sm text-slate-600 flex flex-wrap items-center gap-3">
+              <div className="admin-body flex flex-wrap items-center gap-3">
                 <span>Question ID: {resolvedParams.questionId}</span>
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs">
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -573,10 +537,10 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="admin-header-actions">
               <Link
                 href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-50"
+                className="admin-button-secondary"
               >
                 ← Back to Admin
               </Link>
@@ -584,7 +548,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
+                className="admin-button-primary disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Question"}
               </button>
@@ -592,27 +556,27 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
           </header>
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div className="admin-alert admin-alert-error">
               {error}
             </div>
           )}
           {success && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <div className="admin-alert admin-alert-success">
               {success}
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
-            <section className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-5">
+            <section className="admin-card p-5 space-y-5">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-900">
+                <div className="admin-card-title">
                   Question Content
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
+                  <label className="admin-field-label">
                     Question Type *
                   </label>
                   <select
@@ -620,7 +584,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                     onChange={(e) =>
                       handleInputChange("questionTypeId", parseInt(e.target.value))
                     }
-                    className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                    className="admin-field mt-1"
                   >
                     {questionTypes
                       .filter((type) => {
@@ -636,10 +600,10 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
+                  <label className="admin-field-label">
                     Question Text *
                   </label>
-                  <div className="mt-1 rounded-xl border border-slate-200 bg-white">
+                  <div className="admin-info-tile mt-1 bg-white">
                     <RichTextEditor
                       value={questionData.question || ""}
                       onChange={(val) => handleInputChange("question", val)}
@@ -650,43 +614,43 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
 
                 {questionData.questionTypeId === 3 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Options (Fixed for True/False)
                     </label>
                     <div className="mt-2 space-y-2">
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
-                        <span className="text-xs font-semibold text-slate-600 min-w-[30px]">
+                      <div className="admin-info-tile flex items-center gap-3 px-3 py-2">
+                        <span className="admin-field-label min-w-[30px]">
                           A:
                         </span>
-                        <span className="text-slate-800">True</span>
+                        <span className="admin-body-sm">True</span>
                       </div>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
-                        <span className="text-xs font-semibold text-slate-600 min-w-[30px]">
+                      <div className="admin-info-tile flex items-center gap-3 px-3 py-2">
+                        <span className="admin-field-label min-w-[30px]">
                           B:
                         </span>
-                        <span className="text-slate-800">False</span>
+                        <span className="admin-body-sm">False</span>
                       </div>
                     </div>
                   </div>
                 ) : questionData.questionTypeId === 7 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Answer Type: Numeric/Fill-in-the-Blank
                     </label>
-                    <p className="text-[12px] text-slate-500 mt-1">
+                    <p className="admin-helper mt-1">
                       Enter the numeric answer below.
                     </p>
                   </div>
                 ) : (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Options *
                       </label>
                       <button
                         type="button"
                         onClick={handleAddOption}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                        className="admin-button-secondary px-3 py-1.5 text-xs"
                       >
                         + Add Option
                       </button>
@@ -695,9 +659,9 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                       {questionData.options?.map((option: string, index: number) => (
                         <div
                           key={index}
-                          className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                          className="admin-info-tile flex items-start gap-3 bg-white px-3 py-2"
                         >
-                          <span className="text-xs font-semibold text-slate-600 min-w-[24px] pt-1">
+                          <span className="admin-field-label min-w-[24px] pt-1">
                             {ANSWER_LABELS[index] || String(index + 1)}:
                           </span>
                           <div className="flex-1">
@@ -712,7 +676,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                               <button
                                 type="button"
                                 onClick={() => handleRemoveOption(index)}
-                                className="text-red-500 hover:text-red-600 p-1"
+                                className="admin-button-danger px-2 py-1 text-xs"
                                 disabled={
                                   questionData.options &&
                                   questionData.options.length <= 2
@@ -729,14 +693,14 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
 
                 {questionData.questionTypeId === 3 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Correct Answer *
                     </label>
                     <div className="mt-2 space-y-2">
                       {["True", "False"].map((val) => (
                         <label
                           key={val}
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                          className="admin-info-tile flex cursor-pointer items-center gap-3 bg-white px-3 py-2"
                         >
                           <input
                             type="radio"
@@ -746,7 +710,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                             onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
                             className="w-4 h-4 text-indigo-600"
                           />
-                          <span className="text-sm text-slate-800">{val}</span>
+                          <span className="admin-body-sm">{val}</span>
                         </label>
                       ))}
                     </div>
@@ -754,7 +718,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                 ) : questionData.questionTypeId === 7 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Correct Answer (Numeric) *
                       </label>
                       <input
@@ -765,26 +729,26 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                             : (questionData.correctAnswer as string) || ""
                         }
                         onChange={(e) => handleInputChange("correctAnswer", [e.target.value])}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Enter numeric answer"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Units
                       </label>
                       <input
                         type="text"
                         value={questionData.units || ""}
                         onChange={(e) => handleInputChange("units", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="e.g., mL, mg, units"
                       />
                     </div>
                   </div>
                 ) : questionData.questionTypeId === 2 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Correct Answer(s) * (Select all that apply)
                     </label>
                     <div className="mt-2 space-y-2">
@@ -806,7 +770,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                         return (
                           <label
                             key={index}
-                            className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                            className="admin-info-tile flex cursor-pointer items-center gap-3 bg-white px-3 py-2"
                           >
                             <input
                               type="checkbox"
@@ -835,10 +799,10 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                               }}
                               className="w-4 h-4 text-indigo-600 rounded"
                             />
-                            <span className="text-xs font-semibold text-slate-600 min-w-[26px]">
+                            <span className="admin-field-label min-w-[26px]">
                               {optionLabel}:
                             </span>
-                            <span className="text-sm text-slate-800 flex-1 line-clamp-1">
+                            <span className="admin-body-sm flex-1 line-clamp-1">
                               {stripHtmlTags(option)}
                             </span>
                           </label>
@@ -848,7 +812,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                   </div>
                 ) : (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Correct Answer *
                     </label>
                     <select
@@ -858,7 +822,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                           : (questionData.correctAnswer as string) || ""
                       }
                       onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
-                      className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                      className="admin-field mt-1"
                     >
                       <option value="">Select correct answer</option>
                       {questionData.options?.map((_: string, index: number) => (
@@ -871,10 +835,10 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                 )}
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
+                  <label className="admin-field-label">
                     Explanation
                   </label>
-                  <div className="mt-1 rounded-xl border border-slate-200 bg-white">
+                  <div className="admin-info-tile mt-1 bg-white">
                     <RichTextEditor
                       value={questionData.explanation || ""}
                       onChange={(val) => handleInputChange("explanation", val)}
@@ -885,13 +849,13 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Status
                     </label>
                     <select
                       value={questionData.status || "published"}
                       onChange={(e) => handleInputChange("status", e.target.value)}
-                      className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                      className="admin-field mt-1"
                     >
                       <option value="published">Published</option>
                       <option value="draft">Draft</option>
@@ -901,11 +865,11 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
               </div>
             </section>
 
-            <aside className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+            <aside className="admin-card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">Meta & Schema</div>
-                  <p className="text-xs text-slate-500">
+                  <div className="admin-card-title">Meta & Schema</div>
+                  <p className="admin-helper">
                     Keep SEO metadata and structured data in sync.
                   </p>
                 </div>
@@ -915,119 +879,119 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
               </div>
 
               <div className="space-y-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
-                  <label className="text-xs font-semibold text-slate-600">
+                <div className="admin-info-tile px-3 py-3">
+                  <label className="admin-field-label">
                     Question Slug URL
                   </label>
                   <input
                     type="text"
                     value={questionData.slug || ""}
                     readOnly
-                    className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 ${gradientBg}`}
+                    className="admin-field mt-1"
                     placeholder="Slug auto-generated from question text"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="admin-helper mt-1">
                     Auto-generated from the first 180 characters of the question text.
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-3">
+                <div className="admin-info-tile bg-white px-3 py-3 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Meta Title
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.title || ""}
                         onChange={(e) => handleInputChange("meta.title", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Meta title"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Meta Description
                       </label>
                       <textarea
                         value={questionData.meta?.description || ""}
                         onChange={(e) => handleInputChange("meta.description", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Meta description"
                         rows={2}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Keywords
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.keywords || ""}
                         onChange={(e) => handleInputChange("meta.keywords", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Keywords (comma separated)"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         OG Title
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.ogTitle || ""}
                         onChange={(e) => handleInputChange("meta.ogTitle", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Open Graph title"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         OG Description
                       </label>
                       <textarea
                         value={questionData.meta?.ogDescription || ""}
                         onChange={(e) => handleInputChange("meta.ogDescription", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Open Graph description"
                         rows={2}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         OG Image URL
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.ogImage || ""}
                         onChange={(e) => handleInputChange("meta.ogImage", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Open Graph image URL"
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Canonical URL
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.canonicalUrl || ""}
                         onChange={(e) => handleInputChange("meta.canonicalUrl", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Canonical URL"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                  <label className="text-xs font-semibold text-slate-600">
+                <div className="admin-info-tile bg-white px-3 py-3">
+                  <label className="admin-field-label">
                     Schema Markup
                   </label>
                   <textarea
                     value={questionData.schema || ""}
                     onChange={(e) => handleInputChange("schema", e.target.value)}
-                    className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                    className="admin-field mt-1 font-mono"
                     placeholder="Enter JSON-LD schema markup..."
                     rows={8}
                   />
@@ -1036,14 +1000,14 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
             </aside>
           </div>
 
-          <footer className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
-            <div className="text-xs text-slate-500">
+          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e3e5f0] pt-3">
+            <div className="admin-helper">
               Autosave not enabled; click Save Question to persist changes.
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm hover:bg-slate-50"
+                className="admin-button-secondary px-3 py-2 text-xs"
               >
                 Cancel
               </Link>
@@ -1051,7 +1015,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-full bg-indigo-600 text-white px-4 py-2 text-xs font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
+                className="admin-button-primary px-4 py-2 text-xs disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Question"}
               </button>
@@ -1062,5 +1026,7 @@ const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
     </SidebarProvider>
   );
 }
+
+
 
 

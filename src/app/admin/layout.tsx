@@ -5,6 +5,9 @@ import Link from "next/link";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminAuthorization } from "@/hooks/useAdminAuthorization";
+import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import { SidebarProvider } from "@/components/layout/SidebarContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -73,32 +76,42 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200 text-center">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Checking admin access
-          </h1>
-          <p className="text-gray-600">
-            Verifying your Firebase authentication and admin claim.
-          </p>
+      <SidebarProvider>
+        <div className="min-h-screen overflow-x-hidden bg-white">
+          <AdminSidebar />
+          <div className="transition-all duration-300 md:ml-64">
+            <AdminTopBar
+              breadcrumbs={[
+                { label: "Admin", href: "/admin" },
+                { label: "Checking Admin Access" },
+              ]}
+            />
+            <main className="admin-workspace">
+              <div className="admin-content flex min-h-[calc(100vh-8rem)] items-center justify-center">
+                <AdminLoadingState
+                  title="Checking Admin Access"
+                  description="Verifying your Firebase authentication and admin permissions."
+                />
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     );
   }
 
   if (status === "unauthenticated") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200">
+      <div className="admin-auth-screen">
+        <div className="admin-auth-card">
           <div className="text-center mb-8">
             <div className="w-14 h-14 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
               <span className="text-blue-700 text-2xl font-bold">A</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="admin-section-title mb-2">
               Admin Sign In
             </h1>
-            <p className="text-gray-600">
+            <p className="admin-body">
               Sign in with your Firebase admin email and password.
             </p>
           </div>
@@ -107,7 +120,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <div>
               <label
                 htmlFor="admin-email"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="user-label mb-2 block"
               >
                 Email Address
               </label>
@@ -120,7 +133,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   setLoginError("");
                 }}
                 autoComplete="email"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                className="admin-field"
                 placeholder="admin@example.com"
                 disabled={isSubmitting}
                 required
@@ -130,7 +143,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <div>
               <label
                 htmlFor="admin-password"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="user-label mb-2 block"
               >
                 Password
               </label>
@@ -143,7 +156,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   setLoginError("");
                 }}
                 autoComplete="current-password"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                className="admin-field"
                 placeholder="Enter your password"
                 disabled={isSubmitting}
                 required
@@ -151,7 +164,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
 
             {loginError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="user-alert user-alert-error">
+                <span className="user-alert-icon" aria-hidden="true">!</span>
                 {loginError}
               </div>
             )}
@@ -159,7 +173,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="admin-button-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
@@ -171,22 +185,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (status === "not-admin") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200">
+      <div className="admin-auth-screen">
+        <div className="admin-auth-card">
           <div className="text-center">
             <div className="w-14 h-14 bg-red-100 rounded-full mx-auto mb-4 flex items-center justify-center">
               <span className="text-red-600 text-2xl font-bold">!</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="admin-section-title mb-2">
               Access Denied
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="admin-body mb-6">
               Your account is signed in, but it does not have the Firebase
               admin claim required to access this area.
             </p>
             <Link
               href="/dashboard"
-              className="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+              className="admin-button-primary"
             >
               Go to Dashboard
             </Link>
@@ -198,23 +212,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (status === "invalid-provider") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200">
+      <div className="admin-auth-screen">
+        <div className="admin-auth-card">
           <div className="text-center">
             <div className="w-14 h-14 bg-amber-100 rounded-full mx-auto mb-4 flex items-center justify-center">
               <span className="text-amber-700 text-2xl font-bold">!</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="admin-section-title mb-2">
               Email Login Required
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="admin-body mb-6">
               Admin access requires Firebase email and password sign-in. Sign
               out, then sign in again from this admin page.
             </p>
             <button
               type="button"
               onClick={() => void logout()}
-              className="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+              className="admin-button-primary"
             >
               Sign Out
             </button>
@@ -226,18 +240,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border border-gray-200 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="admin-auth-screen">
+        <div className="admin-auth-card text-center">
+          <h1 className="admin-section-title mb-2">
             Could Not Verify Access
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="admin-body mb-6">
             {error || "Admin authorization could not be verified."}
           </p>
           <button
             type="button"
             onClick={() => void refresh()}
-            className="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+            className="admin-button-primary"
           >
             Try Again
           </button>
@@ -247,9 +261,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="admin-root">
       {/* Main Content */}
-      <main className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+      <main className="admin-root-main">
         {children}
       </main>
     </div>

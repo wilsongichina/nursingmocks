@@ -178,7 +178,7 @@ export default function CustomHeadingFloatingMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white border border-[#e2e4f0] rounded-lg shadow-lg z-50 p-3 min-w-[200px]"
+      className="admin-editor-menu"
       style={{
         top: `${position.top - 10}px`,
         left: `${position.left}px`,
@@ -188,7 +188,7 @@ export default function CustomHeadingFloatingMenu({
       <div className="space-y-2">
         <label
           htmlFor="heading-id-floating-menu"
-          className="block text-xs font-medium text-[#3b3f57] mb-1"
+          className="admin-field-label mb-1 block"
         >
           ID (optional)
         </label>
@@ -209,7 +209,7 @@ export default function CustomHeadingFloatingMenu({
             e.stopPropagation();
           }}
           placeholder="e.g., section-1"
-          className="w-full px-2.5 py-2 text-sm border border-[#e2e4f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6a5cff] focus:border-[#6a5cff] text-[#202437]"
+          className="admin-field w-full"
         />
         <div className="flex gap-2 justify-end pt-1">
           <button
@@ -219,14 +219,14 @@ export default function CustomHeadingFloatingMenu({
               headingDepthRef.current = null;
               setShow(false);
             }}
-            className="px-3 py-1.5 text-xs font-medium text-[#7a819c] bg-white border border-[#e2e4f0] rounded hover:bg-[#f4f5ff] transition-colors"
+            className="admin-button-cancel min-h-[34px] px-3 py-1.5 text-xs"
           >
             Close
           </button>
           <button
             type="button"
             onClick={handleUpdateId}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-[#6a5cff] to-[#8b5dff] rounded hover:from-[#5a4cef] hover:to-[#7b4def] transition-colors shadow-lg shadow-[#4c3dff]/40"
+            className="admin-button-primary min-h-[34px] px-3 py-1.5 text-xs"
           >
             Update
           </button>

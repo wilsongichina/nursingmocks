@@ -26,271 +26,204 @@ export default function QuestionCard({
 }: QuestionCardProps) {
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // Determine correct option index for highlighting
-  const getCorrectOptionIndex = () => {
-    if (questionTypeId === 1 || questionTypeId === 2) {
-      const correctLabel = correctAnswers[0];
-      return ANSWER_LABELS.indexOf(correctLabel);
-    }
-    return -1;
-  };
+  const correctOptionIndex =
+    questionTypeId === 1 || questionTypeId === 2
+      ? ANSWER_LABELS.indexOf(correctAnswers[0])
+      : -1;
 
-  const correctOptionIndex = getCorrectOptionIndex();
+  const optionClass = (isCorrect: boolean) =>
+    `flex items-start gap-3 rounded-xl border px-3 py-3 transition-all ${
+      showExplanation && isCorrect
+        ? "border-[#16a34a] bg-[#ecfdf3] shadow-[0_0_0_1px_rgba(22,163,74,0.08)]"
+        : "border-[#e3e5f0] bg-[#f9fafb]"
+    }`;
+
+  const optionLabelClass = (isCorrect: boolean) =>
+    `flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
+      showExplanation && isCorrect
+        ? "border-[#16a34a] bg-[#16a34a] text-white"
+        : "border-[#cfd3e6] bg-white text-[#6b7280]"
+    }`;
+
+  const checkIcon = (
+    <svg
+      className="h-5 w-5 flex-shrink-0 text-[#16a34a]"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.5}
+        d="M5 13l4 4L19 7"
+      />
+    </svg>
+  );
 
   return (
-    <article className="relative mb-4.5 px-4 sm:px-4.5 py-4 sm:py-4.5 rounded-[18px] bg-white border border-[#e0e3f5] shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+    <article className="user-card p-4 sm:p-5">
       <input
         type="checkbox"
         id={`q${index + 1}-toggle`}
         className="absolute opacity-0 pointer-events-none"
         checked={showExplanation}
-        onChange={(e) => setShowExplanation(e.target.checked)}
+        onChange={(event) => setShowExplanation(event.target.checked)}
       />
 
-      {/* Question Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-2.5 text-[13px] font-semibold">
-          <span className="text-black">Question {index + 1} of {totalQuestions}</span>
-          <span className="px-2.5 py-1 rounded-full bg-[#eef0ff] border border-dashed border-[rgba(159,163,232,0.9)] text-[11px] text-[#a0a5bf]">
-            {questionTypeName}
-          </span>
-        </div>
-        <div className="px-3 py-1.25 rounded-full bg-[#eef2ff] border border-[rgba(165,180,252,0.95)] text-[11px] text-[#3730a3] whitespace-nowrap">
-          Single-Select Multiple Choice
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="user-card-title text-sm">
+          Question {index + 1} of {totalQuestions}
+        </span>
+        <span className="user-badge">{questionTypeName}</span>
       </div>
 
-      {/* Question Body */}
-      <div className="flex flex-col lg:flex-row items-start gap-5 mt-3">
-        {/* Left: Question and Options */}
-        <div className="w-full lg:flex-[0_0_55%] lg:max-w-[55%] min-w-0">
-          {/* Question Text */}
-          <div className="text-base font-semibold mb-3">
+      <div className="mt-4 flex flex-col items-start gap-5 lg:flex-row">
+        <div className="min-w-0 w-full lg:flex-[0_0_55%] lg:max-w-[55%]">
+          <div className="user-card-title mb-4 text-base leading-7">
             <ContentRenderer content={question.question || ""} />
           </div>
 
-          {/* Options List */}
-          <ul className="list-none m-0 p-0 grid gap-2.5">
-            {questionTypeId === 3 ? (
-              // True/False
-              ["True", "False"].map((option, optIndex) => {
-                const optionLabel = ANSWER_LABELS[optIndex];
-                const isCorrect = correctAnswers.includes(option);
-                const shouldHighlight = showExplanation && isCorrect;
+          <ul className="grid list-none gap-2.5 p-0">
+            {questionTypeId === 3
+              ? ["True", "False"].map((option, optIndex) => {
+                  const optionLabel = ANSWER_LABELS[optIndex];
+                  const isCorrect = correctAnswers.includes(option);
 
-                return (
-                  <li
-                    key={optIndex}
-                    className={`flex items-start gap-2.5 px-3 py-2.5 rounded-xl border transition-all ${
-                      shouldHighlight
-                        ? "border-[#16a34a] bg-[#ecfdf3] shadow-[0_0_0_1px_rgba(22,163,74,0.08)]"
-                        : "border-[#e0e3f5] bg-[#f9fafb]"
-                    }`}
-                  >
-                    <span
-                      className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-[11px] font-semibold ${
-                        shouldHighlight
-                          ? "border-[#16a34a] bg-[#16a34a] text-white"
-                          : "border-[#c5c9ee] bg-white text-[#a0a5bf]"
+                  return (
+                    <li key={option} className={optionClass(isCorrect)}>
+                      <span className={optionLabelClass(isCorrect)}>
+                        {optionLabel}
+                      </span>
+                      <span className="user-body-sm flex-1">{option}</span>
+                      {showExplanation && isCorrect ? checkIcon : null}
+                    </li>
+                  );
+                })
+              : questionTypeId === 7
+                ? (
+                  <li>
+                    <div
+                      className={`relative overflow-hidden rounded-xl border px-4 py-4 transition-all ${
+                        showExplanation
+                          ? "border-[#16a34a] bg-[#ecfdf3] shadow-lg"
+                          : "border-[#e3e5f0] bg-[#f9fafb]"
                       }`}
                     >
-                      {optionLabel}
-                    </span>
-                    <span className="text-sm text-[#202437] flex-1">{option}</span>
-                    {shouldHighlight && (
-                      <svg
-                        className="w-5 h-5 text-[#16a34a] flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </li>
-                );
-              })
-            ) : questionTypeId === 7 ? (
-              // Numeric/Fill-in - Creative Design (shows/hides with toggle)
-              <li className="relative overflow-hidden">
-                <div className={`px-4 py-4 rounded-xl border-2 transition-all ${
-                  showExplanation 
-                    ? "border-[#16a34a] bg-gradient-to-br from-[#ecfdf3] via-[#d1fae5] to-[#ecfdf3] shadow-lg" 
-                    : "border-[#e0e3f5] bg-[#f9fafb]"
-                }`}>
-                  {showExplanation ? (
-                    <div className="flex items-center gap-3">
-                      {/* Checkmark Icon */}
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#16a34a] flex items-center justify-center shadow-md">
-                        <svg
-                          className="w-7 h-7 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
+                            showExplanation ? "bg-[#16a34a]" : "bg-[#e3e5f0]"
+                          }`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                      
-                      {/* Answer Content */}
-                      <div className="flex-1">
-                        <div className="text-xs font-semibold text-[#16a34a] uppercase tracking-wide mb-1">
-                          Correct Answer
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-[#16a34a]">
-                            {correctAnswers[0] || "N/A"}
-                          </span>
-                          {question.units && (
-                            <span className="text-base font-medium text-[#15803d] bg-white/60 px-2 py-0.5 rounded-md">
-                              {question.units}
+                          {showExplanation ? (
+                            <svg
+                              className="h-7 w-7 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            <span className="text-sm font-semibold text-[#6b7280]">
+                              ?
                             </span>
                           )}
                         </div>
-                      </div>
-
-                      {/* Decorative Element */}
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-[#16a34a]/10 rounded-full -mr-10 -mt-10" />
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      {/* Placeholder Icon */}
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#e0e3f5] flex items-center justify-center">
-                        <svg
-                          className="w-7 h-7 text-[#a0a5bf]"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                        <div
+                          className={`min-w-0 flex-1 ${
+                            showExplanation ? "" : "blur-sm opacity-50 pointer-events-none"
+                          }`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                          />
-                        </svg>
-                      </div>
-                      
-                      {/* Blurred Answer Content */}
-                      <div className="flex-1 blur-sm opacity-50 pointer-events-none">
-                        <div className="text-xs font-semibold text-[#7a819c] uppercase tracking-wide mb-1">
-                          Correct Answer
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-[#7a819c]">
-                            ••••
-                          </span>
-                          {question.units && (
-                            <span className="text-base font-medium text-[#7a819c] bg-white/60 px-2 py-0.5 rounded-md">
-                              {question.units}
+                          <div
+                            className={`user-label mb-1 ${
+                              showExplanation ? "text-[#16a34a]" : ""
+                            }`}
+                          >
+                            Correct Answer
+                          </div>
+                          <div className="flex flex-wrap items-baseline gap-2">
+                            <span
+                              className={`text-2xl font-bold ${
+                                showExplanation ? "text-[#16a34a]" : "text-[#6b7280]"
+                              }`}
+                            >
+                              {showExplanation ? correctAnswers[0] || "N/A" : "Hidden"}
                             </span>
-                          )}
+                            {question.units ? (
+                              <span className="rounded-md bg-white/70 px-2 py-0.5 text-base font-medium text-[#15803d]">
+                                {question.units}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              </li>
-            ) : (
-              // Type 1 and 2: Multiple choice options
-              options.length > 0 &&
-              options.map((option: string, optIndex: number) => {
-                const optionLabel = ANSWER_LABELS[optIndex] || String(optIndex + 1);
-                const isCorrect = correctAnswers.includes(optionLabel);
-                const shouldHighlight = showExplanation && isCorrect;
-
-                return (
-                  <li
-                    key={optIndex}
-                    className={`flex items-start gap-2.5 px-3 py-2.5 rounded-xl border transition-all ${
-                      shouldHighlight
-                        ? "border-[#16a34a] bg-[#ecfdf3] shadow-[0_0_0_1px_rgba(22,163,74,0.08)]"
-                        : "border-[#e0e3f5] bg-[#f9fafb]"
-                    }`}
-                  >
-                    <span
-                      className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-[11px] font-semibold ${
-                        shouldHighlight
-                          ? "border-[#16a34a] bg-[#16a34a] text-white"
-                          : "border-[#c5c9ee] bg-white text-[#a0a5bf]"
-                      }`}
-                    >
-                      {optionLabel}
-                    </span>
-                    <span className="text-sm text-[#202437] flex-1">
-                      <ContentRenderer content={option} />
-                    </span>
-                    {shouldHighlight && (
-                      <svg
-                        className="w-5 h-5 text-[#16a34a] flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
                   </li>
-                );
-              })
-            )}
+                )
+                : options.map((option, optIndex) => {
+                    const optionLabel = ANSWER_LABELS[optIndex] || String(optIndex + 1);
+                    const isCorrect = correctAnswers.includes(optionLabel);
+
+                    return (
+                      <li key={`${optionLabel}-${optIndex}`} className={optionClass(isCorrect)}>
+                        <span className={optionLabelClass(isCorrect)}>
+                          {optionLabel}
+                        </span>
+                        <span className="user-body-sm flex-1">
+                          <ContentRenderer content={option} />
+                        </span>
+                        {showExplanation && isCorrect ? checkIcon : null}
+                      </li>
+                    );
+                  })}
           </ul>
 
-          {/* Correct Tag */}
-          {showExplanation && correctOptionIndex >= 0 && (
-            <div className="mt-2 text-xs text-[#16a34a] inline-flex items-center gap-1.5 px-2.25 py-1 rounded-full bg-[#ecfdf3] border border-dashed border-[rgba(134,239,172,0.9)]">
-              <span className="w-2 h-2 rounded-full bg-[#16a34a]" />
-              <span><strong>Correct answer:</strong> {ANSWER_LABELS[correctOptionIndex]}</span>
+          {showExplanation && correctOptionIndex >= 0 ? (
+            <div className="user-badge user-badge-green mt-3 inline-flex">
+              Correct answer: {ANSWER_LABELS[correctOptionIndex]}
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Right: Explanation */}
-        <aside className="w-full lg:flex-[0_0_43%] lg:max-w-[43%] min-w-0 pl-0 lg:pl-4.5 pt-3 lg:pt-0 border-t lg:border-t-0 lg:border-l border-dashed border-[rgba(202,206,240,0.9)]">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
-            <div className="text-[13px] font-semibold text-[#202437]">Explanation</div>
-            <div className="inline-flex rounded-full p-0.5 bg-[#f3f4ff] border border-[rgba(191,194,244,0.9)] gap-0.5">
+        <aside className="min-w-0 w-full border-t border-dashed border-[#d9dcec] pt-4 lg:flex-[0_0_43%] lg:max-w-[43%] lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="user-card-title text-sm">Explanation</h2>
+            <div className="grid w-full grid-cols-2 rounded-full border border-[#d9dcec] bg-[#f5f6fb] p-1 sm:inline-flex sm:w-auto">
               <label
                 htmlFor={`q${index + 1}-toggle`}
-                className={`rounded-full border-none text-[11px] px-2 py-1 cursor-pointer transition-all whitespace-nowrap ${
+                className={`cursor-pointer rounded-full px-3 py-1 text-center text-xs font-semibold transition-all ${
                   showExplanation
                     ? "bg-white text-[#4c1d95] shadow-[0_1px_3px_rgba(15,23,42,0.12)]"
-                    : "bg-transparent text-[#a0a5bf]"
+                    : "bg-transparent text-[#6b7280]"
                 }`}
               >
-                Hide
+                Hide Explanation
               </label>
               <label
                 htmlFor={`q${index + 1}-toggle`}
-                className={`rounded-full border-none text-[11px] px-2 py-1 cursor-pointer transition-all whitespace-nowrap ${
+                className={`cursor-pointer rounded-full px-3 py-1 text-center text-xs font-semibold transition-all ${
                   !showExplanation
                     ? "bg-white text-[#4c1d95] shadow-[0_1px_3px_rgba(15,23,42,0.12)]"
-                    : "bg-transparent text-[#a0a5bf]"
+                    : "bg-transparent text-[#6b7280]"
                 }`}
               >
-                Show
+                Show Explanation
               </label>
             </div>
           </div>
 
           <div
-            className={`rounded-[14px] bg-[#f8f7ff] border border-dashed border-[rgba(190,195,239,0.9)] px-2.75 py-2.5 text-[13px] text-[#7a819c] leading-relaxed transition-all ${
-              !showExplanation ? "blur-[4px] opacity-50 pointer-events-none" : ""
+            className={`user-detail-surface px-3 py-3 text-sm leading-6 transition-all ${
+              showExplanation ? "" : "blur-[4px] opacity-50 pointer-events-none"
             }`}
           >
             {question.explanation ? (
@@ -300,10 +233,10 @@ export default function QuestionCard({
             )}
           </div>
 
-          <div className={`mt-1.5 text-[11px] transition-colors ${!showExplanation ? "text-[#a0a5bf]" : "text-[#7a819c]"}`}>
-            Explanations are blurred until you click <strong>Show</strong>. When visible, the
-            correct answer is highlighted on the left.
-          </div>
+          <p className="user-helper mt-2 text-xs">
+            Explanations are hidden until you choose <strong>Show Explanation</strong>.
+            When visible, the correct answer is highlighted on the left.
+          </p>
         </aside>
       </div>
     </article>

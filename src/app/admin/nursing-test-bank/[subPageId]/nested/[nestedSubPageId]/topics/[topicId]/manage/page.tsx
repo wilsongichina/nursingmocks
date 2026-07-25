@@ -10,6 +10,7 @@ import {
   getNursingTestBankNestedSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import { AdminInlineLoading } from "@/components/admin/AdminUi";
 
 interface Quiz {
   id: string;
@@ -241,10 +242,10 @@ export default function ManageQuizzes({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
+        <div className="admin-loading-state">
+          <div className="admin-loading-spinner"></div>
+          <AdminInlineLoading label="Loading Content" />
         </div>
       </div>
     );
@@ -254,23 +255,23 @@ export default function ManageQuizzes({
   const topicPageUrl = topicSlug || resolvedParams.topicId;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="admin-page min-h-screen">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="admin-card mb-6 p-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="admin-page-title">
                 Manage Quizzes: {topicName || resolvedParams.topicId}
               </h1>
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="admin-body mt-1">
                 Manage quizzes for this topic
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <Link
                 href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}`}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
+                className="admin-button-secondary flex items-center space-x-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -336,9 +337,9 @@ export default function ManageQuizzes({
         )}
 
         {/* Topic Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
+        <div className="admin-card mb-6 p-5">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Topic</h2>
+            <h2 className="admin-section-title">Topic</h2>
             <Link
               href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}`}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
@@ -359,16 +360,16 @@ export default function ManageQuizzes({
               <span>Edit Topic</span>
             </Link>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-gray-600 mb-2">
+          <div className="admin-info-tile p-4">
+            <p className="admin-helper mb-2">
               <strong>Page Name:</strong>{" "}
               {topicContent?.pageName || topicName || resolvedParams.topicId}
             </p>
-            <p className="text-gray-600 mb-2">
+            <p className="admin-helper mb-2">
               <strong>Title:</strong>{" "}
               {topicContent?.hero?.title || topicName || resolvedParams.topicId}
             </p>
-            <p className="text-gray-600">
+            <p className="admin-helper">
               <strong>URL:</strong>{" "}
               <a
                 href={`/${topicPageUrl}`}
@@ -382,9 +383,9 @@ export default function ManageQuizzes({
         </div>
 
         {/* Quizzes Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="admin-card p-5">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Quizzes</h2>
+            <h2 className="admin-section-title">Quizzes</h2>
             <button
               onClick={() => setShowCreateQuizModal(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
@@ -412,7 +413,7 @@ export default function ManageQuizzes({
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="h-5 w-5 text-gray-400"
+                    className="h-5 w-5 text-[#8a90a8]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -430,7 +431,7 @@ export default function ManageQuizzes({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search quizzes by name..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                  className="admin-field w-full pl-10"
                 />
                 {searchQuery && (
                   <button
@@ -438,7 +439,7 @@ export default function ManageQuizzes({
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   >
                     <svg
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                      className="h-5 w-5 text-[#8a90a8] hover:text-[#4b5563]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -470,9 +471,9 @@ export default function ManageQuizzes({
             if (quizzes.length === 0) {
               return (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#f4f2ff]">
                     <svg
-                      className="w-8 h-8 text-gray-400"
+                      className="h-8 w-8 text-[#8a90a8]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -485,10 +486,10 @@ export default function ManageQuizzes({
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="admin-card-title mb-2">
                     No quizzes found
                   </h3>
-                  <p className="text-gray-600">Create a quiz to get started.</p>
+                  <p className="admin-helper">Create a quiz to get started.</p>
                 </div>
               );
             }
@@ -496,9 +497,9 @@ export default function ManageQuizzes({
             if (filteredQuizzes.length === 0) {
               return (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#f4f2ff]">
                     <svg
-                      className="w-8 h-8 text-gray-400"
+                      className="h-8 w-8 text-[#8a90a8]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -511,10 +512,10 @@ export default function ManageQuizzes({
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="admin-card-title mb-2">
                     No quizzes found
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="admin-helper">
                     No quizzes match your search "{searchQuery}".
                   </p>
                 </div>
@@ -530,18 +531,18 @@ export default function ManageQuizzes({
                 return (
                   <div
                     key={quiz.id}
-                    className="bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300"
+                    className="admin-info-tile bg-white p-5 transition-all duration-300 hover:shadow-md"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        <h3 className="admin-card-title mb-2">
                           {quiz.pageName || quiz.hero?.title || quiz.id}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="admin-helper mb-2">
                           ID: {quiz.id}
                         </p>
                         {quiz.lastUpdated && (
-                          <p className="text-sm text-gray-500">
+                          <p className="admin-helper">
                             Updated:{" "}
                             {new Date(quiz.lastUpdated).toLocaleDateString()}
                           </p>
@@ -590,7 +591,7 @@ export default function ManageQuizzes({
                       >
                         View Page →
                       </Link>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="admin-helper mt-1">
                         URL: {quizUrl}
                       </p>
                     </div>
@@ -605,9 +606,9 @@ export default function ManageQuizzes({
 
       {/* Create Quiz Modal */}
       {showCreateQuizModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 overflow-y-auto py-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 my-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="admin-modal-backdrop">
+          <div className="admin-modal max-w-md">
+            <h2 className="admin-modal-title mb-6">
               Create New Quiz
             </h2>
             <form onSubmit={handleCreateQuiz} className="space-y-4">
@@ -617,24 +618,24 @@ export default function ManageQuizzes({
                 </div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="admin-field-label mb-2 block">
                   Quiz Name *
                 </label>
                 <input
                   type="text"
                   value={newQuizName}
                   onChange={(e) => setNewQuizName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="admin-field"
                   placeholder="e.g., Practice Quiz 1"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="admin-field-label mb-2 block">
                   Slug URL *
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                  <span className="admin-helper whitespace-nowrap">
                     https://teasgurus.com/
                   </span>
                   <input
@@ -645,17 +646,17 @@ export default function ManageQuizzes({
                         e.target.value.toLowerCase().replace(/\s+/g, "-")
                       )
                     }
-                    className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field min-w-0 flex-1"
                     placeholder="e.g., quiz-1"
                     required
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-1 break-words">
+                <p className="admin-helper mt-1 break-words">
                   This will create a quiz at /{newQuizId || "quiz-id"}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="admin-field-label mb-2 block">
                   Set Number
                 </label>
                 <input
@@ -663,7 +664,7 @@ export default function ManageQuizzes({
                   min="1"
                   value={newQuizSetNumber}
                   onChange={(e) => setNewQuizSetNumber(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="admin-field"
                   placeholder="e.g., 1"
                 />
               </div>
@@ -671,7 +672,7 @@ export default function ManageQuizzes({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50"
+                  className="admin-button-primary flex-1 disabled:opacity-50"
                 >
                   {saving ? "Creating..." : "Create Quiz"}
                 </button>
@@ -684,7 +685,7 @@ export default function ManageQuizzes({
                     setNewQuizSetNumber("");
                     setValidationError("");
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
+                  className="admin-button-cancel flex-1"
                 >
                   Cancel
                 </button>
@@ -696,4 +697,6 @@ export default function ManageQuizzes({
     </div>
   );
 }
+
+
 

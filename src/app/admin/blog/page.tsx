@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { AdminLoadingState } from "@/components/admin/AdminUi";
 import {
   getAllBlogs,
   deleteBlogContent,
@@ -108,15 +109,11 @@ export default function BlogManagementPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8 shadow-lg">
-          <div className="flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="text-lg font-medium text-gray-700">
-              Loading blogs...
-            </span>
-          </div>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Blogs"
+          description="Preparing blog records, categories, filters, and actions."
+        />
       </div>
     );
   }

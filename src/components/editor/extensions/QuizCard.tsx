@@ -2,6 +2,13 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import ReactDOM from "react-dom/client";
 import { QuizCardModal } from "../QuizCardModal";
 
+const SUPPORTED_QUIZ_CARD_QUESTION_TYPES = new Set([1, 2, 3, 7]);
+
+const isSupportedQuizCardQuestion = (question: any) => {
+  const typeId = question.questionTypeId || question.question_type_id;
+  return SUPPORTED_QUIZ_CARD_QUESTION_TYPES.has(Number(typeId));
+};
+
 export interface QuizCardOptions {
   HTMLAttributes: Record<string, any>;
 }
@@ -254,13 +261,7 @@ export const QuizCard = Node.create<QuizCardOptions>({
                   if (!isMounted) return;
 
                   if (result.success && result.data) {
-                    let filteredQuestions = result.data.filter((q: any) => {
-                      const typeId = q.questionTypeId || q.question_type_id;
-                      return (
-                        q.isCopyRight === true &&
-                        (typeId === 1 || typeId === 2 || typeId === 3 || typeId === 7)
-                      );
-                    });
+                    let filteredQuestions = result.data.filter(isSupportedQuizCardQuestion);
 
                     // Filter by selected question IDs if available
                     if (selectedQuestionIds && Array.isArray(selectedQuestionIds)) {

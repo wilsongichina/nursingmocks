@@ -218,6 +218,50 @@ The Recent Activity and Completed Exams sections now use student-facing empty co
 
 This follows the shared user typography rule that empty states must speak to the user, not to the developer. User-facing sections should explain the next useful student action instead of describing missing implementation details.
 
+## Dynamic Quiz Page Typography Update
+
+Dynamic quiz pages rendered through:
+
+```text
+src/app/[slug]/page.tsx
+```
+
+now use the shared user typography system for the quiz experience instead of the older marketing-style quiz layout.
+
+Changed:
+
+- quiz pages use `user-page` and `user-page-container` for the same background and width rhythm as the dashboard
+- quiz headers use `user-page-header`, `user-page-title`, `user-body-sm`, badges, and pills
+- quiz copy is derived from quiz metadata such as exam product, subject, set number, title, and description
+- hardcoded TEAS English labels were removed from the dynamic quiz route
+- the static example progress bar was removed because real attempt progress is not wired to this page yet
+- question cards use `user-card`, `user-detail-surface`, user badges, and clearer explanation controls
+- the preview-limit CTA uses the shared feature surface and standard user buttons
+- redundant quiz metadata was reduced by replacing the separate Exam, Set, and Mode cards with one compact quiz information strip
+- Review Mode is displayed as the current quiz state, with a single disabled `Go To Exam Mode` button until full Exam Mode behavior is wired
+- duplicate question-type pills were removed from question cards so the type appears once beside the question number
+- template-style quiz descriptions such as `Content for ... under ...` are replaced at display time with natural student-facing fallback copy
+- related practice-set links are rendered from Firestore during the static quiz page render, independent of login or subscription state, so public pages include indexable links such as `More TEAS Math Practice Test Practice Sets`
+- related practice sets exclude inactive and archived quiz records, sort by set number, and render up to nine public links on the page using the shared featured card surface
+- related practice-set card headings are the exact quiz-name anchors, avoiding repeated names while keeping public internal links useful for SEO
+- related practice-set heading links use visible underline, hover state, focus outline, and an arrow indicator so users can recognize they are clickable
+- quiz page related cards use one column on mobile, two columns on tablet, and three columns on wide screens
+- question explanation controls expand to a two-column mobile control to avoid cramped or overflowing labels
+
+Behavior preserved:
+
+- route mapping and dynamic slug resolution
+- preview question limit logic
+- authenticated full-quiz loading through `/api/quiz/full`
+- related quiz lookup
+- explanation reveal behavior
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
 The empty-state CTA now follows the user's selected Primary Exam and routes through the same continue action used by the top practice card, so the action changes when the Primary Exam changes.
 
 Validation:
@@ -2313,6 +2357,23 @@ Scope when implemented:
 - dynamic quiz pages such as `/hesi-a2-math-practice-test-set-1`
 
 Keep this stage small: routing and button behavior only, with no new analytics or exam engine features.
+
+## Deferred Follow-up: Exam Mode Simulation
+
+Exam Mode is the full simulation mode for a quiz set. Review Mode remains the learning/practice mode.
+
+Detailed implementation plan:
+
+- `Documentation/user-dashboard/Exam mode simulation plan.md`
+
+Key rules:
+
+- My Exams should route to the same quiz slug with `?mode=exam` or `?mode=review`.
+- The quiz route should load questions only after the user opens the quiz page.
+- Exam Mode should hide explanations and correctness while answering.
+- Review Mode can show explanations and learning feedback.
+- Attempt records, autosave, timer behavior, and results should be implemented in stages.
+- Access rules must be shared across modes; query parameters must never unlock protected questions.
 
 ## Follow-up: My Exams Entrance And Bank Interfaces
 

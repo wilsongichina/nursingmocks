@@ -577,7 +577,7 @@ Purpose:
 - Documents how it works.
 - Documents security decisions.
 - Documents future additions.
-- Appears in the existing project change-log webpage.
+- Appears in the existing project Documentation webpage.
 
 ## Files edited
 

@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AdminSidebar from "@/components/layout/AdminSidebar";
+import {
+  AdminAlert,
+  AdminStatCard,
+  AdminStatusBadge,
+  AdminTableCell,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,23 +84,22 @@ function formatMoney(value: number, currency: string) {
 }
 
 function StatCard({ label, value, helper }: { label: string; value: string | number; helper: string }) {
-  return (
-    <div className="user-stat-tile">
-      <p className="user-label">{label}</p>
-      <p className="user-stat-value mt-2">{value}</p>
-      <p className="user-helper mt-2">{helper}</p>
-    </div>
-  );
+  return <AdminStatCard label={label} value={value} helper={helper} />;
 }
 
 function AttentionItem({ title, value, href, tone }: { title: string; value: number; href: string; tone: "red" | "amber" | "purple" }) {
-  const toneClass = tone === "red" ? "user-alert-error" : tone === "amber" ? "user-alert-warning" : "user-alert-info";
+  const toneClass =
+    tone === "red"
+      ? "admin-attention-red"
+      : tone === "amber"
+      ? "admin-attention-amber"
+      : "admin-attention-purple";
   return (
-    <Link href={href} className={`user-alert ${toneClass} transition-transform hover:-translate-y-0.5`}>
-      <span className="user-alert-icon" aria-hidden="true">!</span>
+    <Link href={href} className={`admin-attention-card ${toneClass}`}>
+      <span className="admin-attention-icon" aria-hidden="true">!</span>
       <div>
-        <p className="user-card-title">{value} {title}</p>
-        <p className="user-helper mt-1">Open the related admin section to review.</p>
+        <p className="admin-card-title">{value} {title}</p>
+        <p className="admin-helper mt-1">Open the related admin section to review.</p>
       </div>
     </Link>
   );
@@ -101,12 +107,12 @@ function AttentionItem({ title, value, href, tone }: { title: string; value: num
 
 function ManagementCard({ link }: { link: ManagementLink }) {
   return (
-    <Link href={link.href} className="user-card group block p-5 transition-transform hover:-translate-y-0.5">
+    <Link href={link.href} className="admin-management-card group">
       <div className="flex min-h-full flex-col">
-        <span className="user-pill w-fit">Admin</span>
-        <h3 className="user-card-title mt-4 transition-colors group-hover:text-indigo-700">{link.title}</h3>
-        <p className="user-helper mt-2 flex-1">{link.description}</p>
-        <span className="user-button-secondary mt-4 w-fit px-3 py-1.5 text-xs">{link.action}</span>
+        <AdminStatusBadge label="Admin" tone="purple" />
+        <h3 className="admin-card-title mt-4 transition-colors group-hover:text-indigo-700">{link.title}</h3>
+        <p className="admin-helper mt-2 flex-1">{link.description}</p>
+        <span className="admin-button-secondary mt-4 w-fit px-3 py-1.5 text-xs">{link.action}</span>
       </div>
     </Link>
   );
@@ -157,31 +163,28 @@ function AdminPageContent() {
     <div className="min-h-screen overflow-x-hidden bg-white">
       <AdminSidebar />
       <div className={`transition-all duration-300 ${isCollapsed ? "md:ml-20" : "md:ml-64"}`}>
-        <div className="hidden h-16 border-b border-gray-200 bg-white md:block">
-          <div className="flex h-full items-center justify-between px-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link href="/" className="font-medium transition-colors hover:text-blue-600">Home</Link>
-              <span className="text-gray-400">/</span>
-              <span className="font-medium">Admin Dashboard</span>
-            </div>
-            {currentUser && <UserProfileBadge />}
-          </div>
-        </div>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Home", href: "/" },
+            { label: "Admin Dashboard" },
+          ]}
+          actions={currentUser && <UserProfileBadge />}
+        />
 
-        <main className="user-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-          <div className="w-full">
-            <header className="user-page-header mb-6">
-              <div className="user-page-header-row">
-                <div className="user-page-header-copy">
-                  <p className="user-eyebrow">Admin</p>
-                  <h1 className="user-page-title mt-1">Admin Dashboard</h1>
-                  <p className="user-body mt-2 max-w-4xl">
+        <main className="admin-workspace">
+          <div className="admin-content">
+            <header className="admin-header mb-6">
+              <div className="admin-header-row">
+                <div className="admin-header-copy">
+                  <p className="admin-eyebrow">Admin</p>
+                  <h1 className="admin-page-title mt-1">Admin Dashboard</h1>
+                  <p className="admin-body mt-2 max-w-4xl">
                     Monitor users, billing, content, security, and system activity from one workspace.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="user-helper">{summary ? `Last refreshed ${formatDate(summary.generatedAt)}` : "Not refreshed yet"}</span>
-                  <button type="button" onClick={() => void loadSummary()} className="user-button-secondary px-3 py-2 text-xs">
+                  <span className="admin-helper">{summary ? `Last refreshed ${formatDate(summary.generatedAt)}` : "Not refreshed yet"}</span>
+                  <button type="button" onClick={() => void loadSummary()} className="admin-button-secondary px-3 py-2 text-xs">
                     {loading ? "Refreshing..." : "Refresh"}
                   </button>
                 </div>
@@ -189,12 +192,10 @@ function AdminPageContent() {
             </header>
 
             {error && (
-              <div className="user-alert user-alert-error mb-6" role="alert">
-                <span className="user-alert-icon" aria-hidden="true">x</span>
-                <div>
-                  <p className="user-card-title">Could not load dashboard stats</p>
-                  <p className="user-helper mt-1">{error}</p>
-                </div>
+              <div className="mb-6">
+                <AdminAlert tone="error" title="Could Not Load Dashboard Stats">
+                  {error}
+                </AdminAlert>
               </div>
             )}
 
@@ -212,8 +213,8 @@ function AdminPageContent() {
             <section className="mb-6">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="user-section-title">Needs Attention</h2>
-                  <p className="user-helper mt-1">Operational items pulled from security, email, and audit signals.</p>
+                  <h2 className="admin-section-title">Needs Attention</h2>
+                  <p className="admin-helper mt-1">Operational items pulled from security, email, and audit signals.</p>
                 </div>
               </div>
               {attentionItems.length > 0 ? (
@@ -223,42 +224,41 @@ function AdminPageContent() {
                   ))}
                 </div>
               ) : (
-                <div className="user-alert user-alert-success">
-                  <span className="user-alert-icon" aria-hidden="true">!</span>
-                  <p className="user-helper">No high-priority operational alerts in the current dashboard snapshot.</p>
-                </div>
+                <AdminAlert tone="success">
+                  No high-priority operational alerts in the current dashboard snapshot.
+                </AdminAlert>
               )}
             </section>
 
             <section className="mb-6 grid gap-6 xl:grid-cols-2">
-              <div className="user-card overflow-hidden">
+              <div className="admin-table-card overflow-hidden">
                 <div className="border-b border-gray-200 px-4 py-3">
-                  <h2 className="user-section-title">Recent Payments</h2>
-                  <p className="user-helper">Latest visible billing transactions.</p>
+                  <h2 className="admin-section-title">Recent Payments</h2>
+                  <p className="admin-helper">Latest visible billing transactions.</p>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="user-label px-4 py-3 text-left">Plan</th>
-                        <th className="user-label px-4 py-3 text-left">Amount</th>
-                        <th className="user-label px-4 py-3 text-left">Status</th>
-                        <th className="user-label px-4 py-3 text-left">Created</th>
+                        <th className="px-4 py-3 text-left">Plan</th>
+                        <th className="px-4 py-3 text-left">Amount</th>
+                        <th className="px-4 py-3 text-left">Status</th>
+                        <th className="px-4 py-3 text-left">Created</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
                       {(summary?.recent.payments ?? []).length === 0 ? (
-                        <tr><td colSpan={4} className="user-helper px-4 py-8 text-center">No recent payment records found.</td></tr>
+                        <tr><td colSpan={4} className="admin-helper px-4 py-8 text-center">No recent payment records found.</td></tr>
                       ) : (
                         summary?.recent.payments.map((payment) => (
                           <tr key={payment.id}>
-                            <td className="px-4 py-4 align-top">
-                              <p className="user-card-title">{payment.planName || "Unknown plan"}</p>
+                            <AdminTableCell>
+                              <p className="admin-card-title">{payment.planName || "Unknown plan"}</p>
                               <p className="mt-1 max-w-56 truncate font-mono text-xs text-gray-400">{payment.userId || "No user"}</p>
-                            </td>
-                            <td className="user-body-sm px-4 py-4 align-top">{payment.amount === null ? "Not available" : formatMoney(payment.amount, payment.currency || "USD")}</td>
-                            <td className="user-body-sm px-4 py-4 align-top">{payment.status || "Not available"}</td>
-                            <td className="user-body-sm px-4 py-4 align-top">{formatDate(payment.createdAt)}</td>
+                            </AdminTableCell>
+                            <AdminTableCell>{payment.amount === null ? "Not available" : formatMoney(payment.amount, payment.currency || "USD")}</AdminTableCell>
+                            <AdminTableCell>{payment.status || "Not available"}</AdminTableCell>
+                            <AdminTableCell>{formatDate(payment.createdAt)}</AdminTableCell>
                           </tr>
                         ))
                       )}
@@ -267,31 +267,31 @@ function AdminPageContent() {
                 </div>
               </div>
 
-              <div className="user-card overflow-hidden">
+              <div className="admin-table-card overflow-hidden">
                 <div className="border-b border-gray-200 px-4 py-3">
-                  <h2 className="user-section-title">Recent Admin Failures</h2>
-                  <p className="user-helper">Failed audit records from the latest admin audit sample.</p>
+                  <h2 className="admin-section-title">Recent Admin Failures</h2>
+                  <p className="admin-helper">Failed audit records from the latest admin audit sample.</p>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="user-label px-4 py-3 text-left">Action</th>
-                        <th className="user-label px-4 py-3 text-left">Actor</th>
-                        <th className="user-label px-4 py-3 text-left">Error</th>
-                        <th className="user-label px-4 py-3 text-left">Created</th>
+                        <th className="px-4 py-3 text-left">Action</th>
+                        <th className="px-4 py-3 text-left">Actor</th>
+                        <th className="px-4 py-3 text-left">Error</th>
+                        <th className="px-4 py-3 text-left">Created</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
                       {(summary?.recent.auditFailures ?? []).length === 0 ? (
-                        <tr><td colSpan={4} className="user-helper px-4 py-8 text-center">No recent failed admin actions found.</td></tr>
+                        <tr><td colSpan={4} className="admin-helper px-4 py-8 text-center">No recent failed admin actions found.</td></tr>
                       ) : (
                         summary?.recent.auditFailures.map((failure) => (
                           <tr key={failure.id}>
-                            <td className="user-body-sm px-4 py-4 align-top">{failure.action}</td>
-                            <td className="user-body-sm px-4 py-4 align-top">{failure.actorEmail || "Unknown actor"}</td>
-                            <td className="user-body-sm px-4 py-4 align-top">{failure.errorMessage || "No error message"}</td>
-                            <td className="user-body-sm px-4 py-4 align-top">{formatDate(failure.createdAt)}</td>
+                            <AdminTableCell>{failure.action}</AdminTableCell>
+                            <AdminTableCell>{failure.actorEmail || "Unknown actor"}</AdminTableCell>
+                            <AdminTableCell>{failure.errorMessage || "No error message"}</AdminTableCell>
+                            <AdminTableCell>{formatDate(failure.createdAt)}</AdminTableCell>
                           </tr>
                         ))
                       )}
@@ -305,8 +305,8 @@ function AdminPageContent() {
               {managementGroups.map((group) => (
                 <div key={group.title}>
                   <div className="mb-3">
-                    <h2 className="user-section-title">{group.title}</h2>
-                    <p className="user-helper mt-1">{group.description}</p>
+                    <h2 className="admin-section-title">{group.title}</h2>
+                    <p className="admin-helper mt-1">{group.description}</p>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     {group.links.map((link) => (

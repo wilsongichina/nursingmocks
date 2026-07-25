@@ -18,6 +18,7 @@ import {
   deleteNursingExitExamKbArticle,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
   SidebarProvider,
@@ -1054,11 +1055,11 @@ function NursingExitExamAdminPageContent() {
             isCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading sub-pages...</p>
-            </div>
+          <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
+            <AdminLoadingState
+              title="Loading nursing exit exam content"
+              description="Preparing sub pages, nested pages, KB articles, and quizzes."
+            />
           </div>
         </div>
       </div>
@@ -1073,91 +1074,37 @@ function NursingExitExamAdminPageContent() {
           isCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
-        {/* Desktop: Show header bar with breadcrumbs - same as pillar pages */}
-        <div
-          className="hidden md:block h-16"
-          style={{
-            background: "rgba(255, 255, 255, 0.95)",
-            borderBottom: "1px solid #d9def3",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <div className="flex justify-between items-center px-8 h-full">
-            {/* Breadcrumbs */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link
-                href="/"
-                className="hover:text-blue-600 transition-colors font-medium"
-              >
-                Home
-              </Link>
-              <svg
-                className="w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-              <Link
-                href="/admin"
-                className="hover:text-blue-600 transition-colors font-medium"
-              >
-                Admin Dashboard
-              </Link>
-              <svg
-                className="w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-              <span className="font-medium">Nursing Exit Exam</span>
-            </div>
-            {/* Show UserProfileBadge if logged in, or Login/Register buttons if logged out */}
-            {currentUser ? (
-              <div>
-                <UserProfileBadge />
-              </div>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Home", href: "/" },
+            { label: "Admin Dashboard", href: "/admin" },
+            { label: "Nursing Exit Exam" },
+          ]}
+          actions={
+            currentUser ? (
+              <UserProfileBadge />
             ) : (
               <div className="flex items-center space-x-4">
                 <Link
                   href="/login"
-                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  className="font-medium text-gray-700 transition-colors hover:text-indigo-700"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                  className="admin-button-primary px-4 py-2 text-sm"
                 >
                   Register
                 </Link>
               </div>
-            )}
-          </div>
-        </div>
+            )
+          }
+        />
 
-        <div
-          className="min-h-screen"
-          style={{
-            background:
-              "radial-gradient(circle at top left, #eef2ff 0, #f4f5fb 55%, #f9fafb 100%)",
-          }}
-        >
+        <div className="admin-page">
           {/* Main Content */}
-          <div style={{ padding: "24px 32px 32px" }}>
+          <div className="admin-workspace admin-content-management-page">
             {/* Alerts */}
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -1246,36 +1193,6 @@ function NursingExitExamAdminPageContent() {
                   this panel to add, edit, and organize content that appears on
                   NursingMocks.
                 </p>
-              </div>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  style={{
-                    borderRadius: "999px",
-                    padding: "8px 14px",
-                    fontSize: "13px",
-                    border: "1px solid #4f46e5",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    background: "#4f46e5",
-                    color: "#ffffff",
-                    fontFamily:
-                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    fontWeight: 500,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#4338ca";
-                    e.currentTarget.style.borderColor = "#4338ca";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#4f46e5";
-                    e.currentTarget.style.borderColor = "#4f46e5";
-                  }}
-                >
-                  + New Sub Page
-                </button>
               </div>
             </div>
 
@@ -1961,58 +1878,14 @@ function NursingExitExamAdminPageContent() {
                     {activeTab === "kb" ? (
                       <button
                         onClick={() => setShowCreateKbModal(true)}
-                        style={{
-                          borderRadius: "999px",
-                          padding: "8px 14px",
-                          fontSize: "13px",
-                          border: "1px solid #e5e7eb",
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          background: "#ffffff",
-                          color: "#111827",
-                          fontFamily:
-                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                          fontWeight: 500,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "#f3f4ff";
-                          e.currentTarget.style.borderColor = "#c7d2fe";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "#ffffff";
-                          e.currentTarget.style.borderColor = "#e5e7eb";
-                        }}
+                        className="admin-button-primary !min-h-[44px] w-full !px-4 sm:w-auto"
                       >
                         + New KB Article
                       </button>
                     ) : (
                       <button
                         onClick={() => setShowCreateModal(true)}
-                        style={{
-                          borderRadius: "999px",
-                          padding: "8px 14px",
-                          fontSize: "13px",
-                          border: "1px solid #e5e7eb",
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          background: "#ffffff",
-                          color: "#111827",
-                          fontFamily:
-                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                          fontWeight: 500,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "#f3f4ff";
-                          e.currentTarget.style.borderColor = "#c7d2fe";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "#ffffff";
-                          e.currentTarget.style.borderColor = "#e5e7eb";
-                        }}
+                        className="admin-button-primary !min-h-[44px] w-full !px-4 sm:w-auto"
                       >
                         {activeTab === "nested"
                           ? "+ New Nested Sub-page"
@@ -2399,14 +2272,7 @@ function NursingExitExamAdminPageContent() {
                                           'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                                       }}
                                     >
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          gap: "6px",
-                                          flexDirection: "row",
-                                          alignItems: "center",
-                                        }}
-                                      >
+                                      <div className="admin-crud-actions">
                                         <Link
                                           href={`/admin/nursing-exit-exam/${
                                             quiz.parentSubPageDocId ||
@@ -2415,46 +2281,26 @@ function NursingExitExamAdminPageContent() {
                                             quiz.nestedSubPageDocId ||
                                             quiz.nestedSubPageId
                                           }/quizzes/${quiz.id}/manage`}
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#4f46e5",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-primary"
                                         >
                                           Manage
                                         </Link>
                                         <Link
                                           href={`/${quiz.slug || quiz.id}`}
                                           target="_blank"
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#4f46e5",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-neutral"
                                         >
                                           View
                                         </Link>
-                                        <span
+                                        <button
+                                          type="button"
                                           onClick={() =>
                                             handleDeleteQuizClick(quiz)
                                           }
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#ef4444",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-danger"
                                         >
                                           Delete
-                                        </span>
+                                        </button>
                                       </div>
                                     </td>
                                   </tr>
@@ -2669,25 +2515,11 @@ function NursingExitExamAdminPageContent() {
                                         whiteSpace: "nowrap",
                                       }}
                                     >
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          gap: "6px",
-                                          flexDirection: "row",
-                                          alignItems: "center",
-                                        }}
-                                      >
+                                      <div className="admin-crud-actions">
                                         <Link
                                           href={`/${kbArticle.slug || kbArticle.id}`}
                                           target="_blank"
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#4f46e5",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-neutral"
                                         >
                                           View
                                         </Link>
@@ -2695,32 +2527,19 @@ function NursingExitExamAdminPageContent() {
                                           href={`/admin/nursing-exit-exam/kb-articles/${
                                             kbArticle.id
                                           }`}
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#6a5cff",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-secondary"
                                         >
                                           Edit
                                         </Link>
-                                        <span
+                                        <button
+                                          type="button"
                                           onClick={() => {
                                             handleDeleteKbClick(kbArticle);
                                           }}
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#ef4444",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-danger"
                                         >
                                           Delete
-                                        </span>
+                                        </button>
                                       </div>
                                     </td>
                                   </tr>
@@ -2961,42 +2780,22 @@ function NursingExitExamAdminPageContent() {
                                           'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                                       }}
                                     >
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          gap: "6px",
-                                          flexDirection: "row",
-                                          alignItems: "center",
-                                        }}
-                                      >
-                                        <span
+                                      <div className="admin-crud-actions">
+                                        <button
+                                          type="button"
                                           onClick={() => {
                                             setSelectedNestedSubPageForQuiz(
                                               nestedSubPage
                                             );
                                             setShowCreateQuizModal(true);
                                           }}
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#4f46e5",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-primary"
                                         >
                                           Add
-                                        </span>
+                                        </button>
                                         <Link
                                           href={`/admin/nursing-exit-exam/${nestedSubPage.parentSubPageId}/nested/${nestedSubPage.id}`}
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#4f46e5",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-secondary"
                                         >
                                           Edit
                                         </Link>
@@ -3006,34 +2805,21 @@ function NursingExitExamAdminPageContent() {
                                             nestedSubPage.id
                                           }`}
                                           target="_blank"
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#4f46e5",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-neutral"
                                         >
                                           View
                                         </Link>
-                                        <span
+                                        <button
+                                          type="button"
                                           onClick={() =>
                                             handleDeleteNestedClick(
                                               nestedSubPage
                                             )
                                           }
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#ef4444",
-                                            cursor: "pointer",
-                                            fontFamily:
-                                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                            whiteSpace: "nowrap",
-                                          }}
+                                          className="admin-crud-button admin-crud-button-danger"
                                         >
                                           Delete
-                                        </span>
+                                        </button>
                                       </div>
                                     </td>
                                   </tr>
@@ -3251,72 +3037,39 @@ function NursingExitExamAdminPageContent() {
                                         'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                                     }}
                                   >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        gap: "6px",
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                      }}
-                                    >
-                                      <span
+                                    <div className="admin-crud-actions">
+                                      <button
+                                        type="button"
                                         onClick={() => {
                                           setSelectedSubPageForNested(subPage);
                                           setShowCreateNestedModal(true);
                                         }}
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#4f46e5",
-                                          cursor: "pointer",
-                                          fontFamily:
-                                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                          whiteSpace: "nowrap",
-                                        }}
+                                        className="admin-crud-button admin-crud-button-primary"
                                       >
                                         Add
-                                      </span>
+                                      </button>
                                       <Link
                                         href={`/admin/nursing-exit-exam/${subPage.id}`}
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#4f46e5",
-                                          cursor: "pointer",
-                                          fontFamily:
-                                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                          whiteSpace: "nowrap",
-                                        }}
+                                        className="admin-crud-button admin-crud-button-secondary"
                                       >
                                         Edit
                                       </Link>
                                       <Link
                                         href={`/${subPage.slug || subPage.id}`}
                                         target="_blank"
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#4f46e5",
-                                          cursor: "pointer",
-                                          fontFamily:
-                                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                          whiteSpace: "nowrap",
-                                        }}
+                                        className="admin-crud-button admin-crud-button-neutral"
                                       >
                                         View
                                       </Link>
-                                      <span
+                                      <button
+                                        type="button"
                                         onClick={() =>
                                           handleDeleteClick(subPage)
                                         }
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#ef4444",
-                                          cursor: "pointer",
-                                          fontFamily:
-                                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                          whiteSpace: "nowrap",
-                                        }}
+                                        className="admin-crud-button admin-crud-button-danger"
                                       >
                                         Delete
-                                      </span>
+                                      </button>
                                     </div>
                                   </td>
                                 </tr>

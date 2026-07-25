@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { AdminAlert, AdminInlineLoading, AdminTopBar } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -1183,43 +1184,49 @@ function AdminBillingContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden">
       <AdminSidebar />
       <div className={`transition-all duration-300 ${isCollapsed ? "md:ml-20" : "md:ml-64"}`}>
-        <div className="hidden h-16 border-b border-gray-200 bg-white md:block">
-          <div className="flex h-full items-center justify-between px-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link href="/" className="font-medium transition-colors hover:text-blue-600">Home</Link>
-              <span className="text-gray-400">/</span>
-              <Link href="/admin" className="font-medium transition-colors hover:text-blue-600">Admin</Link>
-              <span className="text-gray-400">/</span>
-              <span className="font-medium">Billing</span>
-            </div>
-            {currentUser && <UserProfileBadge />}
-          </div>
-        </div>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Home", href: "/" },
+            { label: "Admin Dashboard", href: "/admin" },
+            { label: "Billing Configuration" },
+          ]}
+          actions={currentUser && <UserProfileBadge />}
+        />
 
-        <main className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="w-full max-w-none">
-            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-purple-700">Admin</p>
-                <h1 className="mt-1 text-2xl font-bold text-gray-950">Billing Configuration</h1>
-                <p className="mt-2 max-w-3xl text-sm text-gray-600">
+        <main className="admin-workspace">
+          <div className="admin-content">
+            <header className="admin-header mb-6">
+              <div className="admin-header-row">
+              <div className="admin-header-copy">
+                <p className="admin-eyebrow">Admin</p>
+                <h1 className="admin-page-title mt-1">Billing Configuration</h1>
+                <p className="admin-body mt-2 max-w-4xl">
                   Manage server-side billing plans, gateways, and provider price mappings. Gateway secrets and live checkout remain disabled until later billing stages.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowHowItWorks(true)}
-                className="inline-flex w-fit items-center justify-center rounded-lg border border-purple-200 bg-white px-4 py-2 text-sm font-semibold text-purple-700 shadow-sm hover:bg-purple-50"
+                className="admin-button-secondary w-fit"
               >
                 How it works
               </button>
-            </div>
+              </div>
+            </header>
 
-            {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
-            {message && <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">{message}</div>}
+            {error && (
+              <div className="mb-4">
+                <AdminAlert tone="error">{error}</AdminAlert>
+              </div>
+            )}
+            {message && (
+              <div className="mb-4">
+                <AdminAlert tone="success">{message}</AdminAlert>
+              </div>
+            )}
 
             <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <SummaryTile label="Plans" value={config.plans.length} />
@@ -1231,11 +1238,11 @@ function AdminBillingContent() {
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(420px,0.65fr)]">
               <div className="grid gap-6 xl:order-2">
                 <div>
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Operations And Create Records</h2>
-                  <p className="mt-1 text-sm text-gray-600">Run audited operations or create internal billing configuration records.</p>
+                  <h2 className="admin-section-title">Operations And Create Records</h2>
+                  <p className="admin-helper mt-1">Run audited operations or create internal billing configuration records.</p>
                 </div>
 
-                <details className="rounded-xl border border-amber-200 bg-white">
+                <details className="admin-card overflow-hidden border-amber-200">
                   <summary className="cursor-pointer border-b border-amber-200 px-4 py-3 marker:text-amber-500">
                     <span className="block text-sm font-semibold text-gray-950">Operations Actions</span>
                     <span className="mt-1 block text-xs text-gray-500">Manual entitlement changes and review records are audited. Provider refunds remain disabled.</span>
@@ -1249,7 +1256,7 @@ function AdminBillingContent() {
                       <select
                         value={operationForm.operation}
                         onChange={(event) => setOperationForm({ ...initialOperationForm, operation: event.target.value })}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                        className="admin-field"
                       >
                         <option value="manualEntitlementGrant">Manual Entitlement Grant</option>
                         <option value="manualEntitlementRevoke">Manual Entitlement Revoke</option>
@@ -1261,22 +1268,22 @@ function AdminBillingContent() {
                       <div className="grid gap-4">
                         <label className="grid gap-1 text-sm font-medium text-gray-700">
                           User ID
-                          <input value={operationForm.uid} onChange={(event) => setOperationForm({ ...operationForm, uid: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Firebase UID" />
+                          <input value={operationForm.uid} onChange={(event) => setOperationForm({ ...operationForm, uid: event.target.value })} className="admin-field" placeholder="Firebase UID" />
                         </label>
                         <label className="grid gap-1 text-sm font-medium text-gray-700">
                           Package
-                          <select value={operationForm.packageId} onChange={(event) => setOperationForm({ ...operationForm, packageId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
+                          <select value={operationForm.packageId} onChange={(event) => setOperationForm({ ...operationForm, packageId: event.target.value })} className="admin-field">
                             {packageOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                           </select>
                         </label>
                         <label className="grid gap-1 text-sm font-medium text-gray-700">
                           Plan ID
-                          <input value={operationForm.planId} onChange={(event) => setOperationForm({ ...operationForm, planId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Optional plan ID" />
+                          <input value={operationForm.planId} onChange={(event) => setOperationForm({ ...operationForm, planId: event.target.value })} className="admin-field" placeholder="Optional plan ID" />
                         </label>
                         {operationForm.operation === "manualEntitlementRevoke" && (
                           <label className="grid gap-1 text-sm font-medium text-gray-700">
                             Entitlement ID
-                            <input value={operationForm.entitlementId} onChange={(event) => setOperationForm({ ...operationForm, entitlementId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Optional existing entitlement ID" />
+                            <input value={operationForm.entitlementId} onChange={(event) => setOperationForm({ ...operationForm, entitlementId: event.target.value })} className="admin-field" placeholder="Optional existing entitlement ID" />
                           </label>
                         )}
                       </div>
@@ -1285,22 +1292,22 @@ function AdminBillingContent() {
                     {operationForm.operation === "webhookReprocess" && (
                       <label className="grid gap-1 text-sm font-medium text-gray-700">
                         Webhook Event Record ID
-                        <input value={operationForm.webhookEventRecordId} onChange={(event) => setOperationForm({ ...operationForm, webhookEventRecordId: event.target.value })} className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="stripe_evt_..." />
+                        <input value={operationForm.webhookEventRecordId} onChange={(event) => setOperationForm({ ...operationForm, webhookEventRecordId: event.target.value })} className="admin-field" placeholder="stripe_evt_..." />
                       </label>
                     )}
 
                     <label className="grid gap-1 text-sm font-medium text-gray-700">
                       Reason
-                      <textarea value={operationForm.reason} onChange={(event) => setOperationForm({ ...operationForm, reason: event.target.value })} className="min-h-20 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100" placeholder="Required reason, minimum 10 characters" />
+                      <textarea value={operationForm.reason} onChange={(event) => setOperationForm({ ...operationForm, reason: event.target.value })} className="admin-field min-h-20" placeholder="Required reason, minimum 10 characters" />
                     </label>
 
-                    <button disabled={saving} className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60">
+                    <button disabled={saving} className="admin-button-primary disabled:cursor-not-allowed disabled:opacity-60">
                       Run Audited Operation
                     </button>
                   </form>
                 </details>
 
-                <details className="rounded-xl border border-gray-200 bg-white">
+                <details className="admin-card overflow-hidden">
                   <summary className="cursor-pointer border-b border-gray-200 px-4 py-3 marker:text-gray-400">
                     <span className="block text-sm font-semibold text-gray-950">Add Plan</span>
                     <span className="mt-1 block text-xs text-gray-500">Creates an internal billing plan without enabling checkout.</span>
@@ -2083,7 +2090,9 @@ function AdminBillingContent() {
                 {activeTab === "gateways" && (
                 <Section title="Gateways" count={config.gateways.length}>
                   {loading ? (
-                    <p className="p-4 text-sm text-gray-500">Loading...</p>
+                    <div className="p-4">
+                      <AdminInlineLoading label="Loading Gateways" />
+                    </div>
                   ) : config.gateways.length === 0 ? (
                     <p className="p-4 text-sm text-gray-500">No gateways configured yet.</p>
                   ) : (

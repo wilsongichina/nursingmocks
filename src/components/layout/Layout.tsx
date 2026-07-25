@@ -18,7 +18,13 @@ interface LayoutProps {
   showSidebar?: boolean;
   /** When false, omits the global Header (and mobile breadcrumb below it). */
   showHeader?: boolean;
+  initialBreadcrumbItems?: BreadcrumbItem[];
 }
+
+type BreadcrumbItem = {
+  name: string;
+  url?: string;
+};
 
 // Helper function to format breadcrumb labels (convert slugs to readable text)
 function formatBreadcrumbLabel(slug: string): string {
@@ -28,7 +34,13 @@ function formatBreadcrumbLabel(slug: string): string {
     .join(" ");
 }
 
-function LayoutWithSidebar({ children }: { children: ReactNode }) {
+function LayoutWithSidebar({
+  children,
+  initialBreadcrumbItems,
+}: {
+  children: ReactNode;
+  initialBreadcrumbItems?: BreadcrumbItem[];
+}) {
   const { isCollapsed, isMobileMenuOpen, setIsMobileMenuOpen } = useSidebar();
   const { currentUser, logout } = useAuth();
   const router = useRouter();
@@ -99,6 +111,11 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
   // No caching - always fetches fresh data from Firebase on every pathname change
   // Works for: nursing-entrance-exam, nursing-exit-exam, and nursing-test-bank
   useEffect(() => {
+    if (initialBreadcrumbItems?.length) {
+      setBreadcrumbData(null);
+      return;
+    }
+
     const loadBreadcrumbs = async () => {
       // Clear previous breadcrumb data immediately to avoid stale data
       setBreadcrumbData(null);
@@ -591,7 +608,7 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
     };
 
     loadBreadcrumbs();
-  }, [pathname]);
+  }, [pathname, initialBreadcrumbItems]);
 
   // Reload test bank sub-pages when navigating to test bank pages to ensure fresh data
   useEffect(() => {
@@ -805,6 +822,43 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
                   </Link>
                   {/* Generate breadcrumbs based on pathname */}
                   {(() => {
+                    if (initialBreadcrumbItems?.length) {
+                      return (
+                        <>
+                          {initialBreadcrumbItems.slice(1).map((item, index) => {
+                            const isLast = index === initialBreadcrumbItems.length - 2;
+                            return (
+                              <React.Fragment key={`${item.name}-${index}`}>
+                                <svg
+                                  className="w-4 h-4 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                                {item.url && !isLast ? (
+                                  <Link
+                                    href={item.url}
+                                    className="hover:text-blue-600 transition-colors font-medium"
+                                  >
+                                    {item.name}
+                                  </Link>
+                                ) : (
+                                  <span className="font-medium">{item.name}</span>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </>
+                      );
+                    }
+
                     // Handle nursing-entrance-exam and nursing-exit-exam with simplified refPath-based logic
                     if (breadcrumbData) {
                       if (breadcrumbData.loading) {
@@ -1079,10 +1133,11 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
         {/* Mobile Breadcrumb */}
         {(() => {
           // Generate breadcrumb items for mobile
-          const getMobileBreadcrumbItems = (): Array<{
-            name: string;
-            url?: string;
-          }> => {
+          const getMobileBreadcrumbItems = (): BreadcrumbItem[] => {
+            if (initialBreadcrumbItems?.length) {
+              return initialBreadcrumbItems;
+            }
+
             const items: Array<{ name: string; url?: string }> = [];
 
             // Excluded routes that don't need breadcrumbs
@@ -1187,17 +1242,20 @@ function LayoutWithSidebar({ children }: { children: ReactNode }) {
 function LayoutWithoutSidebar({
   children,
   showHeader = true,
+  initialBreadcrumbItems,
 }: {
   children: ReactNode;
   showHeader?: boolean;
+  initialBreadcrumbItems?: BreadcrumbItem[];
 }) {
   const pathname = usePathname();
 
   // Generate breadcrumb items for static pages
-  const getMobileBreadcrumbItems = (): Array<{
-    name: string;
-    url?: string;
-  }> => {
+  const getMobileBreadcrumbItems = (): BreadcrumbItem[] => {
+    if (initialBreadcrumbItems?.length) {
+      return initialBreadcrumbItems;
+    }
+
     const items: Array<{ name: string; url?: string }> = [];
 
     // Excluded routes that don't need breadcrumbs
@@ -1278,6 +1336,7 @@ export default function Layout({
   children,
   showSidebar,
   showHeader = true,
+  initialBreadcrumbItems,
 }: LayoutProps) {
   const pathname = usePathname();
   const [sidebarEnabled, setSidebarEnabled] = useState<boolean | null>(() =>
@@ -1328,7 +1387,9 @@ export default function Layout({
     // Default to showing sidebar during initial render to avoid hydration mismatch
     return (
       <SidebarProvider>
-        <LayoutWithSidebar>{children}</LayoutWithSidebar>
+        <LayoutWithSidebar initialBreadcrumbItems={initialBreadcrumbItems}>
+          {children}
+        </LayoutWithSidebar>
       </SidebarProvider>
     );
   }
@@ -1336,13 +1397,18 @@ export default function Layout({
   if (sidebarEnabled) {
     return (
       <SidebarProvider>
-        <LayoutWithSidebar>{children}</LayoutWithSidebar>
+        <LayoutWithSidebar initialBreadcrumbItems={initialBreadcrumbItems}>
+          {children}
+        </LayoutWithSidebar>
       </SidebarProvider>
     );
   }
 
   return (
-    <LayoutWithoutSidebar showHeader={showHeader}>
+    <LayoutWithoutSidebar
+      showHeader={showHeader}
+      initialBreadcrumbItems={initialBreadcrumbItems}
+    >
       {children}
     </LayoutWithoutSidebar>
   );

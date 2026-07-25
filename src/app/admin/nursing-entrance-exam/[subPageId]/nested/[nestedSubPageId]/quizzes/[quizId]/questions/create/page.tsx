@@ -3,11 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  uploadNursingEntranceExamQuizQuestion,
-  getAllQuestionTypes,
   getNursingEntranceExamQuiz,
+  getAllQuestionTypes,
+  uploadNursingEntranceExamQuizQuestion,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import {
+  AdminCard,
+  AdminInfoTile,
+  AdminLoadingState,
+  AdminNotificationRegion,
+  AdminPageHeader,
+  AdminStatusBadge,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
@@ -29,7 +38,6 @@ interface QuestionData {
   question_type_id?: number;
   slug?: string;
   units?: string;
-  isCopyRight?: boolean;
   meta?: {
     title?: string;
     description?: string;
@@ -45,7 +53,6 @@ interface QuestionData {
 }
 
 const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-const gradientBg = "bg-gradient-to-r from-indigo-50 via-white to-blue-50";
 
 export default function CreateQuestion({
   params,
@@ -70,7 +77,6 @@ export default function CreateQuestion({
     questionTypeId: 1,
     slug: "",
     units: "",
-    isCopyRight: false,
     meta: {
       title: "",
       description: "",
@@ -340,7 +346,6 @@ export default function CreateQuestion({
         questionTypeId: questionTypeId,
         slug: questionData.slug || generateSlug(questionData.question || ""),
         units: questionData.units || null,
-        isCopyRight: questionData.isCopyRight || false,
         meta:
           questionData.meta || {
             title: "",
@@ -386,16 +391,54 @@ export default function CreateQuestion({
     }
   };
 
-  if (loading || !resolvedParams) {
+  const loadingQuizManagerHref = resolvedParams
+    ? `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
+    : "/admin/nursing-entrance-exam";
+
+  function LoadingShell({ children }: { children: React.ReactNode }) {
+    const { isCollapsed } = useSidebar();
+    const { currentUser } = useAuth();
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-white overflow-x-hidden">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Admin", href: "/admin" },
+              { label: "Content", href: "/admin" },
+              { label: "Nursing Entrance Exam", href: "/admin/nursing-entrance-exam" },
+              { label: "Quiz Manager", href: loadingQuizManagerHref },
+              { label: "Create Question" },
+            ]}
+            actions={currentUser ? <UserProfileBadge /> : null}
+          />
+          <div className="admin-page flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-6">
+            {children}
+          </div>
         </div>
       </div>
     );
   }
+
+  if (loading || !resolvedParams) {
+    return (
+      <SidebarProvider>
+        <LoadingShell>
+          <AdminLoadingState
+            title="Loading question editor"
+            description="Preparing quiz context, question types, and answer fields."
+          />
+        </LoadingShell>
+      </SidebarProvider>
+    );
+  }
+
+  const quizManagerHref = `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`;
 
   function LayoutShell({ children }: { children: React.ReactNode }) {
     const { isCollapsed } = useSidebar();
@@ -408,70 +451,39 @@ export default function CreateQuestion({
             isCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <div className="hidden md:block border-b border-gray-200 bg-white h-16">
-            <div className="flex justify-between items-center px-4 h-full">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Link
-                  href="/"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Home
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <Link
-                  href="/admin"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Admin
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <span className="font-medium text-gray-800">Create Question</span>
-              </div>
-              {currentUser ? (
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Admin", href: "/admin" },
+              { label: "Content", href: "/admin" },
+              { label: "Nursing Entrance Exam", href: "/admin/nursing-entrance-exam" },
+              {
+                label: "Quiz Manager",
+                href: quizManagerHref,
+              },
+              { label: "Create Question" },
+            ]}
+            actions={
+              currentUser ? (
                 <UserProfileBadge />
               ) : (
                 <div className="flex items-center space-x-4">
                   <Link
                     href="/login"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    className="admin-button-secondary px-3 py-1.5 text-sm"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                    className="admin-button-primary px-4 py-2 text-sm"
                   >
                     Register
                   </Link>
                 </div>
-              )}
-            </div>
-          </div>
-          <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffffff_0,#f5f6fb_40%,#e8ebff_100%)]">
+              )
+            }
+          />
+          <div className="admin-page min-h-[calc(100vh-4rem)]">
             {children}
           </div>
         </div>
@@ -482,65 +494,45 @@ export default function CreateQuestion({
   return (
     <SidebarProvider>
       <LayoutShell>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          <header className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex flex-col gap-2 min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-slate-900">
-                  Create Question
-                </h1>
-              </div>
-              <div className="text-sm text-slate-600 flex flex-wrap items-center gap-3">
-                <span>
-                  Add a new question to{" "}
-                  <strong>{quizName || resolvedParams.quizId}</strong>.
-                </span>
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  Draft mode
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Link
-                href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-50"
-              >
-                ← Back to Admin
-              </Link>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Save Question"}
-              </button>
-            </div>
-          </header>
+        <main className="admin-workspace">
+          <div className="admin-content">
+          <AdminPageHeader
+            eyebrow="Nursing Entrance Exam"
+            title="Create Question"
+            description={
+              <>
+                Add a new question to <strong>{quizName || resolvedParams.quizId}</strong>.
+              </>
+            }
+            actions={
+              <>
+                <Link href={quizManagerHref} className="admin-button-secondary">
+                  Back To Quiz Manager
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="admin-button-primary disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save Question"}
+                </button>
+              </>
+            }
+          />
+          <AdminNotificationRegion
+            error={error}
+            success={success}
+            errorTitle="Unable To Save Question"
+            successTitle="Question Saved"
+          />
 
-          {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              {success}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
-            <section className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-900">
-                  Question Content
-                </div>
-              </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
+            <AdminCard title="Question Content">
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
+                  <label className="admin-field-label">
                     Question Type *
                   </label>
                   <select
@@ -548,7 +540,7 @@ export default function CreateQuestion({
                     onChange={(e) =>
                       handleInputChange("questionTypeId", parseInt(e.target.value))
                     }
-                    className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                    className="admin-field mt-1"
                   >
                     {questionTypes
                       .filter((type) => {
@@ -564,10 +556,10 @@ export default function CreateQuestion({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
+                  <label className="admin-field-label">
                     Question Text *
                   </label>
-                  <div className="mt-1 rounded-xl border border-slate-200 bg-white">
+                  <div className="admin-info-tile mt-1 bg-white">
                     <RichTextEditor
                       value={questionData.question || ""}
                       onChange={(val) => handleInputChange("question", val)}
@@ -578,43 +570,43 @@ export default function CreateQuestion({
 
                 {questionData.questionTypeId === 3 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Options (Fixed for True/False)
                     </label>
                     <div className="mt-2 space-y-2">
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
-                        <span className="text-xs font-semibold text-slate-600 min-w-[30px]">
+                      <div className="admin-info-tile flex items-center gap-3 px-3 py-2">
+                        <span className="admin-field-label min-w-[30px]">
                           A:
                         </span>
-                        <span className="text-slate-800">True</span>
+                        <span className="admin-body-sm">True</span>
                       </div>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
-                        <span className="text-xs font-semibold text-slate-600 min-w-[30px]">
+                      <div className="admin-info-tile flex items-center gap-3 px-3 py-2">
+                        <span className="admin-field-label min-w-[30px]">
                           B:
                         </span>
-                        <span className="text-slate-800">False</span>
+                        <span className="admin-body-sm">False</span>
                       </div>
                     </div>
                   </div>
                 ) : questionData.questionTypeId === 7 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Answer Type: Numeric/Fill-in-the-Blank
                     </label>
-                    <p className="text-[12px] text-slate-500 mt-1">
+                    <p className="admin-helper mt-1">
                       Enter the numeric answer below.
                     </p>
                   </div>
                 ) : (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Options *
                       </label>
                       <button
                         type="button"
                         onClick={handleAddOption}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                        className="admin-button-secondary px-3 py-1.5 text-xs"
                       >
                         + Add Option
                       </button>
@@ -623,9 +615,9 @@ export default function CreateQuestion({
                       {questionData.options?.map((option: string, index: number) => (
                         <div
                           key={index}
-                          className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                          className="admin-info-tile flex items-start gap-3 bg-white px-3 py-2"
                         >
-                          <span className="text-xs font-semibold text-slate-600 min-w-[24px] pt-1">
+                          <span className="admin-field-label min-w-[24px] pt-1">
                             {ANSWER_LABELS[index] || String(index + 1)}:
                           </span>
                           <div className="flex-1">
@@ -640,7 +632,7 @@ export default function CreateQuestion({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveOption(index)}
-                                className="text-red-500 hover:text-red-600 p-1"
+                                className="admin-button-danger px-2 py-1 text-xs"
                                 disabled={
                                   questionData.options &&
                                   questionData.options.length <= 2
@@ -657,14 +649,14 @@ export default function CreateQuestion({
 
                 {questionData.questionTypeId === 3 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Correct Answer *
                     </label>
                     <div className="mt-2 space-y-2">
                       {["True", "False"].map((val) => (
                         <label
                           key={val}
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                          className="admin-info-tile flex cursor-pointer items-center gap-3 bg-white px-3 py-2"
                         >
                           <input
                             type="radio"
@@ -674,7 +666,7 @@ export default function CreateQuestion({
                             onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
                             className="w-4 h-4 text-indigo-600"
                           />
-                          <span className="text-sm text-slate-800">{val}</span>
+                          <span className="admin-body-sm">{val}</span>
                         </label>
                       ))}
                     </div>
@@ -682,7 +674,7 @@ export default function CreateQuestion({
                 ) : questionData.questionTypeId === 7 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Correct Answer (Numeric) *
                       </label>
                       <input
@@ -693,26 +685,26 @@ export default function CreateQuestion({
                             : (questionData.correctAnswer as string) || ""
                         }
                         onChange={(e) => handleInputChange("correctAnswer", [e.target.value])}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Enter numeric answer"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Units
                       </label>
                       <input
                         type="text"
                         value={questionData.units || ""}
                         onChange={(e) => handleInputChange("units", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="e.g., mL, mg, units"
                       />
                     </div>
                   </div>
                 ) : questionData.questionTypeId === 2 ? (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Correct Answer(s) * (Select all that apply)
                     </label>
                     <div className="mt-2 space-y-2">
@@ -725,7 +717,7 @@ export default function CreateQuestion({
                         return (
                           <label
                             key={index}
-                            className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                            className="admin-info-tile flex cursor-pointer items-center gap-3 bg-white px-3 py-2"
                           >
                             <input
                               type="checkbox"
@@ -744,10 +736,10 @@ export default function CreateQuestion({
                               }}
                               className="w-4 h-4 text-indigo-600 rounded"
                             />
-                            <span className="text-xs font-semibold text-slate-600 min-w-[26px]">
+                            <span className="admin-field-label min-w-[26px]">
                               {optionLabel}:
                             </span>
-                            <span className="text-sm text-slate-800 flex-1 line-clamp-1">
+                            <span className="admin-body-sm flex-1 line-clamp-1">
                               {stripHtmlTags(option)}
                             </span>
                           </label>
@@ -757,7 +749,7 @@ export default function CreateQuestion({
                   </div>
                 ) : (
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Correct Answer *
                     </label>
                     <select
@@ -767,7 +759,7 @@ export default function CreateQuestion({
                           : (questionData.correctAnswer as string) || ""
                       }
                       onChange={(e) => handleInputChange("correctAnswer", e.target.value)}
-                      className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                      className="admin-field mt-1"
                     >
                       <option value="">Select correct answer</option>
                       {questionData.options?.map((_, index: number) => (
@@ -780,10 +772,10 @@ export default function CreateQuestion({
                 )}
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
+                  <label className="admin-field-label">
                     Explanation
                   </label>
-                  <div className="mt-1 rounded-xl border border-slate-200 bg-white">
+                  <div className="admin-info-tile mt-1 bg-white">
                     <RichTextEditor
                       value={questionData.explanation || ""}
                       onChange={(val) => handleInputChange("explanation", val)}
@@ -794,190 +786,160 @@ export default function CreateQuestion({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="admin-field-label">
                       Status
                     </label>
                     <select
                       value={questionData.status || "published"}
                       onChange={(e) => handleInputChange("status", e.target.value)}
-                      className={`mt-1 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                      className="admin-field mt-1"
                     >
                       <option value="published">Published</option>
                       <option value="draft">Draft</option>
                     </select>
                   </div>
-                  <label className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                    <div>
-                      <span className="block text-sm font-semibold text-slate-800">
-                        Copyright Protected
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        Mark this question as copyright protected
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleInputChange("isCopyRight", !questionData.isCopyRight)
-                      }
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        questionData.isCopyRight ? "bg-indigo-600" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          questionData.isCopyRight ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </label>
+                  <AdminInfoTile label="Workflow">
+                    <AdminStatusBadge label={questionData.status || "published"} />
+                  </AdminInfoTile>
                 </div>
               </div>
-            </section>
+            </AdminCard>
 
-            <aside className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-slate-900">Meta & Schema</div>
-                  <p className="text-xs text-slate-500">
-                    Keep SEO metadata and structured data in sync.
-                  </p>
-                </div>
-                <span className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 px-3 py-1 text-[11px] font-semibold border border-indigo-100">
-                  SEO
-                </span>
-              </div>
+            <AdminCard
+              title="Meta & Schema"
+              description="Keep SEO metadata and structured data in sync."
+            >
 
               <div className="space-y-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
-                  <label className="text-xs font-semibold text-slate-600">
+                <div className="admin-info-tile px-3 py-3">
+                  <label className="admin-field-label">
                     Question Slug URL
                   </label>
                   <input
                     type="text"
                     value={questionData.slug || ""}
                     readOnly
-                    className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 ${gradientBg}`}
+                    className="admin-field mt-1"
                     placeholder="Slug auto-generated from question text"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="admin-helper mt-1">
                     Auto-generated from the first 180 characters of the question text.
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-3">
+                <div className="admin-info-tile bg-white px-3 py-3 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Meta Title
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.title || ""}
                         onChange={(e) => handleInputChange("meta.title", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Meta title"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Meta Description
                       </label>
                       <textarea
                         value={questionData.meta?.description || ""}
                         onChange={(e) => handleInputChange("meta.description", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Meta description"
                         rows={2}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Keywords
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.keywords || ""}
                         onChange={(e) => handleInputChange("meta.keywords", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Keywords (comma separated)"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         OG Title
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.ogTitle || ""}
                         onChange={(e) => handleInputChange("meta.ogTitle", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Open Graph title"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         OG Description
                       </label>
                       <textarea
                         value={questionData.meta?.ogDescription || ""}
                         onChange={(e) => handleInputChange("meta.ogDescription", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Open Graph description"
                         rows={2}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         OG Image URL
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.ogImage || ""}
                         onChange={(e) => handleInputChange("meta.ogImage", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Open Graph image URL"
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="text-xs font-semibold text-slate-600">
+                      <label className="admin-field-label">
                         Canonical URL
                       </label>
                       <input
                         type="text"
                         value={questionData.meta?.canonicalUrl || ""}
                         onChange={(e) => handleInputChange("meta.canonicalUrl", e.target.value)}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                        className="admin-field mt-1"
                         placeholder="Canonical URL"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                  <label className="text-xs font-semibold text-slate-600">
+                <div className="admin-info-tile bg-white px-3 py-3">
+                  <label className="admin-field-label">
                     Schema Markup
                   </label>
                   <textarea
                     value={questionData.schema || ""}
                     onChange={(e) => handleInputChange("schema", e.target.value)}
-                    className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${gradientBg}`}
+                    className="admin-field mt-1 font-mono"
                     placeholder="Enter JSON-LD schema markup..."
                     rows={8}
                   />
                 </div>
               </div>
-            </aside>
+            </AdminCard>
           </div>
 
-          <footer className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
-            <div className="text-xs text-slate-500">
+          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e3e5f0] pt-3">
+            <div className="admin-helper">
               Autosave not enabled; click Save Question to persist changes.
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm hover:bg-slate-50"
+                className="admin-button-secondary px-3 py-2 text-xs"
               >
                 Cancel
               </Link>
@@ -985,16 +947,19 @@ export default function CreateQuestion({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-full bg-indigo-600 text-white px-4 py-2 text-xs font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
+                className="admin-button-primary px-4 py-2 text-xs disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Question"}
               </button>
             </div>
           </footer>
-        </div>
+          </div>
+        </main>
       </LayoutShell>
     </SidebarProvider>
   );
 }
+
+
 
 

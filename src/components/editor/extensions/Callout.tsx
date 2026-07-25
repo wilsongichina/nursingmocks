@@ -4,6 +4,31 @@ export interface CalloutOptions {
   HTMLAttributes: Record<string, any>;
 }
 
+const CALLOUT_TYPES = new Set(["info", "warning", "success", "error"]);
+
+const normalizeCalloutType = (value: unknown) => {
+  const type = String(value || "").toLowerCase();
+  return CALLOUT_TYPES.has(type) ? type : "info";
+};
+
+const parseCalloutType = (element: HTMLElement) => {
+  const explicitType = element.getAttribute("data-callout-type");
+  if (explicitType) {
+    return normalizeCalloutType(explicitType);
+  }
+
+  const dataType = element.getAttribute("data-type");
+  if (dataType && dataType !== "callout") {
+    return normalizeCalloutType(dataType);
+  }
+
+  const classType = Array.from(element.classList)
+    .find((className) => className.startsWith("callout-"))
+    ?.replace("callout-", "");
+
+  return normalizeCalloutType(classType);
+};
+
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     callout: {
@@ -36,13 +61,13 @@ export const Callout = Node.create<CalloutOptions>({
     return {
       type: {
         default: "info",
-        parseHTML: (element) => element.getAttribute("data-type"),
+        parseHTML: (element) => parseCalloutType(element),
         renderHTML: (attributes) => {
-          if (!attributes.type) {
-            return {};
-          }
+          const type = normalizeCalloutType(attributes.type);
+
           return {
-            "data-type": attributes.type,
+            "data-type": "callout",
+            "data-callout-type": type,
           };
         },
       },
@@ -54,15 +79,33 @@ export const Callout = Node.create<CalloutOptions>({
       {
         tag: 'div[data-type="callout"]',
       },
+      {
+        tag: 'div[data-type="info"]',
+      },
+      {
+        tag: 'div[data-type="warning"]',
+      },
+      {
+        tag: 'div[data-type="success"]',
+      },
+      {
+        tag: 'div[data-type="error"]',
+      },
+      {
+        tag: "div.callout",
+      },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
+    const type = normalizeCalloutType(HTMLAttributes.type);
+
     return [
       "div",
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        "data-type": HTMLAttributes.type || "info",
-        class: `callout callout-${HTMLAttributes.type || "info"}`,
+        "data-type": "callout",
+        "data-callout-type": type,
+        class: `callout callout-${type}`,
       }),
       0,
     ];

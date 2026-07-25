@@ -24,6 +24,14 @@ import { Callout } from "./extensions/Callout";
 import { CustomHeading } from "./extensions/CustomHeading";
 import { DottedSeparator } from "./extensions/DottedSeparator";
 import { QuizCard } from "./extensions/QuizCard";
+import { SuperscriptMark } from "./extensions/SuperscriptMark";
+import { TextColorMark } from "./extensions/TextColorMark";
+import {
+  ComparisonTableBlock,
+  CtaBlock,
+  FaqContentBlock,
+  InternalLinkCard,
+} from "./extensions/MarketingBlocks";
 
 interface TiptapEditorProps {
   content?: string;
@@ -78,9 +86,15 @@ export default function TiptapEditor({
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
+      SuperscriptMark,
+      TextColorMark,
       Callout,
       DottedSeparator,
       QuizCard,
+      CtaBlock,
+      InternalLinkCard,
+      FaqContentBlock,
+      ComparisonTableBlock,
     ],
     content,
     editable,
@@ -157,7 +171,7 @@ export default function TiptapEditor({
           });
 
           if (coordinates) {
-            // Insert a default H2 custom heading with dummy text at the drop position
+            // Insert a default H2 custom heading at the drop position.
             editor
               .chain()
               .focus()
@@ -166,7 +180,6 @@ export default function TiptapEditor({
                 type: "heading",
                 attrs: {
                   level: 2,
-                  id: "dummy",
                 },
                 content: [
                   {
@@ -228,6 +241,86 @@ export default function TiptapEditor({
 
           return true; // Handled the drop
         }
+
+        const ctaBlock = dataTransfer.getData("application/x-cta-block");
+        if (ctaBlock === "true") {
+          event.preventDefault();
+          const coordinates = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+
+          if (coordinates) {
+            editor
+              .chain()
+              .focus()
+              .setTextSelection(coordinates.pos)
+              .setCtaBlock({})
+              .run();
+          }
+
+          return true;
+        }
+
+        const internalLinkCard = dataTransfer.getData("application/x-internal-link-card");
+        if (internalLinkCard === "true") {
+          event.preventDefault();
+          const coordinates = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+
+          if (coordinates) {
+            editor
+              .chain()
+              .focus()
+              .setTextSelection(coordinates.pos)
+              .setInternalLinkCard({})
+              .run();
+          }
+
+          return true;
+        }
+
+        const faqContentBlock = dataTransfer.getData("application/x-faq-content-block");
+        if (faqContentBlock === "true") {
+          event.preventDefault();
+          const coordinates = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+
+          if (coordinates) {
+            editor
+              .chain()
+              .focus()
+              .setTextSelection(coordinates.pos)
+              .setFaqContentBlock({})
+              .run();
+          }
+
+          return true;
+        }
+
+        const comparisonTableBlock = dataTransfer.getData("application/x-comparison-table-block");
+        if (comparisonTableBlock === "true") {
+          event.preventDefault();
+          const coordinates = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+
+          if (coordinates) {
+            editor
+              .chain()
+              .focus()
+              .setTextSelection(coordinates.pos)
+              .setComparisonTableBlock({})
+              .run();
+          }
+
+          return true;
+        }
       }
       return false; // Let Tiptap handle other drops
     };
@@ -244,9 +337,13 @@ export default function TiptapEditor({
 
   // Don't render until mounted on client
   if (!isMounted || !editor) {
+    if (!editable) {
+      return <div className="tiptap-readonly-loading" aria-hidden="true" />;
+    }
+
     return (
-      <div className="border border-gray-300 rounded-lg bg-white shadow-sm min-h-[300px] flex items-center justify-center">
-        <div className="text-gray-500">Loading editor...</div>
+      <div className="admin-editor-loading" role="status" aria-live="polite">
+        <div>Loading Editor</div>
       </div>
     );
   }
@@ -254,7 +351,7 @@ export default function TiptapEditor({
   return (
     <div
       className={`${
-        editable ? "border border-[#e2e4f0] rounded-2xl bg-white shadow-sm flex flex-col max-h-[600px]" : ""
+        editable ? "admin-editor-shell" : ""
       }`}
     >
       {editable && <div className="flex-shrink-0"><Toolbar editor={editor} /></div>}

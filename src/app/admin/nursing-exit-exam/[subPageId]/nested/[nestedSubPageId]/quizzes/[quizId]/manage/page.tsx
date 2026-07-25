@@ -12,6 +12,7 @@ import {
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -317,11 +318,11 @@ export default function ManageQuizQuestions({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Admin Content"
+          description="Preparing admin data and management controls."
+        />
       </div>
     );
   }
@@ -396,69 +397,33 @@ export default function ManageQuizQuestions({
             isCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <div className="hidden md:block border-b border-gray-200 bg-white h-16">
-            <div className="flex justify-between items-center px-4 h-full">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Link
-                  href="/"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Home
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <Link
-                  href="/admin"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Admin
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <span className="font-medium text-gray-800">Quiz Manager</span>
-              </div>
-              {currentUser ? (
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Home", href: "/" },
+              { label: "Admin Dashboard", href: "/admin" },
+              { label: "Quiz Manager" },
+            ]}
+            actions={
+              currentUser ? (
                 <UserProfileBadge />
               ) : (
                 <div className="flex items-center space-x-4">
                   <Link
                     href="/login"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    className="admin-button-secondary px-3 py-1.5 text-sm"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                    className="admin-button-primary px-4 py-2 text-sm"
                   >
                     Register
                   </Link>
                 </div>
-              )}
-            </div>
-          </div>
+              )
+            }
+          />
           <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ecebff_0%,transparent_55%),radial-gradient(circle_at_bottom_right,#eaf5ff_0%,transparent_55%),#f5f6fb]">
             {children}
           </div>
@@ -470,17 +435,17 @@ export default function ManageQuizQuestions({
   return (
     <SidebarProvider>
       <LayoutShell>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="admin-workspace">
           {/* Header */}
-          <header className="mb-6">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="flex flex-col gap-2 min-w-0">
+          <header className="admin-header mb-6">
+            <div className="admin-header-row flex-wrap">
+              <div className="admin-header-copy flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-semibold text-slate-900">
+                  <h1 className="admin-page-title">
                     Quiz Questions – {quizBreadcrumb}
                   </h1>
                 </div>
-                <div className="text-sm text-slate-600 flex flex-wrap items-center gap-3">
+                <div className="admin-body flex flex-wrap items-center gap-3">
                   <span>
                     Review and manage all questions for this quiz. Use search,
                     filters, and bulk actions to keep the set clean and up to
@@ -492,24 +457,24 @@ export default function ManageQuizQuestions({
                   </span>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="admin-header-actions">
                 <Link
                   href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}`}
-                  className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+                  className="admin-button-secondary"
                 >
                   ← Back to Admin
                 </Link>
                 <Link
                   href={`/${quizSlug || resolvedParams.quizId}`}
                   target="_blank"
-                  className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+                  className="admin-button-secondary"
                 >
                   View Live Quiz
                 </Link>
                 <button
                   type="button"
                   onClick={loadQuestions}
-                  className="btn btn-primary rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold shadow"
+                  className="admin-button-primary"
                 >
                   Save Changes
                 </button>
@@ -518,57 +483,57 @@ export default function ManageQuizQuestions({
           </header>
 
           {/* Summary */}
-          <section className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-6">
+          <section className="admin-card p-5 mb-6">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
-              <div className="text-base font-semibold text-slate-900">
+              <div className="admin-section-title">
                 {quizBreadcrumb}
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="admin-helper mt-1">
                 Manage all the questions for this quiz from one place.
               </div>
             </div>
             <Link
               href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
-              className="rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              className="admin-button-secondary"
             >
               Edit Quiz Info
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Exam
               </div>
-              <div className="text-slate-900 font-medium">{parentName}</div>
+              <div className="admin-info-tile-value">{parentName}</div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Subject
               </div>
-              <div className="text-slate-900 font-medium">{nestedName}</div>
+              <div className="admin-info-tile-value">{nestedName}</div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Questions
               </div>
-              <div className="text-slate-900 font-medium">
+              <div className="admin-info-tile-value">
                 {questions.length}
               </div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Set Number
               </div>
-              <div className="text-slate-900 font-medium">
+              <div className="admin-info-tile-value">
                 {quizSetNumber !== "" ? quizSetNumber : "—"}
               </div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 URL
               </div>
-              <div className="text-indigo-600 break-words">
+              <div className="admin-info-tile-value break-words">
                 /{quizSlug || resolvedParams.quizId}
               </div>
             </div>
@@ -576,13 +541,13 @@ export default function ManageQuizQuestions({
         </section>
 
         {/* Questions */}
-        <section className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+        <section className="admin-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <div>
-              <div className="font-semibold text-slate-900 text-base">
+              <div className="admin-section-title">
                 Questions
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="admin-helper mt-1">
                 Showing {totalQuestions === 0 ? 0 : startIndex + 1}–
                 {endIndex} of {totalQuestions} questions.
               </div>
@@ -590,34 +555,34 @@ export default function ManageQuizQuestions({
             <div className="flex flex-wrap gap-2">
               <Link
                 href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/bulk-upload`}
-                className="rounded-full bg-blue-600 text-white px-3 py-2 text-sm font-medium shadow hover:bg-blue-700"
+                className="admin-button-secondary"
               >
                 Bulk Upload
               </Link>
               <Link
                 href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/questions/create`}
-                className="rounded-full bg-green-600 text-white px-3 py-2 text-sm font-medium shadow hover:bg-green-700"
+                className="admin-button-primary"
               >
                 + Add Question
               </Link>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-center mb-3">
+          <div className="admin-card mb-4 flex flex-wrap gap-2 p-3">
             <div className="w-full sm:w-auto min-w-[200px]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search questions…"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               />
             </div>
             <div className="w-full sm:w-40">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               >
                 <option value="all">All types</option>
                 {typeOptions.map((opt) => (
@@ -631,7 +596,7 @@ export default function ManageQuizQuestions({
               <select
                 value={skillFilter}
                 onChange={(e) => setSkillFilter(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               >
                 <option value="all">All skills</option>
                 {availableSkills.map((skill) => (
@@ -645,7 +610,7 @@ export default function ManageQuizQuestions({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               >
                 <option value="all">All statuses</option>
                 {availableStatuses.map((status) => (
@@ -674,18 +639,18 @@ export default function ManageQuizQuestions({
                   />
                 </svg>
               </div>
-              <h3 className="text-base font-medium text-slate-900 mb-1">
+              <h3 className="admin-card-title mb-1">
                 No questions found
               </h3>
-              <p className="text-sm text-slate-600">
+              <p className="admin-helper">
                 Adjust filters or add a new question to get started.
               </p>
             </div>
           ) : (
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="admin-table-wrap">
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <thead className="bg-slate-50 text-slate-500">
+                <table className="admin-table">
+                  <thead >
                     <tr>
                       <th className="px-3 py-2 text-left font-semibold">Q#</th>
                       <th className="px-3 py-2 text-left font-semibold">
@@ -733,12 +698,12 @@ export default function ManageQuizQuestions({
                       return (
                         <tr
                           key={question.id}
-                          className="border-t border-slate-200 bg-white odd:bg-white even:bg-slate-50"
+                          
                         >
-                          <td className="px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">
+                          <td className="admin-table-cell-nowrap px-3 py-3 font-semibold">
                             Q{startIndex + index + 1}
                           </td>
-                          <td className="px-3 py-3 text-slate-900 align-top">
+                          <td className="px-3 py-3 align-top">
                             <div className="line-clamp-2 leading-5">
                               {stripHtmlTags(
                                 question.question || "No question text"
@@ -746,21 +711,21 @@ export default function ManageQuizQuestions({
                             </div>
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
-                            <span className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-1 text-xs font-medium">
+                            <span className="admin-status-badge admin-status-badge-blue">
                               {questionTypeName}
                             </span>
                           </td>
-                          <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
+                          <td className="admin-table-cell-nowrap px-3 py-3">
                             {questionSkill || "—"}
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
                             <span
-                              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium border ${
+                              className={`admin-status-badge ${
                                 isDraft
-                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  ? "admin-status-badge-amber"
                                   : isPublished
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : "bg-slate-50 text-slate-700 border-slate-200"
+                                  ? "admin-status-badge-green"
+                                  : "admin-status-badge-gray"
                               }`}
                             >
                               {questionStatus.charAt(0).toUpperCase() +
@@ -772,14 +737,14 @@ export default function ManageQuizQuestions({
                               {canEdit && (
                                 <Link
                                   href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/questions/${question.id}`}
-                                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
+                                  className="admin-button-secondary px-3 py-1.5 text-xs"
                                 >
                                   Edit
                                 </Link>
                               )}
                               <button
                                 onClick={() => handleDeleteQuestion(question.id)}
-                                className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100"
+                                className="admin-button-danger px-3 py-1.5 text-xs"
                               >
                                 Delete
                               </button>
@@ -791,7 +756,7 @@ export default function ManageQuizQuestions({
                   </tbody>
                 </table>
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 text-sm text-slate-500">
+              <div className="admin-pagination">
                 <span>
                   Showing {totalQuestions === 0 ? 0 : startIndex + 1}–{endIndex} of{" "}
                   {totalQuestions} questions
@@ -801,14 +766,14 @@ export default function ManageQuizQuestions({
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-700 disabled:opacity-40"
+                    className="admin-pagination-button"
                   >
                     «
                   </button>
                   <button
                     type="button"
                     onClick={() => setCurrentPage(1)}
-                    className={`rounded-full border border-slate-200 px-2 py-1 text-xs ${
+                    className={`admin-pagination-button admin-pagination-number ${
                       currentPage === 1
                         ? "bg-indigo-50 text-indigo-700"
                         : "text-slate-700"
@@ -822,7 +787,7 @@ export default function ManageQuizQuestions({
                       onClick={() =>
                         setCurrentPage((p) => Math.min(totalPages, p + 1))
                       }
-                      className={`rounded-full border border-slate-200 px-2 py-1 text-xs ${
+                      className={`admin-pagination-button admin-pagination-number ${
                         currentPage > 1 && currentPage <= totalPages
                           ? "text-slate-700"
                           : "text-slate-400"
@@ -838,7 +803,7 @@ export default function ManageQuizQuestions({
                       setCurrentPage((p) => Math.min(totalPages, p + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-700 disabled:opacity-40"
+                    className="admin-pagination-button"
                   >
                     »
                   </button>
@@ -863,9 +828,9 @@ export default function ManageQuizQuestions({
 
         {/* Create Question Modal */}
         {showCreateQuestionModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 overflow-y-auto py-4">
-            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 my-auto max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <div className="admin-modal-backdrop">
+            <div className="admin-modal max-w-2xl">
+              <h2 className="admin-modal-title mb-6">
                 Add New Question
               </h2>
               <form onSubmit={handleCreateQuestion} className="space-y-4">
@@ -875,7 +840,7 @@ export default function ManageQuizQuestions({
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Question ID *
                   </label>
                   <input
@@ -886,26 +851,26 @@ export default function ManageQuizQuestions({
                         e.target.value.toLowerCase().replace(/\s+/g, "-")
                       )
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="e.g., question-1"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Question Text *
                   </label>
                   <textarea
                     value={newQuestion}
                     onChange={(e) => setNewQuestion(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="Enter the question text"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Options *
                   </label>
                   {newOptions.map((option, index) => (
@@ -918,48 +883,48 @@ export default function ManageQuizQuestions({
                         updated[index] = e.target.value;
                         setNewOptions(updated);
                       }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 mb-2"
+                      className="admin-field mb-2"
                       placeholder={`Option ${index + 1}`}
                     />
                   ))}
                   <button
                     type="button"
                     onClick={() => setNewOptions([...newOptions, ""])}
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    className="admin-button-secondary px-3 py-1.5 text-xs"
                   >
                     + Add Option
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Correct Answer *
                   </label>
                   <input
                     type="text"
                     value={newCorrectAnswer}
                     onChange={(e) => setNewCorrectAnswer(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="Enter the correct answer (must match one of the options)"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Explanation
                   </label>
                   <textarea
                     value={newExplanation}
                     onChange={(e) => setNewExplanation(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="Enter explanation for the correct answer (optional)"
                   />
                 </div>
-                <div className="flex space-x-3 pt-4">
+                <div className="admin-modal-footer pt-4">
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50"
+                    className="admin-button-primary flex-1 disabled:opacity-50"
                   >
                     {saving ? "Creating..." : "Create Question"}
                   </button>
@@ -974,7 +939,7 @@ export default function ManageQuizQuestions({
                       setNewExplanation("");
                       setValidationError("");
                     }}
-                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
+                    className="admin-button-cancel flex-1"
                   >
                     Cancel
                   </button>
@@ -987,4 +952,6 @@ export default function ManageQuizQuestions({
     </SidebarProvider>
   );
 }
+
+
 

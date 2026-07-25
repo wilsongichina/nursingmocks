@@ -29,7 +29,7 @@ Implemented:
 - Admin-only test email endpoint.
 - Admin email monitoring UI at `/admin/email-jobs`.
 - Firestore rules that deny normal client access to email-related private collections.
-- Structured local change-log page at `/change-log`.
+- Structured local Documentation page at `/documentation`.
 
 Not implemented yet:
 

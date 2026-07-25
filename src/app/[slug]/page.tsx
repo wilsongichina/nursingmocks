@@ -2,11 +2,16 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import ContentRenderer from "@/components/ui/ContentRenderer";
 import TiptapContentRenderer from "@/components/editor/TiptapContentRenderer";
 import DynamicQuizQuestions from "@/components/quiz/DynamicQuizQuestions";
 import FAQAccordion from "@/components/ui/FAQAccordion";
 import KbArticleViewer from "@/components/knowledge-base/KbArticleViewer";
+import PublicSubPageHero from "@/components/sections/PublicSubPageHero";
+import PublicSubPageGuide, {
+  PublicSubPageGuideSection,
+} from "@/components/sections/PublicSubPageGuide";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
 import {
   getRouteMappingBySlugOnly,
@@ -35,9 +40,10 @@ import {
   buildQuizPreviewState,
   resolveRequiredExamAccessProduct,
 } from "@/lib/content-access-state";
+import { buildQuizSchemaMarkup } from "@/lib/seo/structured-data";
 
 // Icon components for dashboard-style cards
-const LaptopIcon = ({ className }: { className?: string }) => (
+const _LaptopIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -69,7 +75,7 @@ const _MedalIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const BookIcon = ({ className }: { className?: string }) => (
+const _BookIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -85,7 +91,7 @@ const BookIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const CalculatorIcon = ({ className }: { className?: string }) => (
+const _CalculatorIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -101,7 +107,7 @@ const CalculatorIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const FlaskIcon = ({ className }: { className?: string }) => (
+const _FlaskIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -117,7 +123,7 @@ const FlaskIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const ABCIcon = ({ className }: { className?: string }) => (
+const _ABCIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     fill="none"
@@ -234,6 +240,118 @@ interface TocItem {
   level: number;
 }
 
+type TiptapContentPart =
+  | { type: "html"; html: string }
+  | { type: "quizCard"; key: string; quizTitle: string; questions: any[] };
+
+const SUPPORTED_QUIZ_CARD_QUESTION_TYPES = new Set([1, 2, 3, 7]);
+
+const decodeHtmlAttribute = (value: string) =>
+  value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+
+const parseHtmlAttributes = (htmlTag: string) => {
+  const attrs: Record<string, string> = {};
+  const attrPattern = /([\w-]+)=(["'])(.*?)\2/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = attrPattern.exec(htmlTag)) !== null) {
+    attrs[match[1]] = decodeHtmlAttribute(match[3]);
+  }
+
+  return attrs;
+};
+
+const isSupportedQuizCardQuestion = (question: any) => {
+  const questionTypeId = Number(question.questionTypeId || question.question_type_id);
+  return SUPPORTED_QUIZ_CARD_QUESTION_TYPES.has(questionTypeId);
+};
+
+const getQuestionId = (question: any) => String(question.id || question.questionId || "");
+
+const loadStaticQuizCardQuestions = async (attrs: Record<string, string>) => {
+  const pillarId = attrs["data-pillar-id"];
+  const subPageId = attrs["data-sub-page-id"];
+  const nestedSubPageId = attrs["data-nested-sub-page-id"];
+  const topicId = attrs["data-topic-id"];
+  const quizId = attrs["data-quiz-id"];
+
+  if (!pillarId || !subPageId || !nestedSubPageId || !quizId) {
+    return [];
+  }
+
+  let result: any = null;
+
+  if (pillarId === "nursing-entrance-exam") {
+    result = await getNursingEntranceExamQuizQuestions(subPageId, nestedSubPageId, quizId);
+  } else if (pillarId === "nursing-exit-exam") {
+    result = await getNursingExitExamQuizQuestions(subPageId, nestedSubPageId, quizId);
+  } else if (pillarId === "nursing-test-bank" && topicId) {
+    result = await getNursingTestBankQuizQuestions(subPageId, nestedSubPageId, topicId, quizId);
+  }
+
+  if (!result?.success || !Array.isArray(result.data)) {
+    return [];
+  }
+
+  let questions = result.data.filter(isSupportedQuizCardQuestion);
+  const selectedQuestionIdsValue = attrs["data-selected-question-ids"];
+
+  if (selectedQuestionIdsValue) {
+    try {
+      const selectedQuestionIds = JSON.parse(selectedQuestionIdsValue).map(String);
+      questions = questions.filter((question: any) =>
+        selectedQuestionIds.includes(getQuestionId(question))
+      );
+    } catch {
+      questions = [];
+    }
+  }
+
+  return questions;
+};
+
+const buildStaticTiptapContentParts = async (
+  htmlContent: string
+): Promise<TiptapContentPart[]> => {
+  const quizCardPattern =
+    /<div\b(?=[^>]*\bdata-type=(["'])quiz-card\1)[^>]*><\/div>/gi;
+  const parts: TiptapContentPart[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let quizCardIndex = 0;
+
+  while ((match = quizCardPattern.exec(htmlContent)) !== null) {
+    const htmlBefore = htmlContent.slice(lastIndex, match.index);
+    if (htmlBefore.trim()) {
+      parts.push({ type: "html", html: htmlBefore });
+    }
+
+    const attrs = parseHtmlAttributes(match[0]);
+    const questions = await loadStaticQuizCardQuestions(attrs);
+    parts.push({
+      type: "quizCard",
+      key: `quiz-card-${quizCardIndex}`,
+      quizTitle: attrs["data-quiz-title"] || "Practice Questions",
+      questions,
+    });
+
+    lastIndex = match.index + match[0].length;
+    quizCardIndex += 1;
+  }
+
+  const htmlAfter = htmlContent.slice(lastIndex);
+  if (htmlAfter.trim()) {
+    parts.push({ type: "html", html: htmlAfter });
+  }
+
+  return parts;
+};
+
 const createHeadingId = (text: string, index: number) => {
   const slug = text
     .toLowerCase()
@@ -243,6 +361,231 @@ const createHeadingId = (text: string, index: number) => {
     .replace(/^-+|-+$/g, "");
 
   return slug || `section-${index + 1}`;
+};
+
+const stripHtml = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const titleCaseWords = (value: string) =>
+  value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      const upperWord = word.toUpperCase();
+      if (["ATI", "TEAS", "HESI", "A2", "RN", "LPN"].includes(upperWord)) {
+        return upperWord;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+
+const getPublicPillarLabel = (pillarId: string) => {
+  switch (pillarId) {
+    case "nursing-entrance-exam":
+      return "Nursing Entrance Exams";
+    case "nursing-test-bank":
+      return "Nursing Test Bank";
+    case "nursing-exit-exam":
+      return "Nursing Exit Exams";
+    default:
+      return "NursingMocks";
+  }
+};
+
+const getPublicPillarBreadcrumbLabel = (pillarId: string) => {
+  switch (pillarId) {
+    case "nursing-entrance-exam":
+      return "Nursing Entrance Exam";
+    case "nursing-test-bank":
+      return "Nursing Test Bank";
+    case "nursing-exit-exam":
+      return "Nursing Exit Exam";
+    default:
+      return titleCaseWords(pillarId);
+  }
+};
+
+type PublicBreadcrumbItem = {
+  name: string;
+  url?: string;
+};
+
+const getPublicContentLabel = (pageData: any, fallback: string) =>
+  titleCaseWords(
+    stripHtml(
+      pageData?.seoLabel ||
+        pageData?.pageName ||
+        pageData?.heading ||
+        pageData?.hero?.title ||
+        pageData?.title ||
+        fallback
+    )
+  );
+
+const getRouteSlugByContentId = async ({
+  pillarId,
+  type,
+  id,
+  subPageId,
+  nestedPageId,
+}: {
+  pillarId: string;
+  type: "sub" | "nested" | "topic" | "quiz";
+  id: string;
+  subPageId?: string;
+  nestedPageId?: string;
+}) => {
+  const result = await getRouteMappingById({
+    pillarId,
+    type,
+    id,
+    subPageId,
+    nestedPageId,
+  });
+
+  if (result.success && result.data) {
+    return (result.data as any).slug || id;
+  }
+
+  return id;
+};
+
+const buildGeneratedPageBreadcrumbItems = async ({
+  slug,
+  mapping,
+  pageData,
+}: {
+  slug: string;
+  mapping: any;
+  pageData: any;
+}): Promise<PublicBreadcrumbItem[]> => {
+  const pillarId = String(mapping?.pillarId || pageData?.pillarId || "nursing-entrance-exam");
+  const items: PublicBreadcrumbItem[] = [
+    { name: "Home", url: "/" },
+    {
+      name: getPublicPillarBreadcrumbLabel(pillarId),
+      url: `/${pillarId}`,
+    },
+  ];
+
+  if (mapping?.subPageId && mapping.type !== "sub") {
+    const parentRefPath = `pillarPages/${pillarId}/subPages/${mapping.subPageId}`;
+    const parentResult = await getPageByContentPath(parentRefPath);
+    const parentData = parentResult.success ? parentResult.data : null;
+    const parentSlug = await getRouteSlugByContentId({
+      pillarId,
+      type: "sub",
+      id: mapping.subPageId,
+    });
+
+    items.push({
+      name: getPublicContentLabel(parentData, mapping.subPageId),
+      url: `/${parentSlug}`,
+    });
+  }
+
+  if (mapping?.nestedPageId && mapping.type !== "nested") {
+    const nestedRefPath = `pillarPages/${pillarId}/subPages/${mapping.subPageId}/nestedSubPages/${mapping.nestedPageId}`;
+    const nestedResult = await getPageByContentPath(nestedRefPath);
+    const nestedData = nestedResult.success ? nestedResult.data : null;
+    const nestedSlug = await getRouteSlugByContentId({
+      pillarId,
+      type: "nested",
+      id: mapping.nestedPageId,
+      subPageId: mapping.subPageId,
+    });
+
+    items.push({
+      name: getPublicContentLabel(nestedData, mapping.nestedPageId),
+      url: `/${nestedSlug}`,
+    });
+  }
+
+  if (mapping?.topicId && mapping.type !== "topic") {
+    const topicRefPath = `pillarPages/${pillarId}/subPages/${mapping.subPageId}/nestedSubPages/${mapping.nestedPageId}/topics/${mapping.topicId}`;
+    const topicResult = await getPageByContentPath(topicRefPath);
+    const topicData = topicResult.success ? topicResult.data : null;
+    const topicSlug = await getRouteSlugByContentId({
+      pillarId,
+      type: "topic",
+      id: mapping.topicId,
+      subPageId: mapping.subPageId,
+      nestedPageId: mapping.nestedPageId,
+    });
+
+    items.push({
+      name: getPublicContentLabel(topicData, mapping.topicId),
+      url: `/${topicSlug}`,
+    });
+  }
+
+  items.push({
+    name: getPublicContentLabel(pageData, slug),
+  });
+
+  return items;
+};
+
+const getExamBadgeLabel = (pageData: any, contentName: string) => {
+  const productId = String(pageData?.examAccessProductId || "").toLowerCase();
+  const source = `${contentName} ${pageData?.pageName || ""} ${pageData?.seoLabel || ""}`.toLowerCase();
+
+  if (productId === "ati_teas_7" || source.includes("teas")) return "ATI TEAS 7";
+  if (productId === "hesi_a2" || source.includes("hesi")) return "HESI A2";
+  if (productId === "nursing_test_bank" || source.includes("test bank")) return "Nursing Test Bank";
+  if (productId === "nursing_exit_exams" || source.includes("exit")) return "Nursing Exit Exams";
+
+  return titleCaseWords(contentName || "NursingMocks");
+};
+
+const getSubPageActionLabels = (examBadge: string) => {
+  const examName = examBadge || "Nursing Exam";
+  return {
+    primary: `Start ${examName} Practice`,
+    secondary: `View ${examName} Subjects`,
+    sectionTitle: `${examName} Practice Subjects`,
+  };
+};
+
+const isGeneratedPlaceholderDescription = (value: string) =>
+  /^content for\b.+\bunder\b/i.test(value.trim());
+
+const getPublicCardDescription = (page: any, title: string) => {
+  const candidates = [
+    page.cardDescription,
+    page.shortDescription,
+    page.description,
+    page.hero?.description,
+    page.meta?.description,
+  ];
+
+  for (const candidate of candidates) {
+    const cleanValue = stripHtml(candidate);
+
+    if (!cleanValue || isGeneratedPlaceholderDescription(cleanValue)) {
+      continue;
+    }
+
+    const firstSentence =
+      cleanValue.match(/^(.+?[.!?])(?:\s|$)/)?.[1] || cleanValue;
+
+    return firstSentence.length > 155
+      ? `${firstSentence.slice(0, 152).trim()}...`
+      : firstSentence;
+  }
+
+  return `Practice ${title} with subject-focused questions and review support.`;
 };
 
 const buildTocAndBodyContent = (
@@ -263,26 +606,90 @@ const buildTocAndBodyContent = (
         return fullMatch;
       }
 
+      // Body content is managed in Tiptap, but public pages must keep one H1.
+      const safeLevel = level === "1" ? "2" : level;
+
+      if (level === "1") {
+        return `<h2${attrs} data-toc-ignore="true">${innerHtml}</h2>`;
+      }
+
+      if (safeLevel !== "2") {
+        return fullMatch;
+      }
+
       const existingIdMatch = attrs.match(/\sid=(["'])(.*?)\1/i);
       const id = existingIdMatch?.[2] || createHeadingId(title, headingIndex);
 
       tocItems.push({
         id,
         title,
-        level: parseInt(level, 10),
+        level: parseInt(safeLevel, 10),
       });
 
       headingIndex += 1;
 
       if (existingIdMatch) {
-        return fullMatch;
+        return `<h${safeLevel}${attrs}>${innerHtml}</h${safeLevel}>`;
       }
 
-      return `<h${level}${attrs} id="${id}">${innerHtml}</h${level}>`;
+      return `<h${safeLevel}${attrs} id="${id}">${innerHtml}</h${safeLevel}>`;
     }
   );
 
   return { tocItems, contentWithHeadingIds };
+};
+
+const buildGuideSections = async (
+  htmlContent: string,
+  tocItems: TocItem[],
+  fallbackTitle: string
+): Promise<PublicSubPageGuideSection[]> => {
+  if (!htmlContent) {
+    return [];
+  }
+
+  const headingMatches = Array.from(
+    htmlContent.matchAll(/<h2([^>]*)>([\s\S]*?)<\/h2>/gi)
+  ).filter((match) => !/\sdata-toc-ignore=(["'])true\1/i.test(match[1]));
+
+  if (headingMatches.length === 0) {
+    return [
+      {
+        id: "overview",
+        title: fallbackTitle,
+        content: htmlContent,
+        contentParts: await buildStaticTiptapContentParts(htmlContent),
+      },
+    ];
+  }
+
+  const introContent = htmlContent.slice(0, headingMatches[0].index || 0).trim();
+  const sections: PublicSubPageGuideSection[] = [];
+
+  for (const [index, match] of headingMatches.entries()) {
+    const headingStart = match.index || 0;
+    const contentStart = headingStart + match[0].length;
+    const nextHeadingStart =
+      headingMatches[index + 1]?.index ?? htmlContent.length;
+    const headingTitle =
+      tocItems[index]?.title ||
+      match[2].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() ||
+      `${fallbackTitle} ${index + 1}`;
+    const body = htmlContent.slice(contentStart, nextHeadingStart).trim();
+    const sectionContent =
+      index === 0 && introContent ? `${introContent}${body}` : body;
+
+    sections.push({
+      id: tocItems[index]?.id || createHeadingId(headingTitle, index),
+      title: headingTitle,
+      content: sectionContent || "<p>Content will appear here once it is published.</p>",
+      contentParts: await buildStaticTiptapContentParts(
+        sectionContent || "<p>Content will appear here once it is published.</p>"
+      ),
+    });
+  }
+
+  return sections;
 };
 
 const _getIconComponent = (iconName: string) => {
@@ -584,9 +991,19 @@ export default async function DynamicPage({
     if (kbArticleResult.success && kbArticleResult.data) {
       const pageData = kbArticleResult.data;
       const pillarId = (pageData as any).pillarId || "nursing-entrance-exam";
+      const initialBreadcrumbItems: PublicBreadcrumbItem[] = [
+        { name: "Home", url: "/" },
+        {
+          name: getPublicPillarBreadcrumbLabel(pillarId),
+          url: `/${pillarId}`,
+        },
+        {
+          name: getPublicContentLabel(pageData, slug),
+        },
+      ];
       
       return (
-        <Layout showSidebar={true}>
+        <Layout showSidebar={true} initialBreadcrumbItems={initialBreadcrumbItems}>
           <KbArticleViewer article={pageData} pillarId={pillarId} />
         </Layout>
       );
@@ -606,11 +1023,16 @@ export default async function DynamicPage({
   const pageData = contentResult.data as any;
   const pageType = mapping.type;
   const pillarId = mapping.pillarId;
+  const initialBreadcrumbItems = await buildGeneratedPageBreadcrumbItems({
+    slug,
+    mapping,
+    pageData,
+  });
 
   // Handle knowledge base articles
   if (mapping.refPath && mapping.refPath.startsWith("knowledgeBase/")) {
     return (
-      <Layout showSidebar={true}>
+      <Layout showSidebar={true} initialBreadcrumbItems={initialBreadcrumbItems}>
         <KbArticleViewer article={pageData} pillarId={pillarId} />
       </Layout>
     );
@@ -670,6 +1092,19 @@ export default async function DynamicPage({
       : [];
 
     // Get nested page slug for back button
+    let parentPageSlug = "";
+    if (mapping.subPageId) {
+      const parentPageMappingResult = await getRouteMappingById({
+        pillarId,
+        type: "sub",
+        id: mapping.subPageId,
+      });
+      if (parentPageMappingResult.success && parentPageMappingResult.data) {
+        const parentPageData = parentPageMappingResult.data as any;
+        parentPageSlug = parentPageData.slug || "";
+      }
+    }
+
     let nestedPageSlug = "";
     if (mapping.nestedPageId) {
       const nestedPageMappingResult = await getRouteMappingById({
@@ -764,275 +1199,229 @@ export default async function DynamicPage({
       }
     }
 
-    // Limit to 12 related quizzes
-    relatedQuizzes = relatedQuizzes.slice(0, 12);
+    // Public quiz pages are statically generated, so related quiz links must be
+    // derived from Firestore here instead of client auth state for indexing.
+    const publicRelatedQuizzes = relatedQuizzes
+      .filter((quiz: any) => {
+        const status = String(quiz.status || "").toLowerCase();
+        return quiz.active !== false && status !== "archived";
+      })
+      .sort((first: any, second: any) => {
+        const firstSet = Number(first.setNumber || Number.MAX_SAFE_INTEGER);
+        const secondSet = Number(second.setNumber || Number.MAX_SAFE_INTEGER);
+        if (firstSet !== secondSet) return firstSet - secondSet;
+        const firstName = String(first.pageName || first.title || first.quizName || first.id);
+        const secondName = String(second.pageName || second.title || second.quizName || second.id);
+        return firstName.localeCompare(secondName);
+      })
+      .slice(0, 12);
 
-    // Helper function to get card icon and colors (same as used in header)
-    const _getCardIcon = (name: string, index: number) => {
-      const nameLower = name.toLowerCase();
-      const colorVariants = [
-        { iconBg: "bg-purple-500", numberColor: "text-purple-600" },
-        { iconBg: "bg-blue-500", numberColor: "text-blue-600" },
-        { iconBg: "bg-orange-500", numberColor: "text-orange-600" },
-        { iconBg: "bg-green-500", numberColor: "text-green-600" },
-        { iconBg: "bg-teal-500", numberColor: "text-teal-600" },
-        { iconBg: "bg-indigo-500", numberColor: "text-indigo-600" },
-        { iconBg: "bg-pink-500", numberColor: "text-pink-600" },
-        { iconBg: "bg-cyan-500", numberColor: "text-cyan-600" },
-      ];
-
-      if (nameLower.includes("reading")) {
-        return {
-          icon: <BookIcon className="w-6 h-6 text-white" />,
-          iconBg: "bg-purple-500",
-          numberColor: "text-purple-600",
-        };
-      } else if (nameLower.includes("math")) {
-        return {
-          icon: <CalculatorIcon className="w-6 h-6 text-white" />,
-          iconBg: "bg-blue-500",
-          numberColor: "text-blue-600",
-        };
-      } else if (nameLower.includes("science")) {
-        return {
-          icon: <FlaskIcon className="w-6 h-6 text-white" />,
-          iconBg: "bg-orange-500",
-          numberColor: "text-orange-600",
-        };
-      } else if (nameLower.includes("english")) {
-        return {
-          icon: <ABCIcon className="w-6 h-6 text-white" />,
-          iconBg: "bg-green-500",
-          numberColor: "text-green-600",
-        };
-      }
-      const colorVariant = colorVariants[index % colorVariants.length];
-      return {
-        icon: <LaptopIcon className="w-6 h-6 text-white" />,
-        iconBg: colorVariant.iconBg,
-        numberColor: colorVariant.numberColor,
-      };
-    };
+    const examProductLabel =
+      pageData.examAccessProductId === "hesi_a2"
+        ? "HESI A2"
+        : pageData.examAccessProductId === "ati_teas_7"
+          ? "ATI TEAS 7"
+          : previewState.productLabel;
+    const subjectLabel =
+      pageData.subjectName ||
+      pageData.subject ||
+      pageData.hero?.title ||
+      pageData.pageName ||
+      "Practice Set";
+    const setLabel = pageData.setNumber ? `Set ${pageData.setNumber}` : "Practice Set";
+    const quizTitle = pageData.pageName || pageData.quizName || subjectLabel;
+    const rawQuizDescription =
+      pageData.description ||
+      pageData.hero?.description ||
+      pageData.meta?.description ||
+      `Practice ${subjectLabel} questions and review explanations at your own pace.`;
+    const quizDescription =
+      typeof rawQuizDescription === "string" &&
+      /^content for\b/i.test(rawQuizDescription.trim())
+        ? `Practice questions for ${setLabel}. Review each answer with explanations when you are ready.`
+        : rawQuizDescription;
+    const totalAvailableQuestions = filteredQuestions.length;
+    const previewQuestionCount = questions.length;
+    const lockedQuestionCount = previewState.hiddenQuestionCount;
+    const relatedSectionTitle = `More ${subjectLabel} Practice Sets`;
+    const relatedSectionIntro = `Continue with other ${subjectLabel} sets when you are ready for more practice.`;
+    const categoryLabel =
+      pillarId === "nursing-test-bank"
+        ? "Nursing Test Bank"
+        : pillarId === "nursing-exit-exam"
+          ? "Nursing Exit Exam"
+          : "Nursing Entrance Exam";
+    const educationalLevel =
+      pillarId === "nursing-test-bank"
+        ? "Nursing school test bank practice"
+        : pillarId === "nursing-exit-exam"
+          ? "Nursing exit exam preparation"
+          : "Nursing entrance exam preparation";
+    const publicQuizSchema = buildQuizSchemaMarkup({
+      slug,
+      quizName: quizTitle,
+      description: quizDescription,
+      examProductName: examProductLabel,
+      subjectName: subjectLabel,
+      categoryName: categoryLabel,
+      educationalLevel,
+      setNumber: pageData.setNumber,
+      estimatedMinutes: pageData.estimatedMinutes,
+      questionCount: totalAvailableQuestions > 0 ? totalAvailableQuestions : undefined,
+      breadcrumbs: [
+        { name: categoryLabel, slug: pillarId },
+        ...(parentPageSlug ? [{ name: examProductLabel, slug: parentPageSlug }] : []),
+        ...(nestedPageSlug ? [{ name: subjectLabel, slug: nestedPageSlug }] : []),
+        { name: quizTitle, slug },
+      ],
+      questions: questions.map((question: any) => ({
+        id: question.id,
+        question: question.question,
+      })),
+    });
 
     return (
-      <Layout>
-        {/* Schema Script */}
-        {pageData.schema && (
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: pageData.schema,
-            }}
-          />
-        )}
+      <Layout initialBreadcrumbItems={initialBreadcrumbItems}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: publicQuizSchema,
+          }}
+        />
 
-        {/* Hero Section */}
-        <section className="mb-7">
-          <div className="px-5 py-6 md:px-5 md:py-10 sm:px-[14px] sm:py-[18px]">
-            {/* Back Link */}
-            {nestedPageSlug && (
-              <a
-                href={`/${nestedPageSlug}`}
-                className="inline-flex items-center gap-1.5 text-[13px] text-[#4f46e5] no-underline mb-3 hover:underline"
-              >
-                <span className="text-base">←</span>
-                <span>Back to ATI TEAS English Questions</span>
-              </a>
-            )}
-
-            {/* Hero Card */}
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-5 lg:gap-5.5 p-6 md:p-7 lg:p-6 rounded-[26px] md:rounded-[20px] border border-[rgba(226,229,249,0.9)] shadow-[0_18px_45px_rgba(15,23,42,0.08)] bg-gradient-to-br from-[#f5f1ff] to-[#e5efff] overflow-hidden">
-              {/* Decorative circles */}
-              <div className="absolute w-[220px] h-[220px] rounded-full bg-[radial-gradient(circle,rgba(106,92,255,0.22),transparent_60%)] -top-20 -right-10 pointer-events-none" />
-              <div className="absolute w-[180px] h-[180px] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.2),transparent_60%)] -bottom-20 right-[60px] pointer-events-none" />
-
-              {/* Main Content */}
-              <div className="relative z-10 flex-1 min-w-0 lg:flex-[1_1_60%]">
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[rgba(106,92,255,0.12)] text-[#4338ca] text-[11px] font-semibold tracking-[0.12em] uppercase mb-2.5">
-                  <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
-                  <span>ATI TEAS ENGLISH · QUESTION SET</span>
-                </div>
-
-                <h1 className="mt-0 mb-2.5 text-[32px] md:text-[26px] lg:text-[24px] font-extrabold tracking-[-0.03em] text-[#0f172a]">
-                  Master <span className="text-[#4f46e5]">ATI TEAS English</span> Question Set 1
-                </h1>
-
-                <p className="text-[15px] text-[#7a819c] max-w-[620px] my-0 mb-3.5 leading-relaxed">
-                  Practice TEAS-style English questions that strengthen punctuation, capitalization,
-                  sentence clarity, and grammar. Explanations stay blurred until you reveal them, so you
-                  can test yourself first and review like an instructor later.
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-3.5">
-                  <div className="px-3 py-1.5 rounded-full bg-white/96 border border-[rgba(219,222,247,0.9)] text-xs text-[#a0a5bf] inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(106,92,255,0.85)]" />
-                    <span>{questions.length} TEAS-style English questions</span>
+        <main className="user-page">
+          <div className="user-page-container">
+            <header className="user-page-header">
+              <div className="user-page-header-row">
+                <div className="user-page-header-copy">
+                  <div className="mb-4 flex flex-col items-start gap-3">
+                    {nestedPageSlug && (
+                      <Link
+                        href={`/${nestedPageSlug}`}
+                        className="user-button-secondary min-h-[34px] w-fit px-3 py-1.5 text-sm"
+                      >
+                        Back to {subjectLabel}
+                      </Link>
+                    )}
+                    <p className="user-eyebrow m-0 inline-flex items-center gap-2">
+                      <span className="user-accent-dot shrink-0" />
+                      {examProductLabel} Practice
+                    </p>
                   </div>
-                  <div className="px-3 py-1.5 rounded-full bg-white/96 border border-[rgba(219,222,247,0.9)] text-xs text-[#a0a5bf] inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(106,92,255,0.85)]" />
-                    <span>Single-select multiple choice</span>
-                  </div>
-                  <div className="px-3 py-1.5 rounded-full bg-white/96 border border-[rgba(219,222,247,0.9)] text-xs text-[#a0a5bf] inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(106,92,255,0.85)]" />
-                    <span>Review & exam-style practice</span>
+                  <h1 className="user-page-title mt-2">{quizTitle}</h1>
+                  <p className="user-body-sm mt-3">{quizDescription}</p>
+                  <div className="user-page-header-meta mt-4">
+                    <span className="user-pill user-pill-purple">{examProductLabel}</span>
+                    <span className="user-pill">{subjectLabel}</span>
+                    <span className="user-badge user-badge-green">
+                      {totalAvailableQuestions} {totalAvailableQuestions === 1 ? "question" : "questions"}
+                    </span>
+                    {!previewState.previewEnabled ? (
+                      <span className="user-badge user-badge-amber">Access required</span>
+                    ) : previewState.hiddenQuestionCount > 0 ? (
+                      <span className="user-badge user-badge-amber">
+                        {previewQuestionCount} question preview
+                      </span>
+                    ) : (
+                      <span className="user-badge user-badge-green">Full set available</span>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2.5 items-center mb-2">
-                  <a
-                    href="#questions-start"
-                    className="inline-flex items-center justify-center gap-1.5 px-5.5 py-2.75 rounded-full border-none text-sm font-semibold text-white bg-gradient-to-br from-[#6a5cff] to-[#4f46e5] no-underline shadow-[0_12px_26px_rgba(80,72,220,0.55)] transition-all hover:-translate-y-px hover:shadow-[0_16px_34px_rgba(80,72,220,0.6)] whitespace-nowrap"
-                  >
-                    <span>Start English Set 1</span>
-                    <span>›</span>
-                  </a>
-                  <a
-                    href="#"
-                    className="text-[13px] text-black no-underline inline-flex items-center gap-1 hover:underline"
-                  >
-                    <span>Browse all English sets</span>
-                    <span className="text-[15px]">↗</span>
-                  </a>
-                </div>
-
-                <div className="text-xs text-[#a0a5bf] mb-2">
-                  No sign-up required to start. Create a free NursingMocks account to save your progress and unlock more sets.
-                </div>
-
-                <div className="flex flex-wrap gap-2.5 mt-1 text-[11px] text-[#a0a5bf]">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.25 rounded-full bg-white/95 border border-dashed border-[rgba(210,213,247,0.9)]">
-                    <span className="text-[13px]">⭐</span>
-                    <span>4.8/5 average student rating</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.25 rounded-full bg-white/95 border border-dashed border-[rgba(210,213,247,0.9)]">
-                    <span className="text-[13px]">👩‍⚕️</span>
-                    <span>Used by thousands of aspiring nurses</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.25 rounded-full bg-white/95 border border-dashed border-[rgba(210,213,247,0.9)]">
-                    <span className="text-[13px]">📈</span>
-                    <span>Designed around ATI TEAS 7 English skills</span>
-                  </div>
+                <div className="user-page-header-actions w-full sm:w-auto">
+                  <button type="button" className="user-button-secondary w-full sm:w-auto" disabled>
+                    Go To Exam Mode
+                  </button>
                 </div>
               </div>
+            </header>
 
-              {/* Set Overview Card */}
-              <aside className="relative z-10 w-full lg:w-auto lg:flex-[0_0_38%] lg:max-w-[38%] sm:max-w-[420px] sm:mx-auto sm:mt-1">
-                <div className="max-w-[420px] w-full bg-white rounded-[22px] p-4 pb-[18px] shadow-[0_16px_40px_rgba(15,23,42,0.16)] border border-[rgba(148,163,184,0.45)]">
-                  <div className="mb-3">
-                    <div className="text-[13px] font-bold uppercase tracking-[0.13em] text-[#4b5563] mb-1">
-                      Set overview
-                    </div>
-                    <div className="text-[11px] text-[#6b7280]">
-                      Student view
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5 text-[13px] text-[#4b5563] leading-relaxed">
-                    <p>
-                      {questions.length} TEAS-style English questions focused on ATI TEAS 7 exam skills.
-                    </p>
-                    <p>
-                      Targets punctuation, capitalization, sentence structure, and usage.
-                    </p>
-                    <p>
-                      Correct answers and full explanations stay blurred until you click Show.
-                    </p>
-                    <p>
-                      Perfect warm-up before taking a full-length ATI TEAS English practice test.
-                    </p>
-                    <p className="pt-1 border-t border-[#e5e7eb]">
-                      <strong className="text-[#4b5563]">Tip:</strong> Answer each question on your own first, then reveal the explanation and note why the correct option works.
-                    </p>
-                  </div>
+            <section className="user-card mb-5 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="user-pill">{setLabel}</span>
+                  <span className="user-badge">{previewQuestionCount} visible</span>
+                  {lockedQuestionCount > 0 ? (
+                    <span className="user-badge user-badge-amber">
+                      {lockedQuestionCount} locked
+                    </span>
+                  ) : (
+                    <span className="user-badge user-badge-green">No locked questions</span>
+                  )}
+                  <span className="user-pill user-pill-purple">Review Mode</span>
                 </div>
-              </aside>
-            </div>
-          </div>
-        </section>
+                <p className="user-helper max-w-2xl">
+                  Review Mode lets you answer first, then reveal explanations when you are ready.
+                </p>
+              </div>
+            </section>
 
-        {/* Progress / Info Bar */}
-        {questions.length > 0 && (
-          <section className="mt-4.5 mb-3.5 py-2.5 rounded-2xl bg-white/96 border border-dashed border-[rgba(206,210,244,0.95)] flex flex-wrap items-center justify-between gap-2.5 px-5 sm:px-[14px]">
-            <div className="text-[13px] text-[#7a819c] flex items-center gap-2">
-              <span>Set 1 · {questions.length} Questions</span>
-              <span className="px-2.5 py-1 rounded-full bg-[#eef0ff] border border-[rgba(187,192,234,0.9)] text-[11px] text-[#a0a5bf]">
-                Practice at your own pace
-              </span>
-            </div>
-            <div className="relative flex-1 min-w-[140px] h-2 rounded-full bg-[#e5e7f5] overflow-hidden">
-              <div
-                className="absolute top-0 left-0 bottom-0 rounded-full bg-gradient-to-r from-[#6a5cff] to-[#22c55e]"
-                style={{ width: "18%" }}
+            <section id="questions-start" className="space-y-4">
+              <DynamicQuizQuestions
+                slug={slug}
+                previewQuestions={questions}
+                totalQuestionCount={filteredQuestions.length}
+                hiddenQuestionCount={previewState.hiddenQuestionCount}
+                productLabel={previewState.productLabel}
+                questionTypes={questionTypes}
               />
-            </div>
-            <div className="text-[11px] text-[#a0a5bf] min-w-[120px] text-right">
-              Example: 7 / {questions.length} questions completed · Upgrade your account later to track real progress.
-            </div>
-          </section>
-        )}
+            </section>
 
-        {/* Questions */}
-        <main id="questions-start" className="mt-2.5 px-5 sm:px-[14px]">
-          <DynamicQuizQuestions
-            slug={slug}
-            previewQuestions={questions}
-            totalQuestionCount={filteredQuestions.length}
-            hiddenQuestionCount={previewState.hiddenQuestionCount}
-            productLabel={previewState.productLabel}
-            questionTypes={questionTypes}
-          />
+            {publicRelatedQuizzes.length > 0 && (
+              <section className="user-card mt-6 p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="user-section-title">{relatedSectionTitle}</h2>
+                    <p className="user-helper mt-1">{relatedSectionIntro}</p>
+                  </div>
+                  <span className="user-badge user-badge-purple">
+                    {publicRelatedQuizzes.length} available
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {publicRelatedQuizzes.slice(0, 9).map((quiz: any) => {
+                    const quizSlug = quizSlugMap[quiz.id] || quiz.slug || quiz.id;
+                    const quizName =
+                      quiz.pageName || quiz.title || quiz.quizName || quiz.id;
+                    const questionCount = Number(quiz.questionCount || 0);
+
+                    return (
+                      <article key={quiz.id} className="user-feature-surface flex min-h-[190px] flex-col p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="user-pill user-pill-purple">
+                            {quiz.setNumber ? `Set ${quiz.setNumber}` : "Practice Set"}
+                          </span>
+                          <span className="user-badge">
+                            {questionCount > 0
+                              ? `${questionCount} ${questionCount === 1 ? "question" : "questions"}`
+                            : "Questions"}
+                          </span>
+                        </div>
+                        <h3 className="mt-4">
+                          <Link
+                            href={`/${quizSlug}`}
+                            className="group inline-flex break-words rounded-lg text-[#0f172a] no-underline transition-colors hover:text-[#4338ca] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[rgba(79,70,229,0.22)]"
+                          >
+                            <span className="user-card-title underline decoration-[#c7d2fe] decoration-2 underline-offset-4 group-hover:decoration-[#4338ca]">
+                              {quizName}
+                            </span>
+                            <ArrowUpRight
+                              className="ml-2 mt-0.5 h-4 w-4 shrink-0 text-[#4338ca] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                              aria-hidden="true"
+                            />
+                          </Link>
+                        </h3>
+                        <p className="user-helper mt-2 flex-1">
+                          Continue with another {subjectLabel} practice set and review explanations at your own pace.
+                        </p>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
         </main>
-
-        {/* Related Sets Section */}
-        {relatedQuizzes.length > 0 && (
-          <section className="mt-6 py-4.5 rounded-[20px] bg-white border border-[#e0e3f5] shadow-[0_10px_30px_rgba(15,23,42,0.06)] px-5 sm:px-[14px]">
-            <div className="flex justify-between items-center gap-2.5 mb-2">
-              <div className="text-[15px] font-bold">Next ATI TEAS English Question Sets</div>
-              <span className="px-2.25 py-0.75 rounded-full bg-[#f3f4ff] border border-dashed border-[rgba(177,181,233,0.9)] text-[11px] text-[#4f46e5]">
-                Keep building English mastery
-              </span>
-            </div>
-            <p className="text-[13px] text-[#7a819c] mb-3">
-              When you finish Set 1, continue your practice with more TEAS-style English sets and focused skill drills.
-              Each set builds on what you just practiced so you can walk into test day confident.
-            </p>
-
-            <div className="grid grid-cols-3 gap-2.5 mb-3">
-              {relatedQuizzes.slice(0, 3).map((quiz: any, index: number) => {
-                const quizSlug = quizSlugMap[quiz.id] || quiz.slug || quiz.id;
-                const quizName =
-                  quiz.pageName || quiz.title || quiz.quizName || quiz.id;
-                const questionCount = (quiz.questionCount || 0).toLocaleString();
-
-                return (
-                  <article
-                    key={quiz.id}
-                    className="rounded-[14px] p-2.25 bg-[#f8f7ff] border border-dashed border-[rgba(190,195,239,0.9)] text-xs flex flex-col gap-1"
-                  >
-                    <div className="font-medium text-[#202437]">{quizName}</div>
-                    <div className="text-[11px] text-[#a0a5bf]">{questionCount} questions · Mixed grammar & clarity</div>
-                    <Link
-                      href={`/${quizSlug}`}
-                      className="mt-1 text-[11px] text-[#4f46e5] no-underline hover:underline"
-                    >
-                      Open Set {index + 2} →
-                    </Link>
-                  </article>
-                );
-              })}
-            </div>
-
-            <div className="mt-0.5 pt-2 border-t border-dashed border-[rgba(215,218,245,0.9)] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#a0a5bf]">
-              <span>Want to follow a full English study path instead of picking sets manually?</span>
-              <Link
-                href="#"
-                className="text-xs text-[#4f46e5] no-underline font-medium hover:underline"
-              >
-                View TEAS English study path →
-              </Link>
-            </div>
-          </section>
-        )}
       </Layout>
     );
   }
@@ -1403,10 +1792,195 @@ export default async function DynamicPage({
   const pageDescription = pageData.description || pageData.content || "";
   const bodyContent = pageData.bodyContent || "";
   const { tocItems, contentWithHeadingIds } = buildTocAndBodyContent(bodyContent);
+  const isPublicSubPage = pageType === "sub" || pageType === "nested";
+  const pillarLabel = getPublicPillarLabel(pillarId);
+  const pageName = titleCaseWords(stripHtml(content.pageName || pageHeading || slug));
+  const examBadge = getExamBadgeLabel(pageData, pageName);
+  const actionLabels = getSubPageActionLabels(examBadge);
+  const publishedNestedPages = nestedPages.filter((nestedPage: any) => {
+    const status = String(nestedPage?.status || "Published").toLowerCase();
+    const hasPublicRoute = Boolean(_nestedPageSlugMap[nestedPage.id]);
+
+    if (status === "archived") {
+      return false;
+    }
+
+    // Some legacy nested pages were left as Draft even after public route
+    // mappings were created. The route mapping is the stronger signal that the
+    // child page is crawlable and should be listed from the public parent hub.
+    if (status === "draft") {
+      return hasPublicRoute;
+    }
+
+    return true;
+  });
+  const childCards = publishedNestedPages.map((nestedPage: any) => {
+    const rawName =
+      nestedPage.seoLabel ||
+      nestedPage.pageName ||
+      nestedPage.heading ||
+      nestedPage.title ||
+      nestedPage.slug ||
+      nestedPage.id;
+    const title = titleCaseWords(stripHtml(rawName));
+    const slugValue =
+      _nestedPageSlugMap[nestedPage.id] ||
+      nestedPage.slug ||
+      nestedPage.seoSlug ||
+      nestedPage.id;
+    const questionCount = typeof nestedPage.questionCount === "number" ? nestedPage.questionCount : null;
+    const description = getPublicCardDescription(nestedPage, title);
+
+    return {
+      id: nestedPage.id || slugValue,
+      title,
+      href: `/${String(slugValue).replace(/^\/+/, "")}`,
+      questionCount,
+      description,
+    };
+  });
+  const firstChildHref = childCards[0]?.href || "#content";
+  const totalChildQuestions = childCards.reduce(
+    (total, card) => total + (card.questionCount ?? 0),
+    0
+  );
+  const guideSections = await buildGuideSections(
+    contentWithHeadingIds,
+    tocItems,
+    `${pageName} Guide`
+  );
+
+  if (isPublicSubPage) {
+    return (
+      <Layout initialBreadcrumbItems={initialBreadcrumbItems}>
+        {content.schema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: content.schema,
+            }}
+          />
+        )}
+
+        <main className="user-page">
+          <div className="user-page-container">
+            <PublicSubPageHero
+              pillarHref={`/${pillarId}`}
+              pillarLabel={pillarLabel}
+              examBadge={examBadge}
+              pageHeading={pageHeading}
+              pageDescription={pageDescription}
+              childCards={childCards}
+              firstChildHref={firstChildHref}
+              actionLabels={actionLabels}
+              totalChildQuestions={totalChildQuestions}
+            />
+
+            <div className="public-hero-body-divider" aria-hidden="true" />
+
+            {childCards.length > 0 && (
+              <section id="practice-paths" className="mb-5">
+                <div className="mx-auto mb-5 flex max-w-3xl flex-col items-center gap-3 text-center">
+                  <div>
+                    <p className="user-eyebrow m-0">Start By Subject</p>
+                    <h2 className="user-section-title public-section-heading mt-2">
+                      {actionLabels.sectionTitle}
+                    </h2>
+                  </div>
+                  <p className="user-helper max-w-2xl">
+                    Pick the subject that matches your study plan. Each link opens the exact practice page for that subject.
+                  </p>
+                </div>
+
+                <div className="user-card p-4 sm:p-5">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {childCards.map((card) => (
+                      <article key={card.id} className="user-card flex min-h-[210px] flex-col p-4 shadow-none">
+                        <div className="mb-4">
+                          <span className="user-pill user-pill-purple">Subject</span>
+                          {card.questionCount !== null && (
+                            <span className="mt-3 block text-base font-bold leading-6 text-[#0f766e]">
+                              {card.questionCount} questions
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="user-card-title">{card.title}</h3>
+                        <p className="user-helper public-card-description mt-2 flex-1">
+                          {card.description}
+                        </p>
+                        <Link
+                          href={card.href}
+                          className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#5548e0] no-underline"
+                        >
+                          {card.title}
+                          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            <section className="space-y-5">
+              {bodyContent && guideSections.length > 0 && (
+                <PublicSubPageGuide
+                  title={`${pageName} Guide`}
+                  description="Use the guide navigation to move through the full saved content without scrolling through one long article."
+                  sections={guideSections}
+                />
+              )}
+
+              {Array.isArray(pageData.faqs) && pageData.faqs.length > 0 && (
+                <section className="public-faq-section">
+                  <div className="public-faq-inner">
+                    <div className="public-faq-heading">
+                      <h2>{pageName} Questions</h2>
+                      <p>
+                        Answers to common questions students ask before starting
+                        {` ${examBadge} `}practice on NursingMocks.
+                      </p>
+                    </div>
+
+                    <div className="public-faq-list">
+                      {pageData.faqs.map(
+                        (faq: any, idx: number) =>
+                          faq?.question &&
+                          faq?.answer && (
+                            <details key={`${idx}-${faq.question}`} open={idx === 0}>
+                              <summary>
+                                <span>{String(faq.question)}</span>
+                                <span className="public-faq-toggle" aria-hidden="true">
+                                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M19 9l-7 7-7-7"
+                                    />
+                                  </svg>
+                                </span>
+                              </summary>
+                              <div className="public-faq-answer">
+                                <p>{String(faq.answer)}</p>
+                              </div>
+                            </details>
+                          )
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+            </section>
+          </div>
+        </main>
+      </Layout>
+    );
+  }
 
   // Render content page (sub, nested, or topic)
   return (
-    <Layout>
+    <Layout initialBreadcrumbItems={initialBreadcrumbItems}>
       {/* Schema Script */}
       {content.schema && (
         <script
@@ -1417,11 +1991,57 @@ export default async function DynamicPage({
         />
       )}
 
-      <div className="px-5 pt-8 pb-12 md:px-5 sm:px-[14px] sm:pt-6 sm:pb-10">
+      <main className="user-page">
+        <div className="user-page-container">
+        <header className="user-page-header">
+          <div className="user-page-header-row">
+            <div className="user-page-header-copy">
+              <div className="mb-4 flex flex-col items-start gap-3">
+                <Link
+                  href={`/${pillarId}`}
+                  className="user-button-secondary min-h-[34px] w-fit px-3 py-1.5 text-sm"
+                >
+                  Back to {pillarLabel}
+                </Link>
+                <p className="user-eyebrow m-0 inline-flex items-center gap-2">
+                  <span className="user-accent-dot shrink-0" />
+                  {examBadge} Practice
+                </p>
+              </div>
+              <h1 className="user-page-title mt-2">
+                <ContentRenderer content={pageHeading} />
+              </h1>
+              <div className="user-body-sm mt-3 max-w-[88ch] [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
+                <ContentRenderer content={pageDescription} />
+              </div>
+              <div className="user-page-header-meta mt-4">
+                <span className="user-pill user-pill-purple">{examBadge}</span>
+                <span className="user-pill">{pillarLabel}</span>
+                <span className="user-badge user-badge-green">Free preview available</span>
+                {childCards.length > 0 && (
+                  <span className="user-badge">
+                    {childCards.length} {childCards.length === 1 ? "subject" : "subjects"}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="user-page-header-actions w-full sm:w-auto">
+              <a href={firstChildHref} className="user-button-primary w-full sm:w-auto">
+                {actionLabels.primary}
+              </a>
+              <a href="#practice-paths" className="user-button-secondary w-full sm:w-auto">
+                {actionLabels.secondary}
+              </a>
+            </div>
+          </div>
+        </header>
+
+        {false && (
+        <>
         {/* Hero Section */}
         <section className="mb-7">
           {/* Hero Wrapper */}
-          <div className="relative overflow-hidden rounded-[26px] p-[26px_40px_30px] grid grid-cols-1 lg:grid-cols-[1.4fr_1.1fr] gap-8 items-start bg-gradient-to-br from-[#f0f9ff] via-[#e7e5ff] to-[#fdfbff] shadow-[0_26px_70px_rgba(88,28,135,0.22)]">
+          <div className="relative overflow-hidden rounded-[28px] border border-white/80 p-5 sm:p-7 lg:p-9 grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.8fr)] gap-8 items-center bg-gradient-to-br from-white via-[#f4f2ff] to-[#eaf7ff] shadow-[0_24px_70px_rgba(69,56,154,0.18)]">
             {/* Decorative background circle */}
             <div
               className="absolute w-[420px] h-[420px] rounded-full -right-[140px] -top-[160px] opacity-90 pointer-events-none"
@@ -1434,23 +2054,26 @@ export default async function DynamicPage({
             {/* Hero Left */}
             <div className="relative z-10 flex flex-col pr-2">
               {/* Hero Pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(32,36,55,0.06)] backdrop-blur-sm text-[11px] uppercase tracking-wider text-[#202437] mb-[14px]">
-                <span className="w-[7px] h-[7px] rounded-full bg-[#4ade80]" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/85 border border-[#d9d7ff] backdrop-blur-sm text-[11px] font-semibold uppercase tracking-wider text-[#5548e0] mb-[14px] shadow-sm">
+                <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf]" />
+                <span>{examBadge} - Subject-Based Practice Hub</span>
+                {false && (
                 <span>
                   {pageData.badge ||
                     `${
                       pageData.seoLabel || content.pageName
-                    } Practice · Full Exam`}
+                    } Practice`}
                 </span>
+                )}
               </div>
 
               {/* Hero Title */}
-              <h1 className="text-[30px] leading-[1.16] font-extrabold mb-[10px] text-[#202437]">
+              <h1 className="text-[34px] sm:text-[44px] lg:text-[54px] leading-[1.06] font-extrabold mb-4 text-[#202437] max-w-[760px]">
                 <ContentRenderer content={pageHeading} />
               </h1>
 
               {/* Hero Description */}
-              <div className="text-sm leading-[1.7] text-[#202437] max-w-[540px] mb-4 [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
+              <div className="text-base sm:text-lg leading-8 text-[#3b4058] max-w-[720px] mb-6 [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
                 <ContentRenderer content={pageDescription} />
               </div>
 
@@ -1458,41 +2081,40 @@ export default async function DynamicPage({
               <div className="flex flex-wrap gap-2 mb-[18px]">
                 <div className="inline-flex items-center gap-[6px] px-[11px] py-1 rounded-full bg-[rgba(255,255,255,0.98)] border border-dotted border-[rgba(188,195,255,0.9)] text-[11.5px] text-[#4b5563] shadow-[0_6px_16px_rgba(15,23,42,0.12)] whitespace-nowrap">
                   <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
-                  Updated for {pageData.seoLabel || content.pageName} blueprint
+                  {examBadge}
                 </div>
                 <div className="inline-flex items-center gap-[6px] px-[11px] py-1 rounded-full bg-[rgba(255,255,255,0.98)] border border-dotted border-[rgba(188,195,255,0.9)] text-[11.5px] text-[#4b5563] shadow-[0_6px_16px_rgba(15,23,42,0.12)] whitespace-nowrap">
                   <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
-                  Review & Exam modes for every subject
+                  {pillarLabel}
                 </div>
                 <div className="inline-flex items-center gap-[6px] px-[11px] py-1 rounded-full bg-[rgba(255,255,255,0.98)] border border-dotted border-[rgba(188,195,255,0.9)] text-[11.5px] text-[#4b5563] shadow-[0_6px_16px_rgba(15,23,42,0.12)] whitespace-nowrap">
                   <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e]" />
-                  Skill analytics in your dashboard
+                  Free preview available
                 </div>
               </div>
 
               {/* Hero Actions */}
               <div className="flex flex-wrap gap-[10px] items-center mb-2">
                 <a
-                  href="#question-sets"
+                  href={firstChildHref}
                   className="inline-flex items-center justify-center gap-2 px-[22px] py-[10px] rounded-full bg-gradient-to-r from-[#6a5cff] to-[#8b5cf6] text-white font-semibold text-sm border-none shadow-[0_20px_42px_rgba(90,78,255,0.6)] cursor-pointer no-underline whitespace-nowrap hover:brightness-[1.03]"
                 >
-                  <span className="w-[18px] h-[18px] rounded-full bg-[rgba(255,255,255,0.2)] flex items-center justify-center text-[11px]">
+                  <span className="hidden">
                     ▶
                   </span>
-                  Start {content.pageName} Practice Now
+                  {actionLabels.primary}
                 </a>
                 <a
-                  href="#question-sets"
+                  href="#practice-paths"
                   className="inline-flex items-center justify-center gap-[6px] px-4 py-[9px] rounded-full border border-dashed border-[rgba(106,92,255,0.32)] bg-[rgba(255,255,255,0.96)] text-[13px] font-medium text-[#202437] no-underline shadow-[0_10px_24px_rgba(15,23,42,0.12)] hover:bg-[#f3f4ff]"
                 >
-                  View All {content.pageName} Question Sets
+                  {actionLabels.secondary}
                 </a>
               </div>
 
               {/* Hero Footnote */}
               <p className="text-[11.5px] text-[#7a819c] max-w-[520px] mt-[2px]">
-                One login. Your {content.pageName} mastery updates whenever you
-                answer a linked {content.pageName} practice question.
+                Choose a subject, start with the available preview, and continue deeper practice when your access is active.
               </p>
             </div>
 
@@ -1501,14 +2123,43 @@ export default async function DynamicPage({
               <div className="max-w-[420px] w-full bg-white rounded-[22px] p-4 pb-[18px] shadow-[0_16px_40px_rgba(15,23,42,0.16)] border border-[rgba(148,163,184,0.45)]">
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="text-[13px] font-bold uppercase tracking-[0.13em] text-[#4b5563]">
-                    {content.pageName || pageData?.pageName || pageData?.seoLabel || "Page"} KB Snapshot
+                    Practice Paths
                   </div>
                   <div className="text-[11px] py-1 px-2.5 rounded-full bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] whitespace-nowrap">
-                    Active Learning
+                    {childCards.length || "New"} Subjects
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5 gap-x-3 mb-3">
+                <div className="space-y-3 mb-3">
+                  {childCards.slice(0, 4).map((card) => (
+                    <Link
+                      key={card.id}
+                      href={card.href}
+                      className="group flex items-center justify-between gap-3 rounded-2xl border border-[#e3e6f3] bg-[#fbfcff] p-3 text-left no-underline transition hover:border-[#6a5cff] hover:bg-white hover:shadow-md"
+                    >
+                      <span>
+                        <span className="block text-sm font-bold text-[#202437] group-hover:text-[#4338ca]">
+                          {card.title}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-[#747b96]">
+                          {card.questionCount !== null
+                            ? `${card.questionCount} questions`
+                            : "Practice sets available"}
+                        </span>
+                      </span>
+                      <ArrowUpRight className="h-4 w-4 shrink-0 text-[#6a5cff] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </Link>
+                  ))}
+                  {childCards.length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-[#d8d7f7] bg-[#fbfcff] p-4 text-sm text-[#5f6680]">
+                      Practice paths will appear here once child pages have public routes.
+                    </div>
+                  )}
+                </div>
+
+                {false && (
+                <>
+                <div className="hidden grid-cols-2 gap-2.5 gap-x-3 mb-3">
                   <div className="rounded-[14px] border border-[#e5e7eb] p-2 pb-2.5 bg-[#f9fafb]">
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-1">
                       Articles Read
@@ -1539,23 +2190,78 @@ export default async function DynamicPage({
                   </div>
                 </div>
 
-                <div className="text-[11px] uppercase tracking-[0.14em] text-[#9ca3af] mb-1">
+                <div className="hidden text-[11px] uppercase tracking-[0.14em] text-[#9ca3af] mb-1">
                   Knowledge Base coverage for your plan
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-[#e5e7eb] overflow-hidden relative">
+                <div className="hidden w-full h-1.5 rounded-full bg-[#e5e7eb] overflow-hidden relative">
                   <div className="absolute left-0 top-0 bottom-0 w-[72%] bg-gradient-to-r from-[#4f46e5] to-[#8b5cf6] rounded-full" />
                 </div>
+                </>
+                )}
               </div>
             </div>
           </div>
         </section>
+        </>
+        )}
+
+        {isPublicSubPage && childCards.length > 0 && (
+          <section id="practice-paths" className="mb-9">
+            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+              <div>
+                <p className="text-sm font-bold uppercase text-[#6a5cff]">
+                  Start By Subject
+                </p>
+                <h2 className="text-2xl font-extrabold tracking-tight text-[#202437] sm:text-3xl">
+                  {actionLabels.sectionTitle}
+                </h2>
+              </div>
+              <p className="max-w-[520px] text-sm leading-6 text-[#68708a]">
+                Pick the subject that matches your study plan. Each link opens the exact practice page for that subject.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {childCards.map((card) => (
+                <article
+                  key={card.id}
+                  className="group flex min-h-[210px] flex-col rounded-[22px] border border-[#e1e5f2] bg-white p-5 shadow-[0_14px_36px_rgba(15,23,42,0.08)] transition hover:-translate-y-1 hover:border-[#beb9ff] hover:shadow-[0_18px_44px_rgba(79,70,229,0.15)]"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <span className="rounded-full bg-[#f1efff] px-3 py-1 text-xs font-bold text-[#5548e0]">
+                      Subject
+                    </span>
+                    {card.questionCount !== null && (
+                      <span className="rounded-full bg-[#ecfeff] px-3 py-1 text-xs font-bold text-[#0f766e]">
+                        {card.questionCount} questions
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="mb-2 text-lg font-extrabold leading-snug text-[#202437]">
+                    {card.title}
+                  </h3>
+                  <p className="mb-5 flex-1 text-sm leading-6 text-[#68708a]">
+                    {card.description}
+                  </p>
+                  <Link
+                    href={card.href}
+                    className="inline-flex items-center gap-2 text-sm font-bold text-[#5548e0] no-underline"
+                  >
+                    Start {card.title}
+                    <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
 
         {/* MOBILE-ONLY KB HERO CARD - removed from mobile view */}
 
         {/* MOBILE ONLY: On this page card */}
         {tocItems.length > 0 && (
-          <div className="mt-8 sm:hidden">
+          <div className="mt-8">
             <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
               <div className="text-sm font-semibold mb-1 text-[#202437]">
                 On this page
@@ -1584,14 +2290,14 @@ export default async function DynamicPage({
         )}
 
         {/* CONTENT AREA */}
-        <section className="mt-5 sm:mt-8">
+        <section id="content" className="mt-5 sm:mt-8">
 
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.1fr)_minmax(260px,1fr)] gap-5 items-start w-full">
+          <div className="grid grid-cols-1 gap-6 items-start w-full">
             {/* LEFT COLUMN: Article + FAQ */}
             <div className="flex flex-col gap-8 w-full">
-              <article className="bg-white rounded-[18px] border border-[rgba(148,163,184,0.55)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[16px_18px_18px] w-full">
+              <article className="bg-white rounded-[24px] border border-[#e1e5f2] shadow-[0_18px_48px_rgba(15,23,42,0.08)] p-5 sm:p-7 lg:p-8 w-full overflow-hidden">
                 {bodyContent && (
-                  <div className="text-sm leading-[1.7] text-[#202437]">
+                  <div className="public-tiptap-content">
                     <TiptapContentRenderer content={contentWithHeadingIds} />
                   </div>
                 )}
@@ -1633,7 +2339,7 @@ export default async function DynamicPage({
             </div>
 
             {/* RIGHT COLUMN: sidebar (hidden on mobile) */}
-            <aside className="hidden sm:flex flex-col gap-3 w-full">
+            <aside className="hidden flex-col gap-3 w-full lg:sticky lg:top-24">
               {tocItems.length > 0 && (
                 <div className="bg-white rounded-[16px] border border-[rgba(148,163,184,0.5)] shadow-[0_16px_40px_rgba(15,23,42,0.10)] p-[12px_14px] text-[13px] w-full">
                   <div className="text-sm font-semibold mb-1 text-[#202437]">
@@ -1664,7 +2370,8 @@ export default async function DynamicPage({
             </aside>
           </div>
         </section>
-      </div>
+        </div>
+      </main>
     </Layout>
   );
 }

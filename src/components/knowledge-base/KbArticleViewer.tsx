@@ -30,13 +30,13 @@ export default function KbArticleViewer({
       // Create a temporary DOM element to parse HTML
       const parser = new DOMParser();
       const doc = parser.parseFromString(bodyContent, 'text/html');
-      const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      const headings = doc.querySelectorAll('h2');
       
       const tocItems: Array<{ id: string; title: string; level: number }> = [];
       headings.forEach((heading, index) => {
         const id = heading.id || heading.getAttribute('id') || `heading-${index}`;
         const title = heading.textContent?.trim() || '';
-        const level = parseInt(heading.tagName.charAt(1));
+        const level = 2;
         
         // If heading doesn't have an ID, add one
         if (!heading.id && !heading.getAttribute('id')) {
@@ -75,7 +75,7 @@ export default function KbArticleViewer({
     const articleContent = document.getElementById('article-content');
     if (!articleContent) return;
     
-    const headings = articleContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    const headings = articleContent.querySelectorAll('h2');
     headings.forEach((heading, index) => {
       if (!heading.id) {
         const title = heading.textContent?.trim() || '';

@@ -1,7 +1,14 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import {
+  AdminAlert,
+  AdminInfoTile,
+  AdminStatCard,
+  AdminStatusBadge,
+  AdminTableCell,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -76,13 +83,7 @@ function userDisplayName(user: { displayName?: string | null; fullName?: string 
 }
 
 function statusBadge(label: string, tone: "green" | "red" | "amber" | "gray") {
-  const tones = {
-    green: "user-pill-green",
-    red: "user-pill-red",
-    amber: "user-pill-amber",
-    gray: "border-gray-200 bg-gray-50 text-gray-700",
-  };
-  return <span className={`user-pill ${tones[tone]}`}>{label}</span>;
+  return <AdminStatusBadge label={label} tone={tone} />;
 }
 
 function signalTone(status: AdminLoginSecurity["sharingSignals"]["status"]) {
@@ -103,22 +104,16 @@ function signalLabel(status: AdminLoginSecurity["sharingSignals"]["status"]) {
 }
 
 function StatCard({ label, value, helper }: { label: string; value: string | number; helper: string }) {
-  return (
-    <div className="user-card p-4">
-      <p className="user-label">{label}</p>
-      <p className="user-stat-value mt-2">{value}</p>
-      <p className="user-helper mt-1">{helper}</p>
-    </div>
-  );
+  return <AdminStatCard label={label} value={value} helper={helper} />;
 }
 
 function SharingSignalsPanel({ signals }: { signals: AdminLoginSecurity["sharingSignals"] }) {
   return (
-    <section className="user-card overflow-hidden">
+    <section className="admin-card overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
         <div>
-          <h2 className="user-section-title">Account Sharing Signals</h2>
-          <p className="user-helper">Conservative indicators for manual review only. These signals do not automatically block the account.</p>
+          <h2 className="admin-section-title">Account Sharing Signals</h2>
+          <p className="admin-helper">Conservative indicators for manual review only. These signals do not automatically block the account.</p>
         </div>
         {statusBadge(signalLabel(signals.status), signalTone(signals.status))}
       </div>
@@ -131,20 +126,16 @@ function SharingSignalsPanel({ signals }: { signals: AdminLoginSecurity["sharing
       <div className="border-t border-gray-200 bg-gray-50 p-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.45fr)]">
           <div>
-            <p className="user-label">Signals Found</p>
+            <p className="admin-field-label">Signals Found</p>
             <div className="mt-2 space-y-2">
               {signals.reasons.map((reason) => (
-                <div key={reason} className="user-alert user-alert-warning py-2">
-                  <span className="user-alert-icon" aria-hidden="true">!</span>
-                  <p className="user-helper">{reason}</p>
-                </div>
+                <AdminAlert key={reason} tone="warning">
+                  {reason}
+                </AdminAlert>
               ))}
             </div>
           </div>
-          <div className="user-detail-surface p-3">
-            <p className="user-label">Recommendation</p>
-            <p className="user-helper mt-2">{signals.recommendation}</p>
-          </div>
+          <AdminInfoTile label="Recommendation">{signals.recommendation}</AdminInfoTile>
         </div>
       </div>
     </section>
@@ -165,67 +156,65 @@ function OverviewPanel({
   onSelectUser: (uid: string) => void;
 }) {
   return (
-    <section className="user-card mb-6 overflow-hidden">
+    <section className="admin-table-card mb-6 overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3">
         <div>
-          <h2 className="user-section-title">Auto-Detected Accounts</h2>
-          <p className="user-helper">Users with stored Watch, Review, or High Attention login-security snapshots.</p>
+          <h2 className="admin-section-title">Auto-Detected Accounts</h2>
+          <p className="admin-helper">Users with stored Watch, Review, or High Attention login-security snapshots.</p>
         </div>
-        <button type="button" onClick={onRefresh} className="user-button-secondary px-3 py-1.5 text-xs">
+        <button type="button" onClick={onRefresh} className="admin-button-secondary px-3 py-1.5 text-xs">
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
       {error && (
-        <div className="user-alert user-alert-error m-4" role="alert">
-          <span className="user-alert-icon" aria-hidden="true">x</span>
-          <div>
-            <p className="user-card-title">Could not load auto-detected accounts</p>
-            <p className="user-helper mt-1">{error}</p>
-          </div>
+        <div className="m-4" role="alert">
+          <AdminAlert tone="error" title="Could Not Load Auto-Detected Accounts">
+            {error}
+          </AdminAlert>
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+      <div className="admin-table-wrap">
+        <table className="admin-table">
           <thead className="bg-gray-50">
             <tr>
-              <th className="user-label px-4 py-3 text-left">User</th>
-              <th className="user-label px-4 py-3 text-left">Status</th>
-              <th className="user-label px-4 py-3 text-left">30-Day Signals</th>
-              <th className="user-label px-4 py-3 text-left">Last Evaluated</th>
-              <th className="user-label px-4 py-3 text-right">Action</th>
+              <th className="admin-table-heading px-4 py-3 text-left">User</th>
+              <th className="admin-table-heading px-4 py-3 text-left">Status</th>
+              <th className="admin-table-heading px-4 py-3 text-left">30-Day Signals</th>
+              <th className="admin-table-heading px-4 py-3 text-left">Last Evaluated</th>
+              <th className="admin-table-heading px-4 py-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {loading ? (
               <tr>
-                <td colSpan={5} className="user-helper px-4 py-8 text-center">Loading detected accounts...</td>
+                <td colSpan={5} className="admin-helper px-4 py-8 text-center">Loading detected accounts...</td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="user-helper px-4 py-8 text-center">No flagged login-security snapshots yet.</td>
+                <td colSpan={5} className="admin-helper px-4 py-8 text-center">No flagged login-security snapshots yet.</td>
               </tr>
             ) : (
               users.map((user) => (
                 <tr key={user.uid}>
-                  <td className="px-4 py-4 align-top">
-                    <p className="user-card-title">{userDisplayName(user)}</p>
-                    <p className="user-helper mt-1">{user.email?.toLowerCase() || "No email"}</p>
+                  <AdminTableCell>
+                    <p className="admin-card-title">{userDisplayName(user)}</p>
+                    <p className="admin-helper mt-1">{user.email?.toLowerCase() || "No email"}</p>
                     <p className="mt-1 max-w-72 truncate font-mono text-xs text-gray-400">{user.uid}</p>
-                    {user.reasons[0] && <p className="user-helper mt-2 max-w-xl">{user.reasons[0]}</p>}
-                  </td>
-                  <td className="px-4 py-4 align-top">{statusBadge(signalLabel(user.status), signalTone(user.status))}</td>
-                  <td className="user-body-sm px-4 py-4 align-top">
+                    {user.reasons[0] && <p className="admin-helper mt-2 max-w-xl">{user.reasons[0]}</p>}
+                  </AdminTableCell>
+                  <AdminTableCell>{statusBadge(signalLabel(user.status), signalTone(user.status))}</AdminTableCell>
+                  <AdminTableCell>
                     <p>{user.uniqueIpHashes30d} IP hashes</p>
                     <p>{user.uniqueDevices30d} devices</p>
                     <p>{user.uniqueCountries30d} countries</p>
                     <p>{user.recentSwitches24h} recent switches</p>
-                  </td>
-                  <td className="user-body-sm px-4 py-4 align-top">{formatDate(user.lastEvaluatedAt)}</td>
-                  <td className="px-4 py-4 text-right align-top">
-                    <button type="button" onClick={() => onSelectUser(user.uid)} className="user-button-secondary px-3 py-1.5 text-xs">
+                  </AdminTableCell>
+                  <AdminTableCell>{formatDate(user.lastEvaluatedAt)}</AdminTableCell>
+                  <AdminTableCell className="text-right">
+                    <button type="button" onClick={() => onSelectUser(user.uid)} className="admin-button-secondary px-3 py-1.5 text-xs">
                       View Activity
                     </button>
-                  </td>
+                  </AdminTableCell>
                 </tr>
               ))
             )}
@@ -360,43 +349,39 @@ function AdminLoginSecurityContent() {
     <div className="min-h-screen overflow-x-hidden bg-white">
       <AdminSidebar />
       <div className={`transition-all duration-300 ${isCollapsed ? "md:ml-20" : "md:ml-64"}`}>
-        <div className="hidden h-16 border-b border-gray-200 bg-white md:block">
-          <div className="flex h-full items-center justify-between px-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link href="/" className="font-medium transition-colors hover:text-blue-600">Home</Link>
-              <span className="text-gray-400">/</span>
-              <Link href="/admin" className="font-medium transition-colors hover:text-blue-600">Admin</Link>
-              <span className="text-gray-400">/</span>
-              <span className="font-medium">Login Security</span>
-            </div>
-            {currentUser && <UserProfileBadge />}
-          </div>
-        </div>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Home", href: "/" },
+            { label: "Admin Dashboard", href: "/admin" },
+            { label: "Login Security" },
+          ]}
+          actions={currentUser && <UserProfileBadge />}
+        />
 
-        <main className="user-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-          <div className="w-full">
-            <header className="user-page-header mb-6">
-              <div className="user-page-header-row">
-                <div className="user-page-header-copy">
-                  <p className="user-eyebrow">Admin</p>
-                  <h1 className="user-page-title mt-1">Login Security</h1>
-                  <p className="user-body mt-2 max-w-4xl">
+        <main className="admin-workspace">
+          <div className="admin-content">
+            <header className="admin-header mb-6">
+              <div className="admin-header-row">
+                <div className="admin-header-copy">
+                  <p className="admin-eyebrow">Admin</p>
+                  <h1 className="admin-page-title mt-1">Login Security</h1>
+                  <p className="admin-body mt-2 max-w-4xl">
                     Review recent login activity for a specific user using privacy-preserving IP hashes, device summaries, and coarse location signals.
                   </p>
                 </div>
               </div>
             </header>
 
-            <form onSubmit={submitSearch} className="user-search-panel mb-6 max-w-3xl">
+            <form onSubmit={submitSearch} className="admin-card mb-6 max-w-3xl p-4">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                 <label>
-                  <span className="user-label">User Name, UID, or Exact Email</span>
+                  <span className="admin-field-label">User Name, UID, or Exact Email</span>
                   <input
                     type="search"
                     list="login-security-user-suggestions"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    className="user-field mt-2"
+                    className="admin-field mt-2"
                     placeholder="Jane Student, student@example.com, or Firebase UID"
                   />
                   <datalist id="login-security-user-suggestions">
@@ -409,32 +394,28 @@ function AdminLoginSecurityContent() {
                     ))}
                   </datalist>
                 </label>
-                <button type="submit" disabled={loading} className="user-button-primary md:min-w-36 disabled:cursor-not-allowed disabled:opacity-50">
-                  {loading ? "Loading..." : "View Activity"}
+                <button type="submit" disabled={loading} className="admin-button-primary md:min-w-36 disabled:cursor-not-allowed disabled:opacity-50">
+                  {loading ? "Loading Activity" : "View Activity"}
                 </button>
               </div>
-              <p className="user-helper">
+              <p className="admin-helper mt-3">
                 Location is usually unavailable on localhost. Deployed environments can provide country, region, and city through hosting or CDN headers.
               </p>
             </form>
 
             {error && (
-              <div className="user-alert user-alert-error mb-4" role="alert">
-                <span className="user-alert-icon" aria-hidden="true">x</span>
-                <div>
-                  <p className="user-card-title">Could not load login activity</p>
-                  <p className="user-helper mt-1">{error}</p>
-                </div>
+              <div className="mb-4" role="alert">
+                <AdminAlert tone="error" title="Could Not Load Login Activity">
+                  {error}
+                </AdminAlert>
               </div>
             )}
 
             {!result && !error && (
-              <div className="user-alert user-alert-warning mb-6">
-                <span className="user-alert-icon" aria-hidden="true">!</span>
-                <div>
-                  <p className="user-card-title">Search for a user</p>
-                  <p className="user-helper mt-1">Enter a name, UID, or exact email to review that user's latest login activity.</p>
-                </div>
+              <div className="mb-6">
+                <AdminAlert tone="warning" title="Search For A User">
+                  Enter a name, UID, or exact email to review that user's latest login activity.
+                </AdminAlert>
               </div>
             )}
 
@@ -450,10 +431,10 @@ function AdminLoginSecurityContent() {
             />
 
             {matches.length > 0 && (
-              <section className="user-card mb-6 overflow-hidden">
+              <section className="admin-card mb-6 overflow-hidden">
                 <div className="border-b border-gray-200 px-4 py-3">
-                  <h2 className="user-section-title">Select User</h2>
-                  <p className="user-helper">More than one user matched your search. Choose the correct account to view login activity.</p>
+                  <h2 className="admin-section-title">Select User</h2>
+                  <p className="admin-helper">More than one user matched your search. Choose the correct account to view login activity.</p>
                 </div>
                 <div className="divide-y divide-gray-100">
                   {matches.map((match) => (
@@ -467,11 +448,11 @@ function AdminLoginSecurityContent() {
                       className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-purple-50"
                     >
                       <span>
-                        <span className="user-card-title block">{userDisplayName(match)}</span>
-                        <span className="user-helper mt-1 block">{match.email?.toLowerCase() || "No email"}</span>
+                        <span className="admin-card-title block">{userDisplayName(match)}</span>
+                        <span className="admin-helper mt-1 block">{match.email?.toLowerCase() || "No email"}</span>
                         <span className="mt-1 block break-all font-mono text-xs text-gray-400">{match.uid}</span>
                       </span>
-                      <span className="user-button-secondary px-3 py-1.5 text-xs">View Activity</span>
+                      <span className="admin-button-secondary px-3 py-1.5 text-xs">View Activity</span>
                     </button>
                   ))}
                 </div>
@@ -480,11 +461,11 @@ function AdminLoginSecurityContent() {
 
             {result && security && (
               <div className="space-y-6">
-                <section className="user-card p-4">
+                <section className="admin-card p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 className="user-section-title">{userDisplayName(result.targetUser)}</h2>
-                      <p className="user-body-sm mt-1 break-words">{result.targetUser.email?.toLowerCase() || "No email"}</p>
+                      <h2 className="admin-section-title">{userDisplayName(result.targetUser)}</h2>
+                      <p className="admin-body-sm mt-1 break-words">{result.targetUser.email?.toLowerCase() || "No email"}</p>
                       <p className="mt-1 break-all font-mono text-xs text-gray-400">{result.targetUser.uid}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -492,7 +473,7 @@ function AdminLoginSecurityContent() {
                       {result.targetUser.emailVerified ? statusBadge("Verified", "green") : statusBadge("Unverified", "amber")}
                     </div>
                   </div>
-                  {requestId && <p className="user-helper mt-3">Audit request: {requestId}</p>}
+                  {requestId && <p className="admin-helper mt-3">Audit request: {requestId}</p>}
                 </section>
 
                 <section className="grid gap-3 lg:grid-cols-5">
@@ -508,51 +489,50 @@ function AdminLoginSecurityContent() {
                 {security.summary.flags.length > 0 && (
                   <section className="space-y-2">
                     {security.summary.flags.map((flag) => (
-                      <div key={flag} className="user-alert user-alert-warning">
-                        <span className="user-alert-icon" aria-hidden="true">!</span>
-                        <p className="user-helper">{flag}</p>
-                      </div>
+                      <AdminAlert key={flag} tone="warning">
+                        {flag}
+                      </AdminAlert>
                     ))}
                   </section>
                 )}
 
-                <section className="user-card overflow-hidden">
+                <section className="admin-table-card overflow-hidden">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3">
                     <div>
-                      <h2 className="user-section-title">Recent Login Activity</h2>
-                      <p className="user-helper">Read-only login events from `user_login_events`.</p>
+                      <h2 className="admin-section-title">Recent Login Activity</h2>
+                      <p className="admin-helper">Read-only login events from `user_login_events`.</p>
                     </div>
-                    <button type="button" onClick={() => void loadLoginSecurity(query)} className="user-button-secondary px-3 py-1.5 text-xs">
+                    <button type="button" onClick={() => void loadLoginSecurity(query)} className="admin-button-secondary px-3 py-1.5 text-xs">
                       Refresh
                     </button>
                   </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="user-label px-4 py-3 text-left">Login Time</th>
-                          <th className="user-label px-4 py-3 text-left">Device</th>
-                          <th className="user-label px-4 py-3 text-left">Location</th>
-                          <th className="user-label px-4 py-3 text-left">IP Hash</th>
-                          <th className="user-label px-4 py-3 text-left">Provider</th>
+                          <th className="admin-table-heading px-4 py-3 text-left">Login Time</th>
+                          <th className="admin-table-heading px-4 py-3 text-left">Device</th>
+                          <th className="admin-table-heading px-4 py-3 text-left">Location</th>
+                          <th className="admin-table-heading px-4 py-3 text-left">IP Hash</th>
+                          <th className="admin-table-heading px-4 py-3 text-left">Provider</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 bg-white">
                         {security.events.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="user-helper px-4 py-8 text-center">
+                            <td colSpan={5} className="admin-helper px-4 py-8 text-center">
                               No login activity has been recorded for this user yet.
                             </td>
                           </tr>
                         ) : (
                           security.events.map((event) => (
                             <tr key={event.eventId}>
-                              <td className="user-body-sm px-4 py-4 align-top">{formatDate(event.loginAt)}</td>
-                              <td className="user-body-sm px-4 py-4 align-top">{formatDevice(event.device)}</td>
-                              <td className="user-body-sm px-4 py-4 align-top">{formatPlace(event.location)}</td>
-                              <td className="px-4 py-4 align-top font-mono text-xs text-gray-500">{event.ipHashPreview || "Not available"}</td>
-                              <td className="user-body-sm px-4 py-4 align-top">{event.provider || "Not available"}</td>
+                              <AdminTableCell>{formatDate(event.loginAt)}</AdminTableCell>
+                              <AdminTableCell>{formatDevice(event.device)}</AdminTableCell>
+                              <AdminTableCell>{formatPlace(event.location)}</AdminTableCell>
+                              <AdminTableCell mono>{event.ipHashPreview || "Not available"}</AdminTableCell>
+                              <AdminTableCell>{event.provider || "Not available"}</AdminTableCell>
                             </tr>
                           ))
                         )}

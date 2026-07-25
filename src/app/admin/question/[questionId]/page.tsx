@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import { AdminLoadingState } from "@/components/admin/AdminUi";
 import {
   uploadQuestionContent,
   getQuestionContent,
@@ -558,8 +559,11 @@ export default function EditQuestionPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto py-16 text-center text-lg text-gray-500">
-        Loading...
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Question Editor"
+          description="Preparing the saved question, metadata, answer options, and explanation."
+        />
       </div>
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 export type FaqItem = {
   question: string;
@@ -13,12 +13,16 @@ function normalizeFaqs(value: unknown): FaqItem[] {
     .map((item) => {
       if (!item || typeof item !== "object") return null;
       const question =
-        typeof (item as any).question === "string" ? (item as any).question : "";
+        typeof (item as { question?: unknown }).question === "string"
+          ? (item as { question: string }).question
+          : "";
       const answer =
-        typeof (item as any).answer === "string" ? (item as any).answer : "";
+        typeof (item as { answer?: unknown }).answer === "string"
+          ? (item as { answer: string }).answer
+          : "";
       return { question, answer };
     })
-    .filter(Boolean) as FaqItem[];
+    .filter((item): item is FaqItem => Boolean(item));
 }
 
 export default function FaqEditor({
@@ -33,7 +37,7 @@ export default function FaqEditor({
   const faqs = normalizeFaqs(value);
 
   const update = (idx: number, patch: Partial<FaqItem>) => {
-    const next = faqs.map((f, i) => (i === idx ? { ...f, ...patch } : f));
+    const next = faqs.map((faq, i) => (i === idx ? { ...faq, ...patch } : faq));
     onChange(next);
   };
 
@@ -48,85 +52,94 @@ export default function FaqEditor({
   };
 
   return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="text-[13px] font-semibold text-[#202437]">{label}</div>
-        <button
-          type="button"
-          onClick={add}
-          className="rounded-full border border-[#e2e4f0] bg-white text-[#202437] px-3 py-1.5 text-xs font-medium hover:bg-[#f4f5ff] transition-colors"
-        >
-          + Add FAQ
+    <div className="mt-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="admin-card-title">{label}</div>
+          <p className="admin-helper mt-1">
+            Add public questions and answers shown below the page content.
+          </p>
+        </div>
+        <button type="button" onClick={add} className="admin-button-secondary">
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Add FAQ
         </button>
       </div>
 
       {faqs.length === 0 ? (
-        <div className="text-xs text-[#7a819c] rounded-xl border border-dashed border-[#e2e4f0] bg-[#fbfbff] p-3">
-          No FAQs yet. Click “Add FAQ” to create the first one.
+        <div className="admin-empty-state">
+          <div className="admin-empty-state-icon" aria-hidden="true">
+            +
+          </div>
+          <div>
+            <p className="admin-card-title">No FAQs Yet</p>
+            <p className="admin-helper mt-1">
+              Add the first FAQ when this page needs public question and answer
+              content.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
           {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="rounded-2xl border border-[#e2e4f0] bg-[#fbfbff] p-3"
-            >
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-xs font-semibold text-[#3b3f57]">
-                  FAQ #{idx + 1}
-                </div>
-                <div className="flex items-center gap-1.5">
+            <div key={idx} className="admin-info-tile p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="admin-field-label">FAQ #{idx + 1}</div>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => move(idx, idx - 1)}
                     disabled={idx === 0}
-                    className="rounded-full border border-[#e2e4f0] bg-white px-2.5 py-1 text-[11px] text-[#202437] disabled:opacity-50 hover:bg-[#f4f5ff] transition-colors"
+                    className="admin-button-secondary min-h-[34px] px-3 py-1.5 text-xs"
+                    aria-label={`Move FAQ ${idx + 1} up`}
                   >
-                    ↑
+                    <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
                     onClick={() => move(idx, idx + 1)}
                     disabled={idx === faqs.length - 1}
-                    className="rounded-full border border-[#e2e4f0] bg-white px-2.5 py-1 text-[11px] text-[#202437] disabled:opacity-50 hover:bg-[#f4f5ff] transition-colors"
+                    className="admin-button-secondary min-h-[34px] px-3 py-1.5 text-xs"
+                    aria-label={`Move FAQ ${idx + 1} down`}
                   >
-                    ↓
+                    <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
                     onClick={() => remove(idx)}
-                    className="rounded-full border border-red-200 bg-white text-red-700 px-2.5 py-1 text-[11px] font-medium hover:bg-red-50 transition-colors"
+                    className="admin-button-danger min-h-[34px] px-3 py-1.5 text-xs"
                   >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     Remove
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-medium text-[#3b3f57] mb-1">
-                    Question
-                  </label>
+              <div className="grid grid-cols-1 gap-3">
+                <label className="admin-field-group">
+                  <span className="admin-field-label">Question</span>
                   <input
                     value={faq.question}
-                    onChange={(e) => update(idx, { question: e.target.value })}
-                    placeholder="Type the FAQ question..."
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-white px-2.5 py-2 text-sm text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)]"
+                    onChange={(event) =>
+                      update(idx, { question: event.target.value })
+                    }
+                    placeholder="Type the FAQ question."
+                    className="admin-field"
                   />
-                </div>
+                </label>
 
-                <div>
-                  <label className="block text-[11px] font-medium text-[#3b3f57] mb-1">
-                    Answer
-                  </label>
+                <label className="admin-field-group">
+                  <span className="admin-field-label">Answer</span>
                   <textarea
                     value={faq.answer}
-                    onChange={(e) => update(idx, { answer: e.target.value })}
-                    placeholder="Type the answer..."
+                    onChange={(event) =>
+                      update(idx, { answer: event.target.value })
+                    }
+                    placeholder="Type the answer."
                     rows={4}
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-white px-2.5 py-2 text-sm text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] resize-y"
+                    className="admin-field resize-y"
                   />
-                </div>
+                </label>
               </div>
             </div>
           ))}
@@ -135,4 +148,3 @@ export default function FaqEditor({
     </div>
   );
 }
-

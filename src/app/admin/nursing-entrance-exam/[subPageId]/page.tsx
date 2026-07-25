@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   getNursingEntranceExamSubPage,
   uploadNursingEntranceExamSubPage,
@@ -8,6 +8,8 @@ import {
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
+import ContentQualityWarnings from "@/components/admin/ContentQualityWarnings";
+import PublicContentPreview from "@/components/admin/PublicContentPreview";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/layout/AdminSidebar";
@@ -15,8 +17,26 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/layout/SidebarContext";
+import {
+  AdminCard,
+  AdminFieldGroup,
+  AdminFormSection,
+  AdminInfoTile,
+  AdminLoadingState,
+  AdminNotificationRegion,
+  AdminPageHeader,
+  AdminSelectField,
+  AdminSlugField,
+  AdminStatusBadge,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
+import {
+  normalizeAdminContentName,
+  normalizeAdminContentNameInput,
+  normalizeAdminContentSlug,
+} from "@/lib/admin/content-naming";
 
 interface SubPageContent {
   pageName?: string;
@@ -55,6 +75,8 @@ function EditSubPageContent({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [slug, setSlug] = useState("");
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [savedSnapshot, setSavedSnapshot] = useState("");
   const [status, setStatus] = useState<"Draft" | "Published" | "Archived">(
     "Draft"
   );
@@ -91,6 +113,9 @@ function EditSubPageContent({
         const loadedSlug = pageData.slug || resolvedParams.subPageId;
         const loadedStatus = pageData.status || "Draft";
         setSlug(loadedSlug);
+        setSlugManuallyEdited(
+          loadedSlug !== normalizeAdminContentSlug(pageData.pageName || resolvedParams.subPageId)
+        );
         setStatus(loadedStatus);
 
         // Ensure all required fields exist with defaults
@@ -110,7 +135,7 @@ function EditSubPageContent({
             pageData.seoSlug || pageData.slug || resolvedParams.subPageId,
           meta: {
             title:
-              pageData.meta?.title || `${resolvedParams.subPageId} | TeasGurus`,
+              pageData.meta?.title || `${resolvedParams.subPageId} | NursingMocks`,
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
@@ -133,6 +158,13 @@ function EditSubPageContent({
         };
 
         setContent(initializedContent);
+        setSavedSnapshot(
+          JSON.stringify({
+            content: initializedContent,
+            slug: loadedSlug,
+            status: loadedStatus,
+          })
+        );
       } else {
         // Initialize with default content structure
         const defaultContent: SubPageContent = {
@@ -142,10 +174,10 @@ function EditSubPageContent({
           heading: "",
           description: "",
           meta: {
-            title: `${resolvedParams.subPageId} | TeasGurus`,
+            title: `${resolvedParams.subPageId} | NursingMocks`,
             description: `Content for ${resolvedParams.subPageId}`,
             keywords: `${resolvedParams.subPageId}, nursing entrance exam`,
-            ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
+            ogTitle: `${resolvedParams.subPageId} | NursingMocks`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/${resolvedParams.subPageId}`,
@@ -160,6 +192,8 @@ function EditSubPageContent({
         };
         setContent(defaultContent);
         setSlug(resolvedParams.subPageId);
+        setSlugManuallyEdited(false);
+        setSavedSnapshot("__new__");
       }
     } catch (err) {
       setError("Failed to load content");
@@ -173,6 +207,27 @@ function EditSubPageContent({
     loadContent();
   }, [loadContent]);
 
+  const currentSnapshot = useMemo(() => {
+    if (!content) return "";
+    return JSON.stringify({ content, slug, status });
+  }, [content, slug, status]);
+
+  const hasUnsavedChanges = Boolean(
+    savedSnapshot && currentSnapshot && savedSnapshot !== currentSnapshot
+  );
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const handleSave = async () => {
     if (!content || !resolvedParams) return;
 
@@ -181,15 +236,17 @@ function EditSubPageContent({
       setError("");
       setSuccess("");
 
-      // Prepare content to be saved with all fields
+      // Normalize naming before save so public/admin labels follow the project convention.
+      const normalizedPageName = normalizeAdminContentName(content.pageName || resolvedParams.subPageId);
+      const savedSlug = normalizeAdminContentSlug(slug || normalizedPageName || resolvedParams.subPageId);
       const contentToSave: SubPageContent = {
-        pageName: content.pageName,
-        slug: slug.trim() || resolvedParams.subPageId,
+        pageName: normalizedPageName,
+        slug: savedSlug,
         status,
         heading: content.heading || "",
         description: content.description || "",
-        seoLabel: content.seoLabel || content.pageName || "",
-        seoSlug: content.seoSlug || slug.trim() || resolvedParams.subPageId,
+        seoLabel: normalizeAdminContentName(content.seoLabel || normalizedPageName || ""),
+        seoSlug: normalizeAdminContentSlug(content.seoSlug || savedSlug),
         meta: content.meta,
         schema: content.schema,
         hero: content.hero,
@@ -213,6 +270,15 @@ function EditSubPageContent({
             router.push(`/admin/nursing-entrance-exam/${resultData.slug}`);
           }, 1000);
         } else {
+          setContent(contentToSave);
+          setSlug(savedSlug);
+          setSavedSnapshot(
+            JSON.stringify({
+              content: contentToSave,
+              slug: savedSlug,
+              status,
+            })
+          );
           setSuccess("Content updated successfully!");
           setTimeout(() => setSuccess(""), 3000);
         }
@@ -250,12 +316,50 @@ function EditSubPageContent({
     });
   };
 
+  const handlePageNameBlur = () => {
+    if (!content) return;
+    const normalizedName = normalizeAdminContentName(content.pageName || "");
+    if (!normalizedName) return;
+
+    setContent((current) =>
+      current
+        ? {
+            ...current,
+            pageName: normalizedName,
+            seoLabel: normalizeAdminContentName(current.seoLabel || normalizedName),
+          }
+        : current
+    );
+
+    if (!slugManuallyEdited) {
+      setSlug(normalizeAdminContentSlug(normalizedName));
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6a5cff] mx-auto mb-4"></div>
-          <p className="text-[#7a819c]">Loading content...</p>
+      <div className="min-h-screen overflow-x-hidden bg-white">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Admin", href: "/admin" },
+              { label: "Content", href: "/admin" },
+              { label: "Nursing Entrance Exam", href: "/admin/nursing-entrance-exam" },
+              { label: resolvedParams?.subPageId || "Loading Sub Page" },
+            ]}
+            actions={<span>{currentUser?.email || "Admin"}</span>}
+          />
+          <div className="admin-page flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
+            <AdminLoadingState
+              title="Loading Sub Page Content"
+              description="Preparing page details, SEO fields, schema markup, and the editor."
+            />
+          </div>
         </div>
       </div>
     );
@@ -265,598 +369,397 @@ function EditSubPageContent({
     return null;
   }
 
-  const userInitial = currentUser?.email?.[0]?.toUpperCase() || "A";
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb]">
+    <div className="min-h-screen overflow-x-hidden bg-white">
       <AdminSidebar />
       <div
         className={`transition-all duration-300 ${
           isCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
-        {/* Main Header */}
-        <header className="sticky top-0 z-10 h-[60px] flex items-center justify-center bg-white/92 backdrop-blur-sm border-b border-[#e2e4f0]/95">
-          <div className="w-full max-w-[1220px] flex items-center justify-between gap-3 px-4">
-            <div className="flex items-center gap-1.5 text-xs text-[#a0a5bf]">
-              <span>Home</span>
-              <span>/</span>
-              <span>Content</span>
-              <span>/</span>
-              <span>Nursing Entrance Exam</span>
-              <span>/</span>
-              <span className="text-[#202437] font-medium">
-                {content.pageName ||
-                  resolvedParams?.subPageId ||
-                  "Edit Sub-Page"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-[#202437]">
-              <span>{currentUser?.email || "Admin"}</span>
-              <div className="w-8 h-8 rounded-full bg-[#6a5cff] text-white flex items-center justify-center font-semibold text-sm shadow-lg shadow-[#4c3dff]/40">
-                {userInitial}
-              </div>
-            </div>
-          </div>
-        </header>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Admin", href: "/admin" },
+            { label: "Content", href: "/admin" },
+            { label: "Nursing Entrance Exam", href: "/admin/nursing-entrance-exam" },
+            {
+              label:
+                content.pageName ||
+                resolvedParams?.subPageId ||
+                "Edit Sub Page",
+            },
+          ]}
+          actions={<span>{currentUser?.email || "Admin"}</span>}
+        />
 
         {/* Main Body */}
-        <div className="py-5 px-4 flex justify-center">
-          <div className="w-full max-w-[1220px]">
-            {/* Page Header */}
-            <header className="flex justify-between items-start mb-4.5 gap-3 flex-wrap">
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight mb-1 text-[#202437]">
-                  Edit Sub-Page – Nursing Entrance Exam
-                </h1>
-                <p className="text-sm text-[#7a819c] max-w-[640px] leading-relaxed">
-                  Create a single sub-page (for example, TEAS Reading or HESI
-                  Vocabulary). The parent exam and type are handled elsewhere –
-                  here you define the sub-page details, SEO, and full content.
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 ml-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                    Draft sub-page
-                  </span>
-                </p>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <Link
-                  href="/admin/nursing-entrance-exam"
-                  className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
-                >
-                  ← Back to Admin
-                </Link>
-                {resolvedParams?.subPageId && (
-                  <Link
-                    href={`/${slug || resolvedParams.subPageId}`}
-                    target="_blank"
-                    className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
-                  >
-                    View Page
+        <main className="admin-workspace">
+        <div className="admin-content">
+          <div className="w-full">
+            <AdminPageHeader
+              eyebrow="Nursing Entrance Exam"
+              title="Edit Sub Page"
+              description={
+                <>
+                  Manage the Sub Page label, URL slug, page content, SEO fields,
+                  schema markup, and FAQs.
+                </>
+              }
+              actions={
+                <>
+                  <Link href="/admin/nursing-entrance-exam" className="admin-button-secondary">
+                    Back To Nursing Entrance Exam
                   </Link>
-                )}
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="rounded-full bg-gradient-to-r from-[#6a5cff] to-[#8b5dff] text-white px-3.5 py-2 text-sm font-medium shadow-lg shadow-[#4c3dff]/40 hover:shadow-xl hover:shadow-[#4c3dff]/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {saving ? "Saving..." : "Save Sub-Page"}
-                </button>
-              </div>
-            </header>
-
-            {/* Alerts */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-
-            {success && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
-                <p className="text-sm text-green-800">{success}</p>
-              </div>
-            )}
-
-            {/* Top Grid: Sub-Page Settings + SEO */}
-            <section className="grid grid-cols-1 lg:grid-cols-[3fr_2.2fr] gap-4.5 mb-1 items-start">
-              {/* Left: Sub-Page Settings */}
-              <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
-                <div className="flex justify-between items-center mb-3 gap-2">
-                  <div>
-                    <div className="text-[15px] font-semibold text-[#202437]">
-                      Sub-Page Settings
-                    </div>
-                    <div className="text-xs text-[#a0a5bf]">
-                      See where this sub-page sits in the structure and how it
-                      appears on NursingMocks.
-                    </div>
-                  </div>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
-                    Core
-                  </span>
-                </div>
-
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
-                  Parent Structure
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-1">
-                  <div className="rounded-xl border border-dashed border-[#e2e4f0] p-3 bg-gradient-to-br from-[#f9fafb] via-[#f5f5ff] to-[#eef2ff]">
-                    <div className="text-[11px] uppercase tracking-wider text-[#a0a5bf] mb-1">
-                      Pillar page
-                    </div>
-                    <div className="text-sm font-semibold mb-1 text-[#202437]">
-                      Nursing Entrance Exam
-                    </div>
-                    <div className="text-xs text-[#7a819c]">
-                      Fixed root for all TEAS & HESI entrance content.
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-dashed border-[#e2e4f0] p-3 bg-gradient-to-br from-[#f9fafb] via-[#f5f5ff] to-[#eef2ff]">
-                    <div className="text-[11px] uppercase tracking-wider text-[#a0a5bf] mb-1">
-                      Parent sub page
-                    </div>
-                    <div className="text-sm font-semibold mb-1 text-[#202437]">
-                      {content.pageName ||
-                        resolvedParams?.subPageId ||
-                        "ATI TEAS (example)"}
-                    </div>
-                    <div className="text-xs text-[#7a819c]">
-                      Pulled from the route context – in the real app you'll
-                      inject the actual parent name.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
-                  Sub-Page Details
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-4">
-                  <div>
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="cat-name"
-                        >
-                          Sub-page name
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Internal admin label
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        id="cat-name"
-                        value={content.pageName || ""}
-                        onChange={(e) =>
-                          setContent({ ...content, pageName: e.target.value })
-                        }
-                        placeholder="TEAS Reading"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                      />
-                    </div>
-
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="display-title"
-                        >
-                          Display title (H1)
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Shown on the live page
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        id="display-title"
-                        value={content.heading || ""}
-                        onChange={(e) =>
-                          updateContent("heading", e.target.value)
-                        }
-                        placeholder="ATI TEAS Reading Practice Questions & Study Guide"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="slug"
-                        >
-                          Slug
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Builds the URL
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        id="slug"
-                        value={slug}
-                        onChange={(e) => {
-                          setSlug(e.target.value);
-                          if (content) {
-                            setContent({ ...content, slug: e.target.value });
-                          }
-                        }}
-                        placeholder="ati-teas-reading-questions"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                      />
-                      <div className="text-[11px] text-[#a0a5bf] mt-1">
-                        Example URL:{" "}
-                        <strong className="text-[#7a819c]">
-                          /
-                          {slug ||
-                            resolvedParams?.subPageId ||
-                            "ati-teas-reading-questions"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="status"
-                        >
-                          Status
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Control visibility
-                        </span>
-                      </div>
-                      <select
-                        id="status"
-                        value={status}
-                        onChange={(e) => {
-                          const newStatus = e.target.value as
-                            | "Draft"
-                            | "Published"
-                            | "Archived";
-                          setStatus(newStatus);
-                          if (content) {
-                            setContent({ ...content, status: newStatus });
-                          }
-                        }}
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white appearance-none bg-[length:14px] bg-[right_10px_center] bg-no-repeat pr-8"
-                        style={{
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%237a819c' stroke-width='1.5' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-                        }}
-                      >
-                        <option>Draft</option>
-                        <option>Published</option>
-                        <option>Archived</option>
-                      </select>
-                      <div className="text-[11px] text-[#a0a5bf] mt-1">
-                        Only{" "}
-                        <strong className="text-[#7a819c]">Published</strong>{" "}
-                        sub-pages appear to students.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-3.5 mt-4">
-                  <div className="flex justify-between items-baseline gap-3 mb-1">
-                    <label
-                      className="text-xs font-medium text-[#3b3f57]"
-                      htmlFor="description"
+                  {resolvedParams?.subPageId && (
+                    <Link
+                      href={`/${slug || resolvedParams.subPageId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="admin-button-secondary"
                     >
-                      Description
-                    </label>
-                    <span className="text-[11px] text-[#a0a5bf]">
-                      Rich text description
-                    </span>
+                      View Public Page
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="admin-button-primary"
+                  >
+                    {saving ? "Saving..." : "Save Sub Page"}
+                  </button>
+                </>
+              }
+            />
+
+            <AdminNotificationRegion
+              error={error}
+              success={success}
+              errorTitle="Unable To Save Content"
+              successTitle="Content Saved"
+            />
+
+            {/* Top Grid: Sub Page Settings And SEO */}
+            <section className="grid grid-cols-1 lg:grid-cols-[3fr_2.2fr] gap-4.5 mb-1 items-start">
+              <AdminCard
+                className="mb-5"
+                title="Sub Page Settings"
+                description="Manage where this Sub Page sits in the Nursing Entrance Exam structure and how it appears publicly."
+              >
+                <div className="mb-4 flex justify-end">
+                  <AdminStatusBadge label={status} />
+                </div>
+
+                <AdminFormSection title="Parent Structure">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-1">
+                    <AdminInfoTile label="Pillar Page">
+                      <div className="admin-card-title mb-1">
+                        Nursing Entrance Exam
+                      </div>
+                      <p className="admin-helper">
+                        Root area for ATI TEAS 7 and HESI A2 entrance content.
+                      </p>
+                    </AdminInfoTile>
+                    <AdminInfoTile label="Current Sub Page">
+                      <div className="admin-card-title mb-1">
+                        {content.pageName ||
+                          resolvedParams?.subPageId ||
+                          "New Sub Page"}
+                      </div>
+                      <p className="admin-helper">
+                        This is the admin label and public grouping for the
+                        current Sub Page.
+                      </p>
+                    </AdminInfoTile>
                   </div>
+                </AdminFormSection>
+
+                <AdminFormSection
+                  title="Sub Page Details"
+                  description="Names are normalized as you type. Slugs auto-update until you edit the slug manually."
+                  className="mt-5"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-4">
+                    <div className="space-y-4">
+                      <AdminFieldGroup
+                        label="Sub Page Name"
+                        helper="Used as the internal admin label."
+                      >
+                        <input
+                          type="text"
+                          value={content.pageName || ""}
+                          onChange={(e) => {
+                            const normalizedInput = normalizeAdminContentNameInput(e.target.value);
+                            setContent({ ...content, pageName: normalizedInput });
+                            if (!slugManuallyEdited) {
+                              setSlug(normalizeAdminContentSlug(normalizedInput));
+                            }
+                          }}
+                          onBlur={handlePageNameBlur}
+                          placeholder="TEAS Reading"
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Display Title"
+                        helper="Shown as the public page H1."
+                      >
+                        <input
+                          type="text"
+                          value={content.heading || ""}
+                          onChange={(e) =>
+                            updateContent("heading", e.target.value)
+                          }
+                          placeholder="ATI TEAS Reading Practice Questions And Study Guide"
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+
+                    <div className="space-y-4">
+                      <AdminFieldGroup
+                        label="Slug"
+                        helper="Editable URL slug. Manual edits will not be overwritten by the name field."
+                      >
+                        <AdminSlugField
+                          origin={getSiteUrl()}
+                          value={slug}
+                          onChange={(value) => {
+                            const normalizedSlug = normalizeAdminContentSlug(value);
+                            setSlugManuallyEdited(true);
+                            setSlug(normalizedSlug);
+                            if (content) {
+                              setContent({ ...content, slug: normalizedSlug });
+                            }
+                          }}
+                          placeholder="ati-teas-reading-questions"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Status"
+                        helper="Only Published Sub Pages appear to students."
+                      >
+                        <AdminSelectField
+                          value={status}
+                          onChange={(value) => {
+                            const newStatus = value as
+                              | "Draft"
+                              | "Published"
+                              | "Archived";
+                            setStatus(newStatus);
+                            if (content) {
+                              setContent({ ...content, status: newStatus });
+                            }
+                          }}
+                        >
+                          <option>Draft</option>
+                          <option>Published</option>
+                          <option>Archived</option>
+                        </AdminSelectField>
+                      </AdminFieldGroup>
+                    </div>
+                  </div>
+                </AdminFormSection>
+
+                <AdminFormSection
+                  title="Description"
+                  description="Short public description for this Sub Page."
+                  className="mt-5"
+                >
                   <RichTextEditor
                     value={content.description || ""}
                     onChange={(value) => updateContent("description", value)}
-                    placeholder="Enter a description for this sub-page..."
+                    placeholder="Enter a description for this Sub Page."
                   />
-                </div>
-              </section>
+                </AdminFormSection>
+              </AdminCard>
 
-              {/* Right: SEO, Meta & Schema */}
-              <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
-                <div className="flex justify-between items-center mb-3 gap-2">
-                  <div>
-                    <div className="text-[15px] font-semibold text-[#202437]">
-                      SEO, Meta & Schema
-                    </div>
-                    <div className="text-xs text-[#a0a5bf]">
-                      Control how this sub-page appears in search and on social
-                      platforms.
-                    </div>
-                  </div>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
-                    SEO
-                  </span>
-                </div>
-
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
-                  SEO Fields
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="seo-label"
-                        >
-                          SEO Label
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Used on user-facing pages
-                        </span>
-                      </div>
+              <AdminCard
+                className="mb-5"
+                title="SEO, Meta, and Schema"
+                description="Control how this Sub Page appears in search and on social platforms."
+              >
+                <AdminFormSection title="SEO Fields">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <AdminFieldGroup
+                      label="SEO Label"
+                      helper="Used on user-facing pages."
+                    >
                       <input
                         type="text"
-                        id="seo-label"
                         value={content.seoLabel || ""}
                         onChange={(e) =>
                           setContent({ ...content, seoLabel: e.target.value })
                         }
                         placeholder="ATI TEAS Reading Practice"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
-                    </div>
-                  </div>
+                    </AdminFieldGroup>
 
-                  <div>
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="seo-slug"
-                        >
-                          SEO Slug
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          SEO-friendly URL slug
-                        </span>
-                      </div>
+                    <AdminFieldGroup
+                      label="SEO Slug"
+                      helper="SEO-friendly URL slug."
+                    >
                       <input
                         type="text"
-                        id="seo-slug"
                         value={content.seoSlug || ""}
                         onChange={(e) =>
                           setContent({ ...content, seoSlug: e.target.value })
                         }
                         placeholder="ati-teas-reading-practice"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
+                    </AdminFieldGroup>
+                  </div>
+                </AdminFormSection>
+
+                <AdminFormSection title="SEO Meta" className="mt-5">
+                  <AdminFieldGroup
+                    label="Meta Title"
+                    helper="Recommended length is about 60 characters."
+                  >
+                    <input
+                      type="text"
+                      value={content.meta.title}
+                      onChange={(e) =>
+                        updateContent("meta.title", e.target.value)
+                      }
+                      placeholder="ATI TEAS Reading Practice Questions (Updated 2026)"
+                      className="admin-field"
+                    />
+                  </AdminFieldGroup>
+
+                  <AdminFieldGroup
+                    label="Meta Description"
+                    helper="Recommended length is about 155 characters."
+                  >
+                    <textarea
+                      value={content.meta.description}
+                      onChange={(e) =>
+                        updateContent("meta.description", e.target.value)
+                      }
+                      placeholder="Short summary that will appear in search results for this Sub Page."
+                      rows={3}
+                      className="admin-field resize-y min-h-[90px]"
+                    />
+                  </AdminFieldGroup>
+
+                  <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-4">
+                    <div className="space-y-4">
+                      <AdminFieldGroup
+                        label="Keywords"
+                        helper="Optional internal keyword references."
+                      >
+                        <input
+                          type="text"
+                          value={content.meta.keywords}
+                          onChange={(e) =>
+                            updateContent("meta.keywords", e.target.value)
+                          }
+                          placeholder="teas reading practice, teas passages, nursing entrance exam"
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Canonical URL"
+                        helper="Optional canonical URL override."
+                      >
+                        <input
+                          type="text"
+                          value={content.meta.canonicalUrl}
+                          onChange={(e) =>
+                            updateContent("meta.canonicalUrl", e.target.value)
+                          }
+                          placeholder="https://www.nursingmocks.com/.../ati-teas-reading-questions"
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+
+                    <div className="space-y-4">
+                      <AdminFieldGroup
+                        label="Open Graph Title"
+                        helper="Used for social sharing previews."
+                      >
+                        <input
+                          type="text"
+                          value={content.meta.ogTitle}
+                          onChange={(e) =>
+                            updateContent("meta.ogTitle", e.target.value)
+                          }
+                          placeholder="ATI TEAS Reading Practice Questions And Study Guide"
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Open Graph Description"
+                        helper="Used for social sharing previews."
+                      >
+                        <textarea
+                          value={content.meta.ogDescription}
+                          onChange={(e) =>
+                            updateContent("meta.ogDescription", e.target.value)
+                          }
+                          placeholder="Engaging description that will appear when this page is shared on social media."
+                          rows={3}
+                          className="admin-field resize-y min-h-[90px]"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Open Graph Image"
+                        helper="Relative path or full image URL."
+                      >
+                        <input
+                          type="text"
+                          value={content.meta.ogImage}
+                          onChange={(e) =>
+                            updateContent("meta.ogImage", e.target.value)
+                          }
+                          placeholder="/images/og/ati-teas-reading.png"
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
                     </div>
                   </div>
-                </div>
+                </AdminFormSection>
 
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
-                  SEO Meta
-                </div>
-                <div className="mb-3.5">
-                  <div className="flex justify-between items-baseline gap-3 mb-1">
-                    <label
-                      className="text-xs font-medium text-[#3b3f57]"
-                      htmlFor="meta-title"
-                    >
-                      Meta title
-                    </label>
-                    <span className="text-[11px] text-[#a0a5bf]">
-                      ~60 characters
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    id="meta-title"
-                    value={content.meta.title}
-                    onChange={(e) =>
-                      updateContent("meta.title", e.target.value)
-                    }
-                    placeholder="ATI TEAS Reading Practice Questions (Updated 2026)"
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                  />
-                </div>
-
-                <div className="mb-3.5">
-                  <div className="flex justify-between items-baseline gap-3 mb-1">
-                    <label
-                      className="text-xs font-medium text-[#3b3f57]"
-                      htmlFor="meta-desc"
-                    >
-                      Meta description
-                    </label>
-                    <span className="text-[11px] text-[#a0a5bf]">
-                      ~155 characters
-                    </span>
-                  </div>
+                <AdminFormSection
+                  title="Schema Markup"
+                  description="Paste valid JSON-LD for this Sub Page."
+                  className="mt-5"
+                >
                   <textarea
-                    id="meta-desc"
-                    value={content.meta.description}
-                    onChange={(e) =>
-                      updateContent("meta.description", e.target.value)
-                    }
-                    placeholder="Short summary that will appear in search results for this sub-page."
-                    rows={3}
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[90px]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-4">
-                  <div>
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="keywords"
-                        >
-                          Keywords (optional)
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Internal only
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        id="keywords"
-                        value={content.meta.keywords}
-                        onChange={(e) =>
-                          updateContent("meta.keywords", e.target.value)
-                        }
-                        placeholder="teas reading practice, teas passages, nursing entrance exam"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                      />
-                    </div>
-
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="canonical"
-                        >
-                          Canonical URL
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Optional
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        id="canonical"
-                        value={content.meta.canonicalUrl}
-                        onChange={(e) =>
-                          updateContent("meta.canonicalUrl", e.target.value)
-                        }
-                        placeholder="https://www.nursingmocks.com/.../ati-teas-reading-questions"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="og-title"
-                        >
-                          OG title
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Social preview
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        id="og-title"
-                        value={content.meta.ogTitle}
-                        onChange={(e) =>
-                          updateContent("meta.ogTitle", e.target.value)
-                        }
-                        placeholder="ATI TEAS Reading Practice Questions & Study Guide"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                      />
-                    </div>
-
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="og-description"
-                        >
-                          OG description
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Social preview
-                        </span>
-                      </div>
-                      <textarea
-                        id="og-description"
-                        value={content.meta.ogDescription}
-                        onChange={(e) =>
-                          updateContent("meta.ogDescription", e.target.value)
-                        }
-                        placeholder="Engaging description that will appear when this page is shared on social media."
-                        rows={3}
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[90px]"
-                      />
-                    </div>
-
-                    <div className="mb-3.5">
-                      <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <label
-                          className="text-xs font-medium text-[#3b3f57]"
-                          htmlFor="og-image"
-                        >
-                          OG image
-                        </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
-                          Relative path or URL
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        id="og-image"
-                        value={content.meta.ogImage}
-                        onChange={(e) =>
-                          updateContent("meta.ogImage", e.target.value)
-                        }
-                        placeholder="/images/og/ati-teas-reading.png"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
-                      />
-                      <div className="text-[11px] text-[#a0a5bf] mt-1">
-                        This image will be used for social sharing cards.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
-                  Schema markup (JSON-LD)
-                </div>
-                <div className="mb-3.5">
-                  <textarea
-                    id="schema"
                     value={content.schema}
                     onChange={(e) => updateContent("schema", e.target.value)}
                     placeholder='{
   "@context": "https://schema.org",
   "@type": "Article",
-  "headline": "ATI TEAS Reading Practice Questions & Study Guide",
-  "description": "Short summary describing this sub-page..."
+  "headline": "ATI TEAS Reading Practice Questions And Study Guide",
+  "description": "Short summary describing this Sub Page."
 }'
                     rows={8}
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-xs font-mono text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[130px]"
+                    className="admin-field resize-y min-h-[130px] font-mono text-xs"
                   />
-                  <div className="text-[11px] text-[#a0a5bf] mt-1">
-                    Paste valid JSON-LD. Your frontend will inject this into the
-                    page head.
-                  </div>
-                </div>
-              </section>
+                </AdminFormSection>
+              </AdminCard>
             </section>
 
-            {/* Content Editor */}
-            <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
-              <div className="flex justify-between items-center mb-3 gap-2">
-                <div>
-                  <div className="text-[15px] font-semibold text-[#202437]">
-                    Content Editor
-                  </div>
-                  <div className="text-xs text-[#a0a5bf]">
-                    Single Tiptap editor for the full body content, with
-                    drag-and-drop custom modules.
-                  </div>
-                </div>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
-                  Content
-                </span>
-              </div>
+            <AdminCard
+              className="mb-5"
+              title="Content Editor"
+              description="Use the Tiptap editor for full body content, custom content blocks, and FAQs."
+            >
+
+              <ContentQualityWarnings bodyContent={content.bodyContent || ""} />
+              <PublicContentPreview
+                content={content.bodyContent || ""}
+                publicPath={content.slug || content.seoSlug}
+              />
 
               <div className="mt-2">
                 <TiptapEditor
@@ -874,9 +777,10 @@ function EditSubPageContent({
                 value={content.faqs}
                 onChange={(faqs) => setContent({ ...content, faqs })}
               />
-            </section>
+            </AdminCard>
           </div>
         </div>
+        </main>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/layout/SidebarContext";
+import { AdminAlert, AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
 
@@ -261,11 +262,11 @@ function EditKbArticleContent({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6a5cff] mx-auto mb-4"></div>
-          <p className="text-[#7a819c]">Loading content...</p>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading KB article content"
+          description="Preparing article details, SEO fields, schema markup, and the editor."
+        />
       </div>
     );
   }
@@ -274,148 +275,133 @@ function EditKbArticleContent({
     return null;
   }
 
-  const userInitial = currentUser?.email?.[0]?.toUpperCase() || "A";
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb]">
+    <div className="admin-page">
       <AdminSidebar />
       <div
-        className={`transition-all duration-300 ${
+        className={`admin-workspace ${
           isCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
-        {/* Main Header */}
-        <header className="sticky top-0 z-10 h-[60px] flex items-center justify-center bg-white/92 backdrop-blur-sm border-b border-[#e2e4f0]/95">
-          <div className="w-full max-w-[1220px] flex items-center justify-between gap-3 px-4">
-            <div className="flex items-center gap-1.5 text-xs text-[#a0a5bf]">
-              <span>Home</span>
-              <span>/</span>
-              <span>Content</span>
-              <span>/</span>
-              <span>Nursing Exit Exam</span>
-              <span>/</span>
-              <span>KB Articles</span>
-              <span>/</span>
-              <span className="text-[#202437] font-medium">
-                {content.pageName ||
-                  resolvedParams?.kbArticleId ||
-                  "Edit KB Article"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-[#202437]">
-              <span>{currentUser?.email || "Admin"}</span>
-              <div className="w-8 h-8 rounded-full bg-[#6a5cff] text-white flex items-center justify-center font-semibold text-sm shadow-lg shadow-[#4c3dff]/40">
-                {userInitial}
-              </div>
-            </div>
-          </div>
-        </header>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Admin", href: "/admin" },
+            { label: "Content" },
+            { label: "Nursing Exit Exam", href: "/admin/nursing-exit-exam" },
+            { label: "KB Articles" },
+            {
+              label:
+                content.pageName ||
+                resolvedParams?.kbArticleId ||
+                "Edit KB Article",
+            },
+          ]}
+          actions={<span>{currentUser?.email || "Admin"}</span>}
+        />
 
         {/* Main Body */}
-        <div className="py-5 px-4 flex justify-center">
-          <div className="w-full max-w-[1220px]">
+        <div className="admin-content">
+          <div className="w-full">
             {/* Page Header */}
-            <header className="flex justify-between items-start mb-4.5 gap-3 flex-wrap">
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight mb-1 text-[#202437]">
-                  Edit KB Article – Nursing Exit Exam
-                </h1>
-                <p className="text-sm text-[#7a819c] max-w-[640px] leading-relaxed">
-                  Edit a KB article for the Nursing Exit Exam pillar. Define
-                  the article details, SEO, and full content.
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 ml-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                    Draft KB article
-                  </span>
-                </p>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <Link
-                  href="/admin/nursing-exit-exam"
-                  className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
-                >
-                  ← Back to Admin
-                </Link>
-                {resolvedParams?.kbArticleId && (
-                  <Link
-                    href={`/${slug || resolvedParams.kbArticleId}`}
-                    target="_blank"
-                    className="rounded-full border border-[#e2e4f0] bg-transparent text-[#7a819c] px-3.5 py-2 text-sm font-medium hover:bg-[#f4f5ff] transition-colors flex items-center gap-1.5"
-                  >
-                    View Page
+            <header className="admin-header">
+              <div className="admin-header-row">
+                <div className="admin-header-copy">
+                  <h1 className="admin-page-title">
+                    Edit KB Article - Nursing Exit Exam
+                  </h1>
+                  <p className="admin-body max-w-[720px]">
+                    Edit a KB article for the Nursing Exit Exam pillar. Define the
+                    article details, SEO, and full content.
+                    <span className="admin-status-badge admin-status-badge-warning ml-2">
+                      Draft KB article
+                    </span>
+                  </p>
+                </div>
+                <div className="admin-header-actions">
+                  <Link href="/admin/nursing-exit-exam" className="admin-button-secondary">
+                    Back to Admin
                   </Link>
-                )}
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="rounded-full bg-gradient-to-r from-[#6a5cff] to-[#8b5dff] text-white px-3.5 py-2 text-sm font-medium shadow-lg shadow-[#4c3dff]/40 hover:shadow-xl hover:shadow-[#4c3dff]/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {saving ? "Saving..." : "Save KB Article"}
-                </button>
+                  {resolvedParams?.kbArticleId && (
+                    <Link
+                      href={`/${slug || resolvedParams.kbArticleId}`}
+                      target="_blank"
+                      className="admin-button-secondary"
+                    >
+                      View Page
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="admin-button-primary"
+                  >
+                    {saving ? "Saving..." : "Save KB Article"}
+                  </button>
+                </div>
               </div>
             </header>
 
             {/* Alerts */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
+              <AdminAlert tone="error" title="Unable to save article">
+                {error}
+              </AdminAlert>
             )}
 
             {success && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
-                <p className="text-sm text-green-800">{success}</p>
-              </div>
+              <AdminAlert tone="success" title="KB article saved">
+                {success}
+              </AdminAlert>
             )}
 
             {/* Top Grid: KB Article Settings + SEO */}
             <section className="grid grid-cols-1 lg:grid-cols-[3fr_2.2fr] gap-4.5 mb-1 items-start">
               {/* Left: KB Article Settings */}
-              <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
+              <section className="admin-card mb-5 p-5">
                 <div className="flex justify-between items-center mb-3 gap-2">
                   <div>
-                    <div className="text-[15px] font-semibold text-[#202437]">
+                    <div className="admin-card-title">
                       KB Article Settings
                     </div>
-                    <div className="text-xs text-[#a0a5bf]">
+                    <div className="admin-helper mt-1">
                       See where this KB article sits in the structure and how it
                       appears on NursingMocks.
                     </div>
                   </div>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
+                  <span className="admin-status-badge admin-status-badge-info">
                     Core
                   </span>
                 </div>
 
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                <div className="admin-section-title mt-5 mb-2">
                   Parent Structure
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-1">
-                  <div className="rounded-xl border border-dashed border-[#e2e4f0] p-3 bg-gradient-to-br from-[#f9fafb] via-[#f5f5ff] to-[#eef2ff]">
-                    <div className="text-[11px] uppercase tracking-wider text-[#a0a5bf] mb-1">
+                  <div className="admin-info-tile">
+                    <div className="admin-field-label mb-1">
                       Pillar page
                     </div>
-                    <div className="text-sm font-semibold mb-1 text-[#202437]">
+                    <div className="admin-card-title mb-1">
                       Nursing Exit Exam
                     </div>
-                    <div className="text-xs text-[#7a819c]">
+                    <div className="admin-helper">
                       Fixed root for all exit exam content.
                     </div>
                   </div>
-                  <div className="rounded-xl border border-dashed border-[#e2e4f0] p-3 bg-gradient-to-br from-[#f9fafb] via-[#f5f5ff] to-[#eef2ff]">
-                    <div className="text-[11px] uppercase tracking-wider text-[#a0a5bf] mb-1">
+                  <div className="admin-info-tile">
+                    <div className="admin-field-label mb-1">
                       Parent sub page
                     </div>
-                    <div className="text-sm font-semibold mb-1 text-[#202437]">
+                    <div className="admin-card-title mb-1">
                       {content.parentId || "N/A"}
                     </div>
-                    <div className="text-xs text-[#7a819c]">
+                    <div className="admin-helper">
                       Parent sub-page ID for this KB article.
                     </div>
                   </div>
                 </div>
 
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                <div className="admin-section-title mt-5 mb-2">
                   KB Article Details
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-4">
@@ -423,12 +409,12 @@ function EditKbArticleContent({
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="cat-name"
                         >
                           KB Article name
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Internal admin label
                         </span>
                       </div>
@@ -440,19 +426,19 @@ function EditKbArticleContent({
                           setContent({ ...content, pageName: e.target.value })
                         }
                         placeholder="KB Article Title"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
                     </div>
 
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="display-title"
                         >
                           Display title (H1)
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Shown on the live page
                         </span>
                       </div>
@@ -464,7 +450,7 @@ function EditKbArticleContent({
                           updateContent("heading", e.target.value)
                         }
                         placeholder="KB Article Heading"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
                     </div>
                   </div>
@@ -473,12 +459,12 @@ function EditKbArticleContent({
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="slug"
                         >
                           Slug
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Builds the URL
                         </span>
                       </div>
@@ -493,11 +479,11 @@ function EditKbArticleContent({
                           }
                         }}
                         placeholder="kb-article-slug"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
-                      <div className="text-[11px] text-[#a0a5bf] mt-1">
+                      <div className="admin-helper mt-1">
                         Example URL:{" "}
-                        <strong className="text-[#7a819c]">
+                        <strong className="text-[var(--admin-text-muted)]">
                           /
                           {slug ||
                             resolvedParams?.kbArticleId ||
@@ -509,12 +495,12 @@ function EditKbArticleContent({
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="status"
                         >
                           Status
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Control visibility
                         </span>
                       </div>
@@ -531,7 +517,7 @@ function EditKbArticleContent({
                             setContent({ ...content, status: newStatus });
                           }
                         }}
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white appearance-none bg-[length:14px] bg-[right_10px_center] bg-no-repeat pr-8"
+                        className="admin-field appearance-none bg-[length:14px] bg-[right_10px_center] bg-no-repeat pr-8"
                         style={{
                           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%237a819c' stroke-width='1.5' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
                         }}
@@ -540,9 +526,9 @@ function EditKbArticleContent({
                         <option>Published</option>
                         <option>Archived</option>
                       </select>
-                      <div className="text-[11px] text-[#a0a5bf] mt-1">
+                      <div className="admin-helper mt-1">
                         Only{" "}
-                        <strong className="text-[#7a819c]">Published</strong>{" "}
+                        <strong className="text-[var(--admin-text-muted)]">Published</strong>{" "}
                         KB articles appear to students.
                       </div>
                     </div>
@@ -552,12 +538,12 @@ function EditKbArticleContent({
                 <div className="mb-3.5 mt-4">
                   <div className="flex justify-between items-baseline gap-3 mb-1">
                     <label
-                      className="text-xs font-medium text-[#3b3f57]"
+                      className="admin-field-label"
                       htmlFor="description"
                     >
                       Description
                     </label>
-                    <span className="text-[11px] text-[#a0a5bf]">
+                    <span className="admin-helper">
                       Rich text description
                     </span>
                   </div>
@@ -570,23 +556,23 @@ function EditKbArticleContent({
               </section>
 
               {/* Right: SEO, Meta & Schema */}
-              <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
+              <section className="admin-card mb-5 p-5">
                 <div className="flex justify-between items-center mb-3 gap-2">
                   <div>
-                    <div className="text-[15px] font-semibold text-[#202437]">
+                    <div className="admin-card-title">
                       SEO, Meta & Schema
                     </div>
-                    <div className="text-xs text-[#a0a5bf]">
+                    <div className="admin-helper mt-1">
                       Control how this KB article appears in search and on
                       social platforms.
                     </div>
                   </div>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
+                  <span className="admin-status-badge admin-status-badge-info">
                     SEO
                   </span>
                 </div>
 
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                <div className="admin-section-title mt-5 mb-2">
                   SEO Fields
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -594,12 +580,12 @@ function EditKbArticleContent({
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="seo-label"
                         >
                           SEO Label
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Used on user-facing pages
                         </span>
                       </div>
@@ -611,7 +597,7 @@ function EditKbArticleContent({
                           setContent({ ...content, seoLabel: e.target.value })
                         }
                         placeholder="KB Article SEO Label"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
                     </div>
                   </div>
@@ -620,12 +606,12 @@ function EditKbArticleContent({
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="seo-slug"
                         >
                           SEO Slug
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           SEO-friendly URL slug
                         </span>
                       </div>
@@ -637,24 +623,24 @@ function EditKbArticleContent({
                           setContent({ ...content, seoSlug: e.target.value })
                         }
                         placeholder="kb-article-seo-slug"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                <div className="admin-section-title mt-5 mb-2">
                   SEO Meta
                 </div>
                 <div className="mb-3.5">
                   <div className="flex justify-between items-baseline gap-3 mb-1">
                     <label
-                      className="text-xs font-medium text-[#3b3f57]"
+                      className="admin-field-label"
                       htmlFor="meta-title"
                     >
                       Meta title
                     </label>
-                    <span className="text-[11px] text-[#a0a5bf]">
+                    <span className="admin-helper">
                       ~60 characters
                     </span>
                   </div>
@@ -666,19 +652,19 @@ function EditKbArticleContent({
                       updateContent("meta.title", e.target.value)
                     }
                     placeholder="KB Article Meta Title"
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                    className="admin-field"
                   />
                 </div>
 
                 <div className="mb-3.5">
                   <div className="flex justify-between items-baseline gap-3 mb-1">
                     <label
-                      className="text-xs font-medium text-[#3b3f57]"
+                      className="admin-field-label"
                       htmlFor="meta-desc"
                     >
                       Meta description
                     </label>
-                    <span className="text-[11px] text-[#a0a5bf]">
+                    <span className="admin-helper">
                       ~155 characters
                     </span>
                   </div>
@@ -690,7 +676,7 @@ function EditKbArticleContent({
                     }
                     placeholder="Short summary that will appear in search results for this KB article."
                     rows={3}
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[90px]"
+                    className="admin-field resize-y min-h-[90px]"
                   />
                 </div>
 
@@ -699,12 +685,12 @@ function EditKbArticleContent({
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="keywords"
                         >
                           Keywords (optional)
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Internal only
                         </span>
                       </div>
@@ -716,19 +702,19 @@ function EditKbArticleContent({
                           updateContent("meta.keywords", e.target.value)
                         }
                         placeholder="kb article, nursing exit exam"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
                     </div>
 
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="canonical"
                         >
                           Canonical URL
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Optional
                         </span>
                       </div>
@@ -740,7 +726,7 @@ function EditKbArticleContent({
                           updateContent("meta.canonicalUrl", e.target.value)
                         }
                         placeholder="https://www.nursingmocks.com/.../kb-article"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
                     </div>
                   </div>
@@ -749,12 +735,12 @@ function EditKbArticleContent({
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="og-title"
                         >
                           OG title
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Social preview
                         </span>
                       </div>
@@ -766,19 +752,19 @@ function EditKbArticleContent({
                           updateContent("meta.ogTitle", e.target.value)
                         }
                         placeholder="KB Article OG Title"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
                     </div>
 
                     <div className="mb-3.5">
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <label
-                          className="text-xs font-medium text-[#3b3f57]"
+                          className="admin-field-label"
                           htmlFor="og-image"
                         >
                           OG image
                         </label>
-                        <span className="text-[11px] text-[#a0a5bf]">
+                        <span className="admin-helper">
                           Relative path or URL
                         </span>
                       </div>
@@ -790,16 +776,16 @@ function EditKbArticleContent({
                           updateContent("meta.ogImage", e.target.value)
                         }
                         placeholder="/images/og/kb-article.png"
-                        className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-sm font-sans text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white"
+                        className="admin-field"
                       />
-                      <div className="text-[11px] text-[#a0a5bf] mt-1">
+                      <div className="admin-helper mt-1">
                         This image will be used for social sharing cards.
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-[13px] font-semibold mt-2 mb-1.5 text-[#202437]">
+                <div className="admin-section-title mt-5 mb-2">
                   Schema markup (JSON-LD)
                 </div>
                 <div className="mb-3.5">
@@ -814,9 +800,9 @@ function EditKbArticleContent({
   "description": "Short summary describing this KB article..."
 }'
                     rows={8}
-                    className="w-full rounded-lg border border-[#e2e4f0] bg-[#f9f9ff] px-2.5 py-2.25 text-xs font-mono text-[#202437] outline-none transition-all focus:border-[#6a5cff] focus:shadow-[0_0_0_1px_rgba(91,76,255,0.35)] focus:bg-white resize-y min-h-[130px]"
+                    className="admin-field resize-y min-h-[130px] font-mono text-xs"
                   />
-                  <div className="text-[11px] text-[#a0a5bf] mt-1">
+                  <div className="admin-helper mt-1">
                     Paste valid JSON-LD. Your frontend will inject this into the
                     page head.
                   </div>
@@ -825,18 +811,18 @@ function EditKbArticleContent({
             </section>
 
             {/* Content Editor */}
-            <section className="bg-white rounded-2xl shadow-sm p-4.5 border border-[#e2e4f0]/90 mb-4.5">
+            <section className="admin-card mb-5 p-5">
               <div className="flex justify-between items-center mb-3 gap-2">
                 <div>
-                  <div className="text-[15px] font-semibold text-[#202437]">
+                  <div className="admin-card-title">
                     Content Editor
                   </div>
-                  <div className="text-xs text-[#a0a5bf]">
+                  <div className="admin-helper mt-1">
                     Single Tiptap editor for the full body content, with
                     drag-and-drop custom modules.
                   </div>
                 </div>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f4f4ff] text-[#5b60a0]">
+                <span className="admin-status-badge admin-status-badge-info">
                   Content
                 </span>
               </div>

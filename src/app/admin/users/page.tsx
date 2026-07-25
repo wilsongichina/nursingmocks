@@ -1,7 +1,16 @@
 "use client";
 
 import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import {
+  AdminAlert,
+  AdminCard,
+  AdminInlineLoading,
+  AdminInfoTile,
+  AdminStatCard,
+  AdminStatusBadge,
+  AdminTableCell,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -28,18 +37,7 @@ function formatDate(value: string | null) {
 }
 
 function statusBadge(label: string, tone: "green" | "red" | "gray" | "purple" | "amber") {
-  const tones = {
-    green: "user-pill-green",
-    red: "user-pill-red",
-    gray: "border-gray-200 bg-gray-50 text-gray-700",
-    purple: "user-pill-purple",
-    amber: "user-pill-amber",
-  };
-  return (
-    <span className={`user-pill ${tones[tone]}`}>
-      {label}
-    </span>
-  );
+  return <AdminStatusBadge label={label} tone={tone} />;
 }
 
 function formatUnknownValue(value: unknown): string {
@@ -62,12 +60,11 @@ function pickRecordValue(record: Record<string, unknown> | null, keys: string[])
 
 function Field({ label, value }: { label: string; value: string | number | boolean | null | undefined }) {
   return (
-    <div className="user-detail-surface p-3">
-      <p className="user-label">{label}</p>
-      <p className="user-card-title mt-1 break-words">
+    <AdminInfoTile label={label}>
+      <span className="break-words">
         {value === null || value === undefined || value === "" ? "Not available" : String(value)}
-      </p>
-    </div>
+      </span>
+    </AdminInfoTile>
   );
 }
 
@@ -81,30 +78,26 @@ function DetailSection({
   children: ReactNode;
 }) {
   return (
-    <section className="user-card p-4">
-      <div>
-        <h3 className="user-section-title">{title}</h3>
-        {description && <p className="user-helper mt-1">{description}</p>}
-      </div>
+    <AdminCard title={title} description={description} className="p-4">
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         {children}
       </div>
-    </section>
+    </AdminCard>
   );
 }
 
 function JsonPanel({ title, data }: { title: string; data: Record<string, unknown> | null }) {
   return (
-    <div className="user-card p-4">
-      <h3 className="user-card-title">{title}</h3>
+    <AdminCard className="p-4">
+      <h3 className="admin-card-title">{title}</h3>
       {data ? (
         <pre className="mt-3 max-h-64 overflow-auto rounded-md bg-gray-950 p-3 text-xs leading-5 text-gray-100">
           {JSON.stringify(data, null, 2)}
         </pre>
       ) : (
-        <p className="user-helper mt-2">No data available.</p>
+        <p className="admin-helper mt-2">No data available.</p>
       )}
-    </div>
+    </AdminCard>
   );
 }
 
@@ -136,13 +129,13 @@ function UserDetailSections({
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="user-detail-surface p-4">
+      <div className="admin-card p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="user-card-title break-words">
+            <h3 className="admin-card-title break-words">
               {user.displayName || user.firestoreProfile?.fullName || "Unnamed user"}
             </h3>
-            <p className="user-body-sm mt-1 break-words">{user.email || "No email"}</p>
+            <p className="admin-helper mt-1 break-words">{user.email || "No email"}</p>
             <p className="mt-1 break-all font-mono text-xs text-gray-400">{user.uid}</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -156,7 +149,7 @@ function UserDetailSections({
             type="button"
             onClick={() => onSupportAction(user.uid, "send_password_reset")}
             disabled={actionLoading !== null || !user.email}
-            className="user-button-secondary px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+            className="admin-button-secondary px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
           >
             {actionLoading === "send_password_reset" ? "Sending..." : "Send Password Reset"}
           </button>
@@ -165,35 +158,34 @@ function UserDetailSections({
               type="button"
               onClick={() => onSupportAction(user.uid, "send_email_verification")}
               disabled={actionLoading !== null || !user.email}
-              className="user-button-secondary px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              className="admin-button-secondary px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
             >
               {actionLoading === "send_email_verification" ? "Sending..." : "Send Email Verification"}
             </button>
           )}
         </div>
         {supportMessage && (
-          <div className={`mt-4 user-alert ${supportMessage.tone === "success" ? "user-alert-success" : "user-alert-error"}`} role="status">
-            <span className="user-alert-icon" aria-hidden="true">
-              {supportMessage.tone === "success" ? "!" : "x"}
-            </span>
-            <p className="user-helper">{supportMessage.text}</p>
+          <div className="mt-4">
+            <AdminAlert tone={supportMessage.tone}>
+              {supportMessage.text}
+            </AdminAlert>
           </div>
         )}
       </div>
 
-      <section className="user-card p-4">
+      <section className="admin-card p-4">
         <div>
-          <h3 className="user-section-title">Account Controls</h3>
-          <p className="user-helper mt-1">
+          <h3 className="admin-section-title">Account Controls</h3>
+          <p className="admin-helper mt-1">
             Disable blocks sign-in. Enable restores sign-in. A reason is required and every action is audited.
           </p>
         </div>
         <label className="mt-4 block">
-          <span className="user-label">Reason</span>
+          <span className="admin-field-label">Reason</span>
           <textarea
             value={statusReason}
             onChange={(event) => onStatusReasonChange(event.target.value)}
-            className="user-field mt-2 min-h-24"
+            className="admin-field mt-2 min-h-24"
             maxLength={500}
             placeholder="Explain why this account status change is needed."
           />
@@ -204,7 +196,7 @@ function UserDetailSections({
               type="button"
               onClick={() => onAccountStatusAction(user.uid, "enable_account")}
               disabled={actionLoading !== null || statusReason.trim().length < 10}
-              className="user-button-primary px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              className="admin-button-primary px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
             >
               {actionLoading === "enable_account" ? "Enabling..." : "Enable Account"}
             </button>
@@ -213,18 +205,17 @@ function UserDetailSections({
               type="button"
               onClick={() => onAccountStatusAction(user.uid, "disable_account")}
               disabled={actionLoading !== null || statusReason.trim().length < 10}
-              className="user-button-secondary border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="admin-button-danger px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
             >
               {actionLoading === "disable_account" ? "Disabling..." : "Disable Account"}
             </button>
           )}
         </div>
         {statusMessage && (
-          <div className={`mt-4 user-alert ${statusMessage.tone === "success" ? "user-alert-success" : "user-alert-error"}`} role="status">
-            <span className="user-alert-icon" aria-hidden="true">
-              {statusMessage.tone === "success" ? "!" : "x"}
-            </span>
-            <p className="user-helper">{statusMessage.text}</p>
+          <div className="mt-4">
+            <AdminAlert tone={statusMessage.tone}>
+              {statusMessage.text}
+            </AdminAlert>
           </div>
         )}
       </section>
@@ -274,10 +265,10 @@ function UserDetailSections({
         <Field label="Profile created" value={formatDate(user.firestoreDocument.createdAt)} />
       </DetailSection>
 
-      <details className="user-card p-4">
+      <details className="admin-card p-4">
         <summary className="cursor-pointer list-none">
-          <span className="user-section-title">Technical Records</span>
-          <span className="user-helper mt-1 block">Open only when you need the raw read-only Firestore/Auth payloads.</span>
+          <span className="admin-section-title">Technical Records</span>
+          <span className="admin-helper mt-1 block">Open only when you need the raw read-only Firestore/Auth payloads.</span>
         </summary>
         <div className="mt-4 space-y-4">
           <JsonPanel title="Custom Claims" data={user.customClaims} />
@@ -504,37 +495,29 @@ function AdminUsersContent() {
     <div className="min-h-screen overflow-x-hidden bg-white">
       <AdminSidebar />
       <div className={`transition-all duration-300 ${isCollapsed ? "md:ml-20" : "md:ml-64"}`}>
-        <div className="hidden md:block border-b border-gray-200 bg-white h-16">
-          <div className="flex h-full items-center justify-between px-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link href="/" className="font-medium transition-colors hover:text-blue-600">
-                Home
-              </Link>
-              <span className="text-gray-400">/</span>
-              <Link href="/admin" className="font-medium transition-colors hover:text-blue-600">
-                Admin
-              </Link>
-              <span className="text-gray-400">/</span>
-              <span className="font-medium">Users</span>
-            </div>
-            {currentUser && <UserProfileBadge />}
-          </div>
-        </div>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Home", href: "/" },
+            { label: "Admin Dashboard", href: "/admin" },
+            { label: "User Management" },
+          ]}
+          actions={currentUser && <UserProfileBadge />}
+        />
 
-        <main className="user-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-          <div className="w-full">
-            <header className="user-page-header mb-6">
-              <div className="user-page-header-row">
-                <div className="user-page-header-copy">
-                  <p className="user-eyebrow">Admin</p>
-                  <h1 className="user-page-title mt-1">User Management</h1>
-                  <p className="user-body mt-2 max-w-4xl">
+        <main className="admin-workspace">
+          <div className="admin-content">
+            <header className="admin-header mb-6">
+              <div className="admin-header-row">
+                <div className="admin-header-copy">
+                  <p className="admin-eyebrow">Admin</p>
+                  <h1 className="admin-page-title mt-1">User Management</h1>
+                  <p className="admin-body mt-2 max-w-4xl">
                     Read-only Firebase Auth and Firestore user overview. Sensitive account changes should be added as audited server actions in a later phase.
                   </p>
                 </div>
               </div>
-              <form onSubmit={submitSearch} className="user-search-panel mt-4 max-w-3xl">
-                <div className="user-search-row sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <form onSubmit={submitSearch} className="admin-card mt-4 max-w-3xl p-3">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                   <input
                     type="search"
                     list="admin-user-search-suggestions"
@@ -542,7 +525,7 @@ function AdminUsersContent() {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search visible page, UID, or exact email"
-                    className="user-field min-w-0"
+                    className="admin-field min-w-0"
                   />
                   <datalist id="admin-user-search-suggestions">
                     {searchSuggestions.map((suggestion) => (
@@ -551,7 +534,7 @@ function AdminUsersContent() {
                   </datalist>
                   <button
                     type="submit"
-                    className="user-button-primary sm:min-w-28"
+                    className="admin-button-primary sm:min-w-28"
                   >
                     Search
                   </button>
@@ -560,53 +543,35 @@ function AdminUsersContent() {
             </header>
 
             <section className="mb-6 grid gap-3 lg:grid-cols-4">
-              <div className="user-card p-4">
-                <p className="user-label">Visible users</p>
-                <p className="user-stat-value mt-2">{loading ? "..." : users.length}</p>
-                <p className="user-helper mt-1">Loaded from the current Firebase Auth page.</p>
-              </div>
-              <div className="user-card p-4">
-                <p className="user-label">Page position</p>
-                <p className="user-stat-value mt-2">{pageTokens.length + 1}</p>
-                <p className="user-helper mt-1">{nextPageToken && !activeSearch ? "More users available." : "No next page currently available."}</p>
-              </div>
-              <div className="user-card p-4">
-                <p className="user-label">Search mode</p>
-                <p className="user-card-title mt-2">{activeSearch ? activeSearch : "No search"}</p>
-                <p className="user-helper mt-1">{searchMode}</p>
-              </div>
-              <div className="user-alert user-alert-warning p-4">
-                <span className="user-alert-icon" aria-hidden="true">!</span>
-                <div>
-                  <p className="user-card-title">Read-only phase</p>
-                  <p className="user-helper mt-1">Audit logging should come before write actions.</p>
-                </div>
-              </div>
+              <AdminStatCard label="Visible Users" value={loading ? "..." : users.length} helper="Loaded from the current Firebase Auth page." />
+              <AdminStatCard label="Page Position" value={pageTokens.length + 1} helper={nextPageToken && !activeSearch ? "More users available." : "No next page currently available."} />
+              <AdminStatCard label="Search Mode" value={activeSearch ? activeSearch : "No search"} helper={searchMode} />
+              <AdminAlert tone="warning" title="Read-Only Phase">
+                Audit logging should come before write actions.
+              </AdminAlert>
             </section>
 
             {error && (
-              <div className="user-alert user-alert-error mb-4" role="alert">
-                <span className="user-alert-icon" aria-hidden="true">x</span>
-                <div>
-                  <p className="user-card-title">Could not load users</p>
-                  <p className="user-helper mt-1">{error}</p>
-                </div>
+              <div className="mb-4">
+                <AdminAlert tone="error" title="Could Not Load Users">
+                  {error}
+                </AdminAlert>
               </div>
             )}
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
-              <section className="user-card overflow-hidden">
+              <section className="admin-table-card overflow-hidden">
                 <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                   <div>
-                    <h2 className="user-section-title">Users</h2>
-                    <p className="user-helper">{loading ? "Loading..." : `${users.length} shown from current page`}</p>
+                    <h2 className="admin-section-title">Users</h2>
+                    <p className="admin-helper">{loading ? "Loading Users" : `${users.length} shown from current page`}</p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={goPrevious}
                       disabled={pageTokens.length === 0 || loading}
-                      className="user-button-secondary px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                      className="admin-button-secondary px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Previous
                     </button>
@@ -614,86 +579,86 @@ function AdminUsersContent() {
                       type="button"
                       onClick={goNext}
                       disabled={!nextPageToken || loading || Boolean(activeSearch)}
-                      className="user-button-secondary px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                      className="admin-button-secondary px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Next
                     </button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="user-label px-4 py-3 text-left">User</th>
-                        <th className="user-label px-4 py-3 text-left">Access</th>
-                        <th className="user-label px-4 py-3 text-left">Subscription</th>
-                        <th className="user-label px-4 py-3 text-left">Last sign-in</th>
-                        <th className="user-label px-4 py-3 text-right">Action</th>
+                        <th className="px-4 py-3 text-left">User</th>
+                        <th className="px-4 py-3 text-left">Access</th>
+                        <th className="px-4 py-3 text-left">Subscription</th>
+                        <th className="px-4 py-3 text-left">Last sign-in</th>
+                        <th className="px-4 py-3 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
                       {loading ? (
                         <tr>
-                          <td colSpan={5} className="user-helper px-4 py-8 text-center">
-                            Loading users...
+                          <td colSpan={5} className="px-4 py-8 text-center">
+                            <AdminInlineLoading label="Loading Users" />
                           </td>
                         </tr>
                       ) : users.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="user-helper px-4 py-8 text-center">
+                          <td colSpan={5} className="admin-helper px-4 py-8 text-center">
                             No users found.
                           </td>
                         </tr>
                       ) : (
                         users.map((user) => (
                           <tr key={user.uid} className={selectedUser?.uid === user.uid ? "bg-purple-50/50" : ""}>
-                            <td className="px-4 py-4 align-top">
-                              <p className="user-card-title">{user.displayName || user.firestoreProfile?.fullName || "Unnamed user"}</p>
-                              <p className="user-body-sm mt-1">{user.email || "No email"}</p>
+                            <AdminTableCell>
+                              <p className="admin-card-title">{user.displayName || user.firestoreProfile?.fullName || "Unnamed user"}</p>
+                              <p className="admin-helper mt-1">{user.email || "No email"}</p>
                               <p className="mt-1 max-w-56 truncate font-mono text-xs text-gray-400">{user.uid}</p>
-                            </td>
-                            <td className="px-4 py-4 align-top">
+                            </AdminTableCell>
+                            <AdminTableCell>
                               <div className="flex flex-wrap gap-2">
                                 {user.adminClaim ? statusBadge("Admin claim", "purple") : statusBadge("Student", "gray")}
                                 {user.disabled ? statusBadge("Disabled", "red") : statusBadge("Enabled", "green")}
                                 {user.emailVerified ? statusBadge("Verified", "green") : statusBadge("Unverified", "amber")}
                               </div>
-                            </td>
-                            <td className="px-4 py-4 align-top">
-                              <p className="user-card-title">{user.firestoreProfile?.subscriptionStatus || "None"}</p>
-                              <p className="user-helper">{user.firestoreProfile?.planId || "No plan"}</p>
-                            </td>
-                            <td className="user-body-sm px-4 py-4 align-top">{formatDate(user.lastSignInAt)}</td>
-                            <td className="px-4 py-4 text-right align-top">
+                            </AdminTableCell>
+                            <AdminTableCell>
+                              <p className="admin-card-title">{user.firestoreProfile?.subscriptionStatus || "None"}</p>
+                              <p className="admin-helper">{user.firestoreProfile?.planId || "No plan"}</p>
+                            </AdminTableCell>
+                            <AdminTableCell>{formatDate(user.lastSignInAt)}</AdminTableCell>
+                            <AdminTableCell className="text-right">
                               <button
                                 type="button"
                                 onClick={() => void loadUserDetail(user.uid)}
-                                className="user-button-secondary px-3 py-1.5 text-xs"
+                                className="admin-button-secondary px-3 py-1.5 text-xs"
                               >
                                 View
                               </button>
-                            </td>
+                            </AdminTableCell>
                           </tr>
                         ))
                       )}
                     </tbody>
                   </table>
                 </div>
-                <div className="user-helper border-t border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="admin-helper border-t border-gray-200 bg-gray-50 px-4 py-3">
                   Firebase Auth is paginated. Use exact email search to find a user globally; other searches filter only the currently loaded page.
                 </div>
               </section>
 
               <aside className="space-y-4">
-                <div className="user-card p-4">
-                  <h2 className="user-section-title">User Detail</h2>
+                <div className="admin-card p-4">
+                  <h2 className="admin-section-title">User Detail</h2>
                   {!selectedUser && (
-                    <p className="user-helper mt-2">
+                    <p className="admin-helper mt-2">
                       Select a user to view Firebase Auth and Firestore profile details.
                     </p>
                   )}
-                  {detailLoading && <p className="user-helper mt-2">Loading detail...</p>}
+                  {detailLoading && <p className="admin-helper mt-2">Loading detail...</p>}
                   {selectedUser && !detailLoading && (
                     <UserDetailSections
                       user={selectedUser}

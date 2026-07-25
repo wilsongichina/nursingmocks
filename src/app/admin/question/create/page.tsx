@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { AdminLoadingState } from "@/components/admin/AdminUi";
 import {
   uploadQuestionContent,
   getAllPages,
@@ -1166,15 +1167,11 @@ function CreateQuestionForm() {
 export default function CreateQuestionPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading...</p>
-            </div>
-          </div>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Question Form"
+          description="Preparing page options, services, categories, and answer fields."
+        />
       </div>
     }>
       <CreateQuestionForm />

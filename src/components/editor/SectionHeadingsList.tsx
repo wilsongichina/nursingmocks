@@ -39,8 +39,9 @@ export default function SectionHeadingsList({
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, "text/html");
     
-    // Select all headings that have an ID attribute
-    const headingElements = doc.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]");
+    // Only H2 headings define navigable article sections. Structured modules
+    // use lower-level titles and should remain inline inside the section body.
+    const headingElements = doc.querySelectorAll("h2[id]");
 
     const extractedHeadings: SectionHeading[] = [];
 

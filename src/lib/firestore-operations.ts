@@ -4,6 +4,7 @@ import {
   setDoc,
   getDoc,
   collection,
+  collectionGroup,
   getDocs,
   deleteDoc,
   addDoc,
@@ -18,7 +19,12 @@ import {
 } from "firebase/storage";
 import { mathPageContent } from "./math-page-content";
 import { getSiteUrl } from "./config";
-import { normalizeContentExamAccessProductId } from "./content-access-products";
+import { contentAccessProductLabel, normalizeContentExamAccessProductId } from "./content-access-products";
+import {
+  buildEntranceQuizSchemaMarkup,
+  buildPublicPageSchemaMarkup,
+  type SchemaListItem,
+} from "./seo/structured-data";
 
 const EXAM_SUBJECT_CATALOG_COLLECTION = "exam_subject_catalog";
 
@@ -31,6 +37,383 @@ function textMetadataValue(...values: unknown[]) {
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return "";
+}
+
+function pillarSchemaLabel(pillarId: string) {
+  if (pillarId === "nursing-test-bank") return "Nursing Test Bank";
+  if (pillarId === "nursing-exit-exam") return "Nursing Exit Exams";
+  return "Nursing Entrance Exams";
+}
+
+function pillarSchemaSlug(pillarId: string) {
+  return pillarId;
+}
+
+function pageSchemaTitle(content: Record<string, any>, fallback: string) {
+  return textMetadataValue(
+    content.pageName,
+    content.heading,
+    content.hero?.title,
+    content.title,
+    content.seoLabel,
+    fallback
+  );
+}
+
+function pageSchemaDescription(content: Record<string, any>, fallbackTitle: string) {
+  return textMetadataValue(
+    content.description,
+    content.meta?.description,
+    content.hero?.description,
+    content.cardDescription,
+    `Study ${fallbackTitle} with NursingMocks practice resources.`
+  );
+}
+
+function pageSchemaFaqs(content: Record<string, any>) {
+  if (!Array.isArray(content.faqs)) return [];
+  return content.faqs
+    .map((faq: any) => ({
+      question: textMetadataValue(faq.question, faq.q, faq.title),
+      answer: textMetadataValue(faq.answer, faq.a, faq.content),
+    }))
+    .filter((faq) => faq.question && faq.answer);
+}
+
+function cleanQuestionSeoText(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&rsquo;/gi, "'")
+    .replace(/&lsquo;/gi, "'")
+    .replace(/&rdquo;/gi, '"')
+    .replace(/&ldquo;/gi, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function truncateSeoText(value: string, maxLength: number) {
+  const clean = cleanQuestionSeoText(value);
+  if (clean.length <= maxLength) return clean;
+  const truncated = clean.slice(0, maxLength + 1);
+  const lastSpace = truncated.lastIndexOf(" ");
+  const base =
+    lastSpace >= Math.floor(maxLength * 0.65)
+      ? truncated.slice(0, lastSpace)
+      : truncated.slice(0, maxLength);
+  return base.replace(/[.,;:!?-]+$/g, "").trim();
+}
+
+function questionAnswerText(value: unknown, options?: unknown[]) {
+  if (Array.isArray(value)) {
+    return value.map((item) => cleanQuestionSeoText(item)).filter(Boolean).join(", ");
+  }
+  const answer = cleanQuestionSeoText(value);
+  if (!answer || !Array.isArray(options)) return answer;
+
+  const labelIndex = "ABCDEFGH".indexOf(answer.toUpperCase());
+  if (labelIndex >= 0 && options[labelIndex]) {
+    return cleanQuestionSeoText(options[labelIndex]);
+  }
+  return answer;
+}
+
+function buildNursingEntranceQuestionSeoFields({
+  content,
+  questionId,
+  quizData,
+  parentData,
+  nestedData,
+}: {
+  content: Record<string, any>;
+  questionId: string;
+  quizData?: Record<string, any> | null;
+  parentData?: Record<string, any> | null;
+  nestedData?: Record<string, any> | null;
+}) {
+  const siteUrl = getSiteUrl().replace(/\/$/, "");
+  const slug = textMetadataValue(content.slug, questionId);
+  const canonicalUrl = slug ? `${siteUrl}/${slug.replace(/^\/+/, "")}` : siteUrl;
+  const questionText = cleanQuestionSeoText(content.question);
+  const fallbackTitle = textMetadataValue(
+    quizData?.pageName,
+    quizData?.quizName,
+    quizData?.title,
+    "Nursing Entrance Exam Question"
+  );
+  const titleSuffix = " | NursingMocks";
+  const titleBase = truncateSeoText(
+    questionText || fallbackTitle,
+    Math.max(20, 60 - titleSuffix.length)
+  );
+  const metaTitle = `${titleBase || "Nursing Entrance Exam Question"}${titleSuffix}`;
+  const metaDescription = truncateSeoText(
+    questionText || `Practice ${fallbackTitle} question.`,
+    155
+  );
+  const answerText = questionAnswerText(content.correctAnswer, content.options);
+  const explanationText = cleanQuestionSeoText(content.explanation || content.solution);
+  const parentName = textMetadataValue(
+    parentData?.pageName,
+    parentData?.hero?.title,
+    parentData?.title,
+    parentData?.slug
+  );
+  const nestedName = textMetadataValue(
+    nestedData?.pageName,
+    nestedData?.hero?.title,
+    nestedData?.title,
+    nestedData?.slug
+  );
+  const quizName = textMetadataValue(
+    quizData?.pageName,
+    quizData?.quizName,
+    quizData?.title,
+    quizData?.slug,
+    fallbackTitle
+  );
+
+  const breadcrumbItems = [
+    { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Nursing Entrance Exam",
+      item: `${siteUrl}/nursing-entrance-exam`,
+    },
+    parentName
+      ? {
+          "@type": "ListItem",
+          position: 3,
+          name: parentName,
+          item: `${siteUrl}/${textMetadataValue(parentData?.slug)}`,
+        }
+      : null,
+    nestedName
+      ? {
+          "@type": "ListItem",
+          position: 4,
+          name: nestedName,
+          item: `${siteUrl}/${textMetadataValue(nestedData?.slug)}`,
+        }
+      : null,
+    quizName
+      ? {
+          "@type": "ListItem",
+          position: 5,
+          name: quizName,
+          item: `${siteUrl}/${textMetadataValue(quizData?.slug)}`,
+        }
+      : null,
+    {
+      "@type": "ListItem",
+      position: 6,
+      name: titleBase || "Question",
+      item: canonicalUrl,
+    },
+  ].filter(Boolean);
+
+  const schema = JSON.stringify(
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${canonicalUrl}#webpage`,
+          url: canonicalUrl,
+          name: metaTitle,
+          description: metaDescription,
+          isPartOf: { "@id": `${siteUrl}/#website` },
+          breadcrumb: { "@id": `${canonicalUrl}#breadcrumb` },
+          mainEntity: { "@id": `${canonicalUrl}#question` },
+          inLanguage: "en-US",
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${canonicalUrl}#breadcrumb`,
+          itemListElement: breadcrumbItems,
+        },
+        {
+          "@type": "Question",
+          "@id": `${canonicalUrl}#question`,
+          name: titleBase || "Nursing Entrance Exam Question",
+          text: questionText,
+          acceptedAnswer: answerText
+            ? {
+                "@type": "Answer",
+                text: explanationText ? `${answerText}. ${explanationText}` : answerText,
+              }
+            : undefined,
+          isPartOf: quizName
+            ? {
+                "@type": "Quiz",
+                name: quizName,
+                url: `${siteUrl}/${textMetadataValue(quizData?.slug)}`,
+              }
+            : undefined,
+          inLanguage: "en-US",
+        },
+      ],
+    },
+    null,
+    2
+  );
+
+  return {
+    meta: {
+      title: metaTitle,
+      description: metaDescription,
+      ogTitle: metaTitle,
+      ogDescription: metaDescription,
+      ogImage: `${siteUrl}/nursing-mocks-logo.png`,
+      canonicalUrl,
+    },
+    schema,
+  };
+}
+
+function mergeGeneratedQuestionSeo(
+  content: Record<string, any>,
+  generated: ReturnType<typeof buildNursingEntranceQuestionSeoFields>
+) {
+  const currentMeta = content.meta || {};
+  return {
+    ...content,
+    meta: {
+      ...currentMeta,
+      title: textMetadataValue(currentMeta.title) || generated.meta.title,
+      description: textMetadataValue(currentMeta.description) || generated.meta.description,
+      ogTitle: textMetadataValue(currentMeta.ogTitle) || generated.meta.ogTitle,
+      ogDescription: textMetadataValue(currentMeta.ogDescription) || generated.meta.ogDescription,
+      ogImage: textMetadataValue(currentMeta.ogImage) || generated.meta.ogImage,
+      canonicalUrl: textMetadataValue(currentMeta.canonicalUrl) || generated.meta.canonicalUrl,
+    },
+    schema: textMetadataValue(content.schema) || generated.schema,
+  };
+}
+
+async function getUniqueQuestionSlug(baseSlug: string, currentQuestionPath: string) {
+  const normalizedBase =
+    baseSlug
+      .toLowerCase()
+      .replace(/nbsp/g, "")
+      .replace(/&nbsp;/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "question";
+
+  for (let suffix = 0; suffix < 100; suffix += 1) {
+    const candidate = suffix === 0 ? normalizedBase : `${normalizedBase}-${suffix + 1}`;
+    const slugSnapshot = await getDocs(
+      query(collectionGroup(db, "questions"), where("slug", "==", candidate))
+    );
+    const hasAnotherQuestionWithSlug = slugSnapshot.docs.some(
+      (questionDoc) => questionDoc.ref.path !== currentQuestionPath
+    );
+    if (!hasAnotherQuestionWithSlug) return candidate;
+  }
+
+  return `${normalizedBase}-${Date.now()}`;
+}
+
+function pageSchemaChildItemsFromSnapshot(snapshotDocs: Array<{ data: () => any }>): SchemaListItem[] {
+  return snapshotDocs
+    .map((docSnap) => {
+      const data = docSnap.data();
+      const name = pageSchemaTitle(data, textMetadataValue(data.slug));
+      const slug = textMetadataValue(data.slug);
+      return {
+        name,
+        slug,
+        description: pageSchemaDescription(data, name),
+      };
+    })
+    .filter((item) => item.name && item.slug);
+}
+
+async function childSchemaItemsForSubPage(pillarId: string, subPageId: string) {
+  const snapshot = await getDocs(
+    collection(db, "pillarPages", pillarId, "subPages", subPageId, "nestedSubPages")
+  );
+  return pageSchemaChildItemsFromSnapshot(snapshot.docs);
+}
+
+async function childSchemaItemsForNestedPage(pillarId: string, subPageId: string, nestedPageId: string) {
+  const basePath = ["pillarPages", pillarId, "subPages", subPageId, "nestedSubPages", nestedPageId] as const;
+  if (pillarId === "nursing-test-bank") {
+    const snapshot = await getDocs(collection(db, ...basePath, "topics"));
+    return pageSchemaChildItemsFromSnapshot(snapshot.docs);
+  }
+
+  const snapshot = await getDocs(collection(db, ...basePath, "quizzes"));
+  return pageSchemaChildItemsFromSnapshot(snapshot.docs);
+}
+
+async function buildSubPageSchemaForSave({
+  pillarId,
+  slug,
+  content,
+  docId,
+}: {
+  pillarId: string;
+  slug: string;
+  content: Record<string, any>;
+  docId: string;
+}) {
+  const title = pageSchemaTitle(content, slug);
+  return buildPublicPageSchemaMarkup({
+    slug,
+    pageName: title,
+    description: pageSchemaDescription(content, title),
+    categoryName: pillarSchemaLabel(pillarId),
+    pageType: "CollectionPage",
+    breadcrumbs: [
+      { name: pillarSchemaLabel(pillarId), slug: pillarSchemaSlug(pillarId) },
+      { name: title, slug },
+    ],
+    childItems: await childSchemaItemsForSubPage(pillarId, docId),
+    faqs: pageSchemaFaqs(content),
+  });
+}
+
+async function buildNestedPageSchemaForSave({
+  pillarId,
+  slug,
+  content,
+  parentData,
+  parentId,
+  nestedId,
+}: {
+  pillarId: string;
+  slug: string;
+  content: Record<string, any>;
+  parentData?: Record<string, any> | null;
+  parentId: string;
+  nestedId: string;
+}) {
+  const parentSlug = textMetadataValue(parentData?.slug, parentId);
+  const parentTitle = pageSchemaTitle(parentData || {}, parentSlug);
+  const title = pageSchemaTitle(content, slug);
+  return buildPublicPageSchemaMarkup({
+    slug,
+    pageName: title,
+    description: pageSchemaDescription(content, title),
+    categoryName: pillarSchemaLabel(pillarId),
+    parentName: parentTitle,
+    pageType: "CollectionPage",
+    breadcrumbs: [
+      { name: pillarSchemaLabel(pillarId), slug: pillarSchemaSlug(pillarId) },
+      { name: parentTitle, slug: parentSlug },
+      { name: title, slug },
+    ],
+    childItems: await childSchemaItemsForNestedPage(pillarId, parentId, nestedId),
+    faqs: pageSchemaFaqs(content),
+  });
 }
 
 function numberMetadataValue(...values: unknown[]) {
@@ -1157,13 +1540,20 @@ export const uploadNursingEntranceExamSubPage = async (
         version: cleanContent.version || "1.0",
       });
 
-      // Update contentPath with the actual document ID
+      // Generate schema after creation so child lookups use the real Firestore document ID.
       const contentPath = `pillarPages/${pillarId}/subPages/${newDocRef.id}`;
+      const generatedSchema = await buildSubPageSchemaForSave({
+        pillarId,
+        slug: normalizedNewSlug,
+        content: cleanContent,
+        docId: newDocRef.id,
+      });
       const docRef = doc(db, "pillarPages", pillarId, "subPages", newDocRef.id);
       await setDoc(
         docRef,
         {
           contentPath: contentPath,
+          schema: generatedSchema,
         },
         { merge: true }
       );
@@ -1223,6 +1613,12 @@ export const uploadNursingEntranceExamSubPage = async (
     // Remove unnecessary keys: content, hero, image
     const { content: _, hero: __, image: ___, ...cleanContent } = content;
     const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
+    const generatedSchema = await buildSubPageSchemaForSave({
+      pillarId,
+      slug: normalizedNewSlug,
+      content: cleanContent,
+      docId,
+    });
 
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
@@ -1231,6 +1627,7 @@ export const uploadNursingEntranceExamSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
+        schema: generatedSchema,
         examAccessProductId,
         type: "sub",
         parentId: pillarId,
@@ -2419,13 +2816,20 @@ export const uploadNursingExitExamSubPage = async (
         version: cleanContent.version || "1.0",
       });
 
-      // Update contentPath with the actual document ID
+      // Generate schema after creation so child lookups use the real Firestore document ID.
       const contentPath = `pillarPages/${pillarId}/subPages/${newDocRef.id}`;
+      const generatedSchema = await buildSubPageSchemaForSave({
+        pillarId,
+        slug: normalizedNewSlug,
+        content: cleanContent,
+        docId: newDocRef.id,
+      });
       const docRef = doc(db, "pillarPages", pillarId, "subPages", newDocRef.id);
       await setDoc(
         docRef,
         {
           contentPath: contentPath,
+          schema: generatedSchema,
         },
         { merge: true }
       );
@@ -2454,6 +2858,12 @@ export const uploadNursingExitExamSubPage = async (
     // Remove unnecessary keys: content, hero, image
     const { content: _, hero: __, image: ___, ...cleanContent } = content;
     const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
+    const generatedSchema = await buildSubPageSchemaForSave({
+      pillarId,
+      slug: normalizedNewSlug,
+      content: cleanContent,
+      docId,
+    });
 
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
@@ -2462,6 +2872,7 @@ export const uploadNursingExitExamSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
+        schema: generatedSchema,
         examAccessProductId,
         type: "sub",
         parentId: pillarId,
@@ -2606,6 +3017,49 @@ export const getNestedSubPages = async (parentSubPageId: string) => {
     };
   } catch (error) {
     console.error("Error getting nested sub-pages:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve nested sub-pages: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+  }
+};
+
+// Use this from admin listing flows that already have the parent document ID.
+// It avoids the slug-resolution query performed by getNestedSubPages.
+export const getNestedSubPagesByParentDocId = async (
+  parentSubPageDocId: string
+) => {
+  try {
+    const pillarId = "nursing-entrance-exam";
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        pillarId,
+        "subPages",
+        parentSubPageDocId,
+        "nestedSubPages"
+      )
+    );
+    const nestedSubPages: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      nestedSubPages.push({
+        id: doc.id,
+        nestedSubPageId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: nestedSubPages,
+      message: "All nested sub-pages retrieved successfully!",
+    };
+  } catch (error) {
+    console.error("Error getting nested sub-pages by parent document ID:", error);
     return {
       success: false,
       message: `Failed to retrieve nested sub-pages: ${
@@ -2852,6 +3306,9 @@ export const uploadNursingExitExamNestedSubPage = async (
       }
     }
 
+    const parentDataSnap = await getDoc(doc(db, "pillarPages", pillarId, "subPages", resolvedParentId));
+    const parentData = parentDataSnap.exists() ? parentDataSnap.data() : null;
+
     // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
@@ -2936,8 +3393,16 @@ export const uploadNursingExitExamNestedSubPage = async (
         version: cleanContent.version || "1.0",
       });
 
-      // Update contentPath with the actual document ID
+      // Update contentPath and schema after creation because the generated schema needs the final document ID.
       const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`;
+      const generatedSchema = await buildNestedPageSchemaForSave({
+        pillarId,
+        slug: normalizedNewSlug,
+        content: cleanContent,
+        parentData,
+        parentId: resolvedParentId,
+        nestedId: newDocRef.id,
+      });
       const docRef = doc(
         db,
         "pillarPages",
@@ -2951,6 +3416,7 @@ export const uploadNursingExitExamNestedSubPage = async (
         docRef,
         {
           contentPath: contentPath,
+          schema: generatedSchema,
         },
         { merge: true }
       );
@@ -3042,6 +3508,14 @@ export const uploadNursingExitExamNestedSubPage = async (
     } = content;
 
     const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
+    const generatedSchema = await buildNestedPageSchemaForSave({
+      pillarId,
+      slug: normalizedNewSlug,
+      content: cleanContent,
+      parentData,
+      parentId: resolvedParentId,
+      nestedId: nestedDocId,
+    });
     const docRef = doc(
       db,
       "pillarPages",
@@ -3056,6 +3530,7 @@ export const uploadNursingExitExamNestedSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug,
+        schema: generatedSchema,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
@@ -3304,13 +3779,20 @@ export const uploadNursingTestBankSubPage = async (
         version: cleanContent.version || "1.0",
       });
 
-      // Update contentPath with the actual document ID
+      // Generate schema after creation so child lookups use the real Firestore document ID.
       const contentPath = `pillarPages/${pillarId}/subPages/${newDocRef.id}`;
+      const generatedSchema = await buildSubPageSchemaForSave({
+        pillarId,
+        slug: normalizedNewSlug,
+        content: cleanContent,
+        docId: newDocRef.id,
+      });
       const docRef = doc(db, "pillarPages", pillarId, "subPages", newDocRef.id);
       await setDoc(
         docRef,
         {
           contentPath: contentPath,
+          schema: generatedSchema,
         },
         { merge: true }
       );
@@ -3370,6 +3852,12 @@ export const uploadNursingTestBankSubPage = async (
     // Remove unnecessary keys: content, hero, image
     const { content: _, hero: __, image: ___, ...cleanContent } = content;
     const examAccessProductId = contentExamAccessProductFor(pillarId, cleanContent);
+    const generatedSchema = await buildSubPageSchemaForSave({
+      pillarId,
+      slug: normalizedNewSlug,
+      content: cleanContent,
+      docId,
+    });
 
     const contentPath = `pillarPages/${pillarId}/subPages/${docId}`;
     const docRef = doc(db, "pillarPages", pillarId, "subPages", docId);
@@ -3378,6 +3866,7 @@ export const uploadNursingTestBankSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug, // Update slug field
+        schema: generatedSchema,
         examAccessProductId,
         type: "sub",
         parentId: pillarId,
@@ -3689,6 +4178,9 @@ export const uploadNursingTestBankNestedSubPage = async (
       }
     }
 
+    const parentDataSnap = await getDoc(doc(db, "pillarPages", pillarId, "subPages", resolvedParentId));
+    const parentData = parentDataSnap.exists() ? parentDataSnap.data() : null;
+
     // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
@@ -3771,8 +4263,16 @@ export const uploadNursingTestBankNestedSubPage = async (
         version: cleanContent.version || "1.0",
       });
 
-      // Update contentPath with the actual document ID
+      // Update contentPath and schema after creation because the generated schema needs the final document ID.
       const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`;
+      const generatedSchema = await buildNestedPageSchemaForSave({
+        pillarId,
+        slug: normalizedNewSlug,
+        content: cleanContent,
+        parentData,
+        parentId: resolvedParentId,
+        nestedId: newDocRef.id,
+      });
       const docRef = doc(
         db,
         "pillarPages",
@@ -3786,6 +4286,7 @@ export const uploadNursingTestBankNestedSubPage = async (
         docRef,
         {
           contentPath: contentPath,
+          schema: generatedSchema,
         },
         { merge: true }
       );
@@ -3876,6 +4377,14 @@ export const uploadNursingTestBankNestedSubPage = async (
     } = content;
 
     const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${nestedDocId}`;
+    const generatedSchema = await buildNestedPageSchemaForSave({
+      pillarId,
+      slug: normalizedNewSlug,
+      content: cleanContent,
+      parentData,
+      parentId: resolvedParentId,
+      nestedId: nestedDocId,
+    });
     const docRef = doc(
       db,
       "pillarPages",
@@ -3890,6 +4399,7 @@ export const uploadNursingTestBankNestedSubPage = async (
       {
         ...cleanContent,
         slug: normalizedNewSlug,
+        schema: generatedSchema,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
@@ -5786,6 +6296,9 @@ export const uploadNestedSubPage = async (
       }
     }
 
+    const parentDataSnap = await getDoc(doc(db, "pillarPages", pillarId, "subPages", resolvedParentId));
+    const parentData = parentDataSnap.exists() ? parentDataSnap.data() : null;
+
     // Get user-provided slug (no prefix)
     const userSlug = content.slug?.trim() || nestedSubPageId;
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
@@ -5847,17 +6360,29 @@ export const uploadNestedSubPage = async (
         };
       }
 
+      const cleanContent = { ...content };
+
       const newDocRef = await addDoc(nestedSubPagesRef, {
-        ...content,
+        ...cleanContent,
         slug: normalizedNewSlug,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
         lastUpdated: new Date().toISOString(),
-        version: content.version || "1.0",
+        version: cleanContent.version || "1.0",
       });
 
-      // Update contentPath with the actual document ID
+      const contentPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`;
+      const generatedSchema = await buildNestedPageSchemaForSave({
+        pillarId,
+        slug: normalizedNewSlug,
+        content: cleanContent,
+        parentData,
+        parentId: resolvedParentId,
+        nestedId: newDocRef.id,
+      });
+
+      // Update contentPath and schema after creation because the generated schema needs the final document ID.
       const newDocRef2 = doc(
         db,
         "pillarPages",
@@ -5870,7 +6395,8 @@ export const uploadNestedSubPage = async (
       await setDoc(
         newDocRef2,
         {
-          contentPath: `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${newDocRef.id}`,
+          contentPath,
+          schema: generatedSchema,
         },
         { merge: true }
       );
@@ -5970,11 +6496,21 @@ export const uploadNestedSubPage = async (
       ...cleanContent
     } = content;
 
+    const generatedSchema = await buildNestedPageSchemaForSave({
+      pillarId,
+      slug: normalizedNewSlug,
+      content: cleanContent,
+      parentData,
+      parentId: resolvedParentId,
+      nestedId: nestedDocId,
+    });
+
     await setDoc(
       docRef,
       {
         ...cleanContent,
         slug: normalizedNewSlug,
+        schema: generatedSchema,
         type: "nested",
         parentId: resolvedParentId,
         pillarId: pillarId,
@@ -6565,6 +7101,7 @@ export const uploadNursingEntranceExamQuiz = async (
     const normalizedUserSlug = userSlug.toLowerCase().replace(/\s+/g, "-");
     const normalizedNewSlug = normalizedUserSlug;
     const normalizedOldSlug = quizId.toLowerCase().replace(/\s+/g, "-");
+    let currentStoredSlug = normalizedOldSlug;
 
     // Find quiz by slug (or document ID for backward compatibility)
     let quizDocId: string | null = null;
@@ -6588,6 +7125,7 @@ export const uploadNursingEntranceExamQuiz = async (
     if (!quizSlugSnapshot.empty) {
       quizDocId = quizSlugSnapshot.docs[0].id;
       existingQuizData = quizSlugSnapshot.docs[0].data();
+      currentStoredSlug = existingQuizData?.slug || normalizedOldSlug;
     } else {
       // Fallback: try by document ID
       const quizDocRef = doc(
@@ -6605,8 +7143,10 @@ export const uploadNursingEntranceExamQuiz = async (
       if (quizDocSnap.exists()) {
         quizDocId = quizDocSnap.id;
         existingQuizData = quizDocSnap.data();
+        currentStoredSlug = existingQuizData?.slug || normalizedOldSlug;
       }
     }
+    currentStoredSlug = currentStoredSlug.toLowerCase().replace(/\s+/g, "-");
 
     const parentDocSnap = await getDoc(doc(db, "pillarPages", pillarId, "subPages", resolvedParentId));
     const nestedDocSnap = await getDoc(
@@ -6620,6 +7160,42 @@ export const uploadNursingEntranceExamQuiz = async (
       nestedData,
       existingQuestionCount: existingQuizData?.questionCount,
     });
+    const generatedSchema = buildEntranceQuizSchemaMarkup({
+      slug: normalizedNewSlug,
+      quizName: textMetadataValue(content.pageName, content.quizName, content.title, normalizedNewSlug),
+      description: textMetadataValue(
+        content.description,
+        content.hero?.description,
+        content.meta?.description,
+        `Practice questions for ${textMetadataValue(content.pageName, content.quizName, normalizedNewSlug)}.`
+      ),
+      examProductName: contentAccessProductLabel(entranceQuizMetadata.examAccessProductId),
+      subjectName: textMetadataValue(entranceQuizMetadata.subjectName, nestedData?.pageName, nestedData?.title),
+      categoryName: "Nursing Entrance Exam",
+      setNumber: content.setNumber,
+      estimatedMinutes: content.estimatedMinutes,
+      questionCount: entranceQuizMetadata.questionCount,
+      breadcrumbs: [
+        { name: "Nursing Entrance Exam", slug: "nursing-entrance-exam" },
+        {
+          name: textMetadataValue(parentData?.pageName, parentData?.title, parentData?.slug, resolvedParentId),
+          slug: textMetadataValue(parentData?.slug, resolvedParentId),
+        },
+        {
+          name: textMetadataValue(nestedData?.pageName, nestedData?.title, nestedData?.slug, resolvedNestedId),
+          slug: textMetadataValue(nestedData?.slug, resolvedNestedId),
+        },
+        {
+          name: textMetadataValue(content.pageName, content.quizName, content.title, normalizedNewSlug),
+          slug: normalizedNewSlug,
+        },
+      ],
+      questions: [],
+    });
+    const contentWithSchema = {
+      ...content,
+      schema: textMetadataValue(content.schema) || generatedSchema,
+    };
 
     if (!quizDocId) {
       // Document doesn't exist, create new one with auto-generated ID
@@ -6636,7 +7212,7 @@ export const uploadNursingEntranceExamQuiz = async (
 
       // nestedSubPageId should be the document ID of the parent nested sub-page (the page that contains this quiz)
       const newDocRef = await addDoc(quizzesRef, {
-        ...content,
+        ...contentWithSchema,
         ...entranceQuizMetadata,
         slug: normalizedNewSlug,
         type: "quiz",
@@ -6664,6 +7240,7 @@ export const uploadNursingEntranceExamQuiz = async (
         docRef,
         {
           contentPath: contentPath,
+          schema: generatedSchema,
         },
         { merge: true }
       );
@@ -6671,7 +7248,7 @@ export const uploadNursingEntranceExamQuiz = async (
       await upsertEntranceQuizSubjectCatalog({
         quizId: newDocRef.id,
         contentPath,
-        content: { ...content, ...entranceQuizMetadata, slug: normalizedNewSlug },
+        content: { ...contentWithSchema, ...entranceQuizMetadata, slug: normalizedNewSlug },
         parentData,
         nestedData,
         existingQuestionCount: entranceQuizMetadata.questionCount,
@@ -6698,7 +7275,7 @@ export const uploadNursingEntranceExamQuiz = async (
 
     // Document exists, update it (document ID stays the same, only slug field updates)
     // Check if the new slug is different and already exists (for another page)
-    if (normalizedNewSlug !== normalizedOldSlug) {
+    if (normalizedNewSlug !== currentStoredSlug) {
       // First check if slug is in static routes
       const slugCheck = await isSlugAvailable(normalizedNewSlug);
       if (!slugCheck.available) {
@@ -6743,7 +7320,7 @@ export const uploadNursingEntranceExamQuiz = async (
     await setDoc(
       docRef,
       {
-        ...content,
+        ...contentWithSchema,
         ...entranceQuizMetadata,
         slug: normalizedNewSlug, // Update slug field
         type: "quiz",
@@ -6760,7 +7337,7 @@ export const uploadNursingEntranceExamQuiz = async (
     await upsertEntranceQuizSubjectCatalog({
       quizId: quizDocId,
       contentPath,
-      content: { ...content, ...entranceQuizMetadata, slug: normalizedNewSlug },
+      content: { ...contentWithSchema, ...entranceQuizMetadata, slug: normalizedNewSlug },
       parentData,
       nestedData,
       existingQuestionCount: entranceQuizMetadata.questionCount,
@@ -7502,6 +8079,7 @@ export const uploadNursingTestBankQuizQuestion = async (
       "questions",
       questionId
     );
+
     await setDoc(docRef, {
       ...content,
       lastUpdated: new Date().toISOString(),
@@ -8523,8 +9101,40 @@ export const uploadNursingEntranceExamQuizQuestion = async (
       "questions",
       questionId
     );
-    await setDoc(docRef, {
+    const uniqueSlug = await getUniqueQuestionSlug(
+      textMetadataValue(content.slug, questionId),
+      docRef.path
+    );
+    const contentWithUniqueSlug = {
       ...content,
+      slug: uniqueSlug,
+    };
+    const parentDocSnap = await getDoc(
+      doc(db, "pillarPages", resolvedPillarId, "subPages", resolvedParentId)
+    );
+    const nestedDocSnap = await getDoc(
+      doc(
+        db,
+        "pillarPages",
+        resolvedPillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId
+      )
+    );
+    const contentWithSeo = mergeGeneratedQuestionSeo(
+      contentWithUniqueSlug,
+      buildNursingEntranceQuestionSeoFields({
+        content: contentWithUniqueSlug,
+        questionId,
+        quizData: quizDoc,
+        parentData: parentDocSnap.exists() ? parentDocSnap.data() : null,
+        nestedData: nestedDocSnap.exists() ? nestedDocSnap.data() : null,
+      })
+    );
+    await setDoc(docRef, {
+      ...contentWithSeo,
       lastUpdated: new Date().toISOString(),
       version: content.version || "1.0",
     });
@@ -8706,6 +9316,23 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
       pillarId: resolvedPillarId,
     });
 
+    const parentDocSnap = await getDoc(
+      doc(db, "pillarPages", resolvedPillarId, "subPages", resolvedParentId)
+    );
+    const nestedDocSnap = await getDoc(
+      doc(
+        db,
+        "pillarPages",
+        resolvedPillarId,
+        "subPages",
+        resolvedParentId,
+        "nestedSubPages",
+        resolvedNestedId
+      )
+    );
+    const parentData = parentDocSnap.exists() ? parentDocSnap.data() : null;
+    const nestedData = nestedDocSnap.exists() ? nestedDocSnap.data() : null;
+
     const results = [];
     const errors = [];
 
@@ -8840,7 +9467,6 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
           originalId: question.id?.toString() || "",
           questionId:
             question.id?.toString() || question.questionId?.toString() || "",
-          isCopyRight: question.isCopyRight || false,
           // Meta fields (editable after upload)
           meta: {
             title: "",
@@ -8865,6 +9491,25 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
         const questionDocId =
           question.id?.toString() ||
           `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const questionDocPath = `pillarPages/${resolvedPillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}/questions/${questionDocId}`;
+        const uniqueSlug = await getUniqueQuestionSlug(
+          questionContent.slug || questionDocId,
+          questionDocPath
+        );
+        const questionContentWithUniqueSlug = {
+          ...questionContent,
+          slug: uniqueSlug,
+        };
+        const questionContentWithSeo = mergeGeneratedQuestionSeo(
+          questionContentWithUniqueSlug,
+          buildNursingEntranceQuestionSeoFields({
+            content: questionContentWithUniqueSlug,
+            questionId: questionDocId,
+            quizData: quizDoc,
+            parentData,
+            nestedData,
+          })
+        );
 
         // Use the IDs from the quiz document to construct the path
         if (
@@ -8884,9 +9529,8 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
           continue;
         }
 
-        const docPath = `pillarPages/${resolvedPillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}/questions/${questionDocId}`;
         console.log(
-          `[BULK UPLOAD DEBUG] Saving question ${i + 1} to path: ${docPath}`
+          `[BULK UPLOAD DEBUG] Saving question ${i + 1} to path: ${questionDocPath}`
         );
 
         const docRef = doc(
@@ -8904,7 +9548,7 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
         );
 
         await setDoc(docRef, {
-          ...questionContent,
+          ...questionContentWithSeo,
           lastUpdated: new Date().toISOString(),
           version: "1.0",
         });

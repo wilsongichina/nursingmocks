@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import { AdminLoadingState } from "@/components/admin/AdminUi";
 
 interface ServiceCard {
   icon: string;
@@ -335,11 +336,11 @@ export default function EditPillarPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading pillar page...</p>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Pillar Page"
+          description="Preparing pillar page content, metadata, services, and editor fields."
+        />
       </div>
     );
   }

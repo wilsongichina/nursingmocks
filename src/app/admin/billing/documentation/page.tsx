@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { AdminTopBar } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -71,9 +72,9 @@ function DocumentationCard({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="user-card scroll-mt-24 p-5 sm:p-6">
-      <h2 className="user-section-title">{title}</h2>
-      <div className="mt-4 space-y-4 text-sm leading-6 text-gray-700">{children}</div>
+    <section id={id} className="admin-card scroll-mt-24 p-5 sm:p-6">
+      <h2 className="admin-section-title">{title}</h2>
+      <div className="admin-body mt-4 space-y-4 text-sm leading-6">{children}</div>
     </section>
   );
 }
@@ -103,40 +104,29 @@ function AdminBillingDocumentationContent() {
     <div className="min-h-screen overflow-x-hidden bg-white">
       <AdminSidebar />
       <div className={`transition-all duration-300 ${isCollapsed ? "md:ml-20" : "md:ml-64"}`}>
-        <div className="hidden h-16 border-b border-gray-200 bg-white md:block">
-          <div className="flex h-full items-center justify-between px-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link href="/" className="font-medium transition-colors hover:text-blue-600">
-                Home
-              </Link>
-              <span className="text-gray-400">/</span>
-              <Link href="/admin" className="font-medium transition-colors hover:text-blue-600">
-                Admin Dashboard
-              </Link>
-              <span className="text-gray-400">/</span>
-              <Link href="/admin/billing" className="font-medium transition-colors hover:text-blue-600">
-                Billing Configuration
-              </Link>
-              <span className="text-gray-400">/</span>
-              <span className="font-medium">Documentation</span>
-            </div>
-            {currentUser && <UserProfileBadge />}
-          </div>
-        </div>
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Home", href: "/" },
+            { label: "Admin Dashboard", href: "/admin" },
+            { label: "Billing Configuration", href: "/admin/billing" },
+            { label: "Documentation" },
+          ]}
+          actions={currentUser && <UserProfileBadge />}
+        />
 
-        <main className="user-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-          <div className="w-full">
-            <header className="user-page-header mb-6">
-              <div className="user-page-header-row">
-                <div className="user-page-header-copy">
-                  <p className="user-eyebrow">Admin Documentation</p>
-                  <h1 className="user-page-title mt-1">Billing Documentation</h1>
-                  <p className="user-body mt-2 max-w-4xl">
+        <main className="admin-workspace">
+          <div className="admin-content">
+            <header className="admin-header mb-6">
+              <div className="admin-header-row">
+                <div className="admin-header-copy">
+                  <p className="admin-eyebrow">Admin Documentation</p>
+                  <h1 className="admin-page-title mt-1">Billing Documentation</h1>
+                  <p className="admin-body mt-2 max-w-4xl">
                     Detailed reference for plans, gateways, provider mappings, validation, operations, and readiness.
                   </p>
                 </div>
-                <div className="user-page-header-actions">
-                  <Link href="/admin/billing" className="user-button-secondary">
+                <div className="admin-header-actions">
+                  <Link href="/admin/billing" className="admin-button-secondary">
                     Back To Billing
                   </Link>
                 </div>
@@ -145,8 +135,8 @@ function AdminBillingDocumentationContent() {
 
             <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
               <aside className="lg:sticky lg:top-20 lg:self-start">
-                <div className="user-card p-4">
-                  <p className="user-label">Main Headers</p>
+                <div className="admin-card p-4">
+                  <p className="admin-eyebrow">Main Headers</p>
                   <nav className="mt-3 space-y-1" aria-label="Billing documentation sections">
                     {documentationSections.map((section) => (
                       <a

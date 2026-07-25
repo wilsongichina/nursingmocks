@@ -13,9 +13,12 @@ import {
   Heading3,
   Quote,
   Code,
+  Eraser,
   Undo,
   Redo,
   Image as ImageIcon,
+  Palette,
+  Superscript,
   Table,
   Link as LinkIcon,
   Unlink,
@@ -23,6 +26,8 @@ import {
   AlignCenter,
   AlignRight,
 } from "lucide-react";
+import { AdminDestructiveDialog } from "@/components/admin/AdminUi";
+
 interface ToolbarProps {
   editor: Editor;
 }
@@ -30,12 +35,69 @@ interface ToolbarProps {
 export default function Toolbar({ editor }: ToolbarProps) {
   const [showLinkMenu, setShowLinkMenu] = useState(false);
   const [showTableMenu, setShowTableMenu] = useState(false);
+  const [showColorMenu, setShowColorMenu] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
   const [withHeaderRow, setWithHeaderRow] = useState(true);
+  const [confirmingTableDelete, setConfirmingTableDelete] = useState(false);
+  const [documentStats, setDocumentStats] = useState({ words: 0, characters: 0 });
   const linkMenuRef = useRef<HTMLDivElement>(null);
   const tableMenuRef = useRef<HTMLDivElement>(null);
+  const colorMenuRef = useRef<HTMLDivElement>(null);
+
+  const textColors = [
+    { label: "Default", value: "", swatch: "#202437" },
+    { label: "Purple", value: "#5548e0", swatch: "#5548e0" },
+    { label: "Green", value: "#15803d", swatch: "#15803d" },
+    { label: "Amber", value: "#b45309", swatch: "#b45309" },
+    { label: "Red", value: "#b91c1c", swatch: "#b91c1c" },
+  ];
+
+  const getDocumentStats = () => {
+    const text = editor.getText().trim();
+    return {
+      words: text ? text.split(/\s+/).filter(Boolean).length : 0,
+      characters: text.replace(/\s/g, "").length,
+    };
+  };
+
+  const cleanPastedContent = () => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(editor.getHTML(), "text/html");
+
+    doc.body.querySelectorAll("*").forEach((element) => {
+      element.removeAttribute("style");
+
+      const dataType = element.getAttribute("data-type");
+      const isCustomModule = Boolean(dataType);
+      const isHeading = /^H[1-6]$/.test(element.tagName);
+      const isTableCell = element.tagName === "TH" || element.tagName === "TD";
+
+      if (!isCustomModule && !isHeading && !isTableCell) {
+        element.removeAttribute("class");
+      }
+
+      Array.from(element.attributes).forEach((attribute) => {
+        const name = attribute.name;
+        const keep =
+          name.startsWith("data-") ||
+          ["href", "src", "alt", "title", "id", "class", "colspan", "rowspan"].includes(name);
+
+        if (!keep) {
+          element.removeAttribute(name);
+        }
+      });
+    });
+
+    doc.body.querySelectorAll("span").forEach((span) => {
+      if (span.attributes.length === 0) {
+        span.replaceWith(...Array.from(span.childNodes));
+      }
+    });
+
+    editor.chain().focus().setContent(doc.body.innerHTML).run();
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -51,27 +113,48 @@ export default function Toolbar({ editor }: ToolbarProps) {
       ) {
         setShowTableMenu(false);
       }
+      if (
+        colorMenuRef.current &&
+        !colorMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowColorMenu(false);
+      }
     };
 
-    if (showLinkMenu || showTableMenu) {
+    if (showLinkMenu || showTableMenu || showColorMenu) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showLinkMenu, showTableMenu]);
+  }, [showLinkMenu, showTableMenu, showColorMenu]);
+
+  useEffect(() => {
+    const updateStats = () => setDocumentStats(getDocumentStats());
+    updateStats();
+    editor.on("update", updateStats);
+
+    return () => {
+      editor.off("update", updateStats);
+    };
+  }, [editor]);
 
   if (!editor) {
     return null;
   }
 
-  const buttonClass =
-    "p-2 rounded hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-  const activeButtonClass = "bg-white";
+  const buttonClass = "admin-editor-toolbar-button";
+  const activeButtonClass = "admin-editor-toolbar-button-active";
+  const handleConfirmTableDelete = () => {
+    editor.chain().focus().deleteTable().run();
+    setConfirmingTableDelete(false);
+    setShowTableMenu(false);
+  };
 
   return (
-    <div className="border-b border-[#e2e4f0] p-2 bg-gradient-to-r from-[#f9fafb] via-[#f4f5ff] to-[#f9fafb] flex flex-wrap gap-1 items-center rounded-t-2xl">
+    <>
+    <div className="admin-editor-toolbar">
       {/* Text Formatting */}
       <button
         type="button"
@@ -82,7 +165,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Bold (Ctrl+B)"
       >
-        <Bold className="w-4 h-4 text-[#202437]" />
+        <Bold className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -93,7 +176,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Italic (Ctrl+I)"
       >
-        <Italic className="w-4 h-4 text-[#202437]" />
+        <Italic className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -104,7 +187,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Strikethrough"
       >
-        <Strikethrough className="w-4 h-4 text-[#202437]" />
+        <Strikethrough className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -115,10 +198,69 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Inline Code"
       >
-        <Code className="w-4 h-4 text-[#202437]" />
+        <Code className="admin-editor-toolbar-icon" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleSuperscript().run()}
+        className={`${buttonClass} ${
+          editor.isActive("superscript") ? activeButtonClass : ""
+        }`}
+        title="Superscript"
+      >
+        <Superscript className="admin-editor-toolbar-icon" />
       </button>
 
-      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+      <div className="relative" ref={colorMenuRef}>
+        <button
+          type="button"
+          onClick={() => setShowColorMenu((value) => !value)}
+          className={`${buttonClass} ${
+            editor.isActive("textColor") ? activeButtonClass : ""
+          }`}
+          title="Text Color"
+        >
+          <Palette className="admin-editor-toolbar-icon" />
+        </button>
+        {showColorMenu && (
+          <div className="absolute top-full left-0 z-50 mt-2 min-w-[190px] rounded-2xl border border-[#e3e5f0] bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
+            <div className="grid gap-1">
+              {textColors.map((color) => (
+                <button
+                  key={color.label}
+                  type="button"
+                  onClick={() => {
+                    if (color.value) {
+                      editor.chain().focus().setTextColor(color.value).run();
+                    } else {
+                      editor.chain().focus().unsetTextColor().run();
+                    }
+                    setShowColorMenu(false);
+                  }}
+                  className="flex min-h-[34px] items-center gap-2 rounded-lg px-2 text-left text-xs font-semibold text-[#202437] hover:bg-[#f4f5ff]"
+                >
+                  <span
+                    className="h-4 w-4 rounded-full border border-[#e3e5f0]"
+                    style={{ backgroundColor: color.swatch }}
+                    aria-hidden="true"
+                  />
+                  {color.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={cleanPastedContent}
+        className={buttonClass}
+        title="Clean Pasted Content"
+      >
+        <Eraser className="admin-editor-toolbar-icon" />
+      </button>
+
+      <div className="admin-editor-divider" />
 
       {/* Headings */}
       <button
@@ -129,7 +271,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Heading 1"
       >
-        <Heading1 className="w-4 h-4 text-[#202437]" />
+        <Heading1 className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -139,7 +281,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Heading 2"
       >
-        <Heading2 className="w-4 h-4 text-[#202437]" />
+        <Heading2 className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -149,10 +291,10 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Heading 3"
       >
-        <Heading3 className="w-4 h-4 text-[#202437]" />
+        <Heading3 className="admin-editor-toolbar-icon" />
       </button>
 
-      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+      <div className="admin-editor-divider" />
 
       {/* Lists */}
       <button
@@ -163,7 +305,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Bullet List"
       >
-        <List className="w-4 h-4 text-[#202437]" />
+        <List className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -173,7 +315,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Numbered List"
       >
-        <ListOrdered className="w-4 h-4 text-[#202437]" />
+        <ListOrdered className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -183,7 +325,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Blockquote"
       >
-        <Quote className="w-4 h-4 text-[#202437]" />
+        <Quote className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -193,10 +335,10 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Code Block"
       >
-        <Code className="w-4 h-4 text-[#202437]" />
+        <Code className="admin-editor-toolbar-icon" />
       </button>
 
-      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+      <div className="admin-editor-divider" />
 
       {/* Links */}
       <div className="relative" ref={linkMenuRef}>
@@ -212,15 +354,15 @@ export default function Toolbar({ editor }: ToolbarProps) {
           }`}
           title="Insert/Edit Link (Ctrl+K)"
         >
-          <LinkIcon className="w-4 h-4 text-[#202437]" />
+          <LinkIcon className="admin-editor-toolbar-icon" />
         </button>
         {showLinkMenu && (
-          <div className="absolute top-full left-0 mt-1 bg-white border border-[#e2e4f0] rounded-lg shadow-lg p-3 z-50 min-w-[280px]">
+          <div className="absolute top-full left-0 z-50 mt-2 min-w-[280px] rounded-2xl border border-[#e3e5f0] bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
             <div className="space-y-2">
               <div>
                 <label
                   htmlFor="link-url-input"
-                  className="block text-xs font-medium text-[#3b3f57] mb-1"
+                  className="admin-field-label mb-1 block"
                 >
                   URL
                 </label>
@@ -274,7 +416,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
                     }
                   }}
                   placeholder="https://example.com"
-                  className="w-full px-2 py-1.5 text-sm border border-[#e2e4f0] rounded focus:outline-none focus:ring-1 focus:ring-[#6a5cff] focus:border-[#6a5cff] text-[#202437]"
+                  className="admin-field min-h-[36px] w-full px-2 py-1.5 text-sm"
                   autoFocus
                 />
               </div>
@@ -285,7 +427,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
                     setShowLinkMenu(false);
                     setLinkUrl("");
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-[#7a819c] bg-white border border-[#e2e4f0] rounded hover:bg-[#f4f5ff] transition-colors"
+                  className="admin-button-cancel min-h-[34px] px-3 py-1.5 text-xs"
                 >
                   Cancel
                 </button>
@@ -334,7 +476,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
                     }
                   }}
                   disabled={!linkUrl.trim()}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-[#6a5cff] to-[#8b5dff] rounded hover:from-[#5a4cef] hover:to-[#7b4def] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#4c3dff]/40"
+                  className="admin-button-primary min-h-[34px] px-3 py-1.5 text-xs"
                 >
                   Insert
                 </button>
@@ -352,9 +494,9 @@ export default function Toolbar({ editor }: ToolbarProps) {
                     setShowLinkMenu(false);
                     setLinkUrl("");
                   }}
-                  className="w-full px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+                  className="admin-button-danger min-h-[34px] w-full px-3 py-1.5 text-xs"
                 >
-                  <Unlink className="w-3 h-3 text-[#202437]" />
+                  <Unlink className="h-3 w-3" />
                   Remove Link
                 </button>
               )}
@@ -363,7 +505,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         )}
       </div>
 
-      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+      <div className="admin-editor-divider" />
 
       {/* Media */}
       <button
@@ -377,7 +519,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         className={buttonClass}
         title="Insert Image"
       >
-        <ImageIcon className="w-4 h-4 text-[#202437]" />
+        <ImageIcon className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -401,10 +543,10 @@ export default function Toolbar({ editor }: ToolbarProps) {
         className={buttonClass}
         title="Upload Image"
       >
-        <ImageIcon className="w-4 h-4 text-[#202437]" />
+        <ImageIcon className="admin-editor-toolbar-icon" />
       </button>
 
-      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+      <div className="admin-editor-divider" />
 
       {/* Tables */}
       <div className="relative" ref={tableMenuRef}>
@@ -418,15 +560,15 @@ export default function Toolbar({ editor }: ToolbarProps) {
           }`}
           title="Insert Table"
         >
-          <Table className="w-4 h-4 text-[#202437]" />
+          <Table className="admin-editor-toolbar-icon" />
         </button>
         {showTableMenu && (
-          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-50 min-w-[240px]">
+          <div className="absolute top-full left-0 z-50 mt-2 min-w-[240px] rounded-2xl border border-[#e3e5f0] bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
             <div className="space-y-3">
               <div>
                 <label
                   htmlFor="table-rows"
-                  className="block text-xs font-medium text-[#3b3f57] mb-1"
+                  className="admin-field-label mb-1 block"
                 >
                   Rows
                 </label>
@@ -441,13 +583,13 @@ export default function Toolbar({ editor }: ToolbarProps) {
                       Math.max(1, Math.min(20, parseInt(e.target.value) || 1))
                     )
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-[#e2e4f0] rounded focus:outline-none focus:ring-1 focus:ring-[#6a5cff] focus:border-[#6a5cff] text-[#202437]"
+                  className="admin-field min-h-[36px] w-full px-2 py-1.5 text-sm"
                 />
               </div>
               <div>
                 <label
                   htmlFor="table-cols"
-                  className="block text-xs font-medium text-[#3b3f57] mb-1"
+                  className="admin-field-label mb-1 block"
                 >
                   Columns
                 </label>
@@ -462,7 +604,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
                       Math.max(1, Math.min(20, parseInt(e.target.value) || 1))
                     )
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-[#e2e4f0] rounded focus:outline-none focus:ring-1 focus:ring-[#6a5cff] focus:border-[#6a5cff] text-[#202437]"
+                  className="admin-field min-h-[36px] w-full px-2 py-1.5 text-sm"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -471,11 +613,11 @@ export default function Toolbar({ editor }: ToolbarProps) {
                   type="checkbox"
                   checked={withHeaderRow}
                   onChange={(e) => setWithHeaderRow(e.target.checked)}
-                  className="w-4 h-4 text-[#6a5cff] border-[#e2e4f0] rounded focus:ring-[#6a5cff]"
+                  className="h-4 w-4 rounded border-[#e3e5f0] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
                 />
                 <label
                   htmlFor="table-header"
-                  className="text-xs font-medium text-[#3b3f57] cursor-pointer"
+                  className="admin-field-label cursor-pointer"
                 >
                   Header Row
                 </label>
@@ -486,7 +628,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
                   onClick={() => {
                     setShowTableMenu(false);
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-[#7a819c] bg-white border border-[#e2e4f0] rounded hover:bg-[#f4f5ff] transition-colors"
+                  className="admin-button-cancel min-h-[34px] px-3 py-1.5 text-xs"
                 >
                   Cancel
                 </button>
@@ -504,21 +646,21 @@ export default function Toolbar({ editor }: ToolbarProps) {
                       .run();
                     setShowTableMenu(false);
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-[#6a5cff] to-[#8b5dff] rounded hover:from-[#5a4cef] hover:to-[#7b4def] transition-colors shadow-lg shadow-[#4c3dff]/40"
+                  className="admin-button-primary min-h-[34px] px-3 py-1.5 text-xs"
                 >
                   Insert Table
                 </button>
               </div>
               {editor.isActive("table") && (
-                <div className="pt-2 border-t border-[#e2e4f0]">
+                <div className="border-t border-[#e3e5f0] pt-2">
                   <button
                     type="button"
                     onClick={() => {
-                      editor.chain().focus().deleteTable().run();
                       setShowTableMenu(false);
+                      setConfirmingTableDelete(true);
                     }}
                     disabled={!editor.can().deleteTable()}
-                    className="w-full px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                    className="admin-button-danger min-h-[34px] w-full px-3 py-1.5 text-xs"
                   >
                     <Table className="w-3 h-3" />
                     Delete Table
@@ -530,7 +672,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         )}
       </div>
 
-      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+      <div className="admin-editor-divider" />
 
       {/* Text Alignment */}
       <button
@@ -541,7 +683,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Align Left"
       >
-        <AlignLeft className="w-4 h-4 text-[#202437]" />
+        <AlignLeft className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -551,7 +693,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Align Center"
       >
-        <AlignCenter className="w-4 h-4 text-[#202437]" />
+        <AlignCenter className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -561,10 +703,10 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
         title="Align Right"
       >
-        <AlignRight className="w-4 h-4 text-[#202437]" />
+        <AlignRight className="admin-editor-toolbar-icon" />
       </button>
 
-      <div className="w-px h-6 bg-[#e2e4f0] mx-1" />
+      <div className="admin-editor-divider" />
 
       {/* History */}
       <button
@@ -574,7 +716,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
         className={buttonClass}
         title="Undo (Ctrl+Z)"
       >
-        <Undo className="w-4 h-4 text-[#202437]" />
+        <Undo className="admin-editor-toolbar-icon" />
       </button>
       <button
         type="button"
@@ -583,8 +725,26 @@ export default function Toolbar({ editor }: ToolbarProps) {
         className={buttonClass}
         title="Redo (Ctrl+Y)"
       >
-        <Redo className="w-4 h-4 text-[#202437]" />
+        <Redo className="admin-editor-toolbar-icon" />
       </button>
+      <div
+        className="ml-auto rounded-full border border-[#e3e5f0] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#64748b]"
+        title={`${documentStats.words} words, ${documentStats.characters} characters`}
+      >
+        {documentStats.words} words
+      </div>
     </div>
+    {confirmingTableDelete && (
+      <AdminDestructiveDialog
+        title="Delete Table"
+        itemName="this table"
+        consequence="This removes the table from the editor content."
+        confirmLabel="Delete Table"
+        onCancel={() => setConfirmingTableDelete(false)}
+        onConfirm={handleConfirmTableDelete}
+      />
+    )}
+    </>
   );
 }
+

@@ -7,6 +7,7 @@ import {
   getNursingExitExamQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -208,11 +209,8 @@ export default function BulkUploadQuestions({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
+        <AdminLoadingState title="Loading bulk upload" description="Preparing quiz details and upload workspace." />
       </div>
     );
   }
@@ -235,69 +233,33 @@ export default function BulkUploadQuestions({
             isCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <div className="hidden md:block border-b border-gray-200 bg-white h-16">
-            <div className="flex justify-between items-center px-4 h-full">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Link
-                  href="/"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Home
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <Link
-                  href="/admin"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Admin
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <span className="font-medium text-gray-800">Bulk Upload</span>
-              </div>
-              {currentUser ? (
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Home", href: "/" },
+              { label: "Admin Dashboard", href: "/admin" },
+              { label: "Bulk Upload" },
+            ]}
+            actions={
+              currentUser ? (
                 <UserProfileBadge />
               ) : (
                 <div className="flex items-center space-x-4">
                   <Link
                     href="/login"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    className="admin-button-secondary px-3 py-1.5 text-sm"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                    className="admin-button-primary px-4 py-2 text-sm"
                   >
                     Register
                   </Link>
                 </div>
-              )}
-            </div>
-          </div>
+              )
+            }
+          />
           <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffffff_0,#f5f6fb_40%,#e8ebff_100%)]">
             {children}
           </div>
@@ -309,15 +271,15 @@ export default function BulkUploadQuestions({
   return (
     <SidebarProvider>
       <LayoutShell>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          <header className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex flex-col gap-2 min-w-0">
+        <div className="admin-workspace space-y-6">
+          <header className="admin-header-row flex-wrap">
+            <div className="admin-header-copy flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-slate-900">
+                <h1 className="admin-page-title">
                   Bulk Upload Questions (JSON)
                 </h1>
               </div>
-              <div className="text-sm text-slate-600 flex flex-wrap items-center gap-3">
+              <div className="admin-body flex flex-wrap items-center gap-3">
                 <span>
                   Import questions for{" "}
                   <strong>{quizName || resolvedParams.quizId}</strong>. We’ll
@@ -329,17 +291,17 @@ export default function BulkUploadQuestions({
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="admin-header-actions">
               <Link
                 href={`/admin/nursing-exit-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`}
-                className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+                className="admin-button-secondary"
               >
                 ← Back to Admin
               </Link>
               <Link
                 href={`/${resolvedParams.quizId}`}
                 target="_blank"
-                className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+                className="admin-button-secondary"
               >
                 View Page
               </Link>
@@ -347,7 +309,7 @@ export default function BulkUploadQuestions({
                 type="button"
                 onClick={handleBulkUpload}
                 disabled={uploading || parsedQuestions.length === 0}
-                className="btn btn-primary rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold shadow disabled:opacity-50"
+                className="admin-button-primary disabled:opacity-50"
               >
                 {uploading
                   ? "Uploading..."
@@ -357,21 +319,21 @@ export default function BulkUploadQuestions({
           </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
-            <section className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+            <section className="admin-card p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-1">
+                  <div className="admin-eyebrow mb-1 inline-flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-indigo-400" />
                     Upload JSON File
                   </div>
-                  <p className="text-sm text-slate-600">
+                  <p className="admin-body">
                     Drop a JSON array of questions. We parse, validate, and show
                     a preview before importing.
                   </p>
                 </div>
                 <button
                   type="button"
-                  className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                  className="admin-button-secondary px-3 py-2 text-xs"
                   onClick={() =>
                     setJsonInput(
                       `{"questions":[{"id":1,"question":"Sample question?","options":["A","B","C","D"],"correctAnswer":"A","solution":"Example solution","question_type_id":1}]}`
@@ -390,27 +352,27 @@ export default function BulkUploadQuestions({
                     onChange={handleFileUpload}
                     className="hidden"
                   />
-                  <div className="relative rounded-2xl border border-dashed border-indigo-100 bg-gradient-to-br from-white to-indigo-50/60 p-5 text-center hover:border-indigo-300 transition">
+                  <div className="admin-info-tile relative border-dashed p-5 text-center transition hover:border-[#6a5cff]">
                     <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-white border border-indigo-100 shadow">
                       <span className="text-lg font-semibold text-indigo-600">
                         {"{ }"}
                       </span>
                     </div>
-                    <div className="text-sm font-semibold text-slate-800">
+                    <div className="admin-card-title">
                       Drop your JSON here
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">
+                    <div className="admin-helper mt-1">
                       or choose a .json file from your computer
                     </div>
                     <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-2">
                       <span className="rounded-full bg-indigo-600 text-white px-3 py-1 text-xs font-semibold">
                         Choose JSON File
                       </span>
-                      <span className="rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-600">
+                      <span className="admin-status-badge admin-status-badge-gray">
                         Preview Example Payload
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-3">
+                    <p className="admin-helper mt-3">
                       Expected: <code className="font-mono">{"{ questions: [...] }"}</code>{" "}
                       up to ~5,000 items.
                     </p>
@@ -418,14 +380,14 @@ export default function BulkUploadQuestions({
                 </label>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-600">
+                  <label className="admin-field-label">
                     Paste JSON Data
                   </label>
                   <textarea
                     value={jsonInput}
                     onChange={(e) => setJsonInput(e.target.value)}
                     placeholder='Paste your JSON data here. Expected format: { "questions": [...] }'
-                    className="w-full h-48 p-4 border border-slate-200 rounded-xl font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 bg-white"
+                    className="admin-field h-48 font-mono"
                   />
                 </div>
 
@@ -447,17 +409,17 @@ export default function BulkUploadQuestions({
                     ["Solution Key", "solution"],
                   ].map(([label, value]) => (
                     <div key={label} className="space-y-1">
-                      <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                      <div className="admin-info-tile-label">
                         {label}
                       </div>
                       <div className="relative">
-                        <select className="w-full rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <select className="admin-field">
                           <option>{value}</option>
                           <option>choices</option>
                           <option>answerKey</option>
                           <option>explanation</option>
                         </select>
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400">
+                        <span className="admin-helper absolute right-3 top-1/2 -translate-y-1/2">
                           ▾
                         </span>
                       </div>
@@ -466,17 +428,17 @@ export default function BulkUploadQuestions({
                 </div>
 
                 {sampleRows.length > 0 && (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500 uppercase tracking-[0.1em] font-semibold">
+                  <div className="admin-table-wrap overflow-hidden">
+                    <div className="admin-info-tile-label flex items-center justify-between px-3 py-2">
                       <span>Sample Questions From JSON</span>
                       <span className="text-[11px] normal-case">
                         Showing {sampleRows.length} of {parsedQuestions.length} parsed items
                       </span>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full border-collapse text-sm">
-                        <thead className="bg-slate-100">
-                          <tr className="text-slate-600">
+                      <table className="admin-table">
+                        <thead >
+                          <tr >
                             <th className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.08em]">
                               #
                             </th>
@@ -498,24 +460,24 @@ export default function BulkUploadQuestions({
                           {sampleRows.map((row, idx) => (
                             <tr
                               key={row.id || idx}
-                              className="border-t border-dashed border-slate-200"
+                              
                             >
-                              <td className="px-3 py-2 text-slate-700">
+                              <td className="px-3 py-2">
                                 {idx + 1}
                               </td>
-                              <td className="px-3 py-2 text-slate-800 max-w-xs truncate">
+                              <td className="max-w-xs truncate px-3 py-2">
                                 {row.question || "—"}
                               </td>
-                              <td className="px-3 py-2 text-slate-600">
-                                <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-slate-200 bg-white text-[11px]">
+                              <td className="px-3 py-2">
+                                <span className="admin-status-badge admin-status-badge-gray">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                   {(row as any).skill || (row as any).tag || "—"}
                                 </span>
                               </td>
-                              <td className="px-3 py-2 text-slate-600 text-xs">
+                              <td className="px-3 py-2 text-xs">
                                 {(row as any).difficulty || "—"}
                               </td>
-                              <td className="px-3 py-2 text-slate-800 text-xs font-semibold">
+                              <td className="px-3 py-2 text-xs font-semibold">
                                 {row.correctAnswer || (row as any).correct_answer || "—"}
                               </td>
                             </tr>
@@ -528,14 +490,14 @@ export default function BulkUploadQuestions({
               </div>
             </section>
 
-            <aside className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+            <aside className="admin-card p-5 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-1">
+                  <div className="admin-eyebrow mb-1 inline-flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-indigo-400" />
                     Import Summary
                   </div>
-                  <p className="text-sm text-slate-600">
+                  <p className="admin-body">
                     Review validation and where these questions will be placed.
                   </p>
                 </div>
@@ -543,55 +505,55 @@ export default function BulkUploadQuestions({
 
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
-                    <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                  <div className="admin-info-tile p-3 space-y-1">
+                    <div className="admin-info-tile-label">
                       Objects Parsed
                     </div>
-                    <div className="text-base font-semibold text-slate-900">
+                    <div className="admin-section-title">
                       {parsedCount || 0}
-                      <span className="ml-2 text-xs text-slate-500">
+                      <span className="admin-helper ml-2">
                         From JSON input
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="admin-helper">
                       We’ll skip duplicates already linked in your DB.
                     </div>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
-                    <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                  <div className="admin-info-tile p-3 space-y-1">
+                    <div className="admin-info-tile-label">
                       Ready To Import
                     </div>
-                    <div className="text-base font-semibold text-slate-900">
+                    <div className="admin-section-title">
                       {readyCount || 0}
-                      <span className="ml-2 text-xs text-slate-500">
+                      <span className="admin-helper ml-2">
                         {needsReviewCount} need review
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="admin-helper">
                       Only valid objects will be written to your question bank.
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
-                  <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                <div className="admin-info-tile p-3 space-y-2">
+                  <div className="admin-info-tile-label">
                     Validation Progress
                   </div>
-                  <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden border border-slate-200">
+                  <div className="h-2 w-full overflow-hidden rounded-full border border-[#e3e5f0] bg-[#edf0f7]">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all"
                       style={{ width: `${validationProgress}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-[11px] text-slate-500">
+                  <div className="admin-helper flex justify-between">
                     <span>Checking JSON shape, keys, and options…</span>
-                    <span className="font-semibold text-slate-600">
+                    <span className="font-semibold">
                       {validationProgress}%
                     </span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-3 space-y-2 text-[12px] text-slate-600">
+                <div className="admin-info-tile p-3 space-y-2">
                   <div className="flex items-start gap-2">
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs">
                       ✓
@@ -621,14 +583,14 @@ export default function BulkUploadQuestions({
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
-                  <div className="text-[11px] uppercase tracking-[0.08em] text-slate-500 font-semibold">
+                <div className="admin-info-tile p-3 space-y-1">
+                  <div className="admin-info-tile-label">
                     Placement
                   </div>
-                  <div className="text-sm font-semibold text-slate-900">
+                  <div className="admin-card-title">
                     {quizName || resolvedParams.quizId}
                   </div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="admin-helper">
                     Sub-page: {resolvedParams.subPageId} · Nested:{" "}
                     {resolvedParams.nestedSubPageId}
                   </div>
@@ -638,13 +600,13 @@ export default function BulkUploadQuestions({
           </div>
 
           {parsedQuestions.length > 0 && (
-            <section className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg p-5 space-y-4">
+            <section className="admin-card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">
+                  <div className="admin-card-title">
                     Preview ({parsedQuestions.length} questions)
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="admin-helper">
                     Scroll to review parsed content before importing.
                   </div>
                 </div>
@@ -658,7 +620,7 @@ export default function BulkUploadQuestions({
 
               {previewExpanded && (
                 <>
-                  <div className="flex flex-wrap items-center justify-between text-sm text-slate-600">
+                  <div className="admin-helper flex flex-wrap items-center justify-between">
                     <span>
                       Showing{" "}
                       {Math.min(
@@ -676,11 +638,11 @@ export default function BulkUploadQuestions({
                       <button
                         onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
+                        className="admin-pagination-button"
                       >
                         «
                       </button>
-                      <span className="text-xs text-slate-600">
+                      <span className="admin-helper">
                         Page {currentPage} of{" "}
                         {Math.ceil(parsedQuestions.length / questionsPerPage)}
                       </span>
@@ -697,7 +659,7 @@ export default function BulkUploadQuestions({
                           currentPage >=
                           Math.ceil(parsedQuestions.length / questionsPerPage)
                         }
-                        className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
+                        className="admin-pagination-button"
                       >
                         »
                       </button>
@@ -718,10 +680,10 @@ export default function BulkUploadQuestions({
                         return (
                           <div
                             key={q.id || globalIndex}
-                            className="border border-slate-200 rounded-xl p-4 bg-white"
+                            className="admin-info-tile bg-white p-4"
                           >
                             <div className="flex items-start justify-between mb-2">
-                              <span className="text-xs font-semibold text-slate-500">
+                              <span className="admin-field-label">
                                 Question #{globalIndex + 1} (ID: {q.id})
                               </span>
                               <span className="text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-1 rounded-full">
@@ -729,14 +691,14 @@ export default function BulkUploadQuestions({
                               </span>
                             </div>
                             <div
-                              className="text-slate-900 mb-3"
+                              className="admin-body mb-3"
                               dangerouslySetInnerHTML={{
                                 __html: q.question || "No question text",
                               }}
                             />
                             {options.length > 0 && (
                               <div className="mb-3">
-                                <p className="text-sm font-semibold text-slate-800 mb-2">
+                                <p className="admin-card-title mb-2">
                                   Options
                                 </p>
                                 <ul className="space-y-1">
@@ -749,7 +711,7 @@ export default function BulkUploadQuestions({
                                         className={`text-sm ${
                                           isCorrect
                                             ? "text-emerald-700 font-semibold"
-                                            : "text-slate-700"
+                                            : "admin-body-sm"
                                         }`}
                                       >
                                         <span className="font-semibold">{label}:</span>{" "}
@@ -768,12 +730,12 @@ export default function BulkUploadQuestions({
                               </div>
                             )}
                             {q.solution && (
-                              <div className="mt-3 pt-3 border-t border-slate-200">
-                                <p className="text-sm font-semibold text-slate-800 mb-1">
+                              <div className="mt-3 border-t border-[#e3e5f0] pt-3">
+                                <p className="admin-card-title mb-1">
                                   Solution
                                 </p>
                                 <div
-                                  className="text-sm text-slate-700"
+                                  className="admin-body-sm"
                                   dangerouslySetInnerHTML={{
                                     __html: (q.solution || "").substring(0, 240) + "...",
                                   }}
@@ -787,15 +749,15 @@ export default function BulkUploadQuestions({
                 </>
               )}
 
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
-                <div className="text-xs text-slate-500">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e3e5f0] pt-3">
+                <div className="admin-helper">
                   Imports run in the background. You can keep editing while this completes.
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleJsonParse()}
-                    className="rounded-full border border-slate-200 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                    className="admin-button-secondary px-3 py-2 text-xs"
                   >
                     Run Validation Only
                   </button>
@@ -827,12 +789,12 @@ export default function BulkUploadQuestions({
           )}
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div className="admin-alert admin-alert-error">
               {error}
             </div>
           )}
           {success && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <div className="admin-alert admin-alert-success">
               {success}
             </div>
           )}
@@ -841,4 +803,7 @@ export default function BulkUploadQuestions({
     </SidebarProvider>
   );
 }
+
+
+
 

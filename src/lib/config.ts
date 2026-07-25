@@ -7,6 +7,32 @@ export const getSiteUrl = (): string => {
   return process.env.NEXT_PUBLIC_SITE_URL || "https://nursingmocks.com";
 };
 
+export const getCanonicalSiteUrl = (): string => {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_CANONICAL_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "https://nursingmocks.com";
+
+  try {
+    const url = new URL(configuredUrl);
+    const hostname = url.hostname.toLowerCase();
+
+    // Structured data is stored in Firestore, so local admin sessions must not
+    // persist localhost URLs that later render in production.
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.endsWith(".local")
+    ) {
+      return "https://nursingmocks.com";
+    }
+
+    return url.origin.replace(/\/$/, "");
+  } catch {
+    return "https://nursingmocks.com";
+  }
+};
+
 export const getSiteDomain = (): string => {
   const url = getSiteUrl();
   try {

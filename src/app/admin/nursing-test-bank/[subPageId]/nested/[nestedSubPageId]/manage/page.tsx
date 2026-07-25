@@ -9,6 +9,7 @@ import {
   getNursingTestBankSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import { AdminInlineLoading } from "@/components/admin/AdminUi";
 
 interface Topic {
   id: string;
@@ -216,33 +217,33 @@ export default function ManageTopics({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
+        <div className="admin-loading-state">
+          <div className="admin-loading-spinner"></div>
+          <AdminInlineLoading label="Loading Content" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="admin-page min-h-screen">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="admin-card mb-6 p-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="admin-page-title">
                 Manage: {nestedSubPageName || resolvedParams.nestedSubPageId}
               </h1>
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="admin-body mt-1">
                 Edit this nested sub-page and manage its topics
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <Link
                 href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/manage`}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
+                className="admin-button-secondary flex items-center space-x-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -308,9 +309,9 @@ export default function ManageTopics({
         )}
 
         {/* Edit Nested Sub-Page Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
+        <div className="admin-card mb-6 p-5">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="admin-section-title">
               Edit Nested Sub-Page
             </h2>
             <Link
@@ -333,20 +334,20 @@ export default function ManageTopics({
               <span>Edit Full Content</span>
             </Link>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-gray-600 mb-2">
+          <div className="admin-info-tile p-4">
+            <p className="admin-helper mb-2">
               <strong>Page Name:</strong>{" "}
               {nestedSubPageContent?.pageName ||
                 nestedSubPageName ||
                 resolvedParams.nestedSubPageId}
             </p>
-            <p className="text-gray-600 mb-2">
+            <p className="admin-helper mb-2">
               <strong>Title:</strong>{" "}
               {nestedSubPageContent?.hero?.title ||
                 nestedSubPageName ||
                 resolvedParams.nestedSubPageId}
             </p>
-            <p className="text-gray-600">
+            <p className="admin-helper">
               <strong>URL:</strong>{" "}
               <a
                 href={`/${nestedSlug || resolvedParams.nestedSubPageId}`}
@@ -360,9 +361,9 @@ export default function ManageTopics({
         </div>
 
         {/* Topics Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="admin-card p-5">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Topics</h2>
+            <h2 className="admin-section-title">Topics</h2>
             <button
               onClick={() => setShowCreateTopicModal(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
@@ -386,9 +387,9 @@ export default function ManageTopics({
 
           {topics.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#f4f2ff]">
                 <svg
-                  className="w-8 h-8 text-gray-400"
+                  className="h-8 w-8 text-[#8a90a8]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -401,10 +402,10 @@ export default function ManageTopics({
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="admin-card-title mb-2">
                 No topics found
               </h3>
-              <p className="text-gray-600">Create a topic to get started.</p>
+              <p className="admin-helper">Create a topic to get started.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -415,18 +416,18 @@ export default function ManageTopics({
                 return (
                   <div
                     key={topic.id}
-                    className="bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300"
+                    className="admin-info-tile bg-white p-5 transition-all duration-300 hover:shadow-md"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        <h3 className="admin-card-title mb-2">
                           {topic.pageName || topic.hero?.title || topic.id}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="admin-helper mb-2">
                           ID: {topic.id}
                         </p>
                         {topic.lastUpdated && (
-                          <p className="text-sm text-gray-500">
+                          <p className="admin-helper">
                             Updated:{" "}
                             {new Date(topic.lastUpdated).toLocaleDateString()}
                           </p>
@@ -475,7 +476,7 @@ export default function ManageTopics({
                       >
                         View Page →
                       </Link>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="admin-helper mt-1">
                         URL: {topicUrl}
                       </p>
                     </div>
@@ -489,9 +490,9 @@ export default function ManageTopics({
 
       {/* Create Topic Modal */}
       {showCreateTopicModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 overflow-y-auto py-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 my-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="admin-modal-backdrop">
+          <div className="admin-modal max-w-md">
+            <h2 className="admin-modal-title mb-6">
               Create New Topic
             </h2>
             <form onSubmit={handleCreateTopic} className="space-y-4">
@@ -501,24 +502,24 @@ export default function ManageTopics({
                 </div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="admin-field-label mb-2 block">
                   Topic Name *
                 </label>
                 <input
                   type="text"
                   value={newTopicName}
                   onChange={(e) => setNewTopicName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="admin-field"
                   placeholder="e.g., Anatomy & Physiology"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="admin-field-label mb-2 block">
                   Slug URL *
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                  <span className="admin-helper whitespace-nowrap">
                     https://teasgurus.com/
                   </span>
                   <input
@@ -529,12 +530,12 @@ export default function ManageTopics({
                         e.target.value.toLowerCase().replace(/\s+/g, "-")
                       )
                     }
-                    className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field min-w-0 flex-1"
                     placeholder="e.g., topic-name"
                     required
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-1 break-words">
+                <p className="admin-helper mt-1 break-words">
                   This will create a page at /{newTopicId || "topic-id"}
                 </p>
               </div>
@@ -542,7 +543,7 @@ export default function ManageTopics({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50"
+                  className="admin-button-primary flex-1 disabled:opacity-50"
                 >
                   {saving ? "Creating..." : "Create Topic"}
                 </button>
@@ -554,7 +555,7 @@ export default function ManageTopics({
                     setNewTopicName("");
                     setValidationError("");
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
+                  className="admin-button-cancel flex-1"
                 >
                   Cancel
                 </button>
@@ -566,3 +567,5 @@ export default function ManageTopics({
     </div>
   );
 }
+
+

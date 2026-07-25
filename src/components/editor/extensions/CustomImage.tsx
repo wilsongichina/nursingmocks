@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { showAdminConfirmDialog } from "../adminConfirmDialog";
 
 export interface CustomImageOptions {
   HTMLAttributes: Record<string, any>;
@@ -223,53 +224,53 @@ export const CustomImage = Node.create<CustomImageOptions>({
 
       const controls = document.createElement("div");
       controls.className =
-        "image-controls absolute top-0 right-0 flex gap-1 p-1 bg-white border border-gray-300 rounded shadow-lg z-10 hidden";
+        "image-controls absolute top-0 right-0 z-10 hidden";
       controls.style.display = "none";
 
       // Alt text button
       const altButton = document.createElement("button");
       altButton.type = "button";
-      altButton.className = "p-1.5 hover:bg-gray-100 rounded transition-colors";
-      altButton.innerHTML = `<svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>`;
+      altButton.className = "admin-image-control-button";
+      altButton.innerHTML = `<svg class="admin-image-control-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>`;
       altButton.title = "Edit Alt Text";
 
       // Alignment buttons
       const alignLeftButton = document.createElement("button");
       alignLeftButton.type = "button";
       alignLeftButton.className =
-        "p-1.5 hover:bg-gray-100 rounded transition-colors";
-      alignLeftButton.innerHTML = `<svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h6M3 18h6"></path></svg>`;
+        "admin-image-control-button";
+      alignLeftButton.innerHTML = `<svg class="admin-image-control-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h6M3 18h6"></path></svg>`;
       alignLeftButton.title = "Align Left";
       if (alignment === "left") {
-        alignLeftButton.classList.add("bg-gray-100");
+        alignLeftButton.classList.add("admin-image-control-active");
       }
 
       const alignCenterButton = document.createElement("button");
       alignCenterButton.type = "button";
       alignCenterButton.className =
-        "p-1.5 hover:bg-gray-100 rounded transition-colors";
-      alignCenterButton.innerHTML = `<svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M6 6h12M6 18h12"></path></svg>`;
+        "admin-image-control-button";
+      alignCenterButton.innerHTML = `<svg class="admin-image-control-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M6 6h12M6 18h12"></path></svg>`;
       alignCenterButton.title = "Align Center";
       if (alignment === "center") {
-        alignCenterButton.classList.add("bg-gray-100");
+        alignCenterButton.classList.add("admin-image-control-active");
       }
 
       const alignRightButton = document.createElement("button");
       alignRightButton.type = "button";
       alignRightButton.className =
-        "p-1.5 hover:bg-gray-100 rounded transition-colors";
-      alignRightButton.innerHTML = `<svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M15 6h6M15 18h6"></path></svg>`;
+        "admin-image-control-button";
+      alignRightButton.innerHTML = `<svg class="admin-image-control-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M15 6h6M15 18h6"></path></svg>`;
       alignRightButton.title = "Align Right";
       if (alignment === "right") {
-        alignRightButton.classList.add("bg-gray-100");
+        alignRightButton.classList.add("admin-image-control-active");
       }
 
       // Delete button
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
       deleteButton.className =
-        "p-1.5 hover:bg-red-50 rounded transition-colors";
-      deleteButton.innerHTML = `<svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+        "admin-image-control-button admin-image-control-danger";
+      deleteButton.innerHTML = `<svg class="admin-image-control-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
       deleteButton.title = "Delete Image";
 
       // Resize handle
@@ -277,18 +278,18 @@ export const CustomImage = Node.create<CustomImageOptions>({
       resizeHandle.className =
         "resize-handle absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize hidden flex items-center justify-center";
       resizeHandle.style.display = "none";
-      resizeHandle.innerHTML = `<svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 24 24"><path d="M22 22H20V20H22V22ZM22 18H20V16H22V18ZM18 22H16V20H18V22ZM18 18H16V16H18V18ZM14 22H12V20H14V22ZM22 14H20V12H22V14Z"/></svg>`;
+      resizeHandle.innerHTML = `<svg class="admin-image-control-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M22 22H20V20H22V22ZM22 18H20V16H22V18ZM18 22H16V20H18V22ZM18 18H16V16H18V18ZM14 22H12V20H14V22ZM22 14H20V12H22V14Z"/></svg>`;
 
       // Alt text input container
       const altInputContainer = document.createElement("div");
       altInputContainer.className =
-        "alt-input-container absolute bottom-full left-0 mb-2 p-3 bg-white border border-gray-300 rounded-lg shadow-xl z-50 hidden";
+        "alt-input-container hidden";
       altInputContainer.style.display = "none";
       altInputContainer.style.minWidth = "250px";
 
       const altInputLabel = document.createElement("label");
       altInputLabel.className =
-        "block text-xs font-semibold text-gray-700 mb-1.5";
+        "admin-field-label mb-1.5 block";
       altInputLabel.textContent = "Alt Text";
 
       const altInput = document.createElement("input");
@@ -296,21 +297,28 @@ export const CustomImage = Node.create<CustomImageOptions>({
       altInput.value = node.attrs.alt || "";
       altInput.placeholder = "Enter image description";
       altInput.className =
-        "w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4f46e5] focus:border-[#4f46e5] text-gray-900";
+        "admin-field min-h-[36px] w-full px-3 py-2 text-sm";
 
       const altInputActions = document.createElement("div");
       altInputActions.className = "flex gap-2 justify-end mt-2";
+      const formControlEvents = [
+        "copy",
+        "cut",
+        "paste",
+        "selectstart",
+        "mouseup",
+      ];
 
       const altInputSave = document.createElement("button");
       altInputSave.type = "button";
       altInputSave.className =
-        "px-3 py-1.5 text-xs font-medium text-white bg-[#4f46e5] rounded hover:bg-[#4338ca] transition-colors";
+        "admin-button-primary min-h-[34px] px-3 py-1.5 text-xs";
       altInputSave.textContent = "Save";
 
       const altInputCancel = document.createElement("button");
       altInputCancel.type = "button";
       altInputCancel.className =
-        "px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors";
+        "admin-button-cancel min-h-[34px] px-3 py-1.5 text-xs";
       altInputCancel.textContent = "Cancel";
 
       altInputActions.appendChild(altInputCancel);
@@ -444,6 +452,13 @@ export const CustomImage = Node.create<CustomImageOptions>({
         e.stopImmediatePropagation();
       });
 
+      formControlEvents.forEach((eventName) => {
+        altInput.addEventListener(eventName, (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        });
+      });
+
       // Allow input event to work normally - NO preventDefault or stopPropagation
       altInput.addEventListener("input", (_e) => {
         // Do nothing - let the input work normally
@@ -502,10 +517,18 @@ export const CustomImage = Node.create<CustomImageOptions>({
       });
 
       // Delete button click
-      deleteButton.addEventListener("click", (e) => {
+      deleteButton.addEventListener("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
+        const confirmed = await showAdminConfirmDialog({
+          title: "Delete Image",
+          itemName: node.attrs.alt || "this image",
+          consequence: "This removes the image from the editor content.",
+          confirmLabel: "Delete Image",
+        });
+        if (!confirmed) return;
+
         if (typeof getPos === "function") {
           const pos = getPos();
           if (pos !== undefined) {
@@ -554,9 +577,9 @@ export const CustomImage = Node.create<CustomImageOptions>({
         updateAttributes({ align: "left" });
         alignmentWrapper.style.textAlign = "left";
         container.style.display = "inline-block";
-        alignLeftButton.classList.add("bg-gray-100");
-        alignCenterButton.classList.remove("bg-gray-100");
-        alignRightButton.classList.remove("bg-gray-100");
+        alignLeftButton.classList.add("admin-image-control-active");
+        alignCenterButton.classList.remove("admin-image-control-active");
+        alignRightButton.classList.remove("admin-image-control-active");
       });
 
       alignCenterButton.addEventListener("click", (e) => {
@@ -566,9 +589,9 @@ export const CustomImage = Node.create<CustomImageOptions>({
         updateAttributes({ align: "center" });
         alignmentWrapper.style.textAlign = "center";
         container.style.display = "inline-block";
-        alignLeftButton.classList.remove("bg-gray-100");
-        alignCenterButton.classList.add("bg-gray-100");
-        alignRightButton.classList.remove("bg-gray-100");
+        alignLeftButton.classList.remove("admin-image-control-active");
+        alignCenterButton.classList.add("admin-image-control-active");
+        alignRightButton.classList.remove("admin-image-control-active");
       });
 
       alignRightButton.addEventListener("click", (e) => {
@@ -578,9 +601,9 @@ export const CustomImage = Node.create<CustomImageOptions>({
         updateAttributes({ align: "right" });
         alignmentWrapper.style.textAlign = "right";
         container.style.display = "inline-block";
-        alignLeftButton.classList.remove("bg-gray-100");
-        alignCenterButton.classList.remove("bg-gray-100");
-        alignRightButton.classList.add("bg-gray-100");
+        alignLeftButton.classList.remove("admin-image-control-active");
+        alignCenterButton.classList.remove("admin-image-control-active");
+        alignRightButton.classList.add("admin-image-control-active");
       });
 
       controls.appendChild(altButton);
@@ -598,6 +621,14 @@ export const CustomImage = Node.create<CustomImageOptions>({
 
       return {
         dom: alignmentWrapper,
+        stopEvent: (event) => {
+          const target = event.target;
+          return (
+            target instanceof HTMLInputElement ||
+            target instanceof HTMLButtonElement ||
+            target instanceof HTMLLabelElement
+          );
+        },
         update: (updatedNode) => {
           if (updatedNode.type !== node.type) {
             return false;
@@ -630,15 +661,15 @@ export const CustomImage = Node.create<CustomImageOptions>({
 
             // Update button states
             alignLeftButton.classList.toggle(
-              "bg-gray-100",
+              "admin-image-control-active",
               newAlignment === "left"
             );
             alignCenterButton.classList.toggle(
-              "bg-gray-100",
+              "admin-image-control-active",
               newAlignment === "center"
             );
             alignRightButton.classList.toggle(
-              "bg-gray-100",
+              "admin-image-control-active",
               newAlignment === "right"
             );
           }
@@ -663,3 +694,4 @@ export const CustomImage = Node.create<CustomImageOptions>({
     };
   },
 });
+

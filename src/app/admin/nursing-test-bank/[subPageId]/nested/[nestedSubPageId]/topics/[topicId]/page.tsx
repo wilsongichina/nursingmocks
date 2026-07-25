@@ -9,6 +9,7 @@ import RichTextEditor from "@/components/ui/RichTextEditor";
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
 import Link from "next/link";
+import { AdminLoadingState } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
   SidebarProvider,
@@ -254,11 +255,11 @@ function EditTopicContent({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f4f2ff] via-[#f5f6fb] to-[#f5f6fb] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6a5cff] mx-auto mb-4"></div>
-          <p className="text-[#7a819c]">Loading content...</p>
-        </div>
+      <div className="admin-page">
+        <AdminLoadingState
+          title="Loading Content"
+          description="Preparing admin content, metadata, and editor fields."
+        />
       </div>
     );
   }

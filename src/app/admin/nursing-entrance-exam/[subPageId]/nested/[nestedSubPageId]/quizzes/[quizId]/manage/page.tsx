@@ -6,16 +6,32 @@ import {
   uploadNursingEntranceExamQuizQuestion,
   deleteNursingEntranceExamQuizQuestion,
   getNursingEntranceExamQuiz,
+  uploadNursingEntranceExamQuiz,
   getNestedSubPage,
   getNursingEntranceExamSubPage,
   getPillarPageContent,
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
+import {
+  AdminAlert,
+  AdminDestructiveDialog,
+  AdminLoadingState,
+  AdminNotificationRegion,
+  AdminStatusBadge,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
 import { useAuth } from "@/contexts/AuthContext";
+import { getSiteUrl } from "@/lib/config";
+import { buildEntranceQuizSchemaMarkup } from "@/lib/seo/structured-data";
+import {
+  normalizeAdminContentName,
+  normalizeAdminContentNameInput,
+  normalizeAdminContentSlug,
+} from "@/lib/admin/content-naming";
 
 interface Question {
   id: string;
@@ -33,6 +49,391 @@ interface QuestionType {
   id: string;
   questionTypeId: string;
   questionTypeName: string;
+}
+
+interface QuizMetadataContent {
+  pageName: string;
+  slug: string;
+  status: "Draft" | "Published" | "Archived";
+  examAccessProductId: "ati_teas_7" | "hesi_a2";
+  subjectName: string;
+  setNumber: string;
+  previewPercentage: string;
+  estimatedMinutes: string;
+  description: string;
+  meta: {
+    title: string;
+    description: string;
+    keywords: string;
+    ogTitle: string;
+    ogDescription: string;
+    ogImage: string;
+    canonicalUrl: string;
+  };
+  schema: string;
+  hero: {
+    title: string;
+    description: string;
+  };
+}
+
+function normalizeSlug(value: string) {
+  return normalizeAdminContentSlug(value);
+}
+
+function quizStatusFromData(value: unknown, active: unknown): "Draft" | "Published" | "Archived" {
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+    if (normalized === "published") return "Published";
+    if (normalized === "archived") return "Archived";
+    if (normalized === "draft") return "Draft";
+  }
+  return active === false ? "Draft" : "Published";
+}
+
+function QuizMetadataPanel({
+  initialMetadata,
+  fallbackSlug,
+  saving,
+  generateSchema,
+  onSave,
+}: {
+  initialMetadata: QuizMetadataContent;
+  fallbackSlug: string;
+  saving: boolean;
+  generateSchema: (metadata: QuizMetadataContent) => string;
+  onSave: (metadata: QuizMetadataContent) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState(initialMetadata);
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+
+  useEffect(() => {
+    const schema = generateSchema(initialMetadata);
+    const normalizedName = normalizeAdminContentName(initialMetadata.pageName);
+    setDraft({
+      ...initialMetadata,
+      pageName: normalizedName,
+      schema,
+    });
+    setSlugManuallyEdited(
+      normalizeSlug(initialMetadata.slug) !== normalizeSlug(normalizedName)
+    );
+  }, [fallbackSlug, generateSchema, initialMetadata]);
+
+  useEffect(() => {
+    const schema = generateSchema(draft);
+    if (schema && schema !== draft.schema) {
+      setDraft((previous) => ({
+        ...previous,
+        schema,
+      }));
+    }
+  }, [draft, generateSchema]);
+
+  const updateField = <
+    TField extends keyof Omit<QuizMetadataContent, "meta" | "hero">,
+  >(
+    field: TField,
+    value: QuizMetadataContent[TField]
+  ) => {
+    setDraft((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
+
+  const updateMetaField = (
+    field: keyof QuizMetadataContent["meta"],
+    value: string
+  ) => {
+    setDraft((previous) => ({
+      ...previous,
+      meta: {
+        ...previous.meta,
+        [field]: value,
+      },
+    }));
+  };
+
+  const normalizedPublicSlug = normalizeSlug(draft.slug || fallbackSlug);
+  const updatePageName = (value: string) => {
+    const normalizedInput = normalizeAdminContentNameInput(value);
+    setDraft((previous) => ({
+      ...previous,
+      pageName: normalizedInput,
+      slug: slugManuallyEdited
+        ? previous.slug
+        : normalizeSlug(normalizedInput || fallbackSlug),
+    }));
+  };
+
+  return (
+    <section className="admin-card mb-6 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+        <div>
+          <div className="admin-section-title">
+            Quiz Metadata
+          </div>
+          <div className="admin-helper mt-1">
+            Manage the public quiz title, access relationship, preview rules, and SEO values.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSave(draft)}
+          disabled={saving}
+          className="admin-button-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save Quiz Metadata"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="admin-field-label">
+                Quiz Name
+              </label>
+              <input
+                type="text"
+                value={draft.pageName}
+                onChange={(event) => updatePageName(event.target.value)}
+                onBlur={() => updatePageName(normalizeAdminContentName(draft.pageName))}
+                className="admin-field mt-2"
+                placeholder="HESI A2 Mathematics Set 1"
+              />
+            </div>
+            <div>
+              <label className="admin-field-label">
+                Slug
+              </label>
+              <input
+                type="text"
+                value={draft.slug}
+                onChange={(event) => {
+                  setSlugManuallyEdited(true);
+                  updateField("slug", normalizeSlug(event.target.value));
+                }}
+                onBlur={(event) =>
+                  updateField("slug", normalizeSlug(event.target.value))
+                }
+                className="admin-field mt-2"
+                placeholder="hesi-a2-math-practice-test-set-1"
+              />
+              <p className="admin-helper mt-1">
+                Public URL: /{normalizedPublicSlug || fallbackSlug}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div>
+              <label className="admin-field-label">
+                Exam Product
+              </label>
+              <select
+                value={draft.examAccessProductId}
+                onChange={(event) =>
+                  updateField(
+                    "examAccessProductId",
+                    event.target.value as QuizMetadataContent["examAccessProductId"]
+                  )
+                }
+                className="admin-field mt-2"
+              >
+                <option value="ati_teas_7">ATI TEAS 7</option>
+                <option value="hesi_a2">HESI A2</option>
+              </select>
+            </div>
+            <div>
+              <label className="admin-field-label">
+                Subject
+              </label>
+              <input
+                type="text"
+                value={draft.subjectName}
+                onChange={(event) => updateField("subjectName", event.target.value)}
+                className="admin-field mt-2"
+                placeholder="Mathematics"
+              />
+            </div>
+            <div>
+              <label className="admin-field-label">
+                Set Number
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={draft.setNumber}
+                onChange={(event) => updateField("setNumber", event.target.value)}
+                className="admin-field mt-2"
+              />
+            </div>
+            <div>
+              <label className="admin-field-label">
+                Status
+              </label>
+              <select
+                value={draft.status}
+                onChange={(event) =>
+                  updateField(
+                    "status",
+                    event.target.value as QuizMetadataContent["status"]
+                  )
+                }
+                className="admin-field mt-2"
+              >
+                <option>Draft</option>
+                <option>Published</option>
+                <option>Archived</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="admin-field-label">
+                Preview Percentage
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={draft.previewPercentage}
+                onChange={(event) =>
+                  updateField("previewPercentage", event.target.value)
+                }
+                className="admin-field mt-2"
+              />
+              <p className="admin-helper mt-1">
+                Controls the unpaid preview limit based on total questions.
+              </p>
+            </div>
+            <div>
+              <label className="admin-field-label">
+                Estimated Minutes
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={draft.estimatedMinutes}
+                onChange={(event) =>
+                  updateField("estimatedMinutes", event.target.value)
+                }
+                className="admin-field mt-2"
+                placeholder="45"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="admin-field-label">
+              Public Description
+            </label>
+            <textarea
+              rows={3}
+              value={draft.description}
+              onChange={(event) => updateField("description", event.target.value)}
+              className="admin-field mt-2"
+              placeholder="Describe what students practice in this quiz set."
+            />
+          </div>
+        </div>
+
+        <div className="admin-info-tile space-y-4 p-4">
+          <div>
+            <div className="admin-card-title">
+              SEO, Social, And Schema
+            </div>
+            <p className="admin-helper mt-1">
+              These fields will support the generated public quiz page.
+            </p>
+          </div>
+          <div>
+            <label className="admin-field-label">
+              Meta Title
+            </label>
+            <input
+              type="text"
+              value={draft.meta.title}
+              onChange={(event) => updateMetaField("title", event.target.value)}
+              className="admin-field mt-2 bg-white"
+            />
+          </div>
+          <div>
+            <label className="admin-field-label">
+              Meta Description
+            </label>
+            <textarea
+              rows={3}
+              value={draft.meta.description}
+              onChange={(event) =>
+                updateMetaField("description", event.target.value)
+              }
+              className="admin-field mt-2 bg-white"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <label className="admin-field-label">
+                Keywords
+              </label>
+              <input
+                type="text"
+                value={draft.meta.keywords}
+                onChange={(event) =>
+                  updateMetaField("keywords", event.target.value)
+                }
+                className="admin-field mt-2 bg-white"
+              />
+            </div>
+            <div>
+              <label className="admin-field-label">
+                OG Image
+              </label>
+              <input
+                type="text"
+                value={draft.meta.ogImage}
+                onChange={(event) =>
+                  updateMetaField("ogImage", event.target.value)
+                }
+                className="admin-field mt-2 bg-white"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="admin-field-label">
+              Canonical URL
+            </label>
+            <input
+              type="text"
+              value={draft.meta.canonicalUrl}
+              onChange={(event) =>
+                updateMetaField("canonicalUrl", event.target.value)
+              }
+              className="admin-field mt-2 bg-white"
+            />
+          </div>
+          <div>
+            <label className="admin-field-label">
+              Schema Markup
+            </label>
+            <textarea
+              rows={5}
+              value={draft.schema}
+              readOnly
+              className="admin-field mt-2 font-mono text-xs"
+              placeholder='{"@context":"https://schema.org","@type":"Quiz"}'
+            />
+            <p className="admin-helper mt-1">
+              Generated automatically from the quiz metadata, parent tree, and public preview questions.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function ManageQuizQuestions({
@@ -61,8 +462,10 @@ export default function ManageQuizQuestions({
   const [newExplanation, setNewExplanation] = useState("");
   const [validationError, setValidationError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingMetadata, setSavingMetadata] = useState(false);
   const [quizName, setQuizName] = useState("");
   const [quizSetNumber, setQuizSetNumber] = useState<string | number>("");
+  const [quizMetadata, setQuizMetadata] = useState<QuizMetadataContent | null>(null);
   const [_parentSlug, setParentSlug] = useState("");
   const [_nestedSlug, setNestedSlug] = useState("");
   const [quizSlug, setQuizSlug] = useState("");
@@ -77,6 +480,8 @@ export default function ManageQuizQuestions({
   const [typeFilter, setTypeFilter] = useState("all");
   const [skillFilter, setSkillFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [deletingQuestion, setDeletingQuestion] = useState(false);
   const questionsPerPage = 10;
 
   // Helper function to strip HTML tags
@@ -108,6 +513,79 @@ export default function ManageQuizQuestions({
     return type?.questionTypeName || `Type ${questionTypeId}`;
   };
 
+  const buildSchemaQuestionList = useCallback((previewPercentage: number) => {
+    const allowedQuestionTypes = [1, 2, 3, 7];
+    const publicQuestions = questions.filter((question) => {
+      const questionTypeId = Number(question.questionTypeId || question.question_type_id);
+      return allowedQuestionTypes.includes(questionTypeId);
+    });
+    const visibleLimit =
+      publicQuestions.length > 0 && previewPercentage > 0
+        ? Math.min(publicQuestions.length, Math.max(1, Math.ceil((publicQuestions.length * previewPercentage) / 100)))
+        : 0;
+
+    // Match the statically generated public quiz page: only preview-visible questions belong in JSON-LD.
+    return publicQuestions.slice(0, visibleLimit).map((question) => {
+      return {
+        id: question.id,
+        question: question.question,
+      };
+    });
+  }, [questions]);
+
+  const buildGeneratedQuizSchema = useCallback(
+    (metadata: QuizMetadataContent) => {
+      const normalizedQuizSlug = normalizeSlug(metadata.slug || resolvedParams?.quizId || "");
+      const setNumber = metadata.setNumber.trim()
+        ? Number(metadata.setNumber)
+        : undefined;
+      const previewPercentage = metadata.previewPercentage.trim()
+        ? Number(metadata.previewPercentage)
+        : 20;
+      const estimatedMinutes = metadata.estimatedMinutes.trim()
+        ? Number(metadata.estimatedMinutes)
+        : undefined;
+      const quizTitle = metadata.pageName.trim() || quizName || resolvedParams?.quizId || "Practice Quiz";
+      const parentName = parentSubPageName || resolvedParams?.subPageId || "Nursing Entrance Exam";
+      const nestedName = nestedSubPageName || metadata.subjectName || resolvedParams?.nestedSubPageId || "Practice Set";
+
+      return buildEntranceQuizSchemaMarkup({
+        slug: normalizedQuizSlug || resolvedParams?.quizId || "",
+        quizName: quizTitle,
+        description:
+          metadata.description ||
+          metadata.hero.description ||
+          metadata.meta.description,
+        examProductName:
+          metadata.examAccessProductId === "hesi_a2" ? "HESI A2" : "ATI TEAS 7",
+        subjectName: metadata.subjectName.trim() || nestedName,
+        categoryName: "Nursing Entrance Exam",
+        setNumber: Number.isFinite(setNumber) ? setNumber : undefined,
+        estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : undefined,
+        questionCount: questions.length,
+        breadcrumbs: [
+          { name: "Nursing Entrance Exam", slug: "nursing-entrance-exam" },
+          { name: parentName, slug: _parentSlug || resolvedParams?.subPageId },
+          { name: nestedName, slug: _nestedSlug || resolvedParams?.nestedSubPageId },
+          { name: quizTitle, slug: normalizedQuizSlug || resolvedParams?.quizId },
+        ],
+        questions: buildSchemaQuestionList(
+          Number.isFinite(previewPercentage) ? previewPercentage : 20
+        ),
+      });
+    },
+    [
+      _nestedSlug,
+      _parentSlug,
+      nestedSubPageName,
+      parentSubPageName,
+      questions,
+      quizName,
+      resolvedParams,
+      buildSchemaQuestionList,
+    ]
+  );
+
   useEffect(() => {
     const resolveParams = async () => {
       const resolved = await params;
@@ -131,11 +609,13 @@ export default function ManageQuizQuestions({
     loadQuestionTypes();
   }, []);
 
-  const loadQuestions = useCallback(async () => {
+  const loadQuestions = useCallback(async (options: { silent?: boolean } = {}) => {
     if (!resolvedParams) return;
 
     try {
-      setLoading(true);
+      if (!options.silent) {
+        setLoading(true);
+      }
       const result = await getNursingEntranceExamQuizQuestions(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
@@ -162,6 +642,54 @@ export default function ManageQuizQuestions({
         setQuizName(quizData.pageName || resolvedParams.quizId);
         setQuizSlug(quizData.slug || resolvedParams.quizId);
         setQuizSetNumber(quizData.setNumber ?? "");
+        const inferredSubjectName =
+          quizData.subjectName ||
+          quizData.hero?.title ||
+          quizData.pageName ||
+          "";
+        const loadedSlug = quizData.slug || resolvedParams.quizId;
+        setQuizMetadata({
+          pageName: quizData.pageName || quizData.quizName || resolvedParams.quizId,
+          slug: loadedSlug,
+          status: quizStatusFromData(quizData.status, quizData.active),
+          examAccessProductId:
+            quizData.examAccessProductId === "hesi_a2" ? "hesi_a2" : "ati_teas_7",
+          subjectName: inferredSubjectName,
+          setNumber: quizData.setNumber != null ? String(quizData.setNumber) : "",
+          previewPercentage:
+            quizData.previewPercentage != null ? String(quizData.previewPercentage) : "20",
+          estimatedMinutes:
+            quizData.estimatedMinutes != null ? String(quizData.estimatedMinutes) : "",
+          description:
+            quizData.description ||
+            quizData.hero?.description ||
+            quizData.meta?.description ||
+            "",
+          meta: {
+            title:
+              quizData.meta?.title ||
+              `${quizData.pageName || quizData.quizName || resolvedParams.quizId} | NursingMocks`,
+            description: quizData.meta?.description || "",
+            keywords: quizData.meta?.keywords || "",
+            ogTitle:
+              quizData.meta?.ogTitle ||
+              quizData.pageName ||
+              quizData.quizName ||
+              resolvedParams.quizId,
+            ogDescription: quizData.meta?.ogDescription || quizData.meta?.description || "",
+            ogImage: quizData.meta?.ogImage || "/nursing-mocks-logo.png",
+            canonicalUrl: quizData.meta?.canonicalUrl || `${getSiteUrl()}/${loadedSlug}`,
+          },
+          schema: quizData.schema || "",
+          hero: {
+            title:
+              quizData.hero?.title ||
+              quizData.pageName ||
+              quizData.quizName ||
+              resolvedParams.quizId,
+            description: quizData.hero?.description || quizData.description || "",
+          },
+        });
       }
 
       // Load parent and nested sub-page content
@@ -181,19 +709,31 @@ export default function ManageQuizQuestions({
       );
       if (nestedResult.success && nestedResult.data) {
         const nestedData = nestedResult.data as any;
+        const loadedNestedName =
+          nestedData.pageName || resolvedParams.nestedSubPageId;
         setNestedSubPageContent(nestedData);
-        setNestedSubPageName(
-          nestedData.pageName || resolvedParams.nestedSubPageId
-        );
+        setNestedSubPageName(loadedNestedName);
         setNestedSlug(nestedData.slug || resolvedParams.nestedSubPageId);
+        setQuizMetadata((prev) =>
+          prev && !prev.subjectName
+            ? { ...prev, subjectName: loadedNestedName }
+            : prev
+        );
       }
     } catch (err) {
       console.error("Error loading questions:", err);
       setError("Failed to load questions");
     } finally {
-      setLoading(false);
+      if (!options.silent) {
+        setLoading(false);
+      }
     }
   }, [resolvedParams]);
+
+  const refreshQuestionsSilently = () => {
+    // Keep the quiz manager visible after question or metadata actions while Firestore refreshes.
+    void loadQuestions({ silent: true });
+  };
 
   useEffect(() => {
     loadQuestions();
@@ -203,26 +743,25 @@ export default function ManageQuizQuestions({
     setCurrentPage(1);
   }, [searchQuery, typeFilter, skillFilter, statusFilter, questions.length]);
 
-  const handleDeleteQuestion = async (questionId: string) => {
-    if (!resolvedParams) return;
+  const handleDeleteQuestion = (question: Question) => {
+    setQuestionToDelete(question);
+  };
 
-    if (
-      !confirm(`Are you sure you want to delete the question "${questionId}"?`)
-    ) {
-      return;
-    }
+  const handleConfirmDeleteQuestion = async () => {
+    if (!resolvedParams || !questionToDelete) return;
 
     try {
+      setDeletingQuestion(true);
       const result = await deleteNursingEntranceExamQuizQuestion(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
         resolvedParams.quizId,
-        questionId
+        questionToDelete.id
       );
       if (result.success) {
         setSuccess("Question deleted successfully!");
-        setCurrentPage(1); // Reset to first page after deletion
-        loadQuestions();
+        setQuestionToDelete(null);
+        refreshQuestionsSilently();
         setTimeout(() => setSuccess(""), 3000);
       } else {
         setError(result.message || "Failed to delete question");
@@ -230,6 +769,8 @@ export default function ManageQuizQuestions({
     } catch (err) {
       setError("Failed to delete question");
       console.error("Error deleting:", err);
+    } finally {
+      setDeletingQuestion(false);
     }
   };
 
@@ -302,7 +843,7 @@ export default function ManageQuizQuestions({
         const totalQuestions = questions.length + 1;
         const lastPage = Math.ceil(totalQuestions / questionsPerPage);
         setCurrentPage(lastPage);
-        loadQuestions();
+        refreshQuestionsSilently();
         setTimeout(() => setSuccess(""), 3000);
       } else {
         setValidationError(result.message || "Failed to create question.");
@@ -315,14 +856,166 @@ export default function ManageQuizQuestions({
     }
   };
 
-  if (loading || !resolvedParams) {
+  const handleSaveQuizMetadata = async (metadataToSave: QuizMetadataContent) => {
+    if (!resolvedParams) return;
+
+    const normalizedQuizName = normalizeAdminContentName(metadataToSave.pageName);
+    const normalizedQuizSlug = normalizeSlug(metadataToSave.slug || normalizedQuizName || resolvedParams.quizId);
+    if (!normalizedQuizName) {
+      setError("Quiz name is required.");
+      return;
+    }
+    if (!normalizedQuizSlug) {
+      setError("Quiz slug is required.");
+      return;
+    }
+
+    try {
+      setSavingMetadata(true);
+      setError("");
+      setSuccess("");
+
+      const setNumber = metadataToSave.setNumber.trim()
+        ? Number(metadataToSave.setNumber)
+        : undefined;
+      const previewPercentage = metadataToSave.previewPercentage.trim()
+        ? Number(metadataToSave.previewPercentage)
+        : 20;
+      const estimatedMinutes = metadataToSave.estimatedMinutes.trim()
+        ? Number(metadataToSave.estimatedMinutes)
+        : undefined;
+
+      if (setNumber !== undefined && (!Number.isFinite(setNumber) || setNumber < 1)) {
+        setError("Set number must be 1 or higher.");
+        return;
+      }
+      if (!Number.isFinite(previewPercentage) || previewPercentage < 0 || previewPercentage > 100) {
+        setError("Preview percentage must be between 0 and 100.");
+        return;
+      }
+      if (
+        estimatedMinutes !== undefined &&
+        (!Number.isFinite(estimatedMinutes) || estimatedMinutes < 1)
+      ) {
+        setError("Estimated minutes must be 1 or higher.");
+        return;
+      }
+
+      const generatedSchema = buildGeneratedQuizSchema({
+        ...metadataToSave,
+        pageName: normalizedQuizName,
+        slug: normalizedQuizSlug,
+        setNumber: setNumber === undefined ? "" : String(setNumber),
+        previewPercentage: String(previewPercentage),
+        estimatedMinutes:
+          estimatedMinutes === undefined ? "" : String(estimatedMinutes),
+      });
+
+      const contentToSave = {
+        pageName: normalizedQuizName,
+        quizName: normalizedQuizName,
+        slug: normalizedQuizSlug,
+        status: metadataToSave.status,
+        active: metadataToSave.status === "Published",
+        examAccessProductId: metadataToSave.examAccessProductId,
+        subjectName: metadataToSave.subjectName.trim() || nestedName,
+        previewPercentage,
+        description: metadataToSave.description,
+        meta: {
+          ...metadataToSave.meta,
+          title: metadataToSave.meta.title || `${normalizedQuizName} | NursingMocks`,
+          canonicalUrl: metadataToSave.meta.canonicalUrl || `${getSiteUrl()}/${normalizedQuizSlug}`,
+        },
+        schema: generatedSchema,
+        hero: {
+          title: metadataToSave.hero.title || normalizedQuizName,
+          description: metadataToSave.hero.description || metadataToSave.description,
+        },
+        ...(setNumber === undefined ? {} : { setNumber }),
+        ...(estimatedMinutes === undefined ? {} : { estimatedMinutes }),
+      };
+
+      const result = await uploadNursingEntranceExamQuiz(
+        resolvedParams.subPageId,
+        resolvedParams.nestedSubPageId,
+        resolvedParams.quizId,
+        contentToSave
+      );
+
+      if (result.success) {
+        setSuccess("Quiz metadata saved successfully.");
+        setQuizName(contentToSave.pageName);
+        setQuizSlug(normalizedQuizSlug);
+        setQuizSetNumber(setNumber ?? "");
+        setQuizMetadata({
+          ...metadataToSave,
+          pageName: contentToSave.pageName,
+          slug: normalizedQuizSlug,
+          subjectName: contentToSave.subjectName,
+          setNumber: setNumber === undefined ? "" : String(setNumber),
+          previewPercentage: String(previewPercentage),
+          estimatedMinutes:
+            estimatedMinutes === undefined ? "" : String(estimatedMinutes),
+          meta: contentToSave.meta,
+          schema: generatedSchema,
+          hero: contentToSave.hero,
+        });
+        refreshQuestionsSilently();
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(result.message || "Failed to save quiz metadata.");
+      }
+    } catch (err) {
+      setError("Failed to save quiz metadata.");
+      console.error("Error saving quiz metadata:", err);
+    } finally {
+      setSavingMetadata(false);
+    }
+  };
+
+  const loadingQuizManagerHref = resolvedParams
+    ? `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/manage`
+    : "/admin/nursing-entrance-exam";
+
+  function LoadingShell({ children }: { children: React.ReactNode }) {
+    const { isCollapsed } = useSidebar();
+    const { currentUser } = useAuth();
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-white overflow-x-hidden">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Home", href: "/" },
+              { label: "Admin Dashboard", href: "/admin" },
+              { label: "Nursing Entrance Exam", href: "/admin/nursing-entrance-exam" },
+              { label: "Quiz Manager", href: loadingQuizManagerHref },
+            ]}
+            actions={currentUser ? <UserProfileBadge /> : null}
+          />
+          <div className="admin-page flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-6">
+            {children}
+          </div>
         </div>
       </div>
+    );
+  }
+
+  if (loading || !resolvedParams) {
+    return (
+      <SidebarProvider>
+        <LoadingShell>
+          <AdminLoadingState
+            title="Loading quiz manager"
+            description="Preparing quiz metadata, questions, filters, and table actions."
+          />
+        </LoadingShell>
+      </SidebarProvider>
     );
   }
 
@@ -383,6 +1076,8 @@ export default function ManageQuizQuestions({
   const quizBreadcrumb = quizName || resolvedParams.quizId;
   const parentName = parentSubPageName || resolvedParams.subPageId;
   const nestedName = nestedSubPageName || resolvedParams.nestedSubPageId;
+  const parentSubPageHref = `/admin/nursing-entrance-exam/${resolvedParams.subPageId}`;
+  const nestedEditorHref = `/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}`;
 
   function LayoutShell({ children }: { children: React.ReactNode }) {
     const { isCollapsed } = useSidebar();
@@ -396,69 +1091,42 @@ export default function ManageQuizQuestions({
             isCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <div className="hidden md:block border-b border-gray-200 bg-white h-16">
-            <div className="flex justify-between items-center px-4 h-full">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Link
-                  href="/"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Home
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <Link
-                  href="/admin"
-                  className="hover:text-blue-600 transition-colors font-medium"
-                >
-                  Admin
-                </Link>
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <span className="font-medium text-gray-800">Quiz Manager</span>
-              </div>
-              {currentUser ? (
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Home", href: "/" },
+              { label: "Admin Dashboard", href: "/admin" },
+              { label: "Nursing Entrance Exam", href: "/admin/nursing-entrance-exam" },
+              {
+                label: parentName,
+                href: parentSubPageHref,
+              },
+              {
+                label: nestedName,
+                href: nestedEditorHref,
+              },
+              { label: "Quiz Manager" },
+            ]}
+            actions={
+              currentUser ? (
                 <UserProfileBadge />
               ) : (
                 <div className="flex items-center space-x-4">
                   <Link
                     href="/login"
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    className="admin-button-secondary px-3 py-1.5 text-sm"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="gradient-button text-white px-6 py-2 rounded-lg font-bold"
+                    className="admin-button-primary px-4 py-2 text-sm"
                   >
                     Register
                   </Link>
                 </div>
-              )}
-            </div>
-          </div>
+              )
+            }
+          />
           <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ecebff_0%,transparent_55%),radial-gradient(circle_at_bottom_right,#eaf5ff_0%,transparent_55%),#f5f6fb]">
             {children}
           </div>
@@ -470,105 +1138,115 @@ export default function ManageQuizQuestions({
   return (
     <SidebarProvider>
       <LayoutShell>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="admin-workspace">
+          <div className="admin-content">
           {/* Header */}
-          <header className="mb-6">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="flex flex-col gap-2 min-w-0">
+          <header className="admin-header mb-6">
+            <div className="admin-header-row flex-wrap">
+              <div className="admin-header-copy flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-semibold text-slate-900">
+                  <h1 className="admin-page-title">
                     Quiz Questions – {quizBreadcrumb}
                   </h1>
                 </div>
-                <div className="text-sm text-slate-600 flex flex-wrap items-center gap-3">
+                <div className="admin-body flex flex-wrap items-center gap-3">
                   <span>
                     Review and manage all questions for this quiz. Use search,
                     filters, and bulk actions to keep the set clean and up to
                     date.
                   </span>
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    Quiz published
-                  </span>
+                  <AdminStatusBadge label="Quiz Published" tone="green" />
                 </div>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="admin-header-actions">
                 <Link
                   href="/admin/nursing-entrance-exam"
-                  className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+                  className="admin-button-secondary"
                 >
                   ← Back to Admin
                 </Link>
                 <Link
                   href={`/${quizSlug || resolvedParams.quizId}`}
                   target="_blank"
-                  className="btn btn-ghost rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-white shadow-sm"
+                  className="admin-button-secondary"
                 >
                   View Live Quiz
                 </Link>
                 <button
                   type="button"
-                  onClick={loadQuestions}
-                  className="btn btn-primary rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold shadow"
+                  onClick={() => void loadQuestions()}
+                  className="admin-button-primary"
                 >
-                  Save Changes
+                  Refresh
                 </button>
               </div>
             </div>
           </header>
 
+          <AdminNotificationRegion
+            error={error}
+            success={success}
+            errorTitle="Unable To Update Quiz"
+            successTitle="Quiz Updated"
+          />
+
+          {/* Quiz Metadata */}
+          {quizMetadata && (
+            <QuizMetadataPanel
+              initialMetadata={quizMetadata}
+              fallbackSlug={resolvedParams.quizId}
+              saving={savingMetadata}
+              generateSchema={buildGeneratedQuizSchema}
+              onSave={handleSaveQuizMetadata}
+            />
+          )}
+
           {/* Summary */}
-          <section className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-6">
+          <section className="admin-card p-5 mb-6">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
-              <div className="text-base font-semibold text-slate-900">
+              <div className="admin-section-title">
                 {quizBreadcrumb}
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="admin-helper mt-1">
                 Manage all the questions for this quiz from one place.
               </div>
             </div>
-            <Link
-              href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/manage`}
-              className="rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              Edit Quiz Info
-            </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Exam
               </div>
-              <div className="text-slate-900 font-medium">{parentName}</div>
+              <div className="admin-info-tile-value">{parentName}</div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Subject
               </div>
-              <div className="text-slate-900 font-medium">{nestedName}</div>
+              <div className="admin-info-tile-value">{nestedName}</div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Questions
               </div>
-              <div className="text-slate-900 font-medium">
+              <div className="admin-info-tile-value">
                 {questions.length}
               </div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 Set Number
               </div>
-              <div className="text-slate-900 font-medium">
+              <div className="admin-info-tile-value">
                 {quizSetNumber !== "" ? quizSetNumber : "—"}
               </div>
             </div>
             <div>
-              <div className="uppercase text-[11px] tracking-wide text-slate-400 mb-1">
+              <div className="admin-info-tile-label mb-1">
                 URL
               </div>
-              <div className="text-indigo-600 break-words">
+              <div className="admin-info-tile-value break-words">
                 /{quizSlug || resolvedParams.quizId}
               </div>
             </div>
@@ -576,13 +1254,13 @@ export default function ManageQuizQuestions({
         </section>
 
         {/* Questions */}
-        <section className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+        <section className="admin-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <div>
-              <div className="font-semibold text-slate-900 text-base">
+              <div className="admin-section-title">
                 Questions
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="admin-helper mt-1">
                 Showing {totalQuestions === 0 ? 0 : startIndex + 1}–
                 {endIndex} of {totalQuestions} questions.
               </div>
@@ -590,34 +1268,34 @@ export default function ManageQuizQuestions({
             <div className="flex flex-wrap gap-2">
               <Link
                 href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/bulk-upload`}
-                className="rounded-full bg-blue-600 text-white px-3 py-2 text-sm font-medium shadow hover:bg-blue-700"
+                className="admin-button-secondary"
               >
                 Bulk Upload
               </Link>
               <Link
                 href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/questions/create`}
-                className="rounded-full bg-green-600 text-white px-3 py-2 text-sm font-medium shadow hover:bg-green-700"
+                className="admin-button-primary"
               >
                 + Add Question
               </Link>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-center mb-3">
+          <div className="admin-card mb-4 flex flex-wrap gap-2 p-3">
             <div className="w-full sm:w-auto min-w-[200px]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search questions…"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               />
             </div>
             <div className="w-full sm:w-40">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               >
                 <option value="all">All types</option>
                 {typeOptions.map((opt) => (
@@ -631,7 +1309,7 @@ export default function ManageQuizQuestions({
               <select
                 value={skillFilter}
                 onChange={(e) => setSkillFilter(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               >
                 <option value="all">All skills</option>
                 {availableSkills.map((skill) => (
@@ -645,7 +1323,7 @@ export default function ManageQuizQuestions({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="admin-field"
               >
                 <option value="all">All statuses</option>
                 {availableStatuses.map((status) => (
@@ -674,18 +1352,18 @@ export default function ManageQuizQuestions({
                   />
                 </svg>
               </div>
-              <h3 className="text-base font-medium text-slate-900 mb-1">
+              <h3 className="admin-card-title mb-1">
                 No questions found
               </h3>
-              <p className="text-sm text-slate-600">
+              <p className="admin-helper">
                 Adjust filters or add a new question to get started.
               </p>
             </div>
           ) : (
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <thead className="bg-slate-50 text-slate-500">
+            <div className="admin-table-wrap">
+              <div>
+                <table className="admin-table">
+                  <thead>
                     <tr>
                       <th className="px-3 py-2 text-left font-semibold">Q#</th>
                       <th className="px-3 py-2 text-left font-semibold">
@@ -733,12 +1411,12 @@ export default function ManageQuizQuestions({
                       return (
                         <tr
                           key={question.id}
-                          className="border-t border-slate-200 bg-white odd:bg-white even:bg-slate-50"
+                          className=""
                         >
-                          <td className="px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">
+                          <td className="admin-table-cell-nowrap px-3 py-3 font-semibold">
                             Q{startIndex + index + 1}
                           </td>
-                          <td className="px-3 py-3 text-slate-900 align-top">
+                          <td className="px-3 py-3 align-top">
                             <div className="line-clamp-2 leading-5">
                               {stripHtmlTags(
                                 question.question || "No question text"
@@ -750,7 +1428,7 @@ export default function ManageQuizQuestions({
                               {questionTypeName}
                             </span>
                           </td>
-                          <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
+                          <td className="admin-table-cell-nowrap px-3 py-3">
                             {questionSkill || "—"}
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
@@ -772,14 +1450,14 @@ export default function ManageQuizQuestions({
                               {canEdit && (
                                 <Link
                                   href={`/admin/nursing-entrance-exam/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/quizzes/${resolvedParams.quizId}/questions/${question.id}`}
-                                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
+                                  className="admin-button-secondary px-3 py-1.5 text-xs"
                                 >
                                   Edit
                                 </Link>
                               )}
                               <button
-                                onClick={() => handleDeleteQuestion(question.id)}
-                                className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100"
+                                onClick={() => handleDeleteQuestion(question)}
+                                className="admin-button-danger px-3 py-1.5 text-xs"
                               >
                                 Delete
                               </button>
@@ -848,34 +1526,23 @@ export default function ManageQuizQuestions({
           )}
         </section>
 
-          {/* Alerts */}
-          {error && (
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              {success}
-            </div>
-          )}
         </div>
 
         {/* Create Question Modal */}
         {showCreateQuestionModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 overflow-y-auto py-4">
-            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 my-auto max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <div className="admin-modal-backdrop">
+            <div className="admin-modal max-w-2xl">
+              <h2 className="admin-modal-title mb-6">
                 Add New Question
               </h2>
               <form onSubmit={handleCreateQuestion} className="space-y-4">
                 {validationError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-sm text-red-800">{validationError}</p>
-                  </div>
+                  <AdminAlert tone="error" title="Question Validation Error">
+                    {validationError}
+                  </AdminAlert>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Question ID *
                   </label>
                   <input
@@ -886,26 +1553,26 @@ export default function ManageQuizQuestions({
                         e.target.value.toLowerCase().replace(/\s+/g, "-")
                       )
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="e.g., question-1"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Question Text *
                   </label>
                   <textarea
                     value={newQuestion}
                     onChange={(e) => setNewQuestion(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="Enter the question text"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Options *
                   </label>
                   {newOptions.map((option, index) => (
@@ -918,48 +1585,48 @@ export default function ManageQuizQuestions({
                         updated[index] = e.target.value;
                         setNewOptions(updated);
                       }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 mb-2"
+                      className="admin-field mb-2"
                       placeholder={`Option ${index + 1}`}
                     />
                   ))}
                   <button
                     type="button"
                     onClick={() => setNewOptions([...newOptions, ""])}
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    className="admin-button-secondary px-3 py-1.5 text-xs"
                   >
                     + Add Option
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Correct Answer *
                   </label>
                   <input
                     type="text"
                     value={newCorrectAnswer}
                     onChange={(e) => setNewCorrectAnswer(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="Enter the correct answer (must match one of the options)"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="admin-field-label mb-2 block">
                     Explanation
                   </label>
                   <textarea
                     value={newExplanation}
                     onChange={(e) => setNewExplanation(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    className="admin-field"
                     placeholder="Enter explanation for the correct answer (optional)"
                   />
                 </div>
-                <div className="flex space-x-3 pt-4">
+                <div className="admin-modal-footer pt-4">
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50"
+                    className="admin-button-primary flex-1 disabled:opacity-50"
                   >
                     {saving ? "Creating..." : "Create Question"}
                   </button>
@@ -974,7 +1641,7 @@ export default function ManageQuizQuestions({
                       setNewExplanation("");
                       setValidationError("");
                     }}
-                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
+                    className="admin-button-cancel flex-1"
                   >
                     Cancel
                   </button>
@@ -983,6 +1650,19 @@ export default function ManageQuizQuestions({
             </div>
           </div>
         )}
+        {questionToDelete && (
+          <AdminDestructiveDialog
+            title="Delete Question"
+            itemName={questionToDelete.questionId || questionToDelete.id}
+            consequence="This removes the question from this quiz and cannot be undone."
+            confirmLabel="Delete Question"
+            confirmingLabel="Deleting..."
+            confirming={deletingQuestion}
+            onCancel={() => setQuestionToDelete(null)}
+            onConfirm={handleConfirmDeleteQuestion}
+          />
+        )}
+        </div>
       </LayoutShell>
     </SidebarProvider>
   );
