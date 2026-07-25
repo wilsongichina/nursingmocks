@@ -2450,3 +2450,30 @@ Validation run:
 .\node_modules\.bin\tsc.cmd --noEmit
 npm test -- src/lib/my-exams/__tests__/get-my-exams.test.ts
 ```
+
+## Follow-up: My Exams Mobile Performance
+
+Updated `/dashboard/my-exams` so mobile users are not held on a full-page loading state while secondary data finishes loading.
+
+Behavior:
+
+- My Exams now renders once the authenticated user document is available.
+- Billing history continues loading in the background and is shown as a `Checking access` badge while pending.
+- The entrance exam catalog continues loading in its own section instead of blocking the full page.
+- Entrance catalog rows are cached in `sessionStorage` for five minutes per selected package.
+- If the user selected ATI TEAS 7 or HESI A2, the catalog query is scoped to that selected package instead of loading all entrance packages.
+- Mobile set selection uses compact horizontal set pills, while desktop keeps the larger set cards.
+- A top `Continue` card appears before the full set module so students can start faster on mobile.
+- Locked package cards wait until access loading finishes, preventing a brief flash of incorrect access options.
+
+Files changed:
+
+- `src/app/dashboard/my-exams/page.tsx`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm run lint
+```

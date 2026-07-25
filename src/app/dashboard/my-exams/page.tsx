@@ -30,6 +30,7 @@ import type { UserDocument } from "@/types/user-document";
 
 const ENTRANCE_PACKAGE_IDS = new Set(["ati_teas_7", "hesi_a2"]);
 const EXAM_SUBJECT_CATALOG_COLLECTION = "exam_subject_catalog";
+const ENTRANCE_CATALOG_CACHE_KEY = "my-exams:entrance-catalog:v1";
 
 type FirestoreRecord = Record<string, unknown> & { id?: string };
 
@@ -78,15 +79,45 @@ function isFullLengthEntranceExam(...values: unknown[]) {
   return text.includes("full-length") || text.includes("full length") || text.includes("full_exam") || text.includes("full exam");
 }
 
-async function fetchEntranceExamItems(): Promise<MyExamsDynamicExamInput[]> {
+function readEntranceCatalogCache(packageId?: string | null) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${ENTRANCE_CATALOG_CACHE_KEY}:${packageId || "all"}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { savedAt?: number; items?: MyExamsDynamicExamInput[] };
+    if (!Array.isArray(parsed.items)) return null;
+    if (Date.now() - Number(parsed.savedAt || 0) > 5 * 60 * 1000) return null;
+    return parsed.items;
+  } catch {
+    return null;
+  }
+}
+
+function writeEntranceCatalogCache(packageId: string | null | undefined, items: MyExamsDynamicExamInput[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(
+      `${ENTRANCE_CATALOG_CACHE_KEY}:${packageId || "all"}`,
+      JSON.stringify({ savedAt: Date.now(), items })
+    );
+  } catch {
+    // Session storage is an optimization only; Firestore remains the source of truth.
+  }
+}
+
+async function fetchEntranceExamItems(packageId?: string | null): Promise<MyExamsDynamicExamInput[]> {
   const items: MyExamsDynamicExamInput[] = [];
   // Read the compact catalog index instead of scanning nested quiz documents.
   // The nested quiz document remains the source of truth; admin quiz writes keep
   // this public display index in sync for fast student dashboard loading.
+  const constraints = [
+    where("examFamilyId", "==", "nursing_entrance_exams"),
+    ...(packageId ? [where("examAccessProductId", "==", packageId)] : []),
+  ];
   const snapshot = await getDocs(
     query(
       collection(db, EXAM_SUBJECT_CATALOG_COLLECTION),
-      where("examFamilyId", "==", "nursing_entrance_exams")
+      ...constraints
     )
   );
 
@@ -206,7 +237,15 @@ function EmptyState({ view }: { view: MyExamsViewModel }) {
   );
 }
 
-function PageHeader({ view, title }: { view: MyExamsViewModel; title: string }) {
+function PageHeader({
+  accessLoading,
+  view,
+  title,
+}: {
+  accessLoading: boolean;
+  view: MyExamsViewModel;
+  title: string;
+}) {
   return (
     <header className="user-page-header">
       <div className="user-page-header-row">
@@ -222,6 +261,7 @@ function PageHeader({ view, title }: { view: MyExamsViewModel; title: string }) 
         </div>
       </div>
       <div className="user-page-header-meta">
+        {accessLoading && <span className="user-pill user-pill-amber">Checking access</span>}
         {view.accessLabels.map((label) => (
           <span key={label} className={`user-pill ${view.hasPaidAccess ? "user-pill-green" : "user-pill-purple"}`}>
             {label}
@@ -272,12 +312,16 @@ function SetButton({
       type="button"
       onClick={onSelect}
       aria-pressed={isActive}
-      className={`relative min-w-[230px] rounded-[1.125rem] p-3 text-left transition lg:min-w-0 ${
+      className={`relative min-w-[92px] rounded-full px-3 py-2 text-left transition sm:min-w-[230px] sm:rounded-[1.125rem] sm:p-3 lg:min-w-0 ${
         isActive ? "user-feature-surface" : "user-card hover:-translate-y-0.5 hover:border-[#4f46e5]/30"
       }`}
     >
-      {isActive && <span className="absolute bottom-3 left-0 top-3 w-1 rounded-r-full bg-[#4f46e5]" />}
-      <div className="flex items-start justify-between gap-3">
+      {isActive && <span className="absolute bottom-3 left-0 top-3 hidden w-1 rounded-r-full bg-[#4f46e5] sm:block" />}
+      <div className="flex items-center justify-center gap-2 sm:hidden">
+        <span className="text-sm font-bold text-[#4338ca]">{setKey === "unassigned" ? "?" : setKey}</span>
+        <span className="sr-only">{examLabel} {label}</span>
+      </div>
+      <div className="hidden items-start justify-between gap-3 sm:flex">
         <div className="flex min-w-0 gap-3">
           <SetNumberTile label={setKey === "unassigned" ? "?" : setKey} active={isActive} />
           <div className="min-w-0">
@@ -292,6 +336,54 @@ function SetButton({
         </span>
       </div>
     </button>
+  );
+}
+
+function ContinueExamCard({ exams }: { exams: MyExamItem[] }) {
+  const exam = exams.find((item) => item.progressStatus === "in_progress") ||
+    exams.find((item) => item.accessState === "full") ||
+    exams[0];
+  if (!exam) return null;
+
+  const action = primaryAction(exam);
+  const setLabel = exam.setNumber ? `Set ${exam.setNumber}` : "Practice Set";
+
+  return (
+    <section className="user-feature-surface p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="user-label">Continue</p>
+          <h2 className="user-section-title mt-1 truncate">{exam.subjectName || exam.title}</h2>
+          <p className="user-body-sm mt-2">
+            {setLabel} - {exam.questionCount > 0 ? `${exam.questionCount} questions` : "Practice set"}
+          </p>
+        </div>
+        <Link href={action.href} className={`${action.className} justify-center gap-2 sm:min-w-[160px]`}>
+          {action.label}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function EntranceCatalogLoading() {
+  return (
+    <section className="user-feature-surface p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="user-label">Loading sets</p>
+          <h2 className="user-section-title mt-1">Preparing your exam subjects</h2>
+        </div>
+        <span className="user-pill user-pill-purple">Syncing</span>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-4">
+        <div className="user-skeleton h-10 rounded-full sm:h-20 sm:rounded-[1.125rem]" />
+        <div className="user-skeleton h-10 rounded-full sm:h-20 sm:rounded-[1.125rem]" />
+        <div className="user-skeleton h-10 rounded-full sm:h-20 sm:rounded-[1.125rem]" />
+        <div className="user-skeleton h-10 rounded-full sm:h-20 sm:rounded-[1.125rem]" />
+      </div>
+    </section>
   );
 }
 
@@ -528,7 +620,15 @@ function BankAndExitExperience({ exams }: { exams: MyExamItem[] }) {
   );
 }
 
-function MyExamsContent({ view }: { view: MyExamsViewModel }) {
+function MyExamsContent({
+  accessLoading,
+  entranceCatalogLoading,
+  view,
+}: {
+  accessLoading: boolean;
+  entranceCatalogLoading: boolean;
+  view: MyExamsViewModel;
+}) {
   const entranceExams = useMemo(() => view.exams.filter((exam) => ENTRANCE_PACKAGE_IDS.has(exam.packageId)), [view.exams]);
   const bankAndExitExams = useMemo(() => view.exams.filter((exam) => !ENTRANCE_PACKAGE_IDS.has(exam.packageId)), [view.exams]);
   const title = entranceExams[0]?.packageId === "hesi_a2"
@@ -541,14 +641,16 @@ function MyExamsContent({ view }: { view: MyExamsViewModel }) {
     <Layout>
       <main className="user-page">
         <div className="user-page-container">
-          <PageHeader view={view} title={title} />
+          <PageHeader accessLoading={accessLoading} view={view} title={title} />
 
           <div className="grid gap-5">
+            {entranceExams.length > 0 && <ContinueExamCard exams={entranceExams} />}
             {entranceExams.length > 0 && <EntranceExamExperience exams={entranceExams} />}
+            {entranceCatalogLoading && entranceExams.length === 0 && <EntranceCatalogLoading />}
             {bankAndExitExams.length > 0 && <BankAndExitExperience exams={bankAndExitExams} />}
-            {view.exams.length === 0 && <EmptyState view={view} />}
+            {view.exams.length === 0 && !entranceCatalogLoading && <EmptyState view={view} />}
 
-            {view.lockedPackages.length > 0 && (
+            {!accessLoading && view.lockedPackages.length > 0 && (
               <section className="user-feature-surface p-5">
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -608,7 +710,7 @@ export default function MyExamsPage() {
   const [entranceExamItems, setEntranceExamItems] = useState<MyExamsDynamicExamInput[] | null>(null);
   const [docLoading, setDocLoading] = useState(true);
   const [billingLoading, setBillingLoading] = useState(false);
-  const [, setEntranceLoading] = useState(false);
+  const [entranceLoading, setEntranceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -653,15 +755,27 @@ export default function MyExamsPage() {
     };
   }, [currentUser]);
 
+  const selectedEntrancePackageId = selectedEntranceExamId(userDoc);
+
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || docLoading) return;
     let cancelled = false;
+    const cachedItems = readEntranceCatalogCache(selectedEntrancePackageId);
+    if (cachedItems) {
+      setEntranceExamItems(cachedItems);
+      setEntranceLoading(false);
+      return;
+    }
+    setEntranceExamItems(null);
     setEntranceLoading(true);
 
     async function loadEntranceItems() {
       try {
-        const items = await fetchEntranceExamItems();
-        if (!cancelled) setEntranceExamItems(items);
+        const items = await fetchEntranceExamItems(selectedEntrancePackageId);
+        if (!cancelled) {
+          writeEntranceCatalogCache(selectedEntrancePackageId, items);
+          setEntranceExamItems(items);
+        }
       } catch (error) {
         console.warn("Could not load dynamic entrance exam sets", error);
         if (!cancelled) setEntranceExamItems([]);
@@ -674,18 +788,18 @@ export default function MyExamsPage() {
     return () => {
       cancelled = true;
     };
-  }, [currentUser]);
+  }, [currentUser, docLoading, selectedEntrancePackageId]);
 
   const view = useMemo(
     () => buildMyExamsViewModel(userDoc, billingHistory, entranceExamItems),
     [billingHistory, entranceExamItems, userDoc]
   );
-  const isSelectedEntranceCatalogLoading = Boolean(selectedEntranceExamId(userDoc)) && entranceExamItems === null;
+  const isSelectedEntranceCatalogLoading = Boolean(selectedEntrancePackageId) && entranceExamItems === null;
 
-  // Dynamic entrance sets can require several Firestore reads and question-count calls.
-  // Render the access shell first, but do not show fallback TEAS/HESI rows because
-  // My Exams must reflect the actual Firestore subjects available to the student.
-  if (loading || (currentUser && (docLoading || billingLoading || isSelectedEntranceCatalogLoading))) return <LoadingState />;
+  // Render the page as soon as the user document is available. Billing and the
+  // entrance catalog continue loading into their own sections so mobile users
+  // are not stuck on a full-page spinner.
+  if (loading || (currentUser && docLoading)) return <LoadingState />;
   if (!currentUser) return null;
 
   if (error) {
@@ -711,7 +825,11 @@ export default function MyExamsPage() {
 
   return (
     <Suspense fallback={<LoadingState />}>
-      <MyExamsContent view={view} />
+      <MyExamsContent
+        accessLoading={billingLoading}
+        entranceCatalogLoading={entranceLoading || isSelectedEntranceCatalogLoading}
+        view={view}
+      />
     </Suspense>
   );
 }
