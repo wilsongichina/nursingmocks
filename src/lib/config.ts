@@ -4,14 +4,14 @@
  */
 
 export const getSiteUrl = (): string => {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://nursingmocks.com";
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com";
 };
 
 export const getCanonicalSiteUrl = (): string => {
   const configuredUrl =
     process.env.NEXT_PUBLIC_CANONICAL_SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://nursingmocks.com";
+    "https://www.nursingmocks.com";
 
   try {
     const url = new URL(configuredUrl);
@@ -22,14 +22,15 @@ export const getCanonicalSiteUrl = (): string => {
     if (
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
-      hostname.endsWith(".local")
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".vercel.app")
     ) {
-      return "https://nursingmocks.com";
+      return "https://www.nursingmocks.com";
     }
 
     return url.origin.replace(/\/$/, "");
   } catch {
-    return "https://nursingmocks.com";
+    return "https://www.nursingmocks.com";
   }
 };
 
@@ -39,7 +40,7 @@ export const getSiteDomain = (): string => {
     const urlObj = new URL(url);
     return urlObj.hostname;
   } catch {
-    return "nursingmocks.com";
+    return "www.nursingmocks.com";
   }
 };
 

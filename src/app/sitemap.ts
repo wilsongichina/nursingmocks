@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { getSiteUrl } from "@/lib/config";
+import { getCanonicalSiteUrl } from "@/lib/config";
 
 const INDEXABLE_PAGES = [
   { path: "/", changeFrequency: "weekly" as const, priority: 1 },
@@ -24,7 +24,7 @@ const INDEXABLE_PAGES = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = getSiteUrl();
+  const baseUrl = getCanonicalSiteUrl();
 
   return INDEXABLE_PAGES.map((page) => ({
     url: page.path === "/" ? baseUrl : `${baseUrl}${page.path}`,

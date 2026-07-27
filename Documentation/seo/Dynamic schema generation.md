@@ -140,8 +140,10 @@ Behavior:
 - About, guarantees, prices, register, login, cookie policy, and thank-you metadata now use current NursingMocks branding and page-specific descriptions.
 - Terms, privacy, and onboarding now use server page wrappers with static metadata while their interactive bodies remain client components.
 - `/robots.txt` is generated from `src/app/robots.ts` and now uses an exact allowlist for home, company, legal, registration/account setup, and four TEAS set 1 subject practice pages.
+- `/robots.txt` explicitly allows `/robots.txt` and `/sitemap.xml` so Google can fetch the sitemap even though the rest of the site is disallowed by default.
 - All other page paths are disallowed in robots, while static render assets such as `/_next/static/`, favicon files, and the NursingMocks logo remain crawlable.
 - `/sitemap.xml` now lists the same indexable page set and no longer includes unrelated placeholder routes.
+- Sitemap and robots generation use the canonical URL helper, which falls back to `https://www.nursingmocks.com` for localhost and Vercel preview domains.
 
 Files changed:
 
@@ -161,6 +163,7 @@ Files changed:
 - `src/app/thank-you/page.tsx`
 - `src/app/robots.ts`
 - `src/app/sitemap.ts`
+- `src/lib/config.ts`
 
 Validation run:
 

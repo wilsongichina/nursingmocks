@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { getCanonicalSiteUrl } from "@/lib/config";
 
 const INDEXABLE_PATHS = [
   "/$",
@@ -28,6 +29,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: [
+          "/robots.txt",
+          "/sitemap.xml",
           ...INDEXABLE_PATHS,
           "/_next/static/",
           "/favicon.ico",
@@ -37,6 +40,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: "/",
       },
     ],
-    sitemap: "https://nursingmocks.com/sitemap.xml",
+    sitemap: `${getCanonicalSiteUrl()}/sitemap.xml`,
   };
 }
