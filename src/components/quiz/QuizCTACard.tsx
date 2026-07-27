@@ -34,7 +34,7 @@ export default function QuizCTACard({
     hiddenQuestionCount && hiddenQuestionCount > 0 ? `${hiddenQuestionCount} more questions` : "the complete set";
 
   return (
-    <section className="user-feature-surface my-5 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <section className="user-feature-surface my-4 flex flex-col gap-4 p-4 sm:my-5 sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div className="max-w-2xl">
         <span className="user-badge user-badge-amber">Preview limit reached</span>
         <h2 className="user-card-title mt-3">Unlock {productLabel}</h2>

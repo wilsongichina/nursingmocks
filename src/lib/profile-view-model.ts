@@ -6,6 +6,7 @@ import {
   PRIMARY_EXAM_LABELS,
   PROGRAM_TYPE_LABELS,
 } from "@/lib/program-type";
+import { onboardingExamLabel } from "@/lib/onboarding";
 import {
   normalizeUserEntitlements,
   USER_ENTITLEMENT_KEYS,
@@ -143,14 +144,17 @@ export function buildProfileView(
   const code = doc?.referral_summary?.referral_code?.trim() || "";
   const referralLink = code ? `${origin}/ref/${encodeURIComponent(code)}` : "";
 
+  const profileExamType = doc?.profile?.primary_exam_type?.trim() ?? "";
   const firstFocusArea = doc?.profile?.focus_areas?.[0]?.trim() ?? "";
   const inferredPrimaryId = inferPrimaryExamIdFromProgramType(firstFocusArea);
   const primaryId = doc?.profile?.primary_exam_id ?? inferredPrimaryId;
   const primaryExamLabel = primaryId
     ? PRIMARY_EXAM_LABELS[primaryId] ?? primaryId
     : "Not set";
-  const programTypeLabel = firstFocusArea
-    ? PROGRAM_TYPE_LABELS[firstFocusArea] ?? firstFocusArea
+  const programTypeLabel = profileExamType || firstFocusArea
+    ? onboardingExamLabel(profileExamType) !== "Not selected"
+      ? onboardingExamLabel(profileExamType)
+      : PROGRAM_TYPE_LABELS[firstFocusArea] ?? firstFocusArea
     : "Not set";
 
   const acct = doc?.account_state?.status;

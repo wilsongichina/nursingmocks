@@ -249,6 +249,128 @@ Validation run:
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
 
+## Follow-up: Nursing Entrance Quiz Explanation Generation
+
+Added a one-click explanation generator to the Nursing Entrance quiz manager.
+
+Affected page:
+
+```text
+/admin/nursing-entrance-exam/[subPageId]/nested/[nestedSubPageId]/quizzes/[quizId]/manage
+/admin/nursing-entrance-exam
+```
+
+Changed:
+
+- added an `AI Explanations` panel with a `Generate Missing Explanations` action
+- added `Generate Explanations` actions to Quiz Metadata rows on `/admin/nursing-entrance-exam` when the quiz has questions
+- active explanation generation can be stopped from either page; stopping aborts the current request and prevents the loop from moving to the next question
+- the admin can optionally regenerate existing explanations for the current quiz
+- the client processes the selected quiz questions one at a time so each LLM request only receives one question, passage, answer set, and saved correct answer
+- the main Quiz Metadata row action loads the quiz questions first, skips questions that already have explanations, then calls the same one-question API route with row-level progress
+- added the admin API route `/api/admin/nursing-entrance-exam/generate-explanation`
+- the route reads the saved question from Firestore, calls OpenAI, and writes the explanation back to the existing question document
+- existing correct answers are treated as the source of truth; if the model sees a likely mismatch, the question is marked `explanationStatus: "needs_answer_review"` instead of changing the answer
+- generated explanations are stored with `explanation`, `explanationStatus`, `explanationGeneratedBy`, and `explanationGeneratedAt`
+- failed generations are recorded with `explanationStatus: "failed"` and `explanationError`
+- explanation generation also classifies each question into official ATI TEAS sections and saves `atiSubject`, `atiSection`, `atiClassificationReason`, `atiClassificationGeneratedBy`, and `atiClassificationGeneratedAt`
+- `atiSection` is server-normalized against the official ATI TEAS section names; unknown or unsupported section names are saved as `Needs Review`
+
+Assumptions:
+
+- `OPENAI_API_KEY` is configured on the server
+- the default explanation model is `gpt-5-nano`, overridable with `OPENAI_EXPLANATION_MODEL`
+- the explanation style prompt is editable through `OPENAI_EXPLANATION_PROMPT`; escaped `\n` values are converted to line breaks before sending to OpenAI
+- the prompt now includes answer mismatch detection, subject-specific guidance, short paragraph formatting, and a 60-140 word target for most explanations
+- generated explanation text is normalized before save so dense one-paragraph outputs are split into readable paragraphs when possible
+- public quiz explanation rendering also formats plain-text explanations into short paragraphs, so already-saved dense explanations display more readably without regeneration
+- public dynamic quiz pages serialize Firestore timestamp-like values before passing questions into client components, preventing Next.js server/client prop errors after explanation and classification metadata are saved
+- public quiz question cards now support the first TEAS renderer pass for Type 1, Type 2, Type 3, Type 6, and Type 7 with type-specific answer surfaces, check-answer feedback, correct/wrong highlighting, ordered-response placement, numeric answer checking, and readable explanations
+- Type 1, Type 2, and Type 3 public answer rows now follow the admin question-type preview style: no visible A/B labels, radio/checkbox markers, transparent full-width rows, square-edged controls, and compact feedback labels
+- public quiz explanations now render below the answer/check area inside the same question card instead of in a desktop side column; checking an answer opens the explanation automatically, and users can still hide or show it manually
+- public quiz pages are now tighter on mobile: question cards use smaller mobile padding, answer rows have larger tap targets with safer text wrapping, ordered-response boxes use shorter mobile heights, Check/Reset controls stack cleanly, and preview CTA/review summary spacing is reduced
+- Type 6 ordered-response questions are now included in public quiz page filtering and the authenticated full-quiz API so they can render with the shared public question UI
+- the authenticated full-quiz API also serializes Firestore timestamp-like values before returning question JSON to client components
+- added a reusable cleanup script for restarting explanation generation from a clean state:
+  - dry-run: `npm run content:entrance-generated-explanations:dry-run`
+  - apply: `npm run content:entrance-generated-explanations:apply`
+- the cleanup script removes only fields written by the AI explanation generator and ATI classification flow, preserving question text, passages, options, and saved correct answers
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm run content:entrance-generated-explanations:dry-run
+npm run content:entrance-generated-explanations:apply
+npm run content:entrance-generated-explanations:dry-run
+```
+
+## Follow-up: Nursing Entrance Quiz Name Cursor Fix
+
+Resolved a create-quiz form issue on `/admin/nursing-entrance-exam` where editing text in the middle of the Quiz Name field moved the cursor back to the end.
+
+Changed:
+
+- Quiz Name input now preserves the raw typed value during `onChange`
+- slug auto-generation still updates from the current Quiz Name while typing
+- display-name normalization still happens on blur and during save
+
+Affected files:
+
+```text
+src/app/admin/nursing-entrance-exam/page.tsx
+```
+
+## Follow-up: Nursing Entrance Quiz Year Metadata
+
+Added optional year metadata for Nursing Entrance Exam quiz sets so admins can identify which year a quiz/set belongs to before importing or managing questions.
+
+Changed:
+
+- Create Quiz modal on `/admin/nursing-entrance-exam` now includes a Year field
+- Year is validated as an optional four-digit value from 2000 through 2100
+- created quiz documents now save `examYear`
+- Quiz Metadata table now shows the saved year when present
+- Quiz Metadata editor now loads, edits, validates, and saves `examYear`
+- entrance quiz subject catalog records now mirror `examYear` for downstream My Exams/import targeting
+
+Affected files:
+
+```text
+src/app/admin/nursing-entrance-exam/page.tsx
+src/app/admin/nursing-entrance-exam/[subPageId]/nested/[nestedSubPageId]/quizzes/[quizId]/manage/page.tsx
+src/lib/firestore-operations.ts
+```
+
+## Follow-up: TEAS Scans Bulk Upload Prefill
+
+Added a TEAS scan import prefill to the Nursing Entrance Exam quiz bulk upload page. The existing bulk upload writer remains the production import path; TEAS scans now load into the JSON textarea and preview before admins confirm the normal import.
+
+Changed:
+
+- `/admin/nursing-entrance-exam/[subPageId]/nested/[nestedSubPageId]/quizzes/[quizId]/bulk-upload` now includes a `Load From TEAS Scans` panel
+- the panel reads the target quiz subject, set number, and year from quiz metadata
+- admins can include or exclude TEAS scan records marked `Needs Review`
+- matching `teasScannedQuestions` records are converted into the existing bulk-upload JSON shape
+- scan warnings/errors are highlighted on the bulk upload page
+- non-blocking issues can still be imported after explicit admin confirmation
+- blocking issues, such as missing question text or missing correct answer, prevent import
+- TEAS scan passages are now included in generated bulk-upload JSON, shown in the bulk-upload preview, saved on imported questions as `passage`, and rendered above the question on public quiz pages
+- imported production question records now preserve `importReview` and `sourceScanId` metadata for later manual cleanup
+- the saved TEAS scans admin API now supports filtering by `setNumber` and normalized TEAS subject
+- bulk upload writes now run through an admin API route instead of browser Firestore writes, avoiding client permission-denied failures while still requiring an admin Firebase token
+
+Affected files:
+
+```text
+src/app/api/admin/teas-image-import/scanned-questions/route.ts
+src/app/api/admin/nursing-entrance-exam/bulk-upload-questions/route.ts
+src/app/admin/nursing-entrance-exam/[subPageId]/nested/[nestedSubPageId]/quizzes/[quizId]/bulk-upload/page.tsx
+src/components/quiz/DynamicQuizQuestions.tsx
+src/components/quiz/QuestionCard.tsx
+src/lib/firestore-operations.ts
+```
+
 ## Follow-up: TEAS DOCX Source Allowlist
 
 Restricted the TEAS DOCX import tool to the two confirmed source documents only.

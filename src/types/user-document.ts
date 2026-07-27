@@ -10,8 +10,14 @@ export interface UserDocumentProfile {
   timezone: string;
   locale: string;
   primary_exam_id: string | null;
+  primary_exam_type?: string | null;
   focus_areas: string[];
   dashboard_exam_ids?: string[];
+  onboarding_completed?: boolean;
+  onboarding_step?: number;
+  exam_date?: string | null;
+  exam_not_scheduled?: boolean;
+  onboarding_completed_at?: Timestamp | null;
 }
 
 export interface UserDocumentPreferences {
@@ -139,6 +145,10 @@ export interface UserDocument {
   user_id: string;
   full_name: string;
   email: string;
+  onboardingCompleted?: boolean;
+  primaryExamType?: string | null;
+  examDate?: string | null;
+  onboardingCompletedAt?: Timestamp | null;
   phone_e164: string | null;
   avatar_url: string | null;
   created_at: Timestamp;

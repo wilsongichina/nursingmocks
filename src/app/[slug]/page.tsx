@@ -244,7 +244,22 @@ type TiptapContentPart =
   | { type: "html"; html: string }
   | { type: "quizCard"; key: string; quizTitle: string; questions: any[] };
 
-const SUPPORTED_QUIZ_CARD_QUESTION_TYPES = new Set([1, 2, 3, 7]);
+const SUPPORTED_QUIZ_CARD_QUESTION_TYPES = new Set([1, 2, 3, 6, 7]);
+
+function toClientSafeValue(value: any): any {
+  if (value === null || value === undefined) return value;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value !== "object") return value;
+  if (typeof value.toDate === "function") return value.toDate().toISOString();
+  if (typeof value.seconds === "number" && typeof value.nanoseconds === "number") {
+    return new Date(value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000)).toISOString();
+  }
+  if (Array.isArray(value)) return value.map(toClientSafeValue);
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entryValue]) => [key, toClientSafeValue(entryValue)])
+  );
+}
 
 const decodeHtmlAttribute = (value: string) =>
   value
@@ -312,7 +327,7 @@ const loadStaticQuizCardQuestions = async (attrs: Record<string, string>) => {
     }
   }
 
-  return questions;
+  return toClientSafeValue(questions);
 };
 
 const buildStaticTiptapContentParts = async (
@@ -1071,7 +1086,7 @@ export default async function DynamicPage({
         : [];
 
     // Filter questions to only show types 1, 2, 3, and 7
-    const allowedQuestionTypes = [1, 2, 3, 7];
+    const allowedQuestionTypes = [1, 2, 3, 6, 7];
     const allQuestions =
       questionsResult && questionsResult.success && questionsResult.data
         ? questionsResult.data
@@ -1090,6 +1105,7 @@ export default async function DynamicPage({
     const questions = previewState.previewEnabled
       ? filteredQuestions.slice(0, previewState.previewLimit)
       : [];
+    const clientQuestions = toClientSafeValue(questions);
 
     // Get nested page slug for back button
     let parentPageSlug = "";
@@ -1274,7 +1290,7 @@ export default async function DynamicPage({
         ...(nestedPageSlug ? [{ name: subjectLabel, slug: nestedPageSlug }] : []),
         { name: quizTitle, slug },
       ],
-      questions: questions.map((question: any) => ({
+      questions: clientQuestions.map((question: any) => ({
         id: question.id,
         question: question.question,
       })),
@@ -1335,7 +1351,7 @@ export default async function DynamicPage({
               </div>
             </header>
 
-            <section className="user-card mb-5 p-4">
+            <section className="user-card mb-4 p-3 sm:mb-5 sm:p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="user-pill">{setLabel}</span>
@@ -1349,16 +1365,16 @@ export default async function DynamicPage({
                   )}
                   <span className="user-pill user-pill-purple">Review Mode</span>
                 </div>
-                <p className="user-helper max-w-2xl">
+                <p className="user-helper max-w-2xl text-sm">
                   Review Mode lets you answer first, then reveal explanations when you are ready.
                 </p>
               </div>
             </section>
 
-            <section id="questions-start" className="space-y-4">
+            <section id="questions-start" className="space-y-3 sm:space-y-4">
               <DynamicQuizQuestions
                 slug={slug}
-                previewQuestions={questions}
+                previewQuestions={clientQuestions}
                 totalQuestionCount={filteredQuestions.length}
                 hiddenQuestionCount={previewState.hiddenQuestionCount}
                 productLabel={previewState.productLabel}

@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import UserProfileBadge from "./UserProfileBadge";
 import FloatingWhatsAppButton from "../ui/FloatingWhatsAppButton";
 import MobileBreadcrumb from "../ui/MobileBreadcrumb";
+import OnboardingRouteGuard from "@/components/onboarding/OnboardingRouteGuard";
 
 interface LayoutProps {
   children: ReactNode;
@@ -1386,30 +1387,36 @@ export default function Layout({
   if (sidebarEnabled === null) {
     // Default to showing sidebar during initial render to avoid hydration mismatch
     return (
-      <SidebarProvider>
-        <LayoutWithSidebar initialBreadcrumbItems={initialBreadcrumbItems}>
-          {children}
-        </LayoutWithSidebar>
-      </SidebarProvider>
+      <OnboardingRouteGuard>
+        <SidebarProvider>
+          <LayoutWithSidebar initialBreadcrumbItems={initialBreadcrumbItems}>
+            {children}
+          </LayoutWithSidebar>
+        </SidebarProvider>
+      </OnboardingRouteGuard>
     );
   }
 
   if (sidebarEnabled) {
     return (
-      <SidebarProvider>
-        <LayoutWithSidebar initialBreadcrumbItems={initialBreadcrumbItems}>
-          {children}
-        </LayoutWithSidebar>
-      </SidebarProvider>
+      <OnboardingRouteGuard>
+        <SidebarProvider>
+          <LayoutWithSidebar initialBreadcrumbItems={initialBreadcrumbItems}>
+            {children}
+          </LayoutWithSidebar>
+        </SidebarProvider>
+      </OnboardingRouteGuard>
     );
   }
 
   return (
-    <LayoutWithoutSidebar
-      showHeader={showHeader}
-      initialBreadcrumbItems={initialBreadcrumbItems}
-    >
-      {children}
-    </LayoutWithoutSidebar>
+    <OnboardingRouteGuard>
+      <LayoutWithoutSidebar
+        showHeader={showHeader}
+        initialBreadcrumbItems={initialBreadcrumbItems}
+      >
+        {children}
+      </LayoutWithoutSidebar>
+    </OnboardingRouteGuard>
   );
 }

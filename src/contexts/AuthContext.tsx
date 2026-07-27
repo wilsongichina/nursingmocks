@@ -26,7 +26,7 @@ interface AuthContextType {
     email: string,
     password: string,
     name: string,
-    programType: string
+    programType?: string
   ) => Promise<void>;
   loginWithGoogle: (options?: { programType?: string }) => Promise<UserCredential>;
   logout: () => Promise<void>;
@@ -77,17 +77,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     name: string,
-    programType: string
+    programType?: string
   ) {
     return createUserWithEmailAndPassword(auth, email, password).then(
       async (userCredential) => {
         await updateProfile(userCredential.user, {
           displayName: name,
         });
-        const normalizedProgram = programType.trim();
+        const normalizedProgram = programType?.trim();
         await ensureUserDocumentOnRegister(userCredential.user, {
           fullName: name,
-          focusAreas: [normalizedProgram],
+          focusAreas: normalizedProgram ? [normalizedProgram] : undefined,
+        }).catch((error) => {
+          // Server-side registration completion is the durable path; this client
+          // write is retained only for older flows and should not strand Auth users.
+          console.warn("Client user document creation could not complete", error);
         });
       }
     );
@@ -121,6 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fullName,
         providerOverride: "google",
         focusAreas: normalizedProgram ? [normalizedProgram] : undefined,
+      }).catch((error) => {
+        // Server-side registration completion is the durable path; this client
+        // write is retained only for older flows and should not strand Auth users.
+        console.warn("Client Google user document creation could not complete", error);
       });
       return credential;
     });

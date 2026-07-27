@@ -2414,6 +2414,9 @@ Behavior:
 - Admin-created quiz slugs must be allowed to resolve dynamically through the top-level `[slug]` route. Do not set `dynamicParams = false` for `src/app/[slug]/page.tsx`, because that requires every new quiz slug to be known at build time.
 - Entrance quiz documents should store lightweight metadata for My Exams: `examAccessProductId`, `examFamilyId`, `subjectName`, `subjectId`, `questionCount`, `previewPercentage`, and `active`.
 - Entrance quiz `questionCount` and the My Exams catalog index are maintained when admin users create or edit entrance quizzes, add one question, bulk upload questions, or delete questions.
+- My Exams now ignores entrance catalog rows where `active === false` or `questionCount <= 0`, so stale test rows and empty deleted-content rows cannot appear in the student dashboard.
+- Nursing Entrance Exam delete flows now cascade My Exams cleanup: deleting a quiz removes its questions, route mapping, and `exam_subject_catalog` row; deleting a nested sub-page removes child quizzes first; deleting a sub-page removes child nested pages first.
+- Stale entrance catalog rows can be audited and removed with `npm run content:entrance-catalog:clean:dry-run` and `npm run content:entrance-catalog:clean:apply`.
 - The Nursing Entrance Exam admin quiz list calls `getNursingEntranceExamQuizzes(..., { repairMyExamsCatalog: true })` so missing My Exams catalog rows are repaired automatically from the admin UI without requiring a backfill command.
 - The Nursing Entrance Exam bulk upload page also calls `/api/admin/entrance-exam/catalog-repair` after a successful upload. This server-side repair recounts quiz questions with Firebase Admin SDK and updates both the quiz metadata and `exam_subject_catalog`, then reports the updated question count in the success message.
 - Entrance catalog repair must infer `ati_teas_7` from TEAS/ATI quiz, parent, nested-page names, or slugs and `hesi_a2` from HESI/Hessi names when `examAccessProductId` is missing. This prevents admin-created TEAS/HESI sets from being uploaded successfully but hidden from My Exams.
@@ -2476,4 +2479,44 @@ Validation run:
 ```text
 .\node_modules\.bin\tsc.cmd --noEmit
 npm run lint
+```
+
+## Follow-up: Registration Onboarding Flow
+
+Registration now creates the account first, then sends the user through `/onboarding` before protected dashboard tools are available.
+
+Behavior:
+
+- Email/password and Google signup no longer require an exam type in the registration form.
+- The registration completion route creates the Firestore user document with onboarding defaults and queues the welcome email from the verified Firebase ID token.
+- New user documents store `profile.onboarding_completed`, `profile.onboarding_step`, `profile.primary_exam_type`, `profile.exam_date`, and `profile.exam_not_scheduled`.
+- `/onboarding` collects the exam type, expected exam date, or not-scheduled state, then writes the derived primary exam ID and focus area.
+- Existing users with a saved primary exam or focus area are treated as already onboarded so legacy accounts are not blocked.
+- Protected dashboard/profile/progress/referral pages redirect signed-in incomplete users to `/onboarding`.
+- Completing onboarding always sends users to `/dashboard/my-exams`.
+- The onboarding UI uses the shared user page, header, card, choice, field, badge, and button styles so it matches login, registration, profile, and dashboard pages.
+- The setup card is centered in the viewport, keeps step content constrained to a readable width, and uses full-width mobile actions with compact progress labels.
+- Onboarding exam descriptions now explain the main subtests or covered tracks: TEAS subjects, HESI subjects, RN/LPN test bank areas, and RN/LPN exit predictor readiness.
+- The expected-date field now uses the browser date picker without a custom overlapping calendar icon, and the selected exam card has a stronger highlighted state with a selected badge.
+- Clicking anywhere inside the onboarding date field container focuses the date input and opens the browser calendar picker when supported.
+
+Files changed:
+
+- `src/app/onboarding/page.tsx`
+- `src/components/onboarding/OnboardingRouteGuard.tsx`
+- `src/components/layout/Layout.tsx`
+- `src/app/register/RegisterPageClient.tsx`
+- `src/components/ui/RegisterForm.tsx`
+- `src/app/api/users/complete-registration/route.ts`
+- `src/contexts/AuthContext.tsx`
+- `src/lib/onboarding.ts`
+- `src/lib/user-document-firestore.ts`
+- `src/lib/profile-view-model.ts`
+- `src/types/user-document.ts`
+- `Documentation/user-dashboard/User dashboard.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
 ```

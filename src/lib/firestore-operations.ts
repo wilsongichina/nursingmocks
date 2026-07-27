@@ -480,6 +480,7 @@ function entranceQuizMetadataFor({
     subjectName,
     subjectId: slugMetadataValue(subjectName || textMetadataValue(content.slug, content.pageName)),
     questionCount,
+    examYear: numberMetadataValue(content.examYear, content.year) || null,
     previewPercentage: numberMetadataValue(content.previewPercentage, 20),
     active: content.active !== false,
   };
@@ -542,6 +543,7 @@ async function upsertEntranceQuizSubjectCatalog({
       pageName: textMetadataValue(content.pageName, title),
       quizName: textMetadataValue(content.quizName, title),
       setNumber: numberMetadataValue(content.setNumber) || null,
+      examYear: numberMetadataValue(content.examYear, content.year) || null,
       contentPath,
       sourcePillarId: "nursing-entrance-exam",
       sourceUpdatedAt: new Date().toISOString(),
@@ -553,6 +555,66 @@ async function upsertEntranceQuizSubjectCatalog({
 
 async function deleteEntranceQuizSubjectCatalog(quizId: string) {
   await deleteDoc(doc(db, EXAM_SUBJECT_CATALOG_COLLECTION, entranceSubjectCatalogDocId(quizId)));
+}
+
+async function deleteCollectionDocuments(collectionPath: string) {
+  const snapshot = await getDocs(collection(db, collectionPath));
+  await Promise.all(snapshot.docs.map((documentSnapshot) => deleteDoc(documentSnapshot.ref)));
+  return snapshot.size;
+}
+
+async function deleteEntranceQuizCascade({
+  parentSubPageId,
+  nestedSubPageId,
+  quizId,
+}: {
+  parentSubPageId: string;
+  nestedSubPageId: string;
+  quizId: string;
+}) {
+  const pillarId = "nursing-entrance-exam";
+  const quizPath = `pillarPages/${pillarId}/subPages/${parentSubPageId}/nestedSubPages/${nestedSubPageId}/quizzes/${quizId}`;
+
+  // Firestore does not cascade subcollections, so delete quiz questions and
+  // denormalized My Exams catalog rows before removing the quiz document.
+  await deleteCollectionDocuments(`${quizPath}/questions`);
+  await deleteDoc(doc(db, quizPath));
+  await deleteEntranceQuizSubjectCatalog(quizId);
+  await deleteRouteMappingByRefPath(quizPath);
+  await deleteRouteMappingByIds({
+    pillarId,
+    subPageId: parentSubPageId,
+    nestedPageId: nestedSubPageId,
+    quizId,
+  });
+}
+
+async function deleteEntranceNestedSubPageCascade({
+  parentSubPageId,
+  nestedSubPageId,
+}: {
+  parentSubPageId: string;
+  nestedSubPageId: string;
+}) {
+  const pillarId = "nursing-entrance-exam";
+  const nestedPath = `pillarPages/${pillarId}/subPages/${parentSubPageId}/nestedSubPages/${nestedSubPageId}`;
+  const quizzesSnapshot = await getDocs(collection(db, `${nestedPath}/quizzes`));
+
+  for (const quizSnapshot of quizzesSnapshot.docs) {
+    await deleteEntranceQuizCascade({
+      parentSubPageId,
+      nestedSubPageId,
+      quizId: quizSnapshot.id,
+    });
+  }
+
+  await deleteDoc(doc(db, nestedPath));
+  await deleteRouteMappingByRefPath(nestedPath);
+  await deleteRouteMappingByIds({
+    pillarId,
+    subPageId: parentSubPageId,
+    nestedPageId: nestedSubPageId,
+  });
 }
 
 async function ensureEntranceQuizSubjectCatalog({
@@ -1673,8 +1735,19 @@ export const deleteNursingEntranceExamSubPage = async (subPageId: string) => {
   try {
     const pillarId = "nursing-entrance-exam";
     const refPath = `pillarPages/${pillarId}/subPages/${subPageId}`;
+    const nestedSubPagesSnapshot = await getDocs(
+      collection(db, "pillarPages", pillarId, "subPages", subPageId, "nestedSubPages")
+    );
 
-    // Delete the document
+    for (const nestedSubPage of nestedSubPagesSnapshot.docs) {
+      await deleteEntranceNestedSubPageCascade({
+        parentSubPageId: subPageId,
+        nestedSubPageId: nestedSubPage.id,
+      });
+    }
+
+    // Delete the parent document after descendants, route mappings, and My Exams
+    // catalog rows are removed.
     const docRef = doc(db, "pillarPages", pillarId, "subPages", subPageId);
     await deleteDoc(docRef);
 
@@ -6636,27 +6709,9 @@ export const deleteNestedSubPage = async (
       }
     }
 
-    const refPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}`;
-
-    // Delete the document
-    const docRef = doc(
-      db,
-      "pillarPages",
-      pillarId,
-      "subPages",
-      resolvedParentId,
-      "nestedSubPages",
-      resolvedNestedId
-    );
-    await deleteDoc(docRef);
-
-    // Delete route mapping
-    await deleteRouteMappingByRefPath(refPath);
-    // Also delete by IDs in case refPath doesn't match
-    await deleteRouteMappingByIds({
-      pillarId,
-      subPageId: resolvedParentId,
-      nestedPageId: resolvedNestedId,
+    await deleteEntranceNestedSubPageCascade({
+      parentSubPageId: resolvedParentId,
+      nestedSubPageId: resolvedNestedId,
     });
 
     return {
@@ -7467,30 +7522,9 @@ export const deleteNursingEntranceExamQuiz = async (
       }
     }
 
-    const refPath = `pillarPages/${pillarId}/subPages/${resolvedParentId}/nestedSubPages/${resolvedNestedId}/quizzes/${actualQuizId}`;
-
-    // Delete the document
-    const docRef = doc(
-      db,
-      "pillarPages",
-      pillarId,
-      "subPages",
-      resolvedParentId,
-      "nestedSubPages",
-      resolvedNestedId,
-      "quizzes",
-      actualQuizId
-    );
-    await deleteDoc(docRef);
-    await deleteEntranceQuizSubjectCatalog(actualQuizId);
-
-    // Delete route mapping
-    await deleteRouteMappingByRefPath(refPath);
-    // Also delete by IDs in case refPath doesn't match
-    await deleteRouteMappingByIds({
-      pillarId,
-      subPageId: resolvedParentId,
-      nestedPageId: resolvedNestedId,
+    await deleteEntranceQuizCascade({
+      parentSubPageId: resolvedParentId,
+      nestedSubPageId: resolvedNestedId,
       quizId: actualQuizId,
     });
 
@@ -9459,6 +9493,7 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
         // Create question content
         const questionContent = {
           question: question.question || "",
+          passage: question.passage || "",
           options: optionsArray,
           correctAnswer: correctAnswerToSave,
           explanation: question.solution || question.explanation || "",
@@ -9485,6 +9520,8 @@ export const bulkUploadNursingEntranceExamQuizQuestions = async (
           imagePath: question.image_path || null,
           units: question.units || null,
           subquestions: question.subquestions || [],
+          importReview: question.importReview || null,
+          sourceScanId: question.importReview?.scanId || question.sourceScanId || null,
         };
 
         // Use question ID as the document ID, or generate one

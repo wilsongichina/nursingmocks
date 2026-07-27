@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 import { CheckCircle2, Eye, EyeOff, ShieldCheck, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { PROGRAM_TYPE_OPTIONS } from "@/lib/program-type";
 import GoogleMark from "@/components/ui/GoogleMark";
 
 const inter = Inter({
@@ -25,7 +24,6 @@ export default function RegisterPageClient() {
     email: "",
     password: "",
     confirmPassword: "",
-    program: "",
     terms: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,22 +82,24 @@ export default function RegisterPageClient() {
     setError("");
   };
 
-  async function sendWelcomeEmail(token?: string) {
+  async function completeRegistration(token?: string) {
     try {
-      const emailResponse = await fetch("/api/send-welcome-email", {
+      const response = await fetch("/api/users/complete-registration", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          fullName: formData.name,
+        }),
       });
 
-      if (!emailResponse.ok) {
-        console.error("Failed to send welcome email");
+      if (!response.ok) {
+        console.error("Failed to complete registration");
       }
-    } catch (emailError) {
-      console.error("Error sending welcome email:", emailError);
+    } catch (registrationError) {
+      console.error("Error completing registration:", registrationError);
     }
   }
 
@@ -109,7 +109,7 @@ export default function RegisterPageClient() {
 
     setTimeout(() => {
       sessionStorage.removeItem("showingRegisterSuccess");
-      router.push("/dashboard");
+      router.push("/onboarding");
     }, 2000);
   }
 
@@ -123,10 +123,9 @@ export default function RegisterPageClient() {
         !formData.name ||
         !formData.email ||
         !formData.password ||
-        !formData.confirmPassword ||
-        !formData.program
+        !formData.confirmPassword
       ) {
-        setError("Please fill in all required fields, including Exam Type.");
+        setError("Please fill in all required fields.");
         setIsSubmitting(false);
         return;
       }
@@ -156,9 +155,9 @@ export default function RegisterPageClient() {
         return;
       }
 
-      await register(formData.email, formData.password, formData.name, formData.program);
+      await register(formData.email, formData.password, formData.name);
       const idToken = await (await import("@/lib/firebase")).auth.currentUser?.getIdToken();
-      await sendWelcomeEmail(idToken);
+      await completeRegistration(idToken);
       showRegisterSuccess();
     } catch (err: unknown) {
       const authError = err as { code?: string; message?: string };
@@ -185,10 +184,6 @@ export default function RegisterPageClient() {
 
   const handleGoogleSignUp = async () => {
     setError("");
-    if (!formData.program) {
-      setError("Please select your Exam Type before continuing with Google.");
-      return;
-    }
     if (!formData.terms) {
       setError("Please agree to the Terms & Conditions and Privacy Policy.");
       return;
@@ -196,9 +191,9 @@ export default function RegisterPageClient() {
     setIsGoogleLoading(true);
 
     try {
-      const userCredential = await loginWithGoogle({ programType: formData.program });
+      const userCredential = await loginWithGoogle();
       const idToken = await userCredential.user.getIdToken();
-      await sendWelcomeEmail(idToken);
+      await completeRegistration(idToken);
       showRegisterSuccess();
     } catch (err: unknown) {
       const authError = err as { code?: string; message?: string };
@@ -232,13 +227,13 @@ export default function RegisterPageClient() {
             <p className="user-eyebrow mt-5">Account Created</p>
             <h1 className="user-page-title mt-2">Registration Successful</h1>
             <p className="user-body-sm mx-auto mt-3 max-w-md">
-              Welcome to NursingMocks. We are taking you to your dashboard now.
+              Welcome to NursingMocks. We are taking you to your guided setup now.
             </p>
             <div className="user-alert user-alert-success mt-5 text-left" role="status">
               <span className="user-alert-icon" aria-hidden="true">ok</span>
               <div>
                 <p className="user-card-title">Profile ready</p>
-                <p className="user-helper mt-1">Your selected Exam Focus has been saved.</p>
+                <p className="user-helper mt-1">Next, choose the exam you want to prepare for.</p>
               </div>
             </div>
           </section>
@@ -258,13 +253,13 @@ export default function RegisterPageClient() {
             </p>
             <h1 className="user-page-title mt-3">Create Your NursingMocks Account</h1>
             <p className="user-body mt-4 max-w-2xl">
-              Choose your Exam Focus, create your account, and keep ATI TEAS 7, HESI A2, Nursing Test Bank, and Nursing Exit Exams in one dashboard.
+              Create your account first, then complete a short setup to choose ATI TEAS 7, HESI A2, Nursing Test Bank, or Nursing Exit Exams.
             </p>
           </div>
 
           <div className="mt-6 hidden gap-3 sm:grid sm:grid-cols-3">
             {[
-              { title: "Pick an Exam Focus", text: "Start with ATI TEAS 7, HESI A2, Nursing Test Bank, or Nursing Exit Exams." },
+              { title: "Guided Setup", text: "Choose ATI TEAS 7, HESI A2, Nursing Test Bank, or Nursing Exit Exams after signup." },
               { title: "Track Progress", text: "Keep practice activity and results connected to one account." },
               { title: "Manage Access", text: "Review plans, payments, and enabled exam areas." },
             ].map((item) => (
@@ -283,7 +278,7 @@ export default function RegisterPageClient() {
           </div>
           <div className="mt-4 text-center">
             <h2 className="user-section-title">Sign Up</h2>
-            <p className="user-body-sm mt-1">Create your account and select your Exam Focus.</p>
+            <p className="user-body-sm mt-1">Create your account, then finish your guided setup.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
@@ -376,27 +371,6 @@ export default function RegisterPageClient() {
                 </div>
               </label>
             </div>
-
-            <label className="user-control">
-              <span className="user-label mb-1">Exam Type</span>
-              <select
-                id="program"
-                name="program"
-                value={formData.program}
-                onChange={handleChange}
-                required
-                className="user-field"
-              >
-                <option value="" disabled>
-                  Select Exam Type
-                </option>
-                {PROGRAM_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
 
             <label className="user-helper flex items-start gap-2">
               <input

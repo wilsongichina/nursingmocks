@@ -30,7 +30,7 @@ import type { UserDocument } from "@/types/user-document";
 
 const ENTRANCE_PACKAGE_IDS = new Set(["ati_teas_7", "hesi_a2"]);
 const EXAM_SUBJECT_CATALOG_COLLECTION = "exam_subject_catalog";
-const ENTRANCE_CATALOG_CACHE_KEY = "my-exams:entrance-catalog:v1";
+const ENTRANCE_CATALOG_CACHE_KEY = "my-exams:entrance-catalog:v2";
 
 type FirestoreRecord = Record<string, unknown> & { id?: string };
 
@@ -124,6 +124,7 @@ async function fetchEntranceExamItems(packageId?: string | null): Promise<MyExam
   for (const docSnap of snapshot.docs) {
     const quiz = { id: docSnap.id, ...docSnap.data() } as FirestoreRecord;
     if (quiz.examFamilyId !== "nursing_entrance_exams") continue;
+    if (quiz.active === false) continue;
     const examId = textValue(quiz.examAccessProductId);
     if (examId !== "ati_teas_7" && examId !== "hesi_a2") continue;
     const examLabel = examId === "hesi_a2" ? "HESI A2" : "ATI TEAS 7";
@@ -139,6 +140,7 @@ async function fetchEntranceExamItems(packageId?: string | null): Promise<MyExam
       quiz.totalQuestions,
       quiz.question_count
     );
+    if (questionCount <= 0) continue;
 
     items.push({
       id: `${examId}-${quizId}`,

@@ -16,6 +16,7 @@ type DynamicQuizQuestionsProps = {
 
 type QuizQuestion = {
   id?: string;
+  passage?: string;
   options?: unknown;
   correctAnswer?: unknown;
   questionTypeId?: number;
@@ -46,7 +47,7 @@ function optionsFor(question: QuizQuestion) {
 
 function correctAnswersFor(question: QuizQuestion, questionTypeId: number) {
   const correctAnswer = question.correctAnswer || "";
-  if (questionTypeId === 2) {
+  if (questionTypeId === 2 || questionTypeId === 6) {
     try {
       const parsed = typeof correctAnswer === "string" ? JSON.parse(correctAnswer) : correctAnswer;
       return Array.isArray(parsed) ? parsed : [];
@@ -144,7 +145,7 @@ export default function DynamicQuizQuestions({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {questions.map((question, index: number) => {
         const questionTypeId = question.questionTypeId || question.question_type_id || 1;
 

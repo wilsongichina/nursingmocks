@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   getNursingEntranceExamSubPages,
+  getNursingEntranceExamQuizQuestions,
   deleteNursingEntranceExamSubPage,
   uploadNursingEntranceExamSubPage,
   getNestedSubPagesByParentDocId,
@@ -190,6 +191,8 @@ interface QuizRow {
   lastUpdated?: AdminDateValue;
   status?: string;
   questionCount?: number;
+  examYear?: number | string;
+  year?: number | string;
   parentSubPageId?: string;
   parentSubPageDocId?: string;
   parentSubPageName?: string;
@@ -212,6 +215,7 @@ interface KnowledgeBaseArticleRow {
 function NursingEntranceExamAdminPageContent() {
   const { isCollapsed } = useSidebar();
   const { currentUser } = useAuth();
+  const quizExplanationAbortControllers = useRef<Record<string, AbortController>>({});
   const [subPages, setSubPages] = useState<SubPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [contentDetailsLoading, setContentDetailsLoading] = useState(false);
@@ -346,6 +350,7 @@ function NursingEntranceExamAdminPageContent() {
   const [newQuizSlugManuallyEdited, setNewQuizSlugManuallyEdited] =
     useState(false);
   const [newQuizSetNumber, setNewQuizSetNumber] = useState("");
+  const [newQuizExamYear, setNewQuizExamYear] = useState("");
   const [quizValidationError, setQuizValidationError] = useState("");
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -395,6 +400,19 @@ function NursingEntranceExamAdminPageContent() {
   const [quizzesCount, setQuizzesCount] = useState(0);
   const [kbArticlesCount, setKbArticlesCount] = useState(0);
   const [quizzes, setQuizzes] = useState<QuizRow[]>([]);
+  const [quizExplanationJobs, setQuizExplanationJobs] = useState<
+    Record<
+      string,
+      {
+        running: boolean;
+        total: number;
+        completed: number;
+        generated: number;
+        failed: number;
+        needsReview: number;
+      }
+    >
+  >({});
   const [kbArticles, setKbArticles] = useState<KnowledgeBaseArticleRow[]>([]);
   const [subPagesPage, setSubPagesPage] = useState(1);
   const [nestedSubPagesPage, setNestedSubPagesPage] = useState(1);
@@ -922,6 +940,181 @@ function NursingEntranceExamAdminPageContent() {
     setQuizToDelete(null);
   };
 
+  const handleStopQuizExplanations = (quizId: string) => {
+    quizExplanationAbortControllers.current[quizId]?.abort();
+    delete quizExplanationAbortControllers.current[quizId];
+    setQuizExplanationJobs((previous) => ({
+      ...previous,
+      [quizId]: {
+        ...(previous[quizId] || {
+          total: 0,
+          completed: 0,
+          generated: 0,
+          failed: 0,
+          needsReview: 0,
+        }),
+        running: false,
+      },
+    }));
+    setSuccess("Explanation generation stopped. Any request that already finished may have saved.");
+    setTimeout(() => setSuccess(""), 5000);
+  };
+
+  const handleGenerateQuizExplanations = async (quiz: QuizRow) => {
+    if (!currentUser) {
+      setError("Admin login is required before generating explanations.");
+      return;
+    }
+
+    const parentId = quiz.parentSubPageDocId || quiz.parentSubPageId || "";
+    const nestedId = quiz.nestedSubPageDocId || quiz.nestedSubPageId || "";
+    if (!parentId || !nestedId || !quiz.id) {
+      setError("This quiz is missing route identifiers required for explanation generation.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setQuizExplanationJobs((previous) => ({
+      ...previous,
+      [quiz.id]: {
+        running: true,
+        total: 0,
+        completed: 0,
+        generated: 0,
+        failed: 0,
+        needsReview: 0,
+      },
+    }));
+
+    const abortController = new AbortController();
+    quizExplanationAbortControllers.current[quiz.id] = abortController;
+
+    try {
+      const questionsResult = await getNursingEntranceExamQuizQuestions(
+        parentId,
+        nestedId,
+        quiz.id
+      );
+      if (!questionsResult.success || !Array.isArray(questionsResult.data)) {
+        throw new Error(questionsResult.message || "Could not load quiz questions.");
+      }
+
+      const targets = questionsResult.data.filter(
+        (question: { explanation?: unknown }) =>
+          !String(question.explanation || "").trim()
+      );
+      if (targets.length === 0) {
+        setQuizExplanationJobs((previous) => ({
+          ...previous,
+          [quiz.id]: {
+            running: false,
+            total: 0,
+            completed: 0,
+            generated: 0,
+            failed: 0,
+            needsReview: 0,
+          },
+        }));
+        setSuccess("All questions in this quiz already have explanations.");
+        setTimeout(() => setSuccess(""), 3000);
+        return;
+      }
+
+      const token = await currentUser.getIdToken();
+      let generated = 0;
+      let failed = 0;
+      let needsReview = 0;
+
+      for (let index = 0; index < targets.length; index += 1) {
+        if (abortController.signal.aborted) break;
+        const question = targets[index] as { id: string; questionId?: string };
+        const response = await fetch("/api/admin/nursing-entrance-exam/generate-explanation", {
+          method: "POST",
+          signal: abortController.signal,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            subPageId: parentId,
+            nestedSubPageId: nestedId,
+            quizId: quiz.id,
+            questionId: question.id || question.questionId,
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          failed += 1;
+        } else if (payload.status === "generated") {
+          generated += 1;
+        } else if (payload.status === "needs_answer_review") {
+          needsReview += 1;
+        }
+
+        setQuizExplanationJobs((previous) => ({
+          ...previous,
+          [quiz.id]: {
+            running: true,
+            total: targets.length,
+            completed: index + 1,
+            generated,
+            failed,
+            needsReview,
+          },
+        }));
+      }
+
+      const stopped = abortController.signal.aborted;
+      setQuizExplanationJobs((previous) => ({
+        ...previous,
+        [quiz.id]: {
+          running: false,
+          total: targets.length,
+          completed: targets.length,
+          generated,
+          failed,
+          needsReview,
+        },
+      }));
+      setSuccess(
+        stopped
+          ? `Explanation generation stopped for ${quiz.pageName || quiz.quizName || quiz.id}: ${generated} generated, ${needsReview} need answer review, ${failed} failed.`
+          : `Explanation generation finished for ${quiz.pageName || quiz.quizName || quiz.id}: ${generated} generated, ${needsReview} need answer review, ${failed} failed.`
+      );
+      setTimeout(() => setSuccess(""), 6000);
+    } catch (generationError) {
+      const wasStopped = abortController.signal.aborted;
+      setQuizExplanationJobs((previous) => ({
+        ...previous,
+        [quiz.id]: {
+          ...(previous[quiz.id] || {
+            total: 0,
+            completed: 0,
+            generated: 0,
+            failed: 0,
+            needsReview: 0,
+          }),
+          running: false,
+        },
+      }));
+      if (wasStopped) {
+        setSuccess("Explanation generation stopped. Any request that already finished may have saved.");
+        setTimeout(() => setSuccess(""), 5000);
+      } else {
+        setError(
+          generationError instanceof Error
+            ? generationError.message
+            : "Failed to generate explanations."
+        );
+      }
+    } finally {
+      if (quizExplanationAbortControllers.current[quiz.id] === abortController) {
+        delete quizExplanationAbortControllers.current[quiz.id];
+      }
+    }
+  };
+
   const handleCreateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
     setQuizValidationError("");
@@ -943,6 +1136,19 @@ function NursingEntranceExamAdminPageContent() {
 
     if (!normalizedQuizName || !normalizedQuizId) {
       setQuizValidationError("Quiz name and slug are required.");
+      return;
+    }
+
+    const normalizedQuizYear = newQuizExamYear.trim()
+      ? Number(newQuizExamYear)
+      : undefined;
+    if (
+      normalizedQuizYear !== undefined &&
+      (!Number.isInteger(normalizedQuizYear) ||
+        normalizedQuizYear < 2000 ||
+        normalizedQuizYear > 2100)
+    ) {
+      setQuizValidationError("Quiz year must be a valid year between 2000 and 2100.");
       return;
     }
 
@@ -1006,6 +1212,7 @@ function NursingEntranceExamAdminPageContent() {
         pageName: normalizedQuizName,
         slug: normalizedQuizId,
         setNumber: newQuizSetNumber ? Number(newQuizSetNumber) : undefined,
+        examYear: normalizedQuizYear,
         meta: {
           title: `${normalizedQuizName} | NursingMocks`,
           description: `Content for ${normalizedQuizName} under ${nestedSubPageName}.`,
@@ -1036,6 +1243,7 @@ function NursingEntranceExamAdminPageContent() {
         setNewQuizName("");
         setNewQuizSlugManuallyEdited(false);
         setNewQuizSetNumber("");
+        setNewQuizExamYear("");
         setQuizValidationError("");
         refreshContentSilently("quizzes");
         setTimeout(() => setSuccess(""), 3000);
@@ -1628,6 +1836,11 @@ function NursingEntranceExamAdminPageContent() {
                           Questions
                         </th>
                       )}
+                      {activeTab === "quizzes" && (
+                        <th className="text-left">
+                          Year
+                        </th>
+                      )}
                       <th className="min-w-[180px] text-left">
                         URL slug
                       </th>
@@ -1647,7 +1860,7 @@ function NursingEntranceExamAdminPageContent() {
                       (activeTab === "quizzes" && quizMetadataLoading) ||
                       (activeTab === "kb" && contentDetailsLoading)) ? (
                       <tr>
-                        <td colSpan={activeTab === "quizzes" ? 8 : 7}>
+                        <td colSpan={activeTab === "quizzes" ? 9 : 7}>
                           <div className="flex justify-center py-8">
                             <AdminInlineLoading
                               label={
@@ -1724,7 +1937,7 @@ function NursingEntranceExamAdminPageContent() {
 
                         return sortedQuizzes.length === 0 ? (
                           <AdminTableEmptyState
-                            colSpan={8}
+                            colSpan={9}
                             title="No Quiz Metadata Found"
                             description="Open Nested Sub Pages and use Add Quiz on the correct subject row when you are ready to attach a question set."
                           />
@@ -1737,6 +1950,8 @@ function NursingEntranceExamAdminPageContent() {
                               quiz.name ||
                               quiz.id;
                             const lastUpdated = formatAdminLastUpdated(quiz.lastUpdated);
+                            const explanationJob = quizExplanationJobs[quiz.id];
+                            const hasQuestions = Number(quiz.questionCount || 0) > 0;
 
                             // Get sub-page name from subPages array
                             const parentSubPage = subPages.find(
@@ -1768,6 +1983,9 @@ function NursingEntranceExamAdminPageContent() {
                                     ? quiz.questionCount
                                     : "—"}
                                 </AdminTableCell>
+                                <AdminTableCell>
+                                  {quiz.examYear || quiz.year || "—"}
+                                </AdminTableCell>
                                 <AdminTableCell className="min-w-[180px]" mono>
                                   /{quiz.slug || quiz.id}
                                 </AdminTableCell>
@@ -1798,6 +2016,23 @@ function NursingEntranceExamAdminPageContent() {
                                     >
                                       View
                                     </Link>
+                                    {hasQuestions && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          explanationJob?.running
+                                            ? handleStopQuizExplanations(quiz.id)
+                                            : void handleGenerateQuizExplanations(quiz)
+                                        }
+                                        className={`admin-crud-button ${
+                                          explanationJob?.running
+                                            ? "admin-crud-button-danger"
+                                            : "admin-crud-button-secondary"
+                                        }`}
+                                      >
+                                        {explanationJob?.running ? "Stop" : "Generate Explanations"}
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -1807,6 +2042,11 @@ function NursingEntranceExamAdminPageContent() {
                                     >
                                       Delete
                                     </button>
+                                    {explanationJob && (
+                                      <span className="text-xs text-gray-500">
+                                        {explanationJob.completed}/{explanationJob.total} · Review {explanationJob.needsReview} · Failed {explanationJob.failed}
+                                      </span>
+                                    )}
                                   </div>
                                 </AdminTableCell>
                               </tr>
@@ -2070,6 +2310,7 @@ function NursingEntranceExamAdminPageContent() {
                                         setNewQuizName("");
                                         setNewQuizSlugManuallyEdited(false);
                                         setNewQuizSetNumber("");
+                                        setNewQuizExamYear("");
                                         setQuizValidationError("");
                                         setShowCreateQuizModal(true);
                                       }}
@@ -2919,10 +3160,10 @@ function NursingEntranceExamAdminPageContent() {
                         type="text"
                         value={newQuizName}
                         onChange={(e) => {
-                          const normalizedInput = normalizeAdminContentNameInput(e.target.value);
-                          setNewQuizName(normalizedInput);
+                          const rawInput = e.target.value;
+                          setNewQuizName(rawInput);
                           if (!newQuizSlugManuallyEdited) {
-                            setNewQuizId(normalizeAdminContentSlug(normalizedInput));
+                            setNewQuizId(normalizeAdminContentSlug(rawInput));
                           }
                         }}
                         onBlur={() => {
@@ -2948,6 +3189,20 @@ function NursingEntranceExamAdminPageContent() {
                         onChange={(e) => setNewQuizSetNumber(e.target.value)}
                         className="admin-field"
                         placeholder="e.g., 1"
+                      />
+                    </AdminFieldGroup>
+                    <AdminFieldGroup
+                      label="Year"
+                      helper="Optional. Use this to identify the exam year for this quiz."
+                    >
+                      <input
+                        type="number"
+                        min="2000"
+                        max="2100"
+                        value={newQuizExamYear}
+                        onChange={(e) => setNewQuizExamYear(e.target.value)}
+                        className="admin-field"
+                        placeholder="e.g., 2026"
                       />
                     </AdminFieldGroup>
                     <AdminFieldGroup
@@ -2981,6 +3236,7 @@ function NursingEntranceExamAdminPageContent() {
                         setNewQuizName("");
                         setNewQuizSlugManuallyEdited(false);
                         setNewQuizSetNumber("");
+                        setNewQuizExamYear("");
                         setQuizValidationError("");
                       }}
                       className="admin-button-cancel"

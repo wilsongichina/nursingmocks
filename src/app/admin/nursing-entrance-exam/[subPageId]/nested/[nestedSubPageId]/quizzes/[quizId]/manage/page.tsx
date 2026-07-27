@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getNursingEntranceExamQuizQuestions,
   uploadNursingEntranceExamQuizQuestion,
@@ -37,9 +37,12 @@ interface Question {
   id: string;
   questionId?: string;
   question?: string;
+  passage?: string;
   options?: string[];
   correctAnswer?: string;
   explanation?: string;
+  explanationStatus?: string;
+  answerReviewReason?: string;
   lastUpdated?: string;
   questionTypeId?: number;
   question_type_id?: number;
@@ -58,6 +61,7 @@ interface QuizMetadataContent {
   examAccessProductId: "ati_teas_7" | "hesi_a2";
   subjectName: string;
   setNumber: string;
+  examYear: string;
   previewPercentage: string;
   estimatedMinutes: string;
   description: string;
@@ -119,16 +123,6 @@ function QuizMetadataPanel({
       normalizeSlug(initialMetadata.slug) !== normalizeSlug(normalizedName)
     );
   }, [fallbackSlug, generateSchema, initialMetadata]);
-
-  useEffect(() => {
-    const schema = generateSchema(draft);
-    if (schema && schema !== draft.schema) {
-      setDraft((previous) => ({
-        ...previous,
-        schema,
-      }));
-    }
-  }, [draft, generateSchema]);
 
   const updateField = <
     TField extends keyof Omit<QuizMetadataContent, "meta" | "hero">,
@@ -227,7 +221,7 @@ function QuizMetadataPanel({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div>
               <label className="admin-field-label">
                 Exam Product
@@ -268,6 +262,20 @@ function QuizMetadataPanel({
                 value={draft.setNumber}
                 onChange={(event) => updateField("setNumber", event.target.value)}
                 className="admin-field mt-2"
+              />
+            </div>
+            <div>
+              <label className="admin-field-label">
+                Year
+              </label>
+              <input
+                type="number"
+                min="2000"
+                max="2100"
+                value={draft.examYear}
+                onChange={(event) => updateField("examYear", event.target.value)}
+                className="admin-field mt-2"
+                placeholder="2026"
               />
             </div>
             <div>
@@ -445,6 +453,8 @@ export default function ManageQuizQuestions({
     quizId: string;
   }>;
 }) {
+  const { currentUser } = useAuth();
+  const explanationAbortController = useRef<AbortController | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -482,6 +492,17 @@ export default function ManageQuizQuestions({
   const [statusFilter, setStatusFilter] = useState("all");
   const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
   const [deletingQuestion, setDeletingQuestion] = useState(false);
+  const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [regenerateExplanations, setRegenerateExplanations] = useState(false);
+  const [explanationProgress, setExplanationProgress] = useState<{
+    total: number;
+    completed: number;
+    generated: number;
+    skipped: number;
+    failed: number;
+    needsReview: number;
+    currentQuestionId: string;
+  } | null>(null);
   const questionsPerPage = 10;
 
   // Helper function to strip HTML tags
@@ -656,6 +677,7 @@ export default function ManageQuizQuestions({
             quizData.examAccessProductId === "hesi_a2" ? "hesi_a2" : "ati_teas_7",
           subjectName: inferredSubjectName,
           setNumber: quizData.setNumber != null ? String(quizData.setNumber) : "",
+          examYear: quizData.examYear != null ? String(quizData.examYear) : quizData.year != null ? String(quizData.year) : "",
           previewPercentage:
             quizData.previewPercentage != null ? String(quizData.previewPercentage) : "20",
           estimatedMinutes:
@@ -878,6 +900,9 @@ export default function ManageQuizQuestions({
       const setNumber = metadataToSave.setNumber.trim()
         ? Number(metadataToSave.setNumber)
         : undefined;
+      const examYear = metadataToSave.examYear.trim()
+        ? Number(metadataToSave.examYear)
+        : undefined;
       const previewPercentage = metadataToSave.previewPercentage.trim()
         ? Number(metadataToSave.previewPercentage)
         : 20;
@@ -887,6 +912,13 @@ export default function ManageQuizQuestions({
 
       if (setNumber !== undefined && (!Number.isFinite(setNumber) || setNumber < 1)) {
         setError("Set number must be 1 or higher.");
+        return;
+      }
+      if (
+        examYear !== undefined &&
+        (!Number.isInteger(examYear) || examYear < 2000 || examYear > 2100)
+      ) {
+        setError("Quiz year must be a valid year between 2000 and 2100.");
         return;
       }
       if (!Number.isFinite(previewPercentage) || previewPercentage < 0 || previewPercentage > 100) {
@@ -906,6 +938,7 @@ export default function ManageQuizQuestions({
         pageName: normalizedQuizName,
         slug: normalizedQuizSlug,
         setNumber: setNumber === undefined ? "" : String(setNumber),
+        examYear: examYear === undefined ? "" : String(examYear),
         previewPercentage: String(previewPercentage),
         estimatedMinutes:
           estimatedMinutes === undefined ? "" : String(estimatedMinutes),
@@ -932,6 +965,7 @@ export default function ManageQuizQuestions({
           description: metadataToSave.hero.description || metadataToSave.description,
         },
         ...(setNumber === undefined ? {} : { setNumber }),
+        ...(examYear === undefined ? {} : { examYear }),
         ...(estimatedMinutes === undefined ? {} : { estimatedMinutes }),
       };
 
@@ -953,6 +987,7 @@ export default function ManageQuizQuestions({
           slug: normalizedQuizSlug,
           subjectName: contentToSave.subjectName,
           setNumber: setNumber === undefined ? "" : String(setNumber),
+          examYear: examYear === undefined ? "" : String(examYear),
           previewPercentage: String(previewPercentage),
           estimatedMinutes:
             estimatedMinutes === undefined ? "" : String(estimatedMinutes),
@@ -970,6 +1005,138 @@ export default function ManageQuizQuestions({
       console.error("Error saving quiz metadata:", err);
     } finally {
       setSavingMetadata(false);
+    }
+  };
+
+  const explanationTargets = questions.filter((question) => {
+    if (regenerateExplanations) return true;
+    return !String(question.explanation || "").trim();
+  });
+
+  const missingExplanationCount = questions.filter(
+    (question) => !String(question.explanation || "").trim()
+  ).length;
+
+  const answerReviewCount = questions.filter(
+    (question) => question.explanationStatus === "needs_answer_review"
+  ).length;
+
+  const handleStopMissingExplanations = () => {
+    explanationAbortController.current?.abort();
+    explanationAbortController.current = null;
+    setGeneratingExplanations(false);
+    setSuccess("Explanation generation stopped. Any request that already finished may have saved.");
+    setTimeout(() => setSuccess(""), 5000);
+  };
+
+  const handleGenerateMissingExplanations = async () => {
+    if (!resolvedParams || !currentUser) {
+      setError("Admin login is required before generating explanations.");
+      return;
+    }
+
+    const targets = explanationTargets;
+    if (targets.length === 0) {
+      setSuccess("All questions already have explanations.");
+      setTimeout(() => setSuccess(""), 3000);
+      return;
+    }
+
+    setGeneratingExplanations(true);
+    setError("");
+    setSuccess("");
+    setExplanationProgress({
+      total: targets.length,
+      completed: 0,
+      generated: 0,
+      skipped: 0,
+      failed: 0,
+      needsReview: 0,
+      currentQuestionId: "",
+    });
+
+    let generated = 0;
+    let skipped = 0;
+    let failed = 0;
+    let needsReview = 0;
+    const abortController = new AbortController();
+    explanationAbortController.current = abortController;
+
+    try {
+      const token = await currentUser.getIdToken();
+      for (let index = 0; index < targets.length; index += 1) {
+        if (abortController.signal.aborted) break;
+        const question = targets[index];
+        setExplanationProgress({
+          total: targets.length,
+          completed: index,
+          generated,
+          skipped,
+          failed,
+          needsReview,
+          currentQuestionId: question.questionId || question.id,
+        });
+
+        // Keep every model call scoped to one question so the saved answer remains the anchor.
+        const response = await fetch("/api/admin/nursing-entrance-exam/generate-explanation", {
+          method: "POST",
+          signal: abortController.signal,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            subPageId: resolvedParams.subPageId,
+            nestedSubPageId: resolvedParams.nestedSubPageId,
+            quizId: resolvedParams.quizId,
+            questionId: question.id,
+            regenerate: regenerateExplanations,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          failed += 1;
+        } else if (payload.status === "generated") {
+          generated += 1;
+        } else if (payload.status === "needs_answer_review") {
+          needsReview += 1;
+        } else if (payload.status === "skipped") {
+          skipped += 1;
+        } else {
+          failed += 1;
+        }
+
+        setExplanationProgress({
+          total: targets.length,
+          completed: index + 1,
+          generated,
+          skipped,
+          failed,
+          needsReview,
+          currentQuestionId: question.questionId || question.id,
+        });
+      }
+
+      const stopped = abortController.signal.aborted;
+      setSuccess(
+        stopped
+          ? `Explanation generation stopped: ${generated} generated, ${needsReview} need answer review, ${failed} failed.`
+          : `Explanation generation finished: ${generated} generated, ${needsReview} need answer review, ${failed} failed.`
+      );
+      refreshQuestionsSilently();
+      setTimeout(() => setSuccess(""), 6000);
+    } catch (err) {
+      if (abortController.signal.aborted) {
+        setSuccess("Explanation generation stopped. Any request that already finished may have saved.");
+        setTimeout(() => setSuccess(""), 5000);
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to generate explanations.");
+      }
+    } finally {
+      setGeneratingExplanations(false);
+      if (explanationAbortController.current === abortController) {
+        explanationAbortController.current = null;
+      }
     }
   };
 
@@ -1251,6 +1418,71 @@ export default function ManageQuizQuestions({
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="admin-card mb-6 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="admin-section-title">AI Explanations</div>
+              <div className="admin-helper mt-1">
+                Generate explanations one question at a time using the saved correct answer.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={
+                generatingExplanations
+                  ? handleStopMissingExplanations
+                  : handleGenerateMissingExplanations
+              }
+              disabled={!generatingExplanations && explanationTargets.length === 0}
+              className={`disabled:cursor-not-allowed disabled:opacity-50 ${
+                generatingExplanations ? "admin-button-danger" : "admin-button-primary"
+              }`}
+            >
+              {generatingExplanations ? "Stop" : "Generate Missing Explanations"}
+            </button>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+            <div className="admin-info-tile">
+              <div className="admin-info-tile-label mb-1">Missing</div>
+              <div className="admin-info-tile-value">{missingExplanationCount}</div>
+            </div>
+            <div className="admin-info-tile">
+              <div className="admin-info-tile-label mb-1">Needs Answer Review</div>
+              <div className="admin-info-tile-value">{answerReviewCount}</div>
+            </div>
+            <label className="admin-info-tile flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={regenerateExplanations}
+                onChange={(event) => setRegenerateExplanations(event.target.checked)}
+                disabled={generatingExplanations}
+                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-gray-900">Regenerate existing</span>
+                <span className="block text-xs text-gray-500">Overwrite current explanations for this quiz.</span>
+              </span>
+            </label>
+          </div>
+          {explanationProgress && (
+            <div className="mt-4 rounded-lg border border-purple-100 bg-purple-50 p-3 text-sm text-purple-900">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold">
+                  {explanationProgress.completed} / {explanationProgress.total} processed
+                </span>
+                <span>
+                  Generated {explanationProgress.generated} · Review {explanationProgress.needsReview} · Failed {explanationProgress.failed}
+                </span>
+              </div>
+              {explanationProgress.currentQuestionId && (
+                <div className="mt-1 text-xs text-purple-700">
+                  Current question: {explanationProgress.currentQuestionId}
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Questions */}

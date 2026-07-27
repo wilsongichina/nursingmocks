@@ -17,11 +17,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { buildProfileView } from "@/lib/profile-view-model";
 import {
-  isValidProgramType,
-  normalizeProgramTypeFromProfile,
-  PROGRAM_TYPE_OPTIONS,
-  recommendedFocusLabelFromProgramType,
-} from "@/lib/program-type";
+  ONBOARDING_EXAM_TYPES,
+  normalizeOnboardingExamType,
+  onboardingExamLabel,
+  primaryExamIdForOnboardingExam,
+  type OnboardingExamType,
+} from "@/lib/onboarding";
 import {
   ensureUserDocumentOnRegister,
   subscribeUserDocument,
@@ -235,7 +236,9 @@ export default function ProfilePage() {
   const [accountCountry, setAccountCountry] = useState("");
   const [accountLocale, setAccountLocale] = useState("");
   const [accountBio, setAccountBio] = useState("");
-  const [accountProgramType, setAccountProgramType] = useState("");
+  const [accountPrimaryExamType, setAccountPrimaryExamType] = useState<OnboardingExamType | "">("");
+  const [accountExamDate, setAccountExamDate] = useState("");
+  const [accountExamNotScheduled, setAccountExamNotScheduled] = useState(false);
   const [accountSaving, setAccountSaving] = useState(false);
   const [accountSaveMessage, setAccountSaveMessage] = useState<string | null>(null);
 
@@ -304,7 +307,11 @@ export default function ProfilePage() {
     setAccountTimezone(normalizedCountry ? userDoc.profile?.timezone ?? "" : "");
     setAccountLocale(normalizedCountry ? userDoc.profile?.locale ?? "" : "");
     setAccountBio(userDoc.profile?.bio ?? "");
-    setAccountProgramType(normalizeProgramTypeFromProfile(userDoc.profile?.focus_areas?.[0]?.trim() ?? ""));
+    setAccountPrimaryExamType(
+      normalizeOnboardingExamType(userDoc.profile?.primary_exam_type || userDoc.profile?.focus_areas?.[0]?.trim())
+    );
+    setAccountExamDate(userDoc.profile?.exam_date ?? "");
+    setAccountExamNotScheduled(userDoc.profile?.exam_not_scheduled === true);
     setPrefDarkMode(!!userDoc.preferences?.dark_mode);
     setPrefEmailUpdates(!!userDoc.preferences?.email_marketing_opt_in);
     setPrefNotifEmail(!!userDoc.preferences?.notifications?.email);
@@ -342,10 +349,12 @@ export default function ProfilePage() {
 
   const accountLocaleLabel = useMemo(() => formatLocaleLabel(accountLocale), [accountLocale]);
 
-  const accountPrimaryExamPreview = useMemo(
-    () => recommendedFocusLabelFromProgramType(accountProgramType),
-    [accountProgramType]
-  );
+  const accountPrimaryExamPreview = useMemo(() => {
+    if (!accountPrimaryExamType) return "Not set";
+    return primaryExamIdForOnboardingExam(accountPrimaryExamType)
+      ? onboardingExamLabel(accountPrimaryExamType)
+      : "Not linked to a single entrance exam";
+  }, [accountPrimaryExamType]);
 
   const resetAccountForm = useCallback(() => {
     if (!userDoc) return;
@@ -357,7 +366,11 @@ export default function ProfilePage() {
     setAccountTimezone(normalizedCountry ? userDoc.profile?.timezone ?? "" : "");
     setAccountLocale(normalizedCountry ? userDoc.profile?.locale ?? "" : "");
     setAccountBio(userDoc.profile?.bio ?? "");
-    setAccountProgramType(normalizeProgramTypeFromProfile(userDoc.profile?.focus_areas?.[0]?.trim() ?? ""));
+    setAccountPrimaryExamType(
+      normalizeOnboardingExamType(userDoc.profile?.primary_exam_type || userDoc.profile?.focus_areas?.[0]?.trim())
+    );
+    setAccountExamDate(userDoc.profile?.exam_date ?? "");
+    setAccountExamNotScheduled(userDoc.profile?.exam_not_scheduled === true);
     setAccountSaveMessage(null);
   }, [userDoc]);
 
@@ -385,8 +398,12 @@ export default function ProfilePage() {
     setAccountSaveMessage(null);
     setAccountSaving(true);
     try {
-      if (!isValidProgramType(accountProgramType)) {
-        setAccountSaveMessage("Please select a program type.");
+      if (!accountPrimaryExamType) {
+        setAccountSaveMessage("Please select an exam type.");
+        return;
+      }
+      if (!accountExamNotScheduled && !accountExamDate) {
+        setAccountSaveMessage("Choose an exam date or mark it as not scheduled.");
         return;
       }
       await updateUserProfileContact(currentUser.uid, {
@@ -397,7 +414,9 @@ export default function ProfilePage() {
         country: accountCountry.trim() || null,
         locale: accountCountry ? accountLocale.trim() || null : null,
         bio: accountBio.trim() || null,
-        program_type: accountProgramType,
+        primary_exam_type: accountPrimaryExamType,
+        exam_date: accountExamNotScheduled ? null : accountExamDate,
+        exam_not_scheduled: accountExamNotScheduled,
       });
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, { displayName: accountDisplayName.trim() });
@@ -408,7 +427,7 @@ export default function ProfilePage() {
     } finally {
       setAccountSaving(false);
     }
-  }, [accountBio, accountCountry, accountDisplayName, accountFullName, accountLocale, accountPhone, accountProgramType, accountTimezone, currentUser, userDoc]);
+  }, [accountBio, accountCountry, accountDisplayName, accountExamDate, accountExamNotScheduled, accountFullName, accountLocale, accountPhone, accountPrimaryExamType, accountTimezone, currentUser, userDoc]);
 
   const handleSavePrefs = useCallback(async () => {
     if (!currentUser || !userDoc) return;
@@ -667,16 +686,47 @@ export default function ProfilePage() {
                           ))}
                         </select>
                       </FormField>
-                      <FormField label="Exam Type" hint="Choose the exam area that should guide your Primary Exam.">
-                        <select className={fieldClass} value={accountProgramType} onChange={(event) => setAccountProgramType(event.target.value)} disabled={!userDoc} required>
+                      <FormField label="Exam Type" hint="Choose the exam area that should personalize your dashboard.">
+                        <select
+                          className={fieldClass}
+                          value={accountPrimaryExamType}
+                          onChange={(event) => setAccountPrimaryExamType(event.target.value as OnboardingExamType)}
+                          disabled={!userDoc}
+                          required
+                        >
                           <option value="" disabled>Select exam type</option>
-                          {PROGRAM_TYPE_OPTIONS.map((option) => (
+                          {ONBOARDING_EXAM_TYPES.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                           ))}
                         </select>
                       </FormField>
                       <FormField label="Primary Exam" hint="This is derived from your selected Exam Type.">
                         <input className={readOnlyFieldClass} value={accountPrimaryExamPreview} readOnly />
+                      </FormField>
+                      <FormField label="Expected Exam Date">
+                        <input
+                          type="date"
+                          className={fieldClass}
+                          value={accountExamDate}
+                          disabled={!userDoc || accountExamNotScheduled}
+                          onChange={(event) => {
+                            setAccountExamDate(event.target.value);
+                            setAccountExamNotScheduled(false);
+                          }}
+                        />
+                        <label className="mt-3 flex items-center gap-2 text-sm text-[#475569]">
+                          <input
+                            type="checkbox"
+                            checked={accountExamNotScheduled}
+                            disabled={!userDoc}
+                            onChange={(event) => {
+                              setAccountExamNotScheduled(event.target.checked);
+                              if (event.target.checked) setAccountExamDate("");
+                            }}
+                            className="h-4 w-4 rounded border-[#d9deea] text-[#6a5cff] focus:ring-[#6a5cff]"
+                          />
+                          I have not scheduled my exam yet.
+                        </label>
                       </FormField>
                       <FormField label="Locale">
                         <input className={readOnlyFieldClass} value={accountLocaleLabel} readOnly />

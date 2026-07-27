@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { PROGRAM_TYPE_OPTIONS } from "@/lib/program-type";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterForm() {
@@ -15,7 +14,6 @@ export default function RegisterForm() {
     email: "",
     password: "",
     confirmPassword: "",
-    program: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -44,10 +42,9 @@ export default function RegisterForm() {
         !formData.name ||
         !formData.email ||
         !formData.password ||
-        !formData.confirmPassword ||
-        !formData.program
+        !formData.confirmPassword
       ) {
-        setError("Please fill in all fields, including exam type");
+        setError("Please fill in all required fields");
         setIsSubmitting(false);
         return;
       }
@@ -75,7 +72,7 @@ export default function RegisterForm() {
       }
 
       // Firebase authentication
-      await register(formData.email, formData.password, formData.name, formData.program);
+      await register(formData.email, formData.password, formData.name);
 
       // Send welcome email (don't block on failure)
       try {
@@ -101,10 +98,10 @@ export default function RegisterForm() {
       sessionStorage.setItem("showingRegisterSuccess", "true");
 
       setSuccess(true);
-      // Redirect to dashboard after successful registration
+      // Redirect to onboarding after successful registration
       setTimeout(() => {
         sessionStorage.removeItem("showingRegisterSuccess");
-        router.push("/dashboard");
+        router.push("/onboarding");
       }, 2000);
     } catch (err: any) {
       // Handle Firebase auth errors
@@ -132,10 +129,6 @@ export default function RegisterForm() {
 
   const handleGoogleSignUp = async () => {
     setError("");
-    if (!formData.program) {
-      setError("Please select your exam type before continuing with Google");
-      return;
-    }
     const termsEl = document.getElementById("terms") as HTMLInputElement | null;
     if (!termsEl?.checked) {
       setError("Please agree to the Terms and Conditions and Privacy Policy");
@@ -144,7 +137,7 @@ export default function RegisterForm() {
     setIsGoogleLoading(true);
 
     try {
-      const userCredential = await loginWithGoogle({ programType: formData.program });
+      const userCredential = await loginWithGoogle();
       const user = userCredential.user;
 
       // Send welcome email for Google sign-up (don't block on failure)
@@ -176,10 +169,10 @@ export default function RegisterForm() {
       // Mark that we're showing success message to prevent auto-redirect
       sessionStorage.setItem("showingRegisterSuccess", "true");
       setSuccess(true);
-      // Redirect to dashboard after showing success message
+      // Redirect to onboarding after showing success message
       setTimeout(() => {
         sessionStorage.removeItem("showingRegisterSuccess");
-        router.push("/dashboard");
+        router.push("/onboarding");
       }, 2000);
     } catch (err: any) {
       let errorMessage =
@@ -225,8 +218,7 @@ export default function RegisterForm() {
           Registration Successful! 🎉
         </h2>
         <p className="text-gray-600 mb-4">
-          Your account has been created successfully. Welcome to TEAS Gurus!
-          Redirecting to dashboard...
+          Your account has been created successfully. Next, choose the exam you want to prepare for.
         </p>
       </div>
     );
@@ -403,32 +395,6 @@ export default function RegisterForm() {
             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
         </div>
-      </div>
-
-      <div>
-        <label
-          htmlFor="program"
-          className="block text-sm font-semibold text-gray-700 mb-2"
-        >
-          Exam Type <span className="text-red-600">*</span>
-        </label>
-        <select
-          id="program"
-          name="program"
-          value={formData.program}
-          onChange={handleChange}
-          required
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900"
-        >
-          <option value="" disabled>
-            Select exam type
-          </option>
-          {PROGRAM_TYPE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="flex items-center">

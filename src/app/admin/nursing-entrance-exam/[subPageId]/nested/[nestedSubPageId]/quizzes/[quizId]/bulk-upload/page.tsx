@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  bulkUploadNursingEntranceExamQuizQuestions,
-  getNursingEntranceExamQuiz,
-} from "@/lib/firestore-operations";
+import { getNursingEntranceExamQuiz } from "@/lib/firestore-operations";
 import Link from "next/link";
 import {
   AdminCard,
@@ -32,6 +29,54 @@ interface ParsedQuestion {
   [key: string]: any;
 }
 
+type ImportIssueLevel = "warning" | "error" | "blocking";
+
+type TeasScanImportIssue = {
+  level: ImportIssueLevel;
+  message: string;
+  scanId?: string;
+  questionId?: string | number;
+};
+
+type TeasScanRecord = {
+  id: string;
+  question?: { html?: string; text?: string } | string;
+  questionContent?: { html?: string; text?: string };
+  passage?: { html?: string; text?: string } | string | null;
+  passageHtml?: string;
+  questionHtml?: string;
+  questionParts?: {
+    questionHtml?: string;
+    bodyHtml?: string;
+    passageHtml?: string;
+    passage?: string;
+  };
+  options?: Record<string, unknown> | unknown[];
+  correctAnswer?: unknown;
+  solution?: string;
+  explanation?: string;
+  questionTypeId?: number;
+  question_type_id?: number;
+  atiFormat?: string | null;
+  questionNumber?: string;
+  needsReview?: boolean;
+  issueCount?: number;
+  sourceImageRequired?: boolean;
+  imagePath?: string | null;
+  image_path?: string | null;
+  sourceFileName?: string;
+  source?: {
+    fileName?: string;
+    inputPath?: string;
+  };
+  review?: {
+    warnings?: string[];
+    questionNumber?: string;
+    subject?: string;
+  };
+  scanOrder?: number;
+};
+
 export default function BulkUploadQuestions({
   params,
 }: {
@@ -51,8 +96,16 @@ export default function BulkUploadQuestions({
   const [jsonInput, setJsonInput] = useState("");
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [quizName, setQuizName] = useState("");
+  const [quizSubjectName, setQuizSubjectName] = useState("");
+  const [quizSetNumber, setQuizSetNumber] = useState("");
+  const [quizExamYear, setQuizExamYear] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [loadingTeasScans, setLoadingTeasScans] = useState(false);
+  const [includeTeasReviewRecords, setIncludeTeasReviewRecords] = useState(true);
+  const [teasScanIssues, setTeasScanIssues] = useState<TeasScanImportIssue[]>([]);
+  const [teasScanSource, setTeasScanSource] = useState("");
+  const [forceImportConfirmed, setForceImportConfirmed] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [previewExpanded, setPreviewExpanded] = useState(false);
@@ -82,6 +135,15 @@ export default function BulkUploadQuestions({
         if (quizResult.success && quizResult.data) {
           const quizData = quizResult.data as any;
           setQuizName(quizData.pageName || resolvedParams.quizId);
+          setQuizSubjectName(quizData.subjectName || quizData.hero?.title || "");
+          setQuizSetNumber(quizData.setNumber != null ? String(quizData.setNumber) : "");
+          setQuizExamYear(
+            quizData.examYear != null
+              ? String(quizData.examYear)
+              : quizData.year != null
+              ? String(quizData.year)
+              : ""
+          );
         }
       } catch (err) {
         console.error("Error loading quiz info:", err);
@@ -109,6 +171,9 @@ export default function BulkUploadQuestions({
       }
 
       setParsedQuestions(parsed.questions);
+      setTeasScanIssues([]);
+      setTeasScanSource("");
+      setForceImportConfirmed(false);
       setSuccess(`Successfully parsed ${parsed.questions.length} questions!`);
       setPreviewExpanded(true);
       setCurrentPage(1);
@@ -152,6 +217,260 @@ export default function BulkUploadQuestions({
     reader.readAsText(file);
   };
 
+  const normalizeTeasSubject = (value: string) => {
+    const text = value.toLowerCase().replace(/&/g, "and");
+    if (text.includes("math")) return "Mathematics";
+    if (text.includes("science")) return "Science";
+    if (text.includes("english")) return "English and Language Usage";
+    if (text.includes("reading")) return "Reading";
+    return value.trim();
+  };
+
+  const decodeEscapedText = (value: unknown) => {
+    let text = String(value ?? "");
+    for (let pass = 0; pass < 3; pass += 1) {
+      const decoded = text
+        .replace(/\\+u([0-9a-fA-F]{4})/g, (_, hex: string) =>
+          String.fromCharCode(Number.parseInt(hex, 16))
+        )
+        .replace(/\\+n/g, "\n")
+        .replace(/\\+t/g, "\t")
+        .replace(/\\+r/g, "\r");
+      if (decoded === text) break;
+      text = decoded;
+    }
+    return text
+      .replace(/&pi;/gi, "π")
+      .replace(/&#960;/gi, "π")
+      .replace(/&#x3c0;/gi, "π")
+      .replace(/&times;/gi, "×")
+      .replace(/&divide;/gi, "÷")
+      .replace(/&nbsp;/gi, " ");
+  };
+
+  const recordQuestionHtml = (record: TeasScanRecord) => {
+    if (record.questionContent?.html) return decodeEscapedText(record.questionContent.html);
+    if (typeof record.question === "object" && record.question?.html) return decodeEscapedText(record.question.html);
+    return decodeEscapedText(
+      record.questionParts?.questionHtml ||
+      record.questionHtml ||
+      record.questionParts?.bodyHtml ||
+      (typeof record.question === "string" ? record.question : "") ||
+      ""
+    );
+  };
+
+  const recordPassageHtml = (record: TeasScanRecord) => {
+    if (typeof record.passage === "object" && record.passage?.html) return decodeEscapedText(record.passage.html);
+    if (typeof record.passage === "string") return decodeEscapedText(record.passage);
+    return decodeEscapedText(record.passageHtml || record.questionParts?.passageHtml || record.questionParts?.passage || "");
+  };
+
+  const questionNumberFromScan = (record: TeasScanRecord) => {
+    const raw = String(record.questionNumber || record.review?.questionNumber || "").trim();
+    const match = raw.match(/\d+/);
+    return match?.[0] || "";
+  };
+
+  const sourceImageName = (record: TeasScanRecord) =>
+    record.sourceFileName || record.source?.fileName || "";
+
+  const optionObjectFromScan = (options: TeasScanRecord["options"]) => {
+    if (!options) return {};
+    if (Array.isArray(options)) {
+      return options.reduce<Record<string, { choice: string }>>((output, option, index) => {
+        const label = String.fromCharCode(65 + index);
+        output[label] = { choice: decodeEscapedText(formatOptionValue(option)) };
+        return output;
+      }, {});
+    }
+    if (typeof options === "object") {
+      return Object.fromEntries(
+        Object.entries(options).map(([label, option]) => {
+          if (option && typeof option === "object" && !Array.isArray(option)) {
+            return [
+              label,
+              {
+                ...option,
+                choice: decodeEscapedText(formatOptionValue(option)),
+              },
+            ];
+          }
+          return [label, { choice: decodeEscapedText(formatOptionValue(option)) }];
+        })
+      );
+    }
+    return {};
+  };
+
+  const stableQuestionId = (record: TeasScanRecord, index: number) => {
+    const subjectSlug = normalizeTeasSubject(quizSubjectName || quizName)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const questionNumber = questionNumberFromScan(record);
+    const fallbackNumber = String(index + 1).padStart(3, "0");
+    return `teas-set-${quizSetNumber || "unknown"}-${subjectSlug || "subject"}-q${String(
+      questionNumber || fallbackNumber
+    ).padStart(3, "0")}`;
+  };
+
+  const issuesForScanRecord = (
+    record: TeasScanRecord,
+    convertedQuestion: ParsedQuestion
+  ): TeasScanImportIssue[] => {
+    const issues: TeasScanImportIssue[] = [];
+    const questionText = String(convertedQuestion.question || "").trim();
+    const answer = convertedQuestion.correctAnswer;
+    const optionCount = parseOptions(convertedQuestion.options).length;
+    const questionTypeId = Number(convertedQuestion.question_type_id || 1);
+    const scanQuestionNumber = questionNumberFromScan(record);
+    const warnings = Array.isArray(record.review?.warnings) ? record.review.warnings : [];
+
+    if (!questionText) {
+      issues.push({ level: "blocking", message: "Question text is missing." });
+    }
+    if (!String(answer ?? "").trim()) {
+      issues.push({ level: "blocking", message: "Correct answer is missing." });
+    }
+    if (![1, 2, 6, 7, 9].includes(questionTypeId)) {
+      issues.push({ level: "blocking", message: `Unsupported question type ${questionTypeId}.` });
+    }
+    if (!scanQuestionNumber) {
+      issues.push({ level: "error", message: "Question number is missing." });
+    }
+    if (record.needsReview) {
+      issues.push({ level: "error", message: "Scan is marked Needs Review." });
+    }
+    if (record.sourceImageRequired && !String(record.imagePath || record.image_path || "").trim()) {
+      issues.push({ level: "error", message: "Source image is required but no image path is attached." });
+    }
+    if (questionTypeId !== 7 && questionTypeId !== 9 && optionCount < 2) {
+      issues.push({ level: "error", message: `Only ${optionCount} answer options were found.` });
+    }
+    warnings.slice(0, 5).forEach((warning) => {
+      issues.push({ level: "warning", message: warning });
+    });
+
+    return issues.map((issue) => ({
+      ...issue,
+      scanId: record.id,
+      questionId: convertedQuestion.id,
+    }));
+  };
+
+  const convertTeasScanToQuestion = (record: TeasScanRecord, index: number): ParsedQuestion => {
+    const questionTypeId = Number(record.questionTypeId || record.question_type_id || 1);
+    const questionId = stableQuestionId(record, index);
+    return {
+      id: questionId,
+      question: recordQuestionHtml(record),
+      passage: recordPassageHtml(record),
+      options: optionObjectFromScan(record.options),
+      correctAnswer: record.correctAnswer as string,
+      solution: decodeEscapedText(record.solution || record.explanation || ""),
+      question_type_id: questionTypeId,
+      image_path: record.imagePath || record.image_path || null,
+      importReview: {
+        source: "teasScannedQuestions",
+        scanId: record.id,
+        sourceFileName: sourceImageName(record),
+        sourceImageRequired: Boolean(record.sourceImageRequired),
+        importedWithIssues: false,
+        issues: [],
+        setNumber: quizSetNumber || null,
+        examYear: quizExamYear || null,
+        subject: normalizeTeasSubject(quizSubjectName || quizName),
+      },
+    };
+  };
+
+  const handleLoadTeasScans = async () => {
+    if (!currentUser) {
+      setError("Admin session is required to load TEAS scans.");
+      return;
+    }
+    if (!quizSetNumber) {
+      setError("Set number is required on the target quiz before loading TEAS scans.");
+      return;
+    }
+    const subject = normalizeTeasSubject(quizSubjectName || quizName);
+    if (!subject) {
+      setError("Could not determine the TEAS subject for this quiz.");
+      return;
+    }
+
+    try {
+      setLoadingTeasScans(true);
+      setError("");
+      setSuccess("");
+      setForceImportConfirmed(false);
+      const token = await currentUser.getIdToken();
+      const params = new URLSearchParams({
+        setNumber: quizSetNumber,
+        subject,
+        sort: "questionNumber",
+        limit: "2500",
+        filter: includeTeasReviewRecords ? "all" : "clean",
+      });
+      const response = await fetch(`/api/admin/teas-image-import/scanned-questions?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Could not load TEAS scans.");
+
+      const records = ((payload.records || []) as TeasScanRecord[]).sort((left, right) => {
+        const leftNumber = Number(questionNumberFromScan(left) || Number.MAX_SAFE_INTEGER);
+        const rightNumber = Number(questionNumberFromScan(right) || Number.MAX_SAFE_INTEGER);
+        if (leftNumber !== rightNumber) return leftNumber - rightNumber;
+        return Number(left.scanOrder || 0) - Number(right.scanOrder || 0);
+      });
+      const seenQuestionIds = new Map<string, number>();
+      const duplicateIdIssues: TeasScanImportIssue[] = [];
+      const questions = records.map((record, index) => {
+        const question = convertTeasScanToQuestion(record, index);
+        const baseId = String(question.id);
+        const nextCount = (seenQuestionIds.get(baseId) || 0) + 1;
+        seenQuestionIds.set(baseId, nextCount);
+        if (nextCount > 1) {
+          question.id = `${baseId}-${nextCount}`;
+          duplicateIdIssues.push({
+            level: "error",
+            message: `Duplicate question number generated ${baseId}; using ${question.id} to avoid overwriting.`,
+            scanId: record.id,
+            questionId: question.id,
+          });
+        }
+        return question;
+      });
+      const issueRows = questions.flatMap((question, index) => {
+        const issues = [
+          ...issuesForScanRecord(records[index], question),
+          ...duplicateIdIssues.filter((issue) => issue.questionId === question.id),
+        ];
+        question.importReview = {
+          ...question.importReview,
+          importedWithIssues: issues.length > 0,
+          issues,
+        };
+        return issues;
+      });
+
+      const nextJson = JSON.stringify({ questions }, null, 2);
+      setJsonInput(nextJson);
+      setParsedQuestions(questions);
+      setTeasScanIssues(issueRows);
+      setTeasScanSource(`${subject} Set ${quizSetNumber}${quizExamYear ? ` (${quizExamYear})` : ""}`);
+      setPreviewExpanded(true);
+      setCurrentPage(1);
+      setSuccess(`Loaded ${questions.length} questions from TEAS scans.`);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Could not load TEAS scans.");
+    } finally {
+      setLoadingTeasScans(false);
+    }
+  };
+
   const handleBulkUpload = async () => {
     if (parsedQuestions.length === 0) {
       setError("No questions to upload. Please parse JSON first.");
@@ -159,6 +478,19 @@ export default function BulkUploadQuestions({
     }
 
     if (!resolvedParams) return;
+    if (!currentUser) {
+      setError("Admin session is required to import questions.");
+      return;
+    }
+    const blockingIssues = teasScanIssues.filter((issue) => issue.level === "blocking");
+    if (blockingIssues.length > 0) {
+      setError(`Fix ${blockingIssues.length} blocking issue${blockingIssues.length === 1 ? "" : "s"} before importing.`);
+      return;
+    }
+    if (teasScanIssues.length > 0 && !forceImportConfirmed) {
+      setShowUploadConfirm(true);
+      return;
+    }
 
     try {
       setUploading(true);
@@ -166,12 +498,24 @@ export default function BulkUploadQuestions({
       setSuccess("");
       setShowUploadConfirm(false);
 
-      const result = await bulkUploadNursingEntranceExamQuizQuestions(
-        resolvedParams.subPageId,
-        resolvedParams.nestedSubPageId,
-        resolvedParams.quizId,
-        parsedQuestions
-      );
+      const token = await currentUser.getIdToken();
+      const uploadResponse = await fetch("/api/admin/nursing-entrance-exam/bulk-upload-questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subPageId: resolvedParams.subPageId,
+          nestedSubPageId: resolvedParams.nestedSubPageId,
+          quizId: resolvedParams.quizId,
+          questions: parsedQuestions,
+        }),
+      });
+      const result = await uploadResponse.json();
+      if (!uploadResponse.ok) {
+        throw new Error(result?.error || "Failed to upload questions.");
+      }
 
       if (result.success) {
         let catalogRepairMessage = "";
@@ -224,7 +568,7 @@ export default function BulkUploadQuestions({
 
   const formatOptionValue = (option: any): string => {
     if (option === null || option === undefined) return "";
-    if (typeof option !== "object") return String(option);
+    if (typeof option !== "object") return decodeEscapedText(option);
     if (Array.isArray(option)) return option.map(formatOptionValue).filter(Boolean).join(" ");
 
     const optionText =
@@ -243,7 +587,7 @@ export default function BulkUploadQuestions({
       return formatOptionValue(optionText);
     }
 
-    return Object.values(option).map(formatOptionValue).filter(Boolean).join(" ");
+    return decodeEscapedText(Object.values(option).map(formatOptionValue).filter(Boolean).join(" "));
   };
 
   const parseOptions = (options: any): string[] => {
@@ -333,6 +677,10 @@ export default function BulkUploadQuestions({
   const readyCount = parsedQuestions.filter(isQuestionReady).length;
   const needsReviewCount = Math.max(0, parsedQuestions.length - readyCount);
   const parsedCount = parsedQuestions.length;
+  const warningIssueCount = teasScanIssues.filter((issue) => issue.level === "warning").length;
+  const errorIssueCount = teasScanIssues.filter((issue) => issue.level === "error").length;
+  const blockingIssueCount = teasScanIssues.filter((issue) => issue.level === "blocking").length;
+  const targetTeasSubject = normalizeTeasSubject(quizSubjectName || quizName);
   const validationProgress = parsedQuestions.length
     ? Math.round((readyCount / parsedQuestions.length) * 100)
     : 0;
@@ -418,6 +766,70 @@ export default function BulkUploadQuestions({
                 </>
               }
             />
+          <AdminCard
+            title="Load From TEAS Scans"
+            description="Prefill this bulk upload from saved TEAS image scans for the current quiz subject and set."
+          >
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="admin-info-tile p-3">
+                  <div className="admin-info-tile-label">Subject</div>
+                  <div className="admin-card-title mt-1">{targetTeasSubject || "Not detected"}</div>
+                </div>
+                <div className="admin-info-tile p-3">
+                  <div className="admin-info-tile-label">Set</div>
+                  <div className="admin-card-title mt-1">{quizSetNumber || "Missing"}</div>
+                </div>
+                <div className="admin-info-tile p-3">
+                  <div className="admin-info-tile-label">Year</div>
+                  <div className="admin-card-title mt-1">{quizExamYear || "Not set"}</div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <label className="flex items-start gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={includeTeasReviewRecords}
+                    onChange={(event) => setIncludeTeasReviewRecords(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span>Include records marked Needs Review</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleLoadTeasScans}
+                  disabled={loadingTeasScans || !quizSetNumber || !targetTeasSubject}
+                  className="admin-button-primary justify-center disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loadingTeasScans ? "Loading Scans..." : "Load Scans Into JSON"}
+                </button>
+              </div>
+            </div>
+            {teasScanSource && (
+              <div className="mt-4 rounded-lg border border-purple-100 bg-purple-50 p-3 text-sm text-purple-900">
+                Loaded source: <strong>{teasScanSource}</strong>. Warnings: {warningIssueCount}. Errors: {errorIssueCount}. Blocking: {blockingIssueCount}.
+              </div>
+            )}
+            {teasScanIssues.length > 0 && (
+              <div className="mt-4 max-h-56 overflow-y-auto rounded-lg border border-amber-200 bg-amber-50">
+                <div className="border-b border-amber-200 px-3 py-2 text-sm font-semibold text-amber-950">
+                  Import Issues
+                </div>
+                <div className="divide-y divide-amber-100">
+                  {teasScanIssues.slice(0, 80).map((issue, index) => (
+                    <div key={`${issue.scanId}-${index}`} className="px-3 py-2 text-sm text-amber-950">
+                      <span className="mr-2 inline-flex rounded border border-amber-300 bg-white px-2 py-0.5 text-xs font-semibold uppercase">
+                        {issue.level}
+                      </span>
+                      <span className="font-medium">{issue.questionId || issue.scanId || "Scan"}</span>
+                      <span className="mx-1">-</span>
+                      <span>{issue.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </AdminCard>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,0.75fr)]">
             <AdminCard
               title="Upload JSON File"
@@ -619,9 +1031,20 @@ export default function BulkUploadQuestions({
                             <div
                               className="admin-body mb-3"
                               dangerouslySetInnerHTML={{
-                                __html: q.question || "No question text",
+                                __html: decodeEscapedText(q.question || "No question text"),
                               }}
                             />
+                            {q.passage && (
+                              <div className="mb-3 rounded-lg border border-purple-100 bg-purple-50 p-3">
+                                <p className="admin-card-title mb-1 text-purple-950">
+                                  Passage
+                                </p>
+                                <div
+                                  className="admin-body-sm text-purple-950"
+                                  dangerouslySetInnerHTML={{ __html: decodeEscapedText(q.passage) }}
+                                />
+                              </div>
+                            )}
                             {options.length > 0 && (
                               <div className="mb-3">
                                 <p className="admin-card-title mb-2">
@@ -642,10 +1065,10 @@ export default function BulkUploadQuestions({
                                       >
                                         <span className="font-semibold">{label}:</span>{" "}
                                         <span
-                                          dangerouslySetInnerHTML={{ __html: opt }}
+                                          dangerouslySetInnerHTML={{ __html: decodeEscapedText(opt) }}
                                         />
                                         {isCorrect && (
-                                          <span className="ml-2 font-semibold text-emerald-700">
+                                          <span className="ml-2 inline-block font-semibold text-emerald-700">
                                             Correct
                                           </span>
                                         )}
@@ -663,7 +1086,7 @@ export default function BulkUploadQuestions({
                                 <div
                                   className="admin-body-sm"
                                   dangerouslySetInnerHTML={{
-                                    __html: (q.solution || "").substring(0, 240) + "...",
+                                    __html: decodeEscapedText(q.solution || "").substring(0, 240) + "...",
                                   }}
                                 />
                               </div>
@@ -685,6 +1108,9 @@ export default function BulkUploadQuestions({
                     onClick={() => {
                       setParsedQuestions([]);
                       setJsonInput("");
+                      setTeasScanIssues([]);
+                      setTeasScanSource("");
+                      setForceImportConfirmed(false);
                       setSuccess("");
                       setError("");
                     }}
@@ -716,7 +1142,11 @@ export default function BulkUploadQuestions({
           {showUploadConfirm && (
             <AdminModal
               title="Confirm Question Import"
-              description={`Import ${parsedQuestions.length} parsed questions into this quiz.`}
+              description={
+                teasScanIssues.length > 0
+                  ? `Import ${parsedQuestions.length} questions with ${teasScanIssues.length} highlighted issue${teasScanIssues.length === 1 ? "" : "s"}.`
+                  : `Import ${parsedQuestions.length} parsed questions into this quiz.`
+              }
               maxWidthClassName="max-w-[460px]"
             >
               <p className="admin-body">
@@ -724,6 +1154,26 @@ export default function BulkUploadQuestions({
                 <strong>{quizName || resolvedParams.quizId}</strong>. Review the
                 parsed preview before confirming.
               </p>
+              {teasScanIssues.length > 0 && (
+                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-sm font-semibold text-amber-950">
+                    This import has unresolved scan issues.
+                  </p>
+                  <p className="mt-1 text-sm text-amber-900">
+                    Warnings: {warningIssueCount}. Errors: {errorIssueCount}. Blocking: {blockingIssueCount}.
+                    Non-blocking issues will be saved on each imported question for later review.
+                  </p>
+                  <label className="mt-3 flex items-start gap-2 text-sm text-amber-950">
+                    <input
+                      type="checkbox"
+                      checked={forceImportConfirmed}
+                      onChange={(event) => setForceImportConfirmed(event.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-amber-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>I understand and want to import these questions with highlighted issues.</span>
+                  </label>
+                </div>
+              )}
               <AdminModalFooter>
                 <button
                   type="button"
@@ -736,7 +1186,12 @@ export default function BulkUploadQuestions({
                 <button
                   type="button"
                   onClick={handleBulkUpload}
-                  disabled={uploading || parsedQuestions.length === 0}
+                  disabled={
+                    uploading ||
+                    parsedQuestions.length === 0 ||
+                    blockingIssueCount > 0 ||
+                    (teasScanIssues.length > 0 && !forceImportConfirmed)
+                  }
                   className="admin-button-primary"
                 >
                   {uploading ? "Uploading..." : "Import Questions"}

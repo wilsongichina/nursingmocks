@@ -140,6 +140,25 @@ function setNumberFromText(value: string) {
   return match?.[1] || "";
 }
 
+function normalizedTeasSubject(value: unknown) {
+  const text = String(value || "").toLowerCase().replace(/&/g, "and");
+  if (text.includes("math")) return "mathematics";
+  if (text.includes("science")) return "science";
+  if (text.includes("english")) return "english and language usage";
+  if (text.includes("reading")) return "reading";
+  return text.trim();
+}
+
+function recordSubject(record: Record<string, unknown>) {
+  const review = record.review && typeof record.review === "object" ? (record.review as Record<string, unknown>) : {};
+  const set = record.set && typeof record.set === "object" ? (record.set as Record<string, unknown>) : {};
+  const scanReview =
+    record.scanReview && typeof record.scanReview === "object"
+      ? (record.scanReview as Record<string, unknown>)
+      : {};
+  return String(record.subject || review.subject || set.subject || scanReview.subject || "").trim();
+}
+
 function setNameFromSource(source: unknown) {
   const sourceObject = source && typeof source === "object" ? (source as Record<string, unknown>) : {};
   const explicit = String(sourceObject.setName || sourceObject.setTitle || "").trim();
@@ -588,6 +607,8 @@ export async function GET(request: Request) {
     const summaryOnly = url.searchParams.get("summaryOnly") === "true";
     const setSlug = String(url.searchParams.get("setSlug") || "").trim();
     const setName = String(url.searchParams.get("setName") || "").trim();
+    const setNumber = String(url.searchParams.get("setNumber") || "").trim();
+    const subject = String(url.searchParams.get("subject") || "").trim();
 
     if (id) {
       const doc = await getAdminDb().collection(COLLECTION_NAME).doc(id).get();
@@ -650,6 +671,8 @@ export async function GET(request: Request) {
       query = query.where("setSlug", "==", setSlug);
     } else if (setName) {
       query = query.where("setName", "==", setName);
+    } else if (setNumber) {
+      query = query.where("setNumber", "==", setNumber);
     }
 
     const snapshot = await query.limit(limit).get();
@@ -667,6 +690,10 @@ export async function GET(request: Request) {
     if (filter === "review") records = records.filter((record) => Boolean(record.needsReview));
     if (filter === "visual") records = records.filter((record) => Boolean(record.sourceImageRequired));
     if (filter === "clean") records = records.filter((record) => !record.needsReview);
+    if (subject) {
+      const normalizedSubject = normalizedTeasSubject(subject);
+      records = records.filter((record) => normalizedTeasSubject(recordSubject(record)) === normalizedSubject);
+    }
 
     if (sort === "issues") {
       records.sort((a, b) => Number(b.issueCount || 0) - Number(a.issueCount || 0));

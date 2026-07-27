@@ -26,6 +26,12 @@ import type {
 } from "@/types/user-document";
 import { inferPrimaryExamIdFromProgramType } from "@/lib/program-type";
 import { defaultUserEntitlements } from "@/lib/user-entitlements";
+import {
+  focusAreasForOnboardingExam,
+  isOnboardingExamType,
+  primaryExamIdForOnboardingExam,
+  type OnboardingExamType,
+} from "@/lib/onboarding";
 
 const USERS_COLLECTION = "users";
 const DASHBOARD_EXAM_IDS = new Set([
@@ -71,6 +77,10 @@ function buildInitialUserPayload(
     user_id: user.uid,
     full_name: fullName,
     email: user.email ?? "",
+    onboardingCompleted: false,
+    primaryExamType: null,
+    examDate: null,
+    onboardingCompletedAt: null,
     phone_e164: null,
     avatar_url: user.photoURL ?? null,
 
@@ -86,8 +96,14 @@ function buildInitialUserPayload(
       timezone: "Europe/London",
       locale: "en",
       primary_exam_id: inferPrimaryExamId(opts.focusAreas),
+      primary_exam_type: null,
       focus_areas: opts.focusAreas ?? [],
       dashboard_exam_ids: [],
+      onboarding_completed: false,
+      onboarding_step: 1,
+      exam_date: null,
+      exam_not_scheduled: false,
+      onboarding_completed_at: null,
     },
 
     preferences: {
@@ -280,6 +296,9 @@ export async function updateUserProfileContact(
     bio?: string | null;
     /** Stored as `profile.focus_areas` (single entry) and derives `profile.primary_exam_id` */
     program_type?: string;
+    primary_exam_type?: OnboardingExamType;
+    exam_date?: string | null;
+    exam_not_scheduled?: boolean;
   }
 ): Promise<void> {
   const ref = doc(db, USERS_COLLECTION, uid);
@@ -303,7 +322,92 @@ export async function updateUserProfileContact(
     updates["profile.focus_areas"] = [data.program_type];
     updates["profile.primary_exam_id"] = inferPrimaryExamIdFromProgramType(data.program_type);
   }
+  if (data.primary_exam_type !== undefined) {
+    if (!isOnboardingExamType(data.primary_exam_type)) {
+      throw new Error("Invalid exam type");
+    }
+    updates.primaryExamType = data.primary_exam_type;
+    updates["profile.primary_exam_type"] = data.primary_exam_type;
+    updates["profile.focus_areas"] = focusAreasForOnboardingExam(data.primary_exam_type);
+    updates["profile.primary_exam_id"] = primaryExamIdForOnboardingExam(data.primary_exam_type);
+  }
+  if (data.exam_date !== undefined) {
+    updates.examDate = data.exam_date;
+    updates["profile.exam_date"] = data.exam_date;
+  }
+  if (data.exam_not_scheduled !== undefined) {
+    updates["profile.exam_not_scheduled"] = data.exam_not_scheduled;
+  }
   await updateDoc(ref, updates);
+}
+
+export async function updateUserOnboardingProgress(
+  uid: string,
+  data: {
+    step: 1 | 2 | 3;
+    primaryExamType?: OnboardingExamType | null;
+    examDate?: string | null;
+    examNotScheduled?: boolean;
+  }
+): Promise<void> {
+  const ref = doc(db, USERS_COLLECTION, uid);
+  const updates: DocumentData = {
+    "profile.onboarding_step": data.step,
+    updated_at: serverTimestamp(),
+  };
+
+  if (data.primaryExamType !== undefined) {
+    if (data.primaryExamType !== null && !isOnboardingExamType(data.primaryExamType)) {
+      throw new Error("Invalid exam type");
+    }
+    updates["profile.primary_exam_type"] = data.primaryExamType;
+    updates.primaryExamType = data.primaryExamType;
+  }
+
+  if (data.examDate !== undefined) {
+    updates["profile.exam_date"] = data.examDate;
+    updates.examDate = data.examDate;
+  }
+
+  if (data.examNotScheduled !== undefined) {
+    updates["profile.exam_not_scheduled"] = data.examNotScheduled;
+  }
+
+  await updateDoc(ref, updates);
+}
+
+export async function completeUserOnboarding(
+  uid: string,
+  data: {
+    primaryExamType: OnboardingExamType;
+    examDate: string | null;
+    examNotScheduled: boolean;
+  }
+): Promise<void> {
+  if (!isOnboardingExamType(data.primaryExamType)) {
+    throw new Error("Invalid exam type");
+  }
+  if (!data.examNotScheduled && !data.examDate) {
+    throw new Error("Exam date or not scheduled selection is required");
+  }
+
+  const primaryExamId = primaryExamIdForOnboardingExam(data.primaryExamType);
+  const ref = doc(db, USERS_COLLECTION, uid);
+  await updateDoc(ref, {
+    onboardingCompleted: true,
+    primaryExamType: data.primaryExamType,
+    examDate: data.examDate,
+    onboardingCompletedAt: serverTimestamp(),
+    "profile.onboarding_completed": true,
+    "profile.onboarding_step": 3,
+    "profile.primary_exam_type": data.primaryExamType,
+    "profile.primary_exam_id": primaryExamId,
+    "profile.focus_areas": focusAreasForOnboardingExam(data.primaryExamType),
+    "profile.exam_date": data.examDate,
+    "profile.exam_not_scheduled": data.examNotScheduled,
+    "profile.onboarding_completed_at": serverTimestamp(),
+    updated_at: serverTimestamp(),
+  });
 }
 
 export async function updateUserPreferenceFields(

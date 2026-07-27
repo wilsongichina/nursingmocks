@@ -425,6 +425,7 @@ Template behavior:
 Files:
 
 ```text
+src/app/api/users/complete-registration/route.ts
 src/app/api/send-welcome-email/route.ts
 src/app/register/RegisterPageClient.tsx
 src/components/ui/RegisterForm.tsx
@@ -434,24 +435,28 @@ Flow:
 
 1. User registers through Firebase Authentication.
 2. Browser gets the Firebase ID token from the authenticated Firebase user.
-3. Browser calls `POST /api/send-welcome-email`.
+3. Browser calls `POST /api/users/complete-registration` with the token, full name, and selected exam type.
 4. Server verifies the ID token with Firebase Admin SDK.
-5. Server derives `uid`, `email`, and `name` from the verified token.
-6. Browser-provided recipient data is ignored.
-7. Server validates the account email.
-8. Server creates a deterministic job with:
+5. Server creates `users/{uid}` with the full default student schema when the document is missing.
+6. Server derives `uid`, `email`, and display name from the verified token and sanitized body data.
+7. Browser-provided recipient data is ignored.
+8. Server validates the account email.
+9. Server creates a deterministic job with:
 
 ```text
 welcome:{uid}
 ```
 
-9. The job ID is the SHA-256 hash of that idempotency key.
+10. The job ID is the SHA-256 hash of that idempotency key.
+11. Server immediately runs the email worker for due jobs.
 
 Important correction made during local testing:
 
 - Brand-new email/password users often have `email_verified: false`.
 - The welcome route now accepts a valid email from a server-verified Firebase token even when `email_verified` is false.
 - The route still does not trust browser-provided recipient identity.
+- Registration completion is now server-side so a failed browser-side Firestore write cannot leave an Auth user without a profile document or welcome email.
+- Existing stranded registrations can be repaired with `npm run users:registration:repair:dry-run -- --email user@example.com` and `npm run users:registration:repair:apply -- --email user@example.com --site-url https://nursingmocks.com`.
 
 ## Contact form flow
 

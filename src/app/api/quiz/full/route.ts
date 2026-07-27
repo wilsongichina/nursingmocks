@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 
 const BILLING_ENTITLEMENTS_COLLECTION = "billing_entitlements";
 const USERS_COLLECTION = "users";
-const ALLOWED_QUESTION_TYPES = [1, 2, 3, 7];
+const ALLOWED_QUESTION_TYPES = [1, 2, 3, 6, 7];
 
 type QuizRouteMapping = {
   type?: unknown;
@@ -57,6 +57,22 @@ function toDate(value: unknown): Date | null {
     return value.toDate();
   }
   return null;
+}
+
+function toClientSafeValue(value: any): any {
+  if (value === null || value === undefined) return value;
+  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Timestamp) return value.toDate().toISOString();
+  if (typeof value !== "object") return value;
+  if (typeof value.toDate === "function") return value.toDate().toISOString();
+  if (typeof value.seconds === "number" && typeof value.nanoseconds === "number") {
+    return new Date(value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000)).toISOString();
+  }
+  if (Array.isArray(value)) return value.map(toClientSafeValue);
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entryValue]) => [key, toClientSafeValue(entryValue)])
+  );
 }
 
 function isActiveAccessEnd(value: unknown) {
@@ -173,7 +189,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: "preview", requiredProductId, reason: "No active matching access" }, { status: 403 });
     }
 
-    const questions = await getQuestionsForMapping(mapping);
+    const questions = toClientSafeValue(await getQuestionsForMapping(mapping));
     return NextResponse.json({ status: "full", requiredProductId, questions });
   } catch (error) {
     console.error("Full quiz access failed", {
