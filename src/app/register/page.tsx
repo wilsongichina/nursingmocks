@@ -2,16 +2,16 @@ import { Metadata } from "next";
 import RegisterPageClient from "./RegisterPageClient";
 
 export const metadata: Metadata = {
-  title: "Register | TEAS Gurus - Create Your Account",
+  title: "Create Account | NursingMocks",
   description:
-    "Join TEAS Gurus today and get access to expert study materials, practice tests, and personalized exam preparation support for your TEAS exam.",
+    "Create a NursingMocks account to choose your exam focus, access ATI TEAS, HESI A2, RN and LPN practice, and manage your study dashboard.",
   keywords:
-    "TEAS Gurus register, sign up, create account, TEAS exam preparation, student registration",
+    "NursingMocks register, create account, nursing exam practice account, ATI TEAS signup, HESI A2 signup",
   openGraph: {
-    title: "Register | TEAS Gurus - Create Your Account",
+    title: "Create Account | NursingMocks",
     description:
-      "Join TEAS Gurus today and get access to expert study materials, practice tests, and personalized exam preparation support.",
-    url: "https://teasgurus.com/register",
+      "Create your NursingMocks account, complete guided setup, and open your personalized nursing exam dashboard.",
+    url: "https://nursingmocks.com/register",
   },
   alternates: {
     canonical: "/register",

@@ -6,16 +6,16 @@ import Link from "next/link";
 import GetStartedButton from "@/components/ui/GetStartedButton";
 
 export const metadata: Metadata = {
-  title: "About TeasGurus | Trusted TEAS Exam Help & Expert Support",
+  title: "About NursingMocks | Nursing Exam Practice and Study Support",
   description:
-    "Learn about TeasGurus—your trusted partner for TEAS exam success. We provide expert real ATI TEAS questions, and professional test-taking services tailored for nursing students.",
+    "Learn about NursingMocks, a nursing exam practice platform for ATI TEAS, HESI A2, RN and LPN test banks, and nursing exit exam preparation.",
   keywords:
-    "about TEAS Gurus, TEAS exam preparation company, nursing school preparation, TEAS tutoring experts",
+    "about NursingMocks, nursing exam practice, ATI TEAS practice, HESI A2 practice, RN LPN practice tests",
   openGraph: {
-    title: "About Teas Gurus | Trusted Professionals for TEAS Exam Help",
+    title: "About NursingMocks | Nursing Exam Practice and Study Support",
     description:
-      "Get to know Teas Gurus — the platform where students find reliable, experienced experts to take their ATI TEAS exams. Learn who we are and why students choose us.",
-    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/about`,
+      "Get to know NursingMocks and how the platform supports nursing students preparing for entrance exams, test banks, and exit exams.",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://nursingmocks.com"}/about`,
   },
   alternates: {
     canonical: "/about",

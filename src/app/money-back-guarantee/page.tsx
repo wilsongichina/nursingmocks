@@ -5,13 +5,13 @@ import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
 
 export const metadata: Metadata = {
-  title: "Money-Back Guarantee Policy - Nursing Mocks",
+  title: "Money-Back Guarantee Policy | NursingMocks",
   description:
-    "Read the Nursing Mocks money-back guarantee policy. Learn when you can request a refund for your TEAS, HESI, or nursing exam prep subscription and how the process works.",
+    "Read the NursingMocks money-back guarantee policy. Learn when you can request a refund for TEAS, HESI A2, or nursing exam practice access and how the process works.",
   keywords:
     "money back guarantee, refund policy, TEAS exam guarantee, HESI exam guarantee, nursing exam prep refund",
   openGraph: {
-    title: "Money-Back Guarantee Policy - Nursing Mocks",
+    title: "Money-Back Guarantee Policy | NursingMocks",
     description:
       "Read our money-back guarantee policy to understand when and how you can request a refund.",
     url: "https://nursingmocks.com/money-back-guarantee",

@@ -5,16 +5,16 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Guarantees - TEAS Gurus",
+  title: "Guarantees | NursingMocks",
   description:
-    "Learn about our guarantees and commitments to your TEAS exam success. We stand behind our services with comprehensive guarantees for your peace of mind.",
+    "Learn about NursingMocks guarantees, student support commitments, practice access expectations, and how we help nursing students prepare with confidence.",
   keywords:
-    "guarantees, TEAS exam guarantees, service guarantees, satisfaction guarantee, educational guarantees",
+    "NursingMocks guarantees, nursing exam practice guarantee, student support, exam prep confidence",
   openGraph: {
-    title: "Guarantees - TEAS Gurus",
+    title: "Guarantees | NursingMocks",
     description:
-      "Learn about our guarantees and commitments to your TEAS exam success.",
-    url: "https://teasgurus.com/guarantees",
+      "Learn about NursingMocks support commitments and guarantees for nursing exam practice users.",
+    url: "https://nursingmocks.com/guarantees",
   },
   alternates: {
     canonical: "/guarantees",

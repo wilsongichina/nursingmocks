@@ -2,16 +2,16 @@ import { Metadata } from "next";
 import LoginPageClient from "./LoginPageClient";
 
 export const metadata: Metadata = {
-  title: "Login | TEAS Gurus - Sign In to Your Account",
+  title: "Sign In | NursingMocks",
   description:
-    "Sign in to your TEAS Gurus account to access study materials, track your progress, and manage your TEAS exam preparation.",
+    "Sign in to NursingMocks to open your exam dashboard, continue practice, manage access, and review nursing exam progress.",
   keywords:
-    "TEAS Gurus login, sign in, TEAS exam account, student portal, TEAS study materials",
+    "NursingMocks login, sign in, nursing exam dashboard, ATI TEAS account, HESI A2 account",
   openGraph: {
-    title: "Login | TEAS Gurus - Sign In to Your Account",
+    title: "Sign In | NursingMocks",
     description:
-      "Sign in to your TEAS Gurus account to access study materials, track your progress, and manage your TEAS exam preparation.",
-    url: "https://teasgurus.com/login",
+      "Sign in to NursingMocks to continue practice and manage your nursing exam dashboard.",
+    url: "https://nursingmocks.com/login",
   },
   alternates: {
     canonical: "/login",

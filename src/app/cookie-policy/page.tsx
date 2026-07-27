@@ -5,16 +5,16 @@ import NewFooter from "@/components/layout/NewFooter";
 import FloatingWhatsAppButton from "@/components/ui/FloatingWhatsAppButton";
 
 export const metadata: Metadata = {
-  title: "Cookie & Tracking Notice - TEAS Gurus",
+  title: "Cookie & Tracking Notice | NursingMocks",
   description:
-    "Learn how TEAS Gurus uses cookies and similar tracking technologies to keep you logged in, analyse usage, and improve TEAS, HESI, and nursing exam prep.",
+    "Learn how NursingMocks uses cookies and similar technologies for sign-in, account security, analytics, support, and nursing exam practice improvements.",
   keywords:
     "cookie policy, tracking notice, cookies, privacy, TEAS exam, HESI exam, nursing exam prep",
   openGraph: {
-    title: "Cookie & Tracking Notice - TEAS Gurus",
+    title: "Cookie & Tracking Notice | NursingMocks",
     description:
-      "Learn how we use cookies and similar tracking technologies to improve your experience.",
-    url: "https://teasgurus.com/cookie-policy",
+      "Learn how NursingMocks uses cookies and similar tracking technologies to support account access and improve your experience.",
+    url: "https://nursingmocks.com/cookie-policy",
   },
   alternates: {
     canonical: "/cookie-policy",

@@ -129,3 +129,41 @@ For parent and nested sub-pages, the Firestore save layer regenerates `schema` a
 3. Add a backfill script to regenerate schema for existing Firestore content.
 4. Add schema validation tests to ensure no `undefined` values reach Firestore.
 5. Add a manual `Regenerate Schema` admin action if admins need to refresh schema without editing other metadata.
+
+## Frontend Page Metadata Coverage
+
+Updated the focused frontend metadata set for home, company, legal, and registration/account setup routes.
+
+Behavior:
+
+- Home and contact metadata already had current NursingMocks titles and descriptions.
+- About, guarantees, prices, register, login, cookie policy, and thank-you metadata now use current NursingMocks branding and page-specific descriptions.
+- Terms, privacy, and onboarding now use server page wrappers with static metadata while their interactive bodies remain client components.
+- `/robots.txt` is generated from `src/app/robots.ts` and now uses an exact allowlist for home, company, legal, registration/account setup, and four TEAS set 1 subject practice pages.
+- All other page paths are disallowed in robots, while static render assets such as `/_next/static/`, favicon files, and the NursingMocks logo remain crawlable.
+- `/sitemap.xml` now lists the same indexable page set and no longer includes unrelated placeholder routes.
+
+Files changed:
+
+- `src/app/about/page.tsx`
+- `src/app/guarantees/page.tsx`
+- `src/app/prices/page.tsx`
+- `src/app/money-back-guarantee/page.tsx`
+- `src/app/terms-and-conditions/page.tsx`
+- `src/app/terms-and-conditions/TermsAndConditionsPageClient.tsx`
+- `src/app/privacy-policy/page.tsx`
+- `src/app/privacy-policy/PrivacyPolicyPageClient.tsx`
+- `src/app/cookie-policy/page.tsx`
+- `src/app/register/page.tsx`
+- `src/app/login/page.tsx`
+- `src/app/onboarding/page.tsx`
+- `src/app/onboarding/OnboardingPageClient.tsx`
+- `src/app/thank-you/page.tsx`
+- `src/app/robots.ts`
+- `src/app/sitemap.ts`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```

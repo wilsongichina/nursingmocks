@@ -4,16 +4,16 @@ import { TikTokThankYouPurchaseScript } from "@/components/analytics/TikTokThank
 import { ThankYouNursingMocksDesign } from "@/components/thank-you/ThankYouNursingMocksDesign";
 
 export const metadata: Metadata = {
-  title: "Thank You — NursingMocks",
+  title: "Thank You | NursingMocks",
   description:
-    "Your NursingMocks purchase is complete. Open your Dropbox folder to access your TEAS study files.",
+    "Your NursingMocks purchase is complete. Continue to your account for exam access, practice materials, and study support.",
   keywords:
-    "thank you, NursingMocks, TEAS practice, purchase confirmation, Dropbox",
+    "thank you, NursingMocks, nursing exam practice, purchase confirmation, exam access",
   openGraph: {
-    title: "Thank You — NursingMocks",
+    title: "Thank You | NursingMocks",
     description:
-      "Your NursingMocks purchase is complete. Open your Dropbox folder to access your TEAS study files.",
-    url: "https://teasgurus.com/thank-you",
+      "Your NursingMocks purchase is complete. Continue to your account to access your exam practice materials.",
+    url: "https://nursingmocks.com/thank-you",
   },
   alternates: {
     canonical: "/thank-you",

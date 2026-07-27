@@ -5,16 +5,16 @@ import PricesPageSchema from "@/components/ui/PricesPageSchema";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Pricing | Take My TEAS Exam Cost",
+  title: "Pricing | NursingMocks",
   description:
-    "Explore our pricing for TEAS exam services including Math, Science, Reading & English help. Affordable rates to take your TEAS test or get real ATI TEAS practice question",
+    "Review NursingMocks pricing for ATI TEAS, HESI A2, nursing test bank, and nursing exit exam practice access.",
   keywords:
-    "TEAS exam pricing, TEAS services cost, payment plans, discounts, affordable TEAS prep",
+    "NursingMocks pricing, ATI TEAS pricing, HESI A2 pricing, nursing exam practice pricing, test bank access",
   openGraph: {
-    title: "TEAS Exam Help Pricing | Affordable & Transparent",
+    title: "Pricing | NursingMocks",
     description:
-      "Explore our pricing plans for TEAS exam services. No hidden fees. Choose the package that fits your exam, urgency, and goals. Pay securely and confidently.",
-    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/prices`,
+      "Compare NursingMocks access options for entrance exams, RN and LPN test banks, and nursing exit exam practice.",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://nursingmocks.com"}/prices`,
   },
   alternates: {
     canonical: "/prices",
