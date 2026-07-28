@@ -350,6 +350,7 @@ function ScanRecordContent({ scanId, mode }: { scanId: string; mode: "view" | "e
   const displaySubject = displayMetadata.subject || record?.subject || "";
   const displaySetName = record?.set?.name || record?.setName || "";
   const displaySetSlug = record?.set?.slug || record?.setSlug || "";
+  const reviewWarnings = record?.review?.warnings || [];
   const selectedType = QUESTION_TYPES.find((type) => type.id === questionTypeId);
   const nextHref = navigation?.nextRecordId
     ? `/admin/teas-image-import/scans/${navigation.nextRecordId}${mode === "edit" ? "/edit" : ""}`
@@ -851,6 +852,16 @@ function ScanRecordContent({ scanId, mode }: { scanId: string; mode: "view" | "e
                   </div>
                 </AdminCard>
 
+                {reviewWarnings.length > 0 && (
+                  <AdminCard title="Stored Review Warnings">
+                    <ul className="list-disc space-y-2 pl-5 text-sm text-amber-800">
+                      {reviewWarnings.map((warning) => (
+                        <li key={warning}>{warning}</li>
+                      ))}
+                    </ul>
+                  </AdminCard>
+                )}
+
                 <AdminCard title="Detected Visuals" description="Upload exhibit images that are required to answer the question. The file is saved under public/teas-exhibits/{setSlug}.">
                   <div className="mb-3">
                     <button type="button" onClick={addImageExhibit} className="admin-button-secondary">
@@ -995,6 +1006,16 @@ function ScanRecordContent({ scanId, mode }: { scanId: string; mode: "view" | "e
                     <p><strong>Status:</strong> {record.status || "Not recorded"}</p>
                     <p><strong>Source file:</strong> {record.sourceFileName || "Not recorded"}</p>
                     {record.manualReviewNotes && <p><strong>Review notes:</strong> {record.manualReviewNotes}</p>}
+                    {reviewWarnings.length > 0 && (
+                      <div>
+                        <p className="font-semibold text-amber-800">Stored review warnings:</p>
+                        <ul className="mt-1 list-disc space-y-1 pl-5 text-amber-800">
+                          {reviewWarnings.map((warning) => (
+                            <li key={warning}>{warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </AdminCard>
               </div>

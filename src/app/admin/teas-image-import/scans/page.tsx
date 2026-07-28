@@ -590,7 +590,21 @@ function SavedTeasScansContent() {
                             )}
                           </div>
                         </AdminTableCell>
-                        <AdminTableCell>{Number(record.issueCount || 0)}</AdminTableCell>
+                        <AdminTableCell nowrap={false}>
+                          <div className="max-w-sm">
+                            <p className="text-sm font-semibold text-gray-900">{Number(record.issueCount || 0)}</p>
+                            {record.review?.warnings && record.review.warnings.length > 0 && (
+                              <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-amber-800">
+                                {record.review.warnings.slice(0, 3).map((warning) => (
+                                  <li key={warning}>{warning}</li>
+                                ))}
+                                {record.review.warnings.length > 3 && (
+                                  <li>{record.review.warnings.length - 3} more warning(s)</li>
+                                )}
+                              </ul>
+                            )}
+                          </div>
+                        </AdminTableCell>
                         <AdminTableCell nowrap={false}>
                           <div className="max-w-sm space-y-2">
                             <p className="break-all text-xs font-semibold text-gray-800">

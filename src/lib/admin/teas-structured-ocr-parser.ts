@@ -2,7 +2,7 @@ import {
   buildTeasBulkUploadPayload,
   type TeasBulkUploadPayload,
   type TeasBulkUploadQuestion,
-} from "@/lib/admin/teas-bulk-upload-schema";
+} from "./teas-bulk-upload-schema";
 
 type StructuredOcrQuestionColumn = {
   questionNumber?: unknown;
@@ -149,7 +149,9 @@ function pageToQuestion(
     ? explicitQuestionTypeId
     : classifyQuestionType(prompt, choiceLines);
   const passage = passageForQuestion(rawPassage, prompt, choiceLines, subject, hasExplicitPassage);
-  stringArray(page.questionColumn?.warnings).forEach((warning) => addWarning(`${pageLabel} ${warning}`));
+  stringArray(page.questionColumn?.warnings)
+    .filter((warning) => !isIgnorableStructuredWarning(questionTypeId, warning))
+    .forEach((warning) => addWarning(`${pageLabel} ${warning}`));
 
   if (promptLines.length === 0) {
     addWarning(`${pageLabel} has no detected prompt lines.`);
@@ -212,10 +214,20 @@ function pageToQuestion(
     if (choiceLines.length > 0) {
       addWarning(`${pageLabel} fill-in-the-blank should not include multiple-choice options.`);
     }
+  } else if (questionTypeId === 2) {
+    if (choiceLines.length < 4) {
+      addWarning(`${pageLabel} multiple select expected at least 4 choices but found ${choiceLines.length}.`);
+    }
   } else if (choiceLines.length !== 4) {
     addWarning(`${pageLabel} expected 4 choices but found ${choiceLines.length}.`);
   }
-  if (questionTypeId !== 6 && questionTypeId !== 7 && !/^[A-F]$/.test(selectedAnswer)) {
+  const selectedAnswerLabels = selectedAnswer
+    .split(/[\s,;]+/)
+    .map((label) => label.trim().toUpperCase())
+    .filter((label) => /^[A-F]$/.test(label));
+  if (questionTypeId === 2 && selectedAnswerLabels.length < 2) {
+    addWarning(`${pageLabel} has no reliable selected answer marker.`);
+  } else if (questionTypeId !== 2 && questionTypeId !== 6 && questionTypeId !== 7 && !/^[A-F]$/.test(selectedAnswer)) {
     addWarning(`${pageLabel} has no reliable selected answer marker.`);
   } else if (
     questionTypeId !== 6 &&
@@ -290,6 +302,34 @@ function pageToQuestion(
         sourceImageRequired: exhibits.some(exhibitRequiresSourceImage),
       },
   };
+}
+
+function isIgnorableStructuredWarning(questionTypeId: number, warning: string) {
+  if (questionTypeId === 6) {
+    return (
+      /\bselected answer is not visually clear\b/i.test(warning) ||
+      /\bselected answer is not visually marked\b/i.test(warning) ||
+      /\bselected answer is not visibly clear\b/i.test(warning) ||
+      /\bselected answer is not visibly indicated\b/i.test(warning) ||
+      /\bno answer is visually selected\b/i.test(warning) ||
+      /\bno single answer is explicitly selected\b/i.test(warning)
+    );
+  }
+  if (questionTypeId === 2) {
+    return (
+      /\bexpected\s+4\s+choices\s+but\s+found\s+[4-6]\b/i.test(warning) ||
+      /\bhas no reliable selected answer marker\b/i.test(warning)
+    );
+  }
+  if (questionTypeId === 7) {
+    return (
+      /\bfill-in-the-blank question, so selectedAnswer is left empty\b/i.test(warning) ||
+      /\bselected answer is left empty\b/i.test(warning) ||
+      /\bselected answer is not visibly indicated\b/i.test(warning) ||
+      /\bhas no reliable selected answer marker\b/i.test(warning)
+    );
+  }
+  return false;
 }
 
 function atiFormatForStructuredQuestionType(questionTypeId: number): TeasBulkUploadQuestion["ati_format"] {

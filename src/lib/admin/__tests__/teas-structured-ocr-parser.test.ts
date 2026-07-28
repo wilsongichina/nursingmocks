@@ -141,6 +141,35 @@ describe("TEAS structured OCR parser", () => {
     });
   });
 
+  it("does not flag empty selectedAnswer wording for fill-in-the-blank questions", () => {
+    const result = parseTeasStructuredOcrToBulkUploadPayload({
+      pages: [
+        {
+          fileName: "40_no-ati-logo.jpg",
+          subject: "Mathematics",
+          questionColumn: {
+            questionTypeId: 7,
+            promptLines: [
+              "What is the least common denominator for the fractions below? (Round the answer to the nearest integer.) 1/2, 2/3, 4/5",
+            ],
+            choiceLines: [],
+            selectedAnswer: "",
+            warnings: [
+              "This question is a fill-in-the-blank question, so selectedAnswer is left empty.",
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(result.payload.questions[0].question_type_id).toBe(7);
+    expect(result.payload.questions[0].scanReview).toMatchObject({
+      needsReview: false,
+      warnings: [],
+    });
+  });
+
   it("keeps failed no-text pages as manual review placeholder questions", () => {
     const result = parseTeasStructuredOcrToBulkUploadPayload({
       pages: [
@@ -734,6 +763,103 @@ describe("TEAS structured OCR parser", () => {
     expect(result.payload.questions[0].options).toMatchObject({
       A: { choice: expect.stringContaining("Girls in 9th grade") },
       D: { choice: expect.stringContaining("By 12th grade") },
+    });
+  });
+
+  it("does not flag missing selected answer markers for ordered response questions", () => {
+    const result = parseTeasStructuredOcrToBulkUploadPayload({
+      pages: [
+        {
+          fileName: "43_no-ati-logo.jpg",
+          subject: "English and Language Usage",
+          questionColumn: {
+            questionTypeId: 6,
+            promptLines: [
+              "A chef is making fried chicken. Identify the sequence the chef should follow. (Move the options into the box on the right, placing them in the order of performance. Use all the options.)",
+            ],
+            choiceLines: ["Season the chicken", "Dredge in flour", "Place in hot oil", "Drain on paper towels"],
+            selectedAnswer: "",
+            warnings: ["Selected answer is not visually marked."],
+          },
+        },
+      ],
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(result.payload.questions[0].question_type_id).toBe(6);
+    expect(result.payload.questions[0].correctAnswer).toEqual(["A", "B", "C", "D"]);
+    expect(result.payload.questions[0].scanReview).toMatchObject({
+      needsReview: false,
+      warnings: [],
+    });
+  });
+
+  it("allows multiple-select questions with more than four options and multiple selected labels", () => {
+    const result = parseTeasStructuredOcrToBulkUploadPayload({
+      pages: [
+        {
+          fileName: "125_no-ati-logo.jpg",
+          subject: "Science",
+          questionColumn: {
+            questionTypeId: 2,
+            promptLines: [
+              "Which of the following correctly describes the result of a P1 cross between a homozygous dominant female and a homozygous recessive male for a single gene? (Select all that apply.)",
+            ],
+            choiceLines: [
+              "F1 generation will result in offspring that all express the dominant phenotype.",
+              "F1 generation will result in offspring that are all heterozygous.",
+              "F2 generation will result in offspring that only express the recessive phenotype.",
+              "F1 generation will result in offspring with a 3:1 phenotypic ratio.",
+              "F2 generation will result in offspring that are all homozygous dominant.",
+            ],
+            selectedAnswer: "A, B",
+            warnings: [
+              "expected 4 choices but found 5.",
+              "has no reliable selected answer marker.",
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(result.payload.questions[0].question_type_id).toBe(2);
+    expect(Object.keys(result.payload.questions[0].options || {})).toHaveLength(5);
+    expect(result.payload.questions[0].correctAnswer).toBe("A, B");
+    expect(result.payload.questions[0].scanReview).toMatchObject({
+      needsReview: false,
+      warnings: [],
+    });
+  });
+
+  it("does not flag unselected screenshots for complete ordered-response questions", () => {
+    const result = parseTeasStructuredOcrToBulkUploadPayload({
+      pages: [
+        {
+          fileName: "150_no-ati-logo.jpg",
+          subject: "English and Language Usage",
+          questionColumn: {
+            questionTypeId: 6,
+            promptLines: [
+              "Which arrangement of the following five sentences yields the most logically organized paragraph? (Move the options into the box on the right, placing them in the selected order. Use all the options.)",
+            ],
+            choiceLines: ["Sentence one.", "Sentence two.", "Sentence three.", "Sentence four.", "Sentence five."],
+            selectedAnswer: "",
+            warnings: [
+              "No answer is visually selected in the screenshot.",
+              "Selected answer is not visibly indicated.",
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(result.payload.questions[0].question_type_id).toBe(6);
+    expect(result.payload.questions[0].correctAnswer).toEqual(["A", "B", "C", "D", "E"]);
+    expect(result.payload.questions[0].scanReview).toMatchObject({
+      needsReview: false,
+      warnings: [],
     });
   });
 

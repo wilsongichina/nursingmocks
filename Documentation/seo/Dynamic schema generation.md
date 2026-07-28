@@ -139,7 +139,7 @@ Behavior:
 - Home and contact metadata already had current NursingMocks titles and descriptions.
 - About, guarantees, prices, register, login, cookie policy, and thank-you metadata now use current NursingMocks branding and page-specific descriptions.
 - Terms, privacy, and onboarding now use server page wrappers with static metadata while their interactive bodies remain client components.
-- `/robots.txt` is served from `public/robots.txt` and allows HTML crawling while blocking API routes.
+- `/robots.txt` is served from `public/robots.txt` and uses an explicit allowlist for public SEO pages, four TEAS set 1 practice pages, sitemap/robots, and render assets while blocking everything else.
 - Non-sitemap pages outside the indexable allowlist receive an `X-Robots-Tag: noindex, nofollow` header from `src/middleware.ts` so Google can crawl the page and see the noindex signal instead of failing live inspection as blocked by robots.
 - The indexable allowlist covers home, company, legal, registration/account setup, and four TEAS set 1 subject practice pages.
 - `/sitemap.xml` now lists the same indexable page set and no longer includes unrelated placeholder routes.

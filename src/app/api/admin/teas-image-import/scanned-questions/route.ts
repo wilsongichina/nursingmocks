@@ -86,11 +86,24 @@ function isIgnorableReviewWarning(questionTypeId: number, warning: string) {
   if (questionTypeId === 6) {
     return (
       /\bselected answer is not visually clear\b/i.test(warning) ||
+      /\bselected answer is not visually marked\b/i.test(warning) ||
+      /\bselected answer is not visibly clear\b/i.test(warning) ||
+      /\bselected answer is not visibly indicated\b/i.test(warning) ||
+      /\bno answer is visually selected\b/i.test(warning) ||
       /\bno single answer is explicitly selected\b/i.test(warning)
+    );
+  }
+  if (questionTypeId === 2) {
+    return (
+      /\bexpected\s+4\s+choices\s+but\s+found\s+[4-6]\b/i.test(warning) ||
+      /\bhas no reliable selected answer marker\b/i.test(warning)
     );
   }
   if (questionTypeId === 7) {
     return (
+      /\bfill-in-the-blank question, so selectedAnswer is left empty\b/i.test(warning) ||
+      /\bselected answer is left empty\b/i.test(warning) ||
+      /\bselected answer is not visibly indicated\b/i.test(warning) ||
       /\bexpected\s+4\s+choices\b/i.test(warning) ||
       /\bhas no reliable selected answer marker\b/i.test(warning) ||
       /\bselected answer marker is low confidence\b/i.test(warning) ||

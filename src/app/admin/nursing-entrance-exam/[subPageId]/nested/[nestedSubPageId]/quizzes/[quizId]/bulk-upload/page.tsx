@@ -23,7 +23,7 @@ interface ParsedQuestion {
   id: number | string;
   question: string;
   options: any;
-  correctAnswer: string;
+  correctAnswer: unknown;
   solution: string;
   question_type_id: number;
   [key: string]: any;
@@ -53,6 +53,9 @@ type TeasScanRecord = {
   };
   options?: Record<string, unknown> | unknown[];
   correctAnswer?: unknown;
+  correct_answer?: unknown;
+  correctAnswerLabels?: unknown;
+  correctAnswerText?: unknown;
   solution?: string;
   explanation?: string;
   questionTypeId?: number;
@@ -73,6 +76,7 @@ type TeasScanRecord = {
     warnings?: string[];
     questionNumber?: string;
     subject?: string;
+    selectedAnswer?: unknown;
   };
   scanOrder?: number;
 };
@@ -275,6 +279,27 @@ export default function BulkUploadQuestions({
   const sourceImageName = (record: TeasScanRecord) =>
     record.sourceFileName || record.source?.fileName || "";
 
+  const normalizedCorrectAnswerFromScan = (record: TeasScanRecord) => {
+    const labelSource = record.correctAnswerLabels;
+    if (Array.isArray(labelSource) && labelSource.length > 0) {
+      const labels = labelSource.map((label) => String(label).trim().toUpperCase()).filter(Boolean);
+      return labels.length === 1 ? labels[0] : labels;
+    }
+    if (typeof labelSource === "string" && labelSource.trim()) {
+      const labels = labelSource
+        .split(/[,\s]+/)
+        .map((label) => label.trim().toUpperCase())
+        .filter(Boolean);
+      return labels.length === 1 ? labels[0] : labels;
+    }
+
+    const directAnswer = record.correctAnswer ?? record.correct_answer ?? record.review?.selectedAnswer;
+    if (String(directAnswer ?? "").trim()) return directAnswer;
+
+    // Preview/export records can carry fill-in or text answers without a label.
+    return record.correctAnswerText ?? "";
+  };
+
   const optionObjectFromScan = (options: TeasScanRecord["options"]) => {
     if (!options) return {};
     if (Array.isArray(options)) {
@@ -367,7 +392,7 @@ export default function BulkUploadQuestions({
       question: recordQuestionHtml(record),
       passage: recordPassageHtml(record),
       options: optionObjectFromScan(record.options),
-      correctAnswer: record.correctAnswer as string,
+      correctAnswer: normalizedCorrectAnswerFromScan(record),
       solution: decodeEscapedText(record.solution || record.explanation || ""),
       question_type_id: questionTypeId,
       image_path: record.imagePath || record.image_path || null,
@@ -680,6 +705,7 @@ export default function BulkUploadQuestions({
   const warningIssueCount = teasScanIssues.filter((issue) => issue.level === "warning").length;
   const errorIssueCount = teasScanIssues.filter((issue) => issue.level === "error").length;
   const blockingIssueCount = teasScanIssues.filter((issue) => issue.level === "blocking").length;
+  const blockingIssues = teasScanIssues.filter((issue) => issue.level === "blocking");
   const targetTeasSubject = normalizeTeasSubject(quizSubjectName || quizName);
   const validationProgress = parsedQuestions.length
     ? Math.round((readyCount / parsedQuestions.length) * 100)
@@ -818,12 +844,26 @@ export default function BulkUploadQuestions({
                 <div className="divide-y divide-amber-100">
                   {teasScanIssues.slice(0, 80).map((issue, index) => (
                     <div key={`${issue.scanId}-${index}`} className="px-3 py-2 text-sm text-amber-950">
-                      <span className="mr-2 inline-flex rounded border border-amber-300 bg-white px-2 py-0.5 text-xs font-semibold uppercase">
+                      <span
+                        className={`mr-2 inline-flex rounded border px-2 py-0.5 text-xs font-semibold uppercase ${
+                          issue.level === "blocking"
+                            ? "border-red-300 bg-red-50 text-red-700"
+                            : "border-amber-300 bg-white text-amber-900"
+                        }`}
+                      >
                         {issue.level}
                       </span>
                       <span className="font-medium">{issue.questionId || issue.scanId || "Scan"}</span>
                       <span className="mx-1">-</span>
                       <span>{issue.message}</span>
+                      {issue.scanId && (
+                        <Link
+                          href={`/admin/teas-image-import/scans/${issue.scanId}/edit`}
+                          className="ml-2 font-semibold text-purple-700 underline-offset-2 hover:underline"
+                        >
+                          Edit scan
+                        </Link>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1161,17 +1201,41 @@ export default function BulkUploadQuestions({
                   </p>
                   <p className="mt-1 text-sm text-amber-900">
                     Warnings: {warningIssueCount}. Errors: {errorIssueCount}. Blocking: {blockingIssueCount}.
-                    Non-blocking issues will be saved on each imported question for later review.
+                    {blockingIssueCount > 0
+                      ? " Blocking issues must be fixed before import."
+                      : " Non-blocking issues will be saved on each imported question for later review."}
                   </p>
-                  <label className="mt-3 flex items-start gap-2 text-sm text-amber-950">
-                    <input
-                      type="checkbox"
-                      checked={forceImportConfirmed}
-                      onChange={(event) => setForceImportConfirmed(event.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-amber-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <span>I understand and want to import these questions with highlighted issues.</span>
-                  </label>
+                  {blockingIssues.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {blockingIssues.map((issue, index) => (
+                        <div key={`${issue.scanId || issue.questionId || "blocking"}-${index}`} className="rounded border border-red-200 bg-white p-2 text-sm text-red-900">
+                          <div className="font-semibold">
+                            {issue.questionId || issue.scanId || "Blocking issue"}
+                          </div>
+                          <div>{issue.message}</div>
+                          {issue.scanId && (
+                            <Link
+                              href={`/admin/teas-image-import/scans/${issue.scanId}/edit`}
+                              className="mt-1 inline-flex font-semibold text-purple-700 underline-offset-2 hover:underline"
+                            >
+                              Edit this scan
+                            </Link>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {blockingIssueCount === 0 && (
+                    <label className="mt-3 flex items-start gap-2 text-sm text-amber-950">
+                      <input
+                        type="checkbox"
+                        checked={forceImportConfirmed}
+                        onChange={(event) => setForceImportConfirmed(event.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-amber-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span>I understand and want to import these questions with highlighted issues.</span>
+                    </label>
+                  )}
                 </div>
               )}
               <AdminModalFooter>

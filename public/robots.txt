@@ -1,5 +1,32 @@
 User-agent: *
-Allow: /
-Disallow: /api/
+
+# Public SEO pages
+Allow: /$
+Allow: /about$
+Allow: /contact$
+Allow: /guarantees$
+Allow: /prices$
+Allow: /money-back-guarantee$
+Allow: /terms-and-conditions$
+Allow: /privacy-policy$
+Allow: /cookie-policy$
+
+# Public practice-test pages
+Allow: /teas-english-practice-test-set-1$
+Allow: /teas-reading-practice-test-set-1$
+Allow: /teas-science-practice-test-set-1$
+Allow: /teas-math-practice-test-set-1$
+
+# Files needed for crawling and rendering
+Allow: /robots.txt$
+Allow: /sitemap.xml$
+Allow: /_next/static/
+Allow: /_next/image
+Allow: /favicon.ico$
+Allow: /favicon.png$
+Allow: /nursing-mocks-logo.png$
+
+# Block everything not explicitly allowed
+Disallow: /
 
 Sitemap: https://www.nursingmocks.com/sitemap.xml

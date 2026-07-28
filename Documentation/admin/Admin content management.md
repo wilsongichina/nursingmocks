@@ -1,5 +1,40 @@
 # Admin Content Management
 
+## TEAS Scan Bulk Import
+
+Completed change:
+
+- TEAS scan bulk import now normalizes alternate answer fields from scan records, including `correctAnswerLabels`, `correct_answer`, `review.selectedAnswer`, and `correctAnswerText`, before validating `correctAnswer`.
+- Blocking scan issues still stop import; the confirmation checkbox only applies to non-blocking warnings and errors that can be saved for later review.
+- Blocking issue rows link directly to the saved TEAS scan editor so admins can repair the exact record before retrying import.
+- The saved TEAS scans list and individual scan view/edit screens now show stored parser review warnings so admins can see why a record is marked Needs Review.
+- Added maintenance scripts for repairing split structured OCR pages and saving repaired structured OCR output back through the local scanned-questions API.
+- Reran and repaired Set 9 OCR pages 12, 22, 100, and 101. Page 100 and 101 were the two halves of the same Science question, so the repaired Set 9 staging output saves 169 scan records.
+- Set 9 page 22 remains intentionally marked Needs Review because the source screenshot shows the passage and choices but not the actual question prompt.
+- Ordered-response scans no longer treat missing visible selected-answer markers as review issues when all ordered options are present; Set 10 `43_no-ati-logo.jpg` now saves as Type 6 with `correctAnswer: ["A","B","C","D","E"]` and no review warnings.
+- Fill-in-the-blank scans no longer treat empty `selectedAnswer` parser wording as a review warning; the least-common-denominator scan `40_no-ati-logo.jpg` should only be blocked when its actual `correctAnswer` is missing.
+- Multiple-select TEAS scans now allow more than four options and multiple selected labels without being marked for review; Set 12 `125_no-ati-logo.jpg` is a valid Type 2 record with five options and `correctAnswer: "A, B"`.
+- Ordered-response scans also ignore the `No answer is visually selected in the screenshot` wording when the ordered answer includes every option; Set 12 `150_no-ati-logo.jpg` is a valid Type 6 record with five ordered options.
+- Set 13 scan review cleanup cleared stale warning-only records: complete Type 6 ordered-response scans ignore `Selected answer is not visibly indicated`, and complete Type 2 multiple-select scans with five or six options remain import-ready.
+
+Files changed:
+
+- `src/app/admin/nursing-entrance-exam/[subPageId]/nested/[nestedSubPageId]/quizzes/[quizId]/bulk-upload/page.tsx`
+- `src/app/admin/teas-image-import/scans/page.tsx`
+- `src/app/admin/teas-image-import/scans/[scanId]/ScanRecordPageClient.tsx`
+- `src/app/api/admin/teas-image-import/scanned-questions/route.ts`
+- `src/lib/admin/__tests__/teas-structured-ocr-parser.test.ts`
+- `src/lib/admin/teas-structured-ocr-parser.ts`
+- `scripts/repair-teas-structured-split-page.mjs`
+- `scripts/save-teas-structured-scans.mjs`
+- `Documentation/admin/Admin content management.md`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
 ## Shared Admin UI Standard
 
 Admin pages should apply the NursingMocks typography system while keeping the layout optimized for data management.
