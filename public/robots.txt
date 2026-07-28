@@ -12,10 +12,10 @@ Allow: /privacy-policy$
 Allow: /cookie-policy$
 
 # Public practice-test pages
-Allow: /teas-english-practice-test-set-1$
-Allow: /teas-reading-practice-test-set-1$
-Allow: /teas-science-practice-test-set-1$
-Allow: /teas-math-practice-test-set-1$
+Allow: /teas-english-practice-test-set-
+Allow: /teas-reading-practice-test-set-
+Allow: /teas-science-practice-test-set-
+Allow: /teas-math-practice-test-set-
 
 # Files needed for crawling and rendering
 Allow: /robots.txt$

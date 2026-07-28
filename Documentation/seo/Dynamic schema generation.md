@@ -139,9 +139,9 @@ Behavior:
 - Home and contact metadata already had current NursingMocks titles and descriptions.
 - About, guarantees, prices, register, login, cookie policy, and thank-you metadata now use current NursingMocks branding and page-specific descriptions.
 - Terms, privacy, and onboarding now use server page wrappers with static metadata while their interactive bodies remain client components.
-- `/robots.txt` is served from `public/robots.txt` and uses an explicit allowlist for public SEO pages, four TEAS set 1 practice pages, sitemap/robots, and render assets while blocking everything else.
+- `/robots.txt` is served from `public/robots.txt` and uses an explicit allowlist for public SEO pages, ATI TEAS quiz URL prefixes, sitemap/robots, and render assets while blocking everything else.
 - Non-sitemap pages outside the indexable allowlist receive an `X-Robots-Tag: noindex, nofollow` header from `src/middleware.ts` so Google can crawl the page and see the noindex signal instead of failing live inspection as blocked by robots.
-- The indexable allowlist covers home, company, legal, registration/account setup, and four TEAS set 1 subject practice pages.
+- The indexable middleware allowlist covers home, company, legal, registration/account setup, and existing ATI TEAS quiz pages for Sets 1-3 and 6-16 across English, Reading, Science, and Math. Sets 4 and 5 are intentionally omitted because those quiz records do not exist.
 - `/sitemap.xml` now lists the same indexable page set and no longer includes unrelated placeholder routes.
 - Sitemap and robots generation use the canonical URL helper, which falls back to `https://www.nursingmocks.com` for localhost and Vercel preview domains.
 
@@ -163,6 +163,7 @@ Files changed:
 - `src/app/thank-you/page.tsx`
 - `public/robots.txt`
 - `src/app/sitemap.ts`
+- `src/middleware.ts`
 - `src/lib/config.ts`
 
 Validation run:

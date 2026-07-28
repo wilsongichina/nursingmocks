@@ -16,9 +16,12 @@ Completed change:
 - Multiple-select TEAS scans now allow more than four options and multiple selected labels without being marked for review; Set 12 `125_no-ati-logo.jpg` is a valid Type 2 record with five options and `correctAnswer: "A, B"`.
 - Ordered-response scans also ignore the `No answer is visually selected in the screenshot` wording when the ordered answer includes every option; Set 12 `150_no-ati-logo.jpg` is a valid Type 6 record with five ordered options.
 - Set 13 scan review cleanup cleared stale warning-only records: complete Type 6 ordered-response scans ignore `Selected answer is not visibly indicated`, and complete Type 2 multiple-select scans with five or six options remain import-ready.
+- `/admin/nursing-entrance-exam` now selects the ATI TEAS 7 exam filter by default after sub-pages load, while still allowing admins to switch to All Exams or another entrance exam.
+- `/admin/nursing-entrance-exam` tab order now places Quiz Metadata immediately after Nested Sub Pages.
 
 Files changed:
 
+- `src/app/admin/nursing-entrance-exam/page.tsx`
 - `src/app/admin/nursing-entrance-exam/[subPageId]/nested/[nestedSubPageId]/quizzes/[quizId]/bulk-upload/page.tsx`
 - `src/app/admin/teas-image-import/scans/page.tsx`
 - `src/app/admin/teas-image-import/scans/[scanId]/ScanRecordPageClient.tsx`

@@ -86,8 +86,8 @@ type ContentRefreshOptions = {
 const nursingEntranceAdminTabs = [
   { id: "sub-pages", label: "Sub Pages" },
   { id: "nested", label: "Nested Sub Pages" },
-  { id: "kb", label: "Knowledge Base Articles" },
   { id: "quizzes", label: "Quiz Metadata" },
+  { id: "kb", label: "Knowledge Base Articles" },
 ];
 
 function normalizeCatalogCategory(value: string) {
@@ -97,6 +97,27 @@ function normalizeCatalogCategory(value: string) {
 function isNursingEntranceCatalogCategory(value: string) {
   const normalized = normalizeCatalogCategory(value);
   return normalized === "nursing entrance exams" || normalized === "nursing entrance exam";
+}
+
+function subPageDisplayName(subPage: SubPage) {
+  return subPage.pageName || subPage.hero?.title || subPage.title || subPage.id;
+}
+
+function defaultEntranceExamFilter(subPages: SubPage[]) {
+  const atiTeasSubPage = subPages.find((subPage) => {
+    const productId = normalizeContentExamAccessProductId(
+      "nursing-entrance-exam",
+      subPage.examAccessProductId,
+      subPageDisplayName(subPage)
+    );
+    return productId === "ati_teas_7";
+  });
+  if (atiTeasSubPage) return subPageDisplayName(atiTeasSubPage);
+
+  const namedAtiTeasSubPage = subPages.find((subPage) =>
+    /ati\s+teas\s*7/i.test(subPageDisplayName(subPage))
+  );
+  return namedAtiTeasSubPage ? subPageDisplayName(namedAtiTeasSubPage) : "";
 }
 
 type AdminDateValue =
@@ -355,6 +376,8 @@ function NursingEntranceExamAdminPageContent() {
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [examFilter, setExamFilter] = useState("");
+  const hasAppliedDefaultExamFilter = useRef(false);
+  const hasManuallyChangedExamFilter = useRef(false);
   const [statusFilter, setStatusFilter] = useState("");
 
   const entranceExamAccessProducts = useMemo(() => {
@@ -455,6 +478,14 @@ function NursingEntranceExamAdminPageContent() {
     if (entranceExamAccessProducts.some((product) => product.examId === newSubPageExamAccessProductId)) return;
     setNewSubPageExamAccessProductId(entranceExamAccessProducts[0].examId);
   }, [entranceExamAccessProducts, newSubPageExamAccessProductId]);
+
+  useEffect(() => {
+    if (hasAppliedDefaultExamFilter.current || hasManuallyChangedExamFilter.current) return;
+    const defaultFilter = defaultEntranceExamFilter(subPages);
+    if (!defaultFilter) return;
+    hasAppliedDefaultExamFilter.current = true;
+    setExamFilter(defaultFilter);
+  }, [subPages]);
 
   const loadSubPages = async (options: ContentRefreshOptions = {}) => {
     const shouldBlockPage = !options.silent && subPages.length === 0;
@@ -1790,7 +1821,10 @@ function NursingEntranceExamAdminPageContent() {
                     id="nursing-entrance-exam-filter"
                     className="admin-field"
                     value={examFilter}
-                    onChange={(e) => setExamFilter(e.target.value)}
+                    onChange={(e) => {
+                      hasManuallyChangedExamFilter.current = true;
+                      setExamFilter(e.target.value);
+                    }}
                   >
                     <option value="">All Exams</option>
                     {uniqueSubPageNames.map((name) => (
