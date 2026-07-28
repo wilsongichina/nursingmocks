@@ -173,6 +173,7 @@ type AdminModalProps = {
   description?: ReactNode;
   children: ReactNode;
   maxWidthClassName?: string;
+  onClose?: () => void;
 };
 
 type AdminModalFooterProps = {
@@ -450,13 +451,26 @@ export function AdminModal({
   description,
   children,
   maxWidthClassName = "max-w-[560px]",
+  onClose,
 }: AdminModalProps) {
   return (
     <div className="admin-modal-backdrop">
       <div className={`admin-modal ${maxWidthClassName}`} role="dialog" aria-modal="true">
-        <div className="admin-modal-header">
-          <h2 className="admin-modal-title">{title}</h2>
-          {description && <p className="admin-modal-description">{description}</p>}
+        <div className="admin-modal-header flex items-start justify-between gap-4">
+          <div>
+            <h2 className="admin-modal-title">{title}</h2>
+            {description && <p className="admin-modal-description">{description}</p>}
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg font-semibold leading-none text-gray-500 transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700"
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+          )}
         </div>
         <div className="admin-modal-body">{children}</div>
       </div>

@@ -573,6 +573,11 @@ const getSubPageActionLabels = (examBadge: string) => {
   };
 };
 
+const getDisplayCopyOverride = (displayCopy: any, key: string) => {
+  const value = displayCopy?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+};
+
 const isGeneratedPlaceholderDescription = (value: string) =>
   /^content for\b.+\bunder\b/i.test(value.trim());
 
@@ -908,7 +913,7 @@ export async function generateStaticParams() {
 // happened, so dynamic slugs must be allowed to resolve through Firestore.
 export const dynamicParams = true;
 export const dynamic = "force-static"; // Force static generation
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 60; // Keep public content fast while allowing admin copy edits to refresh quickly.
 
 export async function generateMetadata({
   params,
@@ -1758,7 +1763,7 @@ export default async function DynamicPage({
 
   // Prepare content structure
   const content: ServiceContent = {
-    pageName: pageData.seoLabel || pageData.pageName || slug,
+    pageName: pageData.pageName || pageData.seoLabel || slug,
     meta: pageData.meta || {
       title: `${slug} | NursingMocks`,
       description: `Content for ${slug}`,
@@ -1813,6 +1818,7 @@ export default async function DynamicPage({
   const pageName = titleCaseWords(stripHtml(content.pageName || pageHeading || slug));
   const examBadge = getExamBadgeLabel(pageData, pageName);
   const actionLabels = getSubPageActionLabels(examBadge);
+  const displayCopy = pageData.displayCopy || {};
   const childItemLabel =
     pageType === "nested"
       ? pillarId === "nursing-test-bank"
@@ -1825,22 +1831,46 @@ export default async function DynamicPage({
       : childItemLabel === "Exam"
         ? "exams"
         : "subjects";
+  const childSummaryLabel =
+    childItemPlural.charAt(0).toUpperCase() + childItemPlural.slice(1);
   const childSectionEyebrow =
-    childItemLabel === "Subject"
+    getDisplayCopyOverride(displayCopy, "practiceEyebrow") ||
+    (childItemLabel === "Subject"
       ? "Start By Subject"
-      : `Start By ${childItemLabel}`;
+      : `Start By ${childItemLabel}`);
   const childSectionTitle =
-    childItemLabel === "Subject"
+    getDisplayCopyOverride(displayCopy, "practiceTitle") ||
+    (childItemLabel === "Subject"
       ? actionLabels.sectionTitle
-      : `${examBadge} Practice ${childItemPlural.charAt(0).toUpperCase()}${childItemPlural.slice(1)}`;
+      : `${examBadge} Practice ${childItemPlural.charAt(0).toUpperCase()}${childItemPlural.slice(1)}`);
+  const childSectionDescription =
+    getDisplayCopyOverride(displayCopy, "practiceDescription") ||
+    `Pick the ${childItemLabel.toLowerCase()} that matches your study plan. Each link opens the exact practice page for that ${childItemLabel.toLowerCase()}.`;
+  const guideSectionTitle =
+    getDisplayCopyOverride(displayCopy, "guideTitle") || `${pageName} Guide`;
+  const guideSectionDescription =
+    getDisplayCopyOverride(displayCopy, "guideDescription") ||
+    "Use the guide navigation to move through the full saved content without scrolling through one long article.";
+  const faqSectionTitle =
+    getDisplayCopyOverride(displayCopy, "faqTitle") || `${pageName} Questions`;
+  const faqSectionDescription =
+    getDisplayCopyOverride(displayCopy, "faqDescription") ||
+    `Answers to common questions students ask before starting ${examBadge} practice on NursingMocks.`;
   const primaryChildAction =
-    childItemLabel === "Subject"
+    getDisplayCopyOverride(displayCopy, "primaryCtaLabel") ||
+    (childItemLabel === "Subject"
       ? actionLabels.primary
-      : `Start ${examBadge} Practice`;
+      : `Start ${examBadge} Practice`);
   const secondaryChildAction =
-    childItemLabel === "Subject"
+    getDisplayCopyOverride(displayCopy, "secondaryCtaLabel") ||
+    (childItemLabel === "Subject"
       ? actionLabels.secondary
-      : `View ${examBadge} ${childItemPlural.charAt(0).toUpperCase()}${childItemPlural.slice(1)}`;
+      : `View ${examBadge} ${childItemPlural.charAt(0).toUpperCase()}${childItemPlural.slice(1)}`);
+  const effectiveActionLabels = {
+    ...actionLabels,
+    primary: primaryChildAction,
+    secondary: secondaryChildAction,
+  };
   const publishedNestedPages = nestedPages.filter((nestedPage: any) => {
     const status = String(nestedPage?.status || "Published").toLowerCase();
     const hasPublicRoute = Boolean(_nestedPageSlugMap[nestedPage.id]);
@@ -1932,8 +1962,9 @@ export default async function DynamicPage({
               pageHeading={pageHeading}
               pageDescription={pageDescription}
               childCards={childCards}
+              childSummaryLabel={childSummaryLabel}
               firstChildHref={firstChildHref}
-              actionLabels={actionLabels}
+              actionLabels={effectiveActionLabels}
               totalChildQuestions={totalChildQuestions}
             />
 
@@ -1949,7 +1980,7 @@ export default async function DynamicPage({
                     </h2>
                   </div>
                   <p className="user-helper max-w-2xl">
-                    Pick the {childItemLabel.toLowerCase()} that matches your study plan. Each link opens the exact practice page for that {childItemLabel.toLowerCase()}.
+                    {childSectionDescription}
                   </p>
                 </div>
 
@@ -1986,8 +2017,8 @@ export default async function DynamicPage({
             <section className="space-y-5">
               {bodyContent && guideSections.length > 0 && (
                 <PublicSubPageGuide
-                  title={`${pageName} Guide`}
-                  description="Use the guide navigation to move through the full saved content without scrolling through one long article."
+                  title={guideSectionTitle}
+                  description={guideSectionDescription}
                   sections={guideSections}
                 />
               )}
@@ -1996,11 +2027,8 @@ export default async function DynamicPage({
                 <section className="public-faq-section">
                   <div className="public-faq-inner">
                     <div className="public-faq-heading">
-                      <h2>{pageName} Questions</h2>
-                      <p>
-                        Answers to common questions students ask before starting
-                        {` ${examBadge} `}practice on NursingMocks.
-                      </p>
+                      <h2>{faqSectionTitle}</h2>
+                      <p>{faqSectionDescription}</p>
                     </div>
 
                     <div className="public-faq-list">

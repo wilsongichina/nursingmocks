@@ -23,6 +23,8 @@ import {
   AdminFormSection,
   AdminInfoTile,
   AdminLoadingState,
+  AdminModal,
+  AdminModalFooter,
   AdminNotificationRegion,
   AdminPageHeader,
   AdminSelectField,
@@ -62,7 +64,44 @@ interface SubPageContent {
   };
   bodyContent: string; // Tiptap editor content
   faqs?: FaqItem[];
+  displayCopy?: {
+    primaryCtaLabel?: string;
+    secondaryCtaLabel?: string;
+    practiceEyebrow?: string;
+    practiceTitle?: string;
+    practiceDescription?: string;
+    guideTitle?: string;
+    guideDescription?: string;
+    faqTitle?: string;
+    faqDescription?: string;
+  };
 }
+
+const getAdminExamBadgeLabel = (content: SubPageContent | null) => {
+  const source = `${content?.pageName || ""} ${content?.seoLabel || ""} ${content?.heading || ""}`.toLowerCase();
+
+  if (source.includes("teas")) return "ATI TEAS 7";
+  if (source.includes("hesi")) return "HESI A2";
+  return content?.pageName || "Nursing Exam";
+};
+
+const getGeneratedPublicCopyDefaults = (content: SubPageContent | null) => {
+  const examBadge = getAdminExamBadgeLabel(content);
+
+  return {
+    primaryCtaLabel: `Start ${examBadge} Practice`,
+    secondaryCtaLabel: `View ${examBadge} Subjects`,
+    practiceEyebrow: "Start By Subject",
+    practiceTitle: `${examBadge} Practice Subjects`,
+    practiceDescription:
+      "Pick the subject that matches your study plan. Each link opens the exact practice page for that subject.",
+    guideTitle: `${content?.pageName || examBadge} Guide`,
+    guideDescription:
+      "Use the guide navigation to move through the full saved content without scrolling through one long article.",
+    faqTitle: `${content?.pageName || examBadge} Questions`,
+    faqDescription: `Answers to common questions students ask before starting ${examBadge} practice on NursingMocks.`,
+  };
+};
 
 function EditSubPageContent({
   params,
@@ -76,6 +115,7 @@ function EditSubPageContent({
   const [success, setSuccess] = useState("");
   const [slug, setSlug] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [publicCopyModalOpen, setPublicCopyModalOpen] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [status, setStatus] = useState<"Draft" | "Published" | "Archived">(
     "Draft"
@@ -155,6 +195,20 @@ function EditSubPageContent({
           },
           bodyContent: pageData.bodyContent || "",
           faqs: Array.isArray(pageData.faqs) ? pageData.faqs : [],
+          displayCopy:
+            pageData.displayCopy && typeof pageData.displayCopy === "object"
+              ? {
+                  primaryCtaLabel: pageData.displayCopy.primaryCtaLabel || "",
+                  secondaryCtaLabel: pageData.displayCopy.secondaryCtaLabel || "",
+                  practiceEyebrow: pageData.displayCopy.practiceEyebrow || "",
+                  practiceTitle: pageData.displayCopy.practiceTitle || "",
+                  practiceDescription: pageData.displayCopy.practiceDescription || "",
+                  guideTitle: pageData.displayCopy.guideTitle || "",
+                  guideDescription: pageData.displayCopy.guideDescription || "",
+                  faqTitle: pageData.displayCopy.faqTitle || "",
+                  faqDescription: pageData.displayCopy.faqDescription || "",
+                }
+              : {},
         };
 
         setContent(initializedContent);
@@ -189,6 +243,7 @@ function EditSubPageContent({
           },
           bodyContent: "",
           faqs: [],
+          displayCopy: {},
         };
         setContent(defaultContent);
         setSlug(resolvedParams.subPageId);
@@ -252,6 +307,7 @@ function EditSubPageContent({
         hero: content.hero,
         bodyContent: content.bodyContent || "",
         faqs: Array.isArray(content.faqs) ? content.faqs : [],
+        displayCopy: content.displayCopy || {},
       };
 
       const result = await uploadNursingEntranceExamSubPage(
@@ -316,6 +372,34 @@ function EditSubPageContent({
     });
   };
 
+  const updateDisplayCopy = (
+    key: keyof NonNullable<SubPageContent["displayCopy"]>,
+    value: string
+  ) => {
+    setContent((current) =>
+      current
+        ? {
+            ...current,
+            displayCopy: {
+              ...(current.displayCopy || {}),
+              [key]: value,
+            },
+          }
+        : current
+    );
+  };
+
+  const clearDisplayCopy = () => {
+    setContent((current) =>
+      current
+        ? {
+            ...current,
+            displayCopy: {},
+          }
+        : current
+    );
+  };
+
   const handlePageNameBlur = () => {
     if (!content) return;
     const normalizedName = normalizeAdminContentName(content.pageName || "");
@@ -369,6 +453,9 @@ function EditSubPageContent({
     return null;
   }
 
+  const publicCopyDefaults = getGeneratedPublicCopyDefaults(content);
+  const displayCopy = content.displayCopy || {};
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
       <AdminSidebar />
@@ -410,6 +497,13 @@ function EditSubPageContent({
                   <Link href="/admin/nursing-entrance-exam" className="admin-button-secondary">
                     Back To Nursing Entrance Exam
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => setPublicCopyModalOpen(true)}
+                    className="admin-button-secondary"
+                  >
+                    Edit Public Copy
+                  </button>
                   {resolvedParams?.subPageId && (
                     <Link
                       href={`/${slug || resolvedParams.subPageId}`}
@@ -438,6 +532,195 @@ function EditSubPageContent({
               errorTitle="Unable To Save Content"
               successTitle="Content Saved"
             />
+
+            {publicCopyModalOpen && (
+              <AdminModal
+                title="Edit Public Copy"
+                description="Override generated public-page labels only when this page needs custom copy. Empty fields use the generated default."
+                maxWidthClassName="max-w-[1040px]"
+                onClose={() => setPublicCopyModalOpen(false)}
+              >
+                <div className="space-y-5">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="mb-4">
+                      <h3 className="admin-card-title">Hero Buttons</h3>
+                      <p className="admin-helper">
+                        Optional labels for the two buttons shown in the public hero.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <AdminFieldGroup
+                        label="Primary Button"
+                        helper={`Default: ${publicCopyDefaults.primaryCtaLabel}`}
+                      >
+                        <input
+                          type="text"
+                          value={displayCopy.primaryCtaLabel || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("primaryCtaLabel", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.primaryCtaLabel}
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Secondary Button"
+                        helper={`Default: ${publicCopyDefaults.secondaryCtaLabel}`}
+                      >
+                        <input
+                          type="text"
+                          value={displayCopy.secondaryCtaLabel || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("secondaryCtaLabel", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.secondaryCtaLabel}
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div className="mb-4">
+                        <h3 className="admin-card-title">Practice Section</h3>
+                        <p className="admin-helper">
+                          Copy shown above the subject, exam, or topic cards.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <AdminFieldGroup
+                          label="Eyebrow"
+                          helper={`Default: ${publicCopyDefaults.practiceEyebrow}`}
+                        >
+                          <input
+                            type="text"
+                            value={displayCopy.practiceEyebrow || ""}
+                            onChange={(event) =>
+                              updateDisplayCopy("practiceEyebrow", event.target.value)
+                            }
+                            placeholder={publicCopyDefaults.practiceEyebrow}
+                            className="admin-field"
+                          />
+                        </AdminFieldGroup>
+
+                        <AdminFieldGroup
+                          label="Title"
+                          helper={`Default: ${publicCopyDefaults.practiceTitle}`}
+                        >
+                          <input
+                            type="text"
+                            value={displayCopy.practiceTitle || ""}
+                            onChange={(event) =>
+                              updateDisplayCopy("practiceTitle", event.target.value)
+                            }
+                            placeholder={publicCopyDefaults.practiceTitle}
+                            className="admin-field"
+                          />
+                        </AdminFieldGroup>
+                      </div>
+
+                    <AdminFieldGroup
+                      label="Description"
+                      helper={`Default: ${publicCopyDefaults.practiceDescription}`}
+                    >
+                      <textarea
+                        value={displayCopy.practiceDescription || ""}
+                        onChange={(event) =>
+                          updateDisplayCopy("practiceDescription", event.target.value)
+                        }
+                        placeholder={publicCopyDefaults.practiceDescription}
+                        rows={3}
+                        className="admin-field mt-4 min-h-[96px] resize-y"
+                      />
+                    </AdminFieldGroup>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div className="mb-4">
+                        <h3 className="admin-card-title">Guide Section</h3>
+                        <p className="admin-helper">
+                          Copy shown above the saved long-form guide content.
+                        </p>
+                      </div>
+                      <AdminFieldGroup
+                        label="Title"
+                        helper={`Default: ${publicCopyDefaults.guideTitle}`}
+                      >
+                        <input
+                          type="text"
+                          value={displayCopy.guideTitle || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("guideTitle", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.guideTitle}
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Description"
+                        helper={`Default: ${publicCopyDefaults.guideDescription}`}
+                      >
+                        <textarea
+                          value={displayCopy.guideDescription || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("guideDescription", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.guideDescription}
+                          rows={3}
+                          className="admin-field mt-4 min-h-[96px] resize-y"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="admin-helper font-semibold text-gray-700">
+                      Current effective copy
+                    </p>
+                    <div className="mt-2 grid grid-cols-1 gap-2 text-sm text-gray-700 sm:grid-cols-2">
+                      <span>{displayCopy.primaryCtaLabel || publicCopyDefaults.primaryCtaLabel}</span>
+                      <span>{displayCopy.secondaryCtaLabel || publicCopyDefaults.secondaryCtaLabel}</span>
+                      <span>{displayCopy.practiceEyebrow || publicCopyDefaults.practiceEyebrow}</span>
+                      <span>{displayCopy.practiceTitle || publicCopyDefaults.practiceTitle}</span>
+                      <span>{displayCopy.guideTitle || publicCopyDefaults.guideTitle}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <AdminModalFooter>
+                  <button
+                    type="button"
+                    onClick={() => setPublicCopyModalOpen(false)}
+                    disabled={saving}
+                    className="admin-button-cancel"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearDisplayCopy}
+                    disabled={saving}
+                    className="admin-button-secondary"
+                  >
+                    Reset To Defaults
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await handleSave();
+                      setPublicCopyModalOpen(false);
+                    }}
+                    disabled={saving}
+                    className="admin-button-primary"
+                  >
+                    {saving ? "Saving..." : "Save Public Copy"}
+                  </button>
+                </AdminModalFooter>
+              </AdminModal>
+            )}
 
             {/* Top Grid: Sub Page Settings And SEO */}
             <section className="grid grid-cols-1 lg:grid-cols-[3fr_2.2fr] gap-4.5 mb-1 items-start">
@@ -752,7 +1035,7 @@ function EditSubPageContent({
             <AdminCard
               className="mb-5"
               title="Content Editor"
-              description="Use the Tiptap editor for full body content, custom content blocks, and FAQs."
+              description="Use the Tiptap editor for the full body content and custom content blocks."
             >
 
               <ContentQualityWarnings bodyContent={content.bodyContent || ""} />
@@ -771,6 +1054,49 @@ function EditSubPageContent({
                   editable={true}
                 />
               </div>
+            </AdminCard>
+
+            <AdminCard
+              className="mb-5"
+              title="FAQ Section"
+              description="Manage the public FAQ heading copy and the question-and-answer list shown below the page content."
+            >
+              <AdminFormSection
+                title="FAQ Section Copy"
+                description="These fields are prefilled from generated defaults and can be edited for this page."
+              >
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <AdminFieldGroup
+                    label="FAQ Title"
+                    helper="Shown as the heading above the public FAQ list."
+                  >
+                    <input
+                      type="text"
+                      value={displayCopy.faqTitle || publicCopyDefaults.faqTitle}
+                      onChange={(event) =>
+                        updateDisplayCopy("faqTitle", event.target.value)
+                      }
+                      placeholder={publicCopyDefaults.faqTitle}
+                      className="admin-field"
+                    />
+                  </AdminFieldGroup>
+
+                  <AdminFieldGroup
+                    label="FAQ Description"
+                    helper="Shown below the FAQ heading on the public page."
+                  >
+                    <textarea
+                      value={displayCopy.faqDescription || publicCopyDefaults.faqDescription}
+                      onChange={(event) =>
+                        updateDisplayCopy("faqDescription", event.target.value)
+                      }
+                      placeholder={publicCopyDefaults.faqDescription}
+                      rows={3}
+                      className="admin-field min-h-[96px] resize-y"
+                    />
+                  </AdminFieldGroup>
+                </div>
+              </AdminFormSection>
 
               <FaqEditor
                 label="FAQs (shown on the live page)"

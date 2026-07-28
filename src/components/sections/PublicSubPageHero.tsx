@@ -22,6 +22,7 @@ interface PublicSubPageHeroProps {
   pageHeading: string;
   pageDescription: string;
   childCards: PublicSubPageHeroCard[];
+  childSummaryLabel?: string;
   firstChildHref: string;
   actionLabels: PublicSubPageHeroActionLabels;
   totalChildQuestions: number;
@@ -108,12 +109,12 @@ export default function PublicSubPageHero({
   pageHeading,
   pageDescription,
   childCards,
+  childSummaryLabel = "Subjects",
   firstChildHref,
   actionLabels,
   totalChildQuestions,
 }: PublicSubPageHeroProps) {
-  const subjectLabel = childCards.length === 1 ? "subject" : "subjects";
-  const questionLabel = totalChildQuestions === 1 ? "question" : "questions";
+  const formattedQuestionCount = totalChildQuestions.toLocaleString("en-US");
 
   return (
     <section className="mb-7">
@@ -144,17 +145,17 @@ export default function PublicSubPageHero({
             </div>
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              <span className="user-pill user-pill-purple">{examBadge}</span>
-              <span className="user-pill">{pillarLabel}</span>
-              <span className="user-badge user-badge-green">Free preview available</span>
+              <span className="user-pill user-pill-purple">Exam: {examBadge}</span>
+              <span className="user-pill">Category: {pillarLabel}</span>
+              <span className="user-badge user-badge-green">Preview: Free</span>
               {childCards.length > 0 && (
                 <span className="user-badge">
-                  {childCards.length} {subjectLabel}
+                  {childSummaryLabel}: {childCards.length}
                 </span>
               )}
               {totalChildQuestions > 0 && (
                 <span className="user-badge user-badge-green">
-                  {totalChildQuestions} {questionLabel}
+                  Questions: {formattedQuestionCount}
                 </span>
               )}
             </div>
