@@ -426,6 +426,45 @@ function numberMetadataValue(...values: unknown[]) {
   return 0;
 }
 
+function questionSortNumberValue(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+      const match = value.match(/\d+/);
+      if (match) return Number(match[0]);
+    }
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function sortQuizQuestionsByDisplayOrder(questions: any[]) {
+  return questions.sort((first, second) => {
+    const firstDisplayOrder = questionSortNumberValue(first.displayOrder);
+    const secondDisplayOrder = questionSortNumberValue(second.displayOrder);
+    if (firstDisplayOrder !== secondDisplayOrder) return firstDisplayOrder - secondDisplayOrder;
+
+    const firstImportOrder = questionSortNumberValue(
+      first.importReview?.scanOrder,
+      first.scanOrder,
+      first.questionNumber,
+      first.originalId,
+      first.questionId,
+      first.id
+    );
+    const secondImportOrder = questionSortNumberValue(
+      second.importReview?.scanOrder,
+      second.scanOrder,
+      second.questionNumber,
+      second.originalId,
+      second.questionId,
+      second.id
+    );
+    if (firstImportOrder !== secondImportOrder) return firstImportOrder - secondImportOrder;
+
+    return String(first.id || first.questionId || "").localeCompare(String(second.id || second.questionId || ""));
+  });
+}
+
 function slugMetadataValue(value: string) {
   return value
     .trim()
@@ -8804,6 +8843,7 @@ export const getNursingEntranceExamQuizQuestions = async (
         ...doc.data(),
       });
     });
+    sortQuizQuestionsByDisplayOrder(questions);
 
     return {
       success: true,

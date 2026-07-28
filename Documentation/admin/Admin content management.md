@@ -18,6 +18,8 @@ Completed change:
 - Set 13 scan review cleanup cleared stale warning-only records: complete Type 6 ordered-response scans ignore `Selected answer is not visibly indicated`, and complete Type 2 multiple-select scans with five or six options remain import-ready.
 - `/admin/nursing-entrance-exam` now selects the ATI TEAS 7 exam filter by default after sub-pages load, while still allowing admins to switch to All Exams or another entrance exam.
 - `/admin/nursing-entrance-exam` tab order now places Quiz Metadata immediately after Nested Sub Pages.
+- ATI TEAS Reading quiz questions for sets 1, 2, 3, and 6-16 now include `displayOrder` and passage grouping metadata so questions tied to the same passage display consecutively.
+- Public Nursing Entrance Exam quiz question reads now sort by `displayOrder` first, then fall back to scan/import numbering when no display order exists.
 
 Files changed:
 
@@ -28,6 +30,7 @@ Files changed:
 - `src/app/api/admin/teas-image-import/scanned-questions/route.ts`
 - `src/lib/admin/__tests__/teas-structured-ocr-parser.test.ts`
 - `src/lib/admin/teas-structured-ocr-parser.ts`
+- `src/lib/firestore-operations.ts`
 - `scripts/repair-teas-structured-split-page.mjs`
 - `scripts/save-teas-structured-scans.mjs`
 - `Documentation/admin/Admin content management.md`
@@ -35,6 +38,9 @@ Files changed:
 Validation run:
 
 ```text
+cmd /c node scripts\tmp-order-reading-passage-groups.mjs --dry-run
+cmd /c node scripts\tmp-order-reading-passage-groups.mjs
+cmd /c node scripts\tmp-order-reading-passage-groups.mjs --dry-run
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
 
