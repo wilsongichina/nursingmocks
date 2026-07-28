@@ -38,7 +38,7 @@ export default function GuaranteesPage() {
           <div className="text-center">
             <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-              We are Teas Gurus
+              We are NursingMocks
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-4">
               Our Guarantees
@@ -76,7 +76,7 @@ export default function GuaranteesPage() {
               What We Promise You
             </h3>
             <p className="text-gray-600 mb-8 leading-relaxed">
-              You're not just paying for a service when you choose Teas Gurus;
+              You're not just paying for a service when you choose NursingMocks;
               you're also trusting us with your future. And we really mean it.
             </p>
             <p className="text-gray-600 mb-8 leading-relaxed">

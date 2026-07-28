@@ -140,7 +140,7 @@ export function buildProfileView(
     fullName;
 
   const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://teasgurus.com";
+    typeof window !== "undefined" ? window.location.origin : "https://www.nursingmocks.com";
   const code = doc?.referral_summary?.referral_code?.trim() || "";
   const referralLink = code ? `${origin}/ref/${encodeURIComponent(code)}` : "";
 

@@ -95,13 +95,13 @@ export default function EditNursingEntranceExamPage() {
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
           meta: {
-            title: pageData.meta?.title || "Nursing Entrance Exam | TeasGurus",
+            title: pageData.meta?.title || "Nursing Entrance Exam | NursingMocks",
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
             ogDescription: pageData.meta?.ogDescription || "",
             ogImage: pageData.meta?.ogImage || "/nursing-mocks-logo.png",
-            canonicalUrl: pageData.meta?.canonicalUrl || "https://teasgurus.com/nursing-entrance-exam",
+            canonicalUrl: pageData.meta?.canonicalUrl || "https://www.nursingmocks.com/nursing-entrance-exam",
           },
           schema: pageData.schema || "",
           hero: {
@@ -143,17 +143,17 @@ export default function EditNursingEntranceExamPage() {
         // Initialize with default content structure
         const defaultContent: ServiceContent = {
           meta: {
-            title: "Nursing Entrance Exam | TeasGurus",
+            title: "Nursing Entrance Exam | NursingMocks",
             description: "Comprehensive guide to nursing entrance exams",
             keywords: "nursing entrance exam, nursing school, exam preparation",
-            ogTitle: "Nursing Entrance Exam | TeasGurus",
+            ogTitle: "Nursing Entrance Exam | NursingMocks",
             ogDescription: "Comprehensive guide to nursing entrance exams",
             ogImage: "/nursing-mocks-logo.png",
-            canonicalUrl: "https://teasgurus.com/nursing-entrance-exam",
+            canonicalUrl: "https://www.nursingmocks.com/nursing-entrance-exam",
           },
           schema: "",
           hero: {
-            badge: "We are Teas Gurus",
+            badge: "We are NursingMocks",
             title: "Nursing Entrance Exam",
             subtitle: "Comprehensive guide to help you succeed in your nursing entrance exam.",
             description: "",

@@ -50,7 +50,7 @@ export default function CookiePolicyPage() {
             >
               Cookies & Tracking
             </span>
-            <span>How TEAS Gurus remembers you and improves the platform</span>
+            <span>How NursingMocks remembers you and improves the platform</span>
           </div>
 
           <h1
@@ -73,7 +73,7 @@ export default function CookiePolicyPage() {
               margin: "0 0 14px",
             }}
           >
-            This page explains how TEAS Gurus uses cookies and similar
+            This page explains how NursingMocks uses cookies and similar
             technologies to keep you logged in, measure which exams and features
             are being used, and improve your overall experience while you
             prepare for TEAS, HESI, and other nursing exams.
@@ -143,7 +143,7 @@ export default function CookiePolicyPage() {
                 marginBottom: "10px",
               }}
             >
-              We use cookies to run TEAS Gurus and understand how nursing
+              We use cookies to run NursingMocks and understand how nursing
               students use it. We do not use cookies to spy on your personal
               life outside the platform.
             </div>
@@ -204,7 +204,7 @@ export default function CookiePolicyPage() {
                 margin: "0 0 10px",
               }}
             >
-              On TEAS Gurus, cookies generally fall into the following
+              On NursingMocks, cookies generally fall into the following
               categories:
             </p>
 
@@ -379,7 +379,7 @@ export default function CookiePolicyPage() {
               }}
             >
               If we run ads or work with affiliates, marketing cookies may track
-              which ad or campaign led you to TEAS Gurus. This helps us
+              which ad or campaign led you to NursingMocks. This helps us
               understand which messages are actually useful to nursing students.
             </p>
             <p
@@ -453,7 +453,7 @@ export default function CookiePolicyPage() {
               }}
             >
               We do not use cookies to read anything on your device outside of
-              TEAS Gurus, and we do not use them to track your unrelated
+              NursingMocks, and we do not use them to track your unrelated
               browsing on other sites.
             </p>
 
@@ -514,7 +514,7 @@ export default function CookiePolicyPage() {
                 margin: "0 0 10px",
               }}
             >
-              If you decide to block all cookies, some parts of TEAS Gurus may
+              If you decide to block all cookies, some parts of NursingMocks may
               stop working correctly — especially exam sessions, login, and
               personalised dashboards.
             </p>
@@ -595,7 +595,7 @@ export default function CookiePolicyPage() {
             >
               Some cookies are temporary and disappear when you close your
               browser. Others last longer, so we can recognise your device when
-              you return to TEAS Gurus.
+              you return to NursingMocks.
             </p>
             <ul
               className="text-[#374151] list-disc"
@@ -656,7 +656,7 @@ export default function CookiePolicyPage() {
               }}
             >
               <li style={{ marginTop: "4px" }}>
-                What types of personal data we collect on TEAS Gurus
+                What types of personal data we collect on NursingMocks
               </li>
               <li style={{ marginTop: "4px" }}>
                 How we use that data to run and improve the platform
@@ -728,7 +728,7 @@ export default function CookiePolicyPage() {
                 margin: "0 0 10px",
               }}
             >
-              Continued use of TEAS Gurus after an updated version is posted
+              Continued use of NursingMocks after an updated version is posted
               means you accept the new version of this notice.
             </p>
 
@@ -763,7 +763,7 @@ export default function CookiePolicyPage() {
               }}
             >
               <li style={{ marginTop: "4px" }}>
-                Email: <strong>support@teasgurus.com</strong>
+                Email: <strong>support@nursingmocks.com</strong>
               </li>
             </ul>
             <p

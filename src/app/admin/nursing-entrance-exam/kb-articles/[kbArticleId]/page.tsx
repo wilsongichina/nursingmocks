@@ -120,7 +120,7 @@ function EditKbArticleContent({
             pageData.seoSlug || pageData.slug || resolvedParams.kbArticleId,
           meta: {
             title:
-              pageData.meta?.title || `${resolvedParams.kbArticleId} | TeasGurus`,
+              pageData.meta?.title || `${resolvedParams.kbArticleId} | NursingMocks`,
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
@@ -153,10 +153,10 @@ function EditKbArticleContent({
           heading: "",
           description: "",
           meta: {
-            title: `${resolvedParams.kbArticleId} | TeasGurus`,
+            title: `${resolvedParams.kbArticleId} | NursingMocks`,
             description: `Content for ${resolvedParams.kbArticleId}`,
             keywords: `${resolvedParams.kbArticleId}, nursing entrance exam`,
-            ogTitle: `${resolvedParams.kbArticleId} | TeasGurus`,
+            ogTitle: `${resolvedParams.kbArticleId} | NursingMocks`,
             ogDescription: `Content for ${resolvedParams.kbArticleId}`,
             ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/${resolvedParams.kbArticleId}`,

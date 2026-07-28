@@ -7,7 +7,14 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
-import { AdminLoadingState } from "@/components/admin/AdminUi";
+import {
+  AdminLoadingState,
+  AdminNotificationRegion,
+  AdminPageHeader,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface ServiceContent {
@@ -77,7 +84,8 @@ interface ServiceContent {
   };
 }
 
-export default function EditNursingTestBankPage() {
+function EditNursingTestBankPageContent() {
+  const { isCollapsed } = useSidebar();
   const [content, setContent] = useState<ServiceContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,7 +105,7 @@ export default function EditNursingTestBankPage() {
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
           meta: {
-            title: pageData.meta?.title || "Nursing Test Bank | TeasGurus",
+            title: pageData.meta?.title || "Nursing Test Bank | NursingMocks",
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
@@ -145,10 +153,10 @@ export default function EditNursingTestBankPage() {
         // Initialize with default content structure
         const defaultContent: ServiceContent = {
           meta: {
-            title: "Nursing Test Bank | TeasGurus",
+            title: "Nursing Test Bank | NursingMocks",
             description: "Comprehensive guide to Nursing Test Banks",
             keywords: "Nursing Test Bank, nursing school, exam preparation",
-            ogTitle: "Nursing Test Bank | TeasGurus",
+            ogTitle: "Nursing Test Bank | NursingMocks",
             ogDescription: "Comprehensive guide to Nursing Test Banks",
             ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/nursing-test-bank`,
@@ -334,11 +342,27 @@ export default function EditNursingTestBankPage() {
 
   if (loading) {
     return (
-      <div className="admin-page">
-        <AdminLoadingState
-          title="Loading Content"
-          description="Preparing admin content, metadata, and editor fields."
-        />
+      <div className="min-h-screen overflow-x-hidden bg-white">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <AdminTopBar
+            breadcrumbs={[
+              { label: "Admin", href: "/admin" },
+              { label: "Nursing Test Bank", href: "/admin/nursing-test-bank" },
+              { label: "Edit Main Page" },
+            ]}
+          />
+          <main className="admin-content min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+            <AdminLoadingState
+              title="Loading Content"
+              description="Preparing admin content, metadata, and editor fields."
+            />
+          </main>
+        </div>
       </div>
     );
   }
@@ -348,40 +372,32 @@ export default function EditNursingTestBankPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-indigo-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Edit Nursing Test Bank
-                </h1>
-              </div>
-              <p className="text-gray-600 text-lg">
-                Update the content for the Nursing Test Bank page
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
+    <div className="min-h-screen overflow-x-hidden bg-white">
+      <AdminSidebar />
+      <div
+        className={`transition-all duration-300 ${
+          isCollapsed ? "md:ml-20" : "md:ml-64"
+        }`}
+      >
+        <AdminTopBar
+          breadcrumbs={[
+            { label: "Admin", href: "/admin" },
+            { label: "Nursing Test Bank", href: "/admin/nursing-test-bank" },
+            { label: "Edit Main Page" },
+          ]}
+        />
+        <main className="admin-content min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="w-full max-w-none space-y-6">
+            <AdminNotificationRegion error={error} success={success} />
+            <AdminPageHeader
+              eyebrow="Content Management"
+              title="Edit Nursing Test Bank"
+              description="Update the public Nursing Test Bank landing page content, metadata, schema, and FAQ blocks."
+              actions={
+                <>
               <Link
-                href="/admin"
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 font-medium"
+                href="/admin/nursing-test-bank"
+                className="admin-button-secondary flex items-center space-x-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -401,7 +417,7 @@ export default function EditNursingTestBankPage() {
               <Link
                 href="/nursing-test-bank"
                 target="_blank"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium"
+                className="admin-button-secondary flex items-center space-x-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -427,7 +443,7 @@ export default function EditNursingTestBankPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none flex items-center space-x-2"
+                className="admin-button-primary flex items-center space-x-2 disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -453,64 +469,11 @@ export default function EditNursingTestBankPage() {
                   </>
                 )}
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
+                </>
+              }
+            />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-800">{success}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Form Sections */}
         <div className="space-y-8">
           {/* Page Settings */}
@@ -1490,8 +1453,18 @@ export default function EditNursingTestBankPage() {
           </div>
 
         </div>
+          </div>
+        </main>
       </div>
     </div>
+  );
+}
+
+export default function EditNursingTestBankPage() {
+  return (
+    <SidebarProvider>
+      <EditNursingTestBankPageContent />
+    </SidebarProvider>
   );
 }
 

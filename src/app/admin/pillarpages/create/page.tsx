@@ -57,7 +57,7 @@ export default function CreatePillarPage() {
       canonicalUrl: "",
     },
     hero: {
-      badge: "We are Teas Gurus",
+      badge: "We are NursingMocks",
       title: "",
       subtitle: "",
     },
@@ -270,7 +270,7 @@ export default function CreatePillarPage() {
           ...content.meta,
           canonicalUrl:
             content.meta.canonicalUrl ||
-            `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${pillarPageId}`,
+            `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"}/${pillarPageId}`,
         },
       };
 
@@ -409,7 +409,7 @@ export default function CreatePillarPage() {
                   Slug URL *
                 </label>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">https://teasgurus.com/</span>
+                  <span className="text-sm text-gray-500">https://www.nursingmocks.com/</span>
                   <input
                     type="text"
                     value={pillarPageId}
@@ -464,7 +464,7 @@ export default function CreatePillarPage() {
                     value={content.meta.title}
                     onChange={(e) => handleMetaChange("title", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                    placeholder="e.g., HESI A2 Services - TeasGurus"
+                    placeholder="e.g., HESI A2 Services - NursingMocks"
                   />
                 </div>
                 <div>
@@ -536,7 +536,7 @@ export default function CreatePillarPage() {
                     value={content.meta.canonicalUrl}
                     onChange={(e) => handleMetaChange("canonicalUrl", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                    placeholder={`${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${pillarPageId || "pillar-page-id"}`}
+                    placeholder={`${process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"}/${pillarPageId || "pillar-page-id"}`}
                   />
                 </div>
               </div>
@@ -576,7 +576,7 @@ export default function CreatePillarPage() {
                   value={content.hero.badge}
                   onChange={(e) => handleHeroChange("badge", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                  placeholder="e.g., We are Teas Gurus"
+                  placeholder="e.g., We are NursingMocks"
                 />
               </div>
               <div>

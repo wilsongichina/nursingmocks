@@ -8,7 +8,15 @@ import {
   deleteNursingTestBankNestedSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminInlineLoading } from "@/components/admin/AdminUi";
+import {
+  AdminDestructiveDialog,
+  AdminInlineLoading,
+  AdminNotificationRegion,
+  AdminPageHeader,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 
 interface ServiceContent {
   pageName?: string;
@@ -90,11 +98,12 @@ interface NestedSubPage {
   };
 }
 
-export default function ManageSubPage({
+function ManageSubPageContent({
   params,
 }: {
   params: Promise<{ subPageId: string }>;
 }) {
+  const { isCollapsed } = useSidebar();
   const [content, setContent] = useState<ServiceContent | null>(null);
   const [nestedSubPages, setNestedSubPages] = useState<NestedSubPage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,6 +119,10 @@ export default function ManageSubPage({
   const [newNestedSubPageName, setNewNestedSubPageName] = useState("");
   const [nestedValidationError, setNestedValidationError] = useState("");
   const [savingNested, setSavingNested] = useState(false);
+  const [deleteNestedTarget, setDeleteNestedTarget] = useState<string | null>(
+    null
+  );
+  const [deletingNested, setDeletingNested] = useState(false);
 
   useEffect(() => {
     const resolveParams = async () => {
@@ -138,7 +151,7 @@ export default function ManageSubPage({
           pageName: pageData.pageName || resolvedParams.subPageId,
           meta: {
             title:
-              pageData.meta?.title || `${resolvedParams.subPageId} | TeasGurus`,
+              pageData.meta?.title || `${resolvedParams.subPageId} | NursingMocks`,
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
@@ -146,7 +159,7 @@ export default function ManageSubPage({
             ogImage: pageData.meta?.ogImage || "/nursing-mocks-logo.png",
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
-              `https://teasgurus.com/${
+              `https://www.nursingmocks.com/${
                 pageData.slug || resolvedParams.subPageId
               }`,
           },
@@ -193,13 +206,13 @@ export default function ManageSubPage({
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.subPageId,
           meta: {
-            title: `${resolvedParams.subPageId} | TeasGurus`,
+            title: `${resolvedParams.subPageId} | NursingMocks`,
             description: `Content for ${resolvedParams.subPageId}`,
             keywords: `${resolvedParams.subPageId}, nursing test bank`,
-            ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
+            ogTitle: `${resolvedParams.subPageId} | NursingMocks`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/nursing-mocks-logo.png",
-            canonicalUrl: `https://teasgurus.com/${resolvedParams.subPageId}`,
+            canonicalUrl: `https://www.nursingmocks.com/${resolvedParams.subPageId}`,
           },
           schema: "",
           hero: {
@@ -271,21 +284,15 @@ export default function ManageSubPage({
   const handleDeleteNestedSubPage = async (nestedSubPageId: string) => {
     if (!resolvedParams) return;
 
-    if (
-      !confirm(
-        `Are you sure you want to delete the nested sub-page "${nestedSubPageId}"?`
-      )
-    ) {
-      return;
-    }
-
     try {
+      setDeletingNested(true);
       const result = await deleteNursingTestBankNestedSubPage(
         resolvedParams.subPageId,
         nestedSubPageId
       );
       if (result.success) {
         setSuccess("Nested sub-page deleted successfully!");
+        setDeleteNestedTarget(null);
         loadNestedSubPages();
         setTimeout(() => setSuccess(""), 3000);
       } else {
@@ -294,6 +301,8 @@ export default function ManageSubPage({
     } catch (err) {
       setError("Failed to delete nested sub-page");
       console.error("Error deleting:", err);
+    } finally {
+      setDeletingNested(false);
     }
   };
 
@@ -337,16 +346,16 @@ export default function ManageSubPage({
         createdAt: new Date().toISOString(),
         bodyContent: "",
         meta: {
-          title: `${newNestedSubPageName} | TeasGurus`,
+          title: `${newNestedSubPageName} | NursingMocks`,
           description: `Content for ${newNestedSubPageName} under ${
             content?.pageName || resolvedParams.subPageId
           }.`,
           keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing test bank`,
-          ogTitle: `${newNestedSubPageName} | TeasGurus`,
+          ogTitle: `${newNestedSubPageName} | NursingMocks`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${
-            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+            process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"
           }/${normalizedNestedSubPageId}`,
         },
         schema: "",
@@ -387,10 +396,19 @@ export default function ManageSubPage({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
-        <div className="admin-loading-state">
-          <div className="admin-loading-spinner"></div>
-          <AdminInlineLoading label="Loading Content" />
+      <div className="min-h-screen overflow-x-hidden bg-white">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <AdminTopBar breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Nursing Test Bank", href: "/admin/nursing-test-bank" }, { label: "Manage" }]} />
+          <main className="admin-content min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <AdminInlineLoading label="Loading Content" />
+            </div>
+          </main>
         </div>
       </div>
     );
@@ -398,29 +416,44 @@ export default function ManageSubPage({
 
   if (!content) {
     return (
-      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
-        <div className="admin-loading-state">
-          <p className="text-red-600">Failed to load sub-page content</p>
+      <div className="min-h-screen overflow-x-hidden bg-white">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <AdminTopBar breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Nursing Test Bank", href: "/admin/nursing-test-bank" }, { label: "Manage" }]} />
+          <main className="admin-content min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <p className="text-sm font-medium text-red-600">
+                Failed to load sub-page content
+              </p>
+            </div>
+          </main>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-page min-h-screen">
-      {/* Header */}
-      <div className="admin-card mb-6 p-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="admin-page-title">
-                Manage: {content.pageName || resolvedParams.subPageId}
-              </h1>
-              <p className="admin-body mt-1">
-                Edit this sub-page and manage its nested sub-pages
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
+    <div className="min-h-screen overflow-x-hidden bg-white">
+      <AdminSidebar />
+      <div
+        className={`transition-all duration-300 ${
+          isCollapsed ? "md:ml-20" : "md:ml-64"
+        }`}
+      >
+        <AdminTopBar breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Nursing Test Bank", href: "/admin/nursing-test-bank" }, { label: "Manage" }]} />
+        <main className="admin-content min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="w-full max-w-none space-y-6">
+            <AdminNotificationRegion error={error} success={success} />
+            <AdminPageHeader
+              eyebrow="Nursing Test Bank"
+              title={`Manage: ${content.pageName || resolvedParams.subPageId}`}
+              description="Edit this sub-page relationship hub and manage its nested sub-pages."
+              actions={
+                <>
               <Link
                 href="/admin/nursing-test-bank"
                 className="admin-button-secondary flex items-center space-x-2"
@@ -466,25 +499,12 @@ export default function ManageSubPage({
                 </svg>
                 <span>View Page</span>
               </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+                </>
+              }
+            />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-green-800">{success}</p>
-          </div>
-        )}
+      <div className="space-y-6">
 
         {/* Main Page Info */}
         <div className="admin-card mb-6 p-5">
@@ -509,7 +529,7 @@ export default function ManageSubPage({
                 target="_blank"
                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
               >
-                View Page →
+                View Page
               </Link>
             </div>
           </div>
@@ -648,9 +668,7 @@ export default function ManageSubPage({
                       <span>Edit</span>
                     </Link>
                     <button
-                      onClick={() =>
-                        handleDeleteNestedSubPage(nestedSubPage.id)
-                      }
+                      onClick={() => setDeleteNestedTarget(nestedSubPage.id)}
                       className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                     >
                       Delete
@@ -663,7 +681,7 @@ export default function ManageSubPage({
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                     >
-                      View Page →
+                      View Page
                     </Link>
                     <p className="admin-helper mt-1">
                       URL: /{nestedSubPage.slug || nestedSubPage.id}
@@ -710,7 +728,7 @@ export default function ManageSubPage({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="admin-helper whitespace-nowrap">
-                    https://teasgurus.com/
+                    https://www.nursingmocks.com/
                   </span>
                   <input
                     type="text"
@@ -755,8 +773,39 @@ export default function ManageSubPage({
           </div>
         </div>
       )}
+      {deleteNestedTarget && (
+        <AdminDestructiveDialog
+          title="Delete Nested Sub-page"
+          itemName={deleteNestedTarget}
+          consequence="This removes the nested sub-page from this Nursing Test Bank sub-page. Related child content may no longer be reachable from this management view."
+          confirmLabel="Delete Nested Sub-page"
+          confirming={deletingNested}
+          onCancel={() => {
+            if (!deletingNested) setDeleteNestedTarget(null);
+          }}
+          onConfirm={() => handleDeleteNestedSubPage(deleteNestedTarget)}
+        />
+      )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
+
+export default function ManageSubPage({
+  params,
+}: {
+  params: Promise<{ subPageId: string }>;
+}) {
+  return (
+    <SidebarProvider>
+      <ManageSubPageContent params={params} />
+    </SidebarProvider>
+  );
+}
+
+
+
 
 

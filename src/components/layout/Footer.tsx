@@ -24,7 +24,7 @@ export default function Footer() {
               {/* Social Media Icons */}
               <div className="flex space-x-4">
                 <Link
-                  href="https://instagram.com/teasgurus"
+                  href="https://instagram.com/nursingmocks"
                   className="text-gray-400 hover:text-white transition-colors"
                   aria-label="Instagram"
                 >
@@ -42,7 +42,7 @@ export default function Footer() {
                   </svg>
                 </Link>
                 <Link
-                  href="https://www.linkedin.com/company/teasgurus"
+                  href="https://www.linkedin.com/company/nursingmocks"
                   className="text-gray-400 hover:text-white transition-colors"
                   aria-label="LinkedIn"
                 >
@@ -74,7 +74,7 @@ export default function Footer() {
                   </svg>
                 </Link>
                 <Link
-                  href="https://www.youtube.com/@teasgurus"
+                  href="https://www.youtube.com/@nursingmocks"
                   className="text-gray-400 hover:text-white transition-colors"
                   aria-label="YouTube"
                 >

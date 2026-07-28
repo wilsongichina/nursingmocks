@@ -17,10 +17,10 @@ export default function AboutPageSchema() {
               url: `${siteUrl}/`,
               logo: `${siteUrl}/nursing-mocks-logo.png`,
               sameAs: [
-                "https://instagram.com/teasgurus",
-                "https://www.linkedin.com/company/teasgurus",
+                "https://instagram.com/nursingmocks",
+                "https://www.linkedin.com/company/nursingmocks",
                 "https://tiktok.com/@teas.gurus",
-                "https://www.youtube.com/@teasgurus",
+                "https://www.youtube.com/@nursingmocks",
               ],
             },
             {
@@ -37,9 +37,9 @@ export default function AboutPageSchema() {
               "@type": "WebPage",
               "@id": `${siteUrl}/about#webpage`,
               url: `${siteUrl}/about`,
-              name: "About TeasGurus | Trusted TEAS Exam Help & Expert Support | TEAS Gurus",
+              name: "About NursingMocks | Trusted TEAS Exam Help & Expert Support | NursingMocks",
               description:
-                "Learn about TeasGurus—your trusted partner for TEAS exam success. We provide expert real ATI TEAS questions, and professional test-taking services tailored for nursing students.",
+                "Learn about NursingMocks—your trusted partner for TEAS exam success. We provide expert real ATI TEAS questions, and professional test-taking services tailored for nursing students.",
               isPartOf: {
                 "@id": `${siteUrl}/#website`,
               },

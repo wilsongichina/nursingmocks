@@ -32,10 +32,10 @@ export default function AboutPage() {
           <div className="text-center">
             <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-              We are Teas Gurus
+              We are NursingMocks
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-4">
-              About TEAS Gurus
+              About NursingMocks
             </h1>
             <p className="text-xl md:text-2xl mb-4 max-w-4xl mx-auto leading-relaxed">
               We are dedicated to helping nursing students achieve their dreams
@@ -111,7 +111,7 @@ export default function AboutPage() {
               </h3>
               <p className="text-gray-600 leading-relaxed">
                 We value your privacy. Any information you share with us is
-                concealed and remains confidential. TEAS Gurus has a strict
+                concealed and remains confidential. NursingMocks has a strict
                 privacy policy, so rest assured that no third party will have
                 access to your material. Your safety is our priority.
               </p>
@@ -148,7 +148,7 @@ export default function AboutPage() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-              We Are Teas Gurus
+              We Are NursingMocks
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Our Mission and Vision
@@ -174,7 +174,7 @@ export default function AboutPage() {
                 Our Mission
               </h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                Our Mission at Teas Gurus is to nature your grades to fit your
+                Our Mission at NursingMocks is to nature your grades to fit your
                 requirements. Everyone is after a goal and a top grade is a
                 requirement. We have to see that you keep scaling towards
                 greater heights. You live to realize your dreams with top grades
@@ -183,7 +183,7 @@ export default function AboutPage() {
                 world to conform to your desires.
               </p>
               <p className="text-gray-600 leading-relaxed">
-                At TEAS Gurus, our core mission is to enhance our student's
+                At NursingMocks, our core mission is to enhance our student's
                 knowledge with affordable instruction. We are dedicated to
                 empowering learners to excel in their fields within the online
                 learning environment, working diligently to ensure we meet our
@@ -234,7 +234,7 @@ export default function AboutPage() {
               </h2>
               <p className="text-xl mb-8 opacity-90 leading-relaxed">
                 Join thousands of successful students who have achieved their
-                nursing school dreams with TEAS Gurus. Get started today and pay
+                nursing school dreams with NursingMocks. Get started today and pay
                 only after you pass.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

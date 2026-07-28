@@ -77,6 +77,10 @@ type AdminLoadingStateProps = {
   description: ReactNode;
 };
 
+type AdminLoadingShellProps = AdminLoadingStateProps & {
+  className?: string;
+};
+
 type AdminInlineLoadingProps = {
   label: string;
   className?: string;
@@ -395,6 +399,20 @@ export function AdminLoadingState({ title, description }: AdminLoadingStateProps
         <div className="admin-loading-skeleton h-4 w-full" />
         <div className="admin-loading-skeleton h-4 w-2/3" />
       </div>
+    </div>
+  );
+}
+
+export function AdminLoadingShell({
+  title,
+  description,
+  className = "",
+}: AdminLoadingShellProps) {
+  return (
+    <div
+      className={`flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-6 sm:px-6 lg:px-8 ${className}`}
+    >
+      <AdminLoadingState title={title} description={description} />
     </div>
   );
 }

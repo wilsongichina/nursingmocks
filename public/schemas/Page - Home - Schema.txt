@@ -16,7 +16,7 @@
       "name": "Can I pay someone to take my remote TEAS exam?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Teas Gurus offers professional remote TEAS exam assistance with MSN-qualified tutors. You can contact support or request a quote to begin."
+        "text": "Yes. NursingMocks offers professional remote TEAS exam assistance with MSN-qualified tutors. You can contact support or request a quote to begin."
       }
     },
     {
@@ -24,7 +24,7 @@
       "name": "Where can I pay someone to take my TEAS entrance exam?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Online platforms like Teas Gurus offer confidential, convenient, and reliable services to help with TEAS entrance exams."
+        "text": "Online platforms like NursingMocks offer confidential, convenient, and reliable services to help with TEAS entrance exams."
       }
     },
     {
@@ -32,23 +32,23 @@
       "name": "How much should I pay someone to take my online TEAS exam?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Teas Gurus charges $400 per exam, with a full money-back guarantee, secure environment, and optional payment plans."
+        "text": "NursingMocks charges $400 per exam, with a full money-back guarantee, secure environment, and optional payment plans."
       }
     },
     {
       "@type": "Question",
-      "name": "Is Teas Gurus legit?",
+      "name": "Is NursingMocks legit?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Teas Gurus is a credible platform with verified student testimonials and transparent service and payment policies."
+        "text": "Yes. NursingMocks is a credible platform with verified student testimonials and transparent service and payment policies."
       }
     },
     {
       "@type": "Question",
-      "name": "Does Teas Gurus have enough TEAS exam takers?",
+      "name": "Does NursingMocks have enough TEAS exam takers?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes, Teas Gurus has a large team of experienced exam takers available to assist students at any time."
+        "text": "Yes, NursingMocks has a large team of experienced exam takers available to assist students at any time."
       }
     },
     {
@@ -56,15 +56,15 @@
       "name": "Can I take my TEAS exam online or remotely?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Most institutions, including ATI, offer remote proctored TEAS exams. Teas Gurus can help you take the test remotely using secure tools and expert support."
+        "text": "Yes. Most institutions, including ATI, offer remote proctored TEAS exams. NursingMocks can help you take the test remotely using secure tools and expert support."
       }
     },
     {
       "@type": "Question",
-      "name": "How do you properly take the TEAS exam with Teas Gurus?",
+      "name": "How do you properly take the TEAS exam with NursingMocks?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Register via the ATI website, choose the remote option, install AnyDesk, and share the code. Teas Gurus will handle the rest using a bypass tool and professional guidance."
+        "text": "Register via the ATI website, choose the remote option, install AnyDesk, and share the code. NursingMocks will handle the rest using a bypass tool and professional guidance."
       }
     },
     {
@@ -72,7 +72,7 @@
       "name": "Are there legit TEAS taker experts?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Teas Gurus has a team of qualified and experienced experts ready to help you pass your TEAS exam."
+        "text": "Yes. NursingMocks has a team of qualified and experienced experts ready to help you pass your TEAS exam."
       }
     }
   ]

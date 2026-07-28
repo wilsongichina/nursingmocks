@@ -437,7 +437,7 @@ export async function generateMetadata({
     
     if (!parentResult.success || !parentResult.data) {
       return {
-        title: `${subPageId} | TeasGurus`,
+        title: `${subPageId} | NursingMocks`,
         description: `Content for ${subPageId}`,
       };
     }
@@ -457,14 +457,14 @@ export async function generateMetadata({
     const data = result.data as any;
     if (data.meta) {
       return {
-        title: data.meta.title || `${subPageId} | TeasGurus`,
+        title: data.meta.title || `${subPageId} | NursingMocks`,
         description: data.meta.description || "",
         keywords: data.meta.keywords || "",
         openGraph: {
           title:
-            data.meta.ogTitle || data.meta.title || `${subPageId} | TeasGurus`,
+            data.meta.ogTitle || data.meta.title || `${subPageId} | NursingMocks`,
           description: data.meta.ogDescription || data.meta.description || "",
-          url: data.meta.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${subPageId}`,
+          url: data.meta.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"}/nursing-exit-exam/${subPageId}`,
           images: [
             {
               url: data.meta.ogImage || "/nursing-mocks-logo.png",
@@ -482,7 +482,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${subPageId} | TeasGurus`,
+    title: `${subPageId} | NursingMocks`,
     description: `Content for ${subPageId}`,
   };
 }
@@ -692,13 +692,13 @@ export default async function SubPage({
     pageName:
       pageData.pageName || (isNestedSubPage ? nestedSubPageId : subPageId),
     meta: pageData.meta || {
-      title: `${subPageId} | TeasGurus`,
+      title: `${subPageId} | NursingMocks`,
       description: `Content for ${subPageId}`,
       keywords: `${subPageId}, nursing exit exam`,
-      ogTitle: `${subPageId} | TeasGurus`,
+      ogTitle: `${subPageId} | NursingMocks`,
       ogDescription: `Content for ${subPageId}`,
       ogImage: "/nursing-mocks-logo.png",
-      canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/nursing-exit-exam/${subPageId}`,
+      canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"}/nursing-exit-exam/${subPageId}`,
     },
     schema: pageData.schema || "",
     hero: pageData.hero || {

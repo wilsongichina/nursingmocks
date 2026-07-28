@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     title: "Thank You — NursingMocks",
     description:
       "Your NursingMocks purchase is complete. Open your Dropbox folder to access your TEAS study files.",
-    url: "https://teasgurus.com/teas/thank-you",
+    url: "https://www.nursingmocks.com/teas/thank-you",
   },
   alternates: {
     canonical: "/teas/thank-you",

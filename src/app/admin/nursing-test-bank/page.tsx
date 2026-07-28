@@ -22,7 +22,30 @@ import {
   deleteNursingTestBankKbArticle,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import {
+  AdminBadgeList,
+  AdminCard,
+  AdminDestructiveDialog,
+  AdminFieldGroup,
+  AdminInfoTile,
+  AdminLoadingState,
+  AdminModal,
+  AdminModalFooter,
+  AdminNotificationRegion,
+  AdminPagination,
+  AdminPageHeader,
+  AdminStatCard,
+  AdminStatusBadge,
+  AdminTabs,
+  AdminTable,
+  AdminTableCell,
+  AdminTableEmptyState,
+  AdminToolbar,
+  AdminTopBar,
+  AdminSlugField,
+  AdminValidationMessage,
+} from "@/components/admin/AdminUi";
+import { useSearchParams } from "next/navigation";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
   SidebarProvider,
@@ -32,6 +55,14 @@ import UserProfileBadge from "@/components/layout/UserProfileBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSiteUrl } from "@/lib/config";
 import { contentAccessProductLabel } from "@/lib/content-access-products";
+
+const nursingTestBankAdminTabs = [
+  { id: "sub-pages", label: "Sub Pages" },
+  { id: "nested", label: "Nested Sub Pages" },
+  { id: "topics", label: "Topics" },
+  { id: "quizzes", label: "Quiz Metadata" },
+  { id: "kb", label: "Knowledge Base Articles" },
+];
 
 interface SubPage {
   id: string;
@@ -51,6 +82,7 @@ interface SubPage {
 function NursingTestBankAdminPageContent() {
   const { isCollapsed } = useSidebar();
   const { currentUser } = useAuth();
+  const searchParams = useSearchParams();
   const [subPages, setSubPages] = useState<SubPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -228,6 +260,68 @@ function NursingTestBankAdminPageContent() {
   const [kbArticleToDelete, setKbArticleToDelete] = useState<any | null>(null);
   const [deletingKb, setDeletingKb] = useState(false);
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const validTab = nursingTestBankAdminTabs.some((item) => item.id === tab);
+    if (tab && validTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const getSubPageNameById = (subPageId?: string) => {
+    const parentSubPage = subPages.find(
+      (sp) => sp.id === subPageId || sp.slug === subPageId
+    );
+    return parentSubPage
+      ? parentSubPage.pageName ||
+          parentSubPage.hero?.title ||
+          parentSubPage.title ||
+          parentSubPage.id
+      : "";
+  };
+
+  const matchesSearch = (value: string) =>
+    !searchQuery || value.toLowerCase().includes(searchQuery.toLowerCase());
+
+  const matchesStatus = (status?: string) =>
+    !statusFilter || (status || "published").toLowerCase() === statusFilter;
+
+  const filteredNestedSubPagesCount = nestedSubPages.filter((nsp) => {
+    const name = nsp.pageName || nsp.hero?.title || nsp.title || nsp.id;
+    const examName =
+      getSubPageNameById(nsp.parentSubPageDocId) ||
+      getSubPageNameById(nsp.parentSubPageId) ||
+      nsp.parentSubPageName ||
+      nsp.parentSubPageId;
+    return matchesSearch(name) && (!examFilter || examName === examFilter) && matchesStatus(nsp.status);
+  }).length;
+
+  const filteredTopicsCount = topics.filter((topic) => {
+    const name = topic.topicName || topic.pageName || topic.title || topic.name || topic.id;
+    const examName =
+      getSubPageNameById(topic.parentSubPageDocId) ||
+      getSubPageNameById(topic.parentSubPageId) ||
+      topic.parentSubPageName ||
+      topic.parentSubPageId;
+    return matchesSearch(name) && (!examFilter || examName === examFilter) && matchesStatus(topic.status);
+  }).length;
+
+  const filteredQuizzesCount = quizzes.filter((quiz) => {
+    const name = quiz.quizName || quiz.pageName || quiz.title || quiz.name || quiz.id;
+    const examName =
+      getSubPageNameById(quiz.parentSubPageDocId) ||
+      getSubPageNameById(quiz.parentSubPageId) ||
+      quiz.parentSubPageName ||
+      quiz.parentSubPageId;
+    return matchesSearch(name) && (!examFilter || examName === examFilter) && matchesStatus(quiz.status);
+  }).length;
+
+  const filteredKbArticlesCount = kbArticles.filter((kb) => {
+    const name = kb.pageName || kb.title || kb.id;
+    const examName = getSubPageNameById(kb.parentId);
+    return matchesSearch(name) && (!examFilter || examName === examFilter) && matchesStatus(kb.status);
+  }).length;
+
   const [showDeleteQuizModal, setShowDeleteQuizModal] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<any | null>(null);
   const [deletingQuiz, setDeletingQuiz] = useState(false);
@@ -237,7 +331,6 @@ function NursingTestBankAdminPageContent() {
   );
   const [newQuizId, setNewQuizId] = useState("");
   const [newQuizName, setNewQuizName] = useState("");
-  const [newQuizSetNumber, setNewQuizSetNumber] = useState("");
   const [quizValidationError, setQuizValidationError] = useState("");
   const [savingQuiz, setSavingQuiz] = useState(false);
 
@@ -1077,12 +1170,11 @@ function NursingTestBankAdminPageContent() {
       const defaultQuizContent = {
         pageName: newQuizName,
         slug: normalizedQuizId,
-        setNumber: newQuizSetNumber ? Number(newQuizSetNumber) : undefined,
         meta: {
-          title: `${newQuizName} | TeasGurus`,
+          title: `${newQuizName} | NursingMocks`,
           description: `Content for ${newQuizName} under ${topicName}.`,
           keywords: `${newQuizName}, ${topicName}, nursing test bank`,
-          ogTitle: `${newQuizName} | TeasGurus`,
+          ogTitle: `${newQuizName} | NursingMocks`,
           ogDescription: `Content for ${newQuizName}`,
           ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedQuizId}`,
@@ -1107,7 +1199,6 @@ function NursingTestBankAdminPageContent() {
         setSelectedTopicForQuiz(null);
         setNewQuizId("");
         setNewQuizName("");
-        setNewQuizSetNumber("");
         setQuizValidationError("");
         loadSubPages(); // Reload to refresh quizzes
         setTimeout(() => setSuccess(""), 3000);
@@ -1174,10 +1265,10 @@ function NursingTestBankAdminPageContent() {
         bodyContent: "",
         slug: normalizedTopicId,
         meta: {
-          title: `${newTopicName} | TeasGurus`,
+          title: `${newTopicName} | NursingMocks`,
           description: `Content for ${newTopicName} under ${nestedSubPageName}.`,
           keywords: `${newTopicName}, ${nestedSubPageName}, nursing test bank`,
-          ogTitle: `${newTopicName} | TeasGurus`,
+          ogTitle: `${newTopicName} | NursingMocks`,
           ogDescription: `Content for ${newTopicName}`,
           ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedTopicId}`,
@@ -1267,10 +1358,10 @@ function NursingTestBankAdminPageContent() {
         createdAt: new Date().toISOString(),
         bodyContent: "",
         meta: {
-          title: `${newNestedSubPageName} | TeasGurus`,
+          title: `${newNestedSubPageName} | NursingMocks`,
           description: `Content for ${newNestedSubPageName} under ${parentSubPageName}.`,
           keywords: `${newNestedSubPageName}, ${parentSubPageId}, nursing test bank`,
-          ogTitle: `${newNestedSubPageName} | TeasGurus`,
+          ogTitle: `${newNestedSubPageName} | NursingMocks`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,
@@ -1443,614 +1534,77 @@ function NursingTestBankAdminPageContent() {
         <div className="admin-page">
           {/* Main Content */}
           <div className="admin-workspace admin-content-management-page">
-            {/* Alerts */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-800">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {success && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-green-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-green-800">{success}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Page Header */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: "16px",
-                marginBottom: "20px",
-              }}
-            >
-              <div>
-                <h1
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: 700,
-                    marginBottom: "6px",
-                    fontFamily:
-                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    color: "#111827",
-                  }}
+            <AdminNotificationRegion
+              error={error}
+              success={success}
+              errorTitle="Unable To Update Test Bank Content"
+              successTitle="Test Bank Content Updated"
+            />
+            <AdminPageHeader
+              eyebrow="Content Management"
+              title="Nursing Test Bank"
+              description="Manage the Nursing Test Bank hierarchy, including Sub Pages, Nested Sub Pages, Topics, Quiz Metadata, and Knowledge Base Articles."
+              actions={
+                <Link
+                  href="/admin/nursing-test-bank/edit"
+                  className="admin-button-secondary"
                 >
-                  Nursing Test Bank – Admin
-                </h1>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    maxWidth: "520px",
-                    fontFamily:
-                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                  }}
-                >
-                  Manage the main pillar page, sub pages, nested sub pages, and
-                  topics for Nursing Test Bank. Use this panel to add, edit, and
-                  organize content.
-                </p>
-              </div>
-            </div>
-
-            {/* Overview Grid */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1.2fr",
-                gap: "20px",
-                marginBottom: "24px",
-              }}
-            >
-              {/* Structure Overview Card */}
-              <div
-                style={{
-                  background: "#ffffff",
-                  borderRadius: "18px",
-                  padding: "18px 20px",
-                  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.03)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <h2
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      color: "#312e81",
-                    }}
-                  >
-                    Structure overview
-                  </h2>
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#9ca3af",
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    }}
-                  >
-                    Test Bank pillar → Sub Pages → Nested → Topics
+                  Edit Main Page
+                </Link>
+              }
+            />
+            <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+              <AdminCard className="p-4 sm:p-5">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="admin-section-title">Structure Overview</h2>
+                    <p className="admin-body mt-1">
+                      Test Bank content follows a four-level structure before question records.
+                    </p>
+                  </div>
+                  <span className="admin-badge admin-badge-purple">
+                    Pillar / Sub Page / Nested Sub Page / Topic / Quiz
                   </span>
                 </div>
-                <div
-                  style={{
-                    fontSize: "13px",
-                    color: "#4b5563",
-                    fontFamily:
-                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                  }}
-                >
-                  <ul style={{ listStyle: "none", marginTop: "6px" }}>
-                    <li style={{ margin: "4px 0" }}>
-                      <span style={{ fontWeight: 500, color: "#111827" }}>
-                        Main Pillar Page:
-                      </span>{" "}
-                      Nursing Test Bank
-                    </li>
-                    <li style={{ margin: "4px 0" }}>
-                      <span style={{ fontWeight: 500, color: "#111827" }}>
-                        Sub Pages:
-                      </span>{" "}
-                      {subPages.length > 0
-                        ? subPages
-                            .map(
-                              (sp) =>
-                                sp.pageName ||
-                                sp.hero?.title ||
-                                sp.title ||
-                                sp.id
-                            )
-                            .join(", ")
-                        : "None"}
-                    </li>
-                    <li style={{ margin: "4px 0" }}>
-                      <span style={{ fontWeight: 500, color: "#111827" }}>
-                        Nested Sub Pages:
-                      </span>{" "}
-                      {nestedSubPages.length > 0
-                        ? nestedSubPages
-                            .slice(0, 5)
-                            .map(
-                              (nsp) =>
-                                nsp.pageName ||
-                                nsp.hero?.title ||
-                                nsp.title ||
-                                nsp.id
-                            )
-                            .join(", ") +
-                          (nestedSubPages.length > 5 ? ", etc." : "")
-                        : "None"}
-                    </li>
-                    <li style={{ margin: "4px 0" }}>
-                      <span style={{ fontWeight: 500, color: "#111827" }}>
-                        Linked Topics:
-                      </span>{" "}
-                      {topicsCount > 0
-                        ? `${topicsCount} topic${
-                            topicsCount !== 1 ? "s" : ""
-                          } (each topic links to its own questions in the question bank)`
-                        : "None (each topic links to its own questions in the question bank)"}
-                    </li>
-                    <li style={{ margin: "4px 0" }}>
-                      <span style={{ fontWeight: 500, color: "#111827" }}>
-                        KB:
-                      </span>{" "}
-                      Knowledge base articles linked from this pillar
-                      {kbArticlesCount > 0
-                        ? ` (${kbArticlesCount} articles)`
-                        : ""}
-                    </li>
-                    <li style={{ margin: "4px 0" }}>
-                      <span style={{ fontWeight: 500, color: "#111827" }}>
-                        Linked Quizzes:
-                      </span>{" "}
-                      {quizzesCount > 0
-                        ? `${quizzesCount} quiz${
-                            quizzesCount !== 1 ? "zes" : ""
-                          } (each quiz links to its own questions in the question bank)`
-                        : "None (each quiz links to its own questions in the question bank)"}
-                    </li>
-                  </ul>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <AdminInfoTile label="Main Pillar Page">Nursing Test Bank</AdminInfoTile>
+                  <AdminInfoTile label="Sub Pages">
+                    <AdminBadgeList
+                      emptyLabel="No Sub Pages"
+                      items={subPages.slice(0, 6).map((sp) => ({
+                        label: sp.pageName || sp.hero?.title || sp.title || sp.id,
+                        tone: "purple",
+                      }))}
+                    />
+                  </AdminInfoTile>
+                  <AdminInfoTile label="Nested Sub Pages">{nestedSubPages.length} total</AdminInfoTile>
+                  <AdminInfoTile label="Topics">{topicsCount} linked topics</AdminInfoTile>
+                  <AdminInfoTile label="Quiz Metadata">{quizzesCount} linked quizzes</AdminInfoTile>
+                  <AdminInfoTile label="Knowledge Base Articles">{kbArticlesCount} articles</AdminInfoTile>
                 </div>
-              </div>
-
-              {/* Content Stats Card */}
-              <div
-                style={{
-                  background: "#ffffff",
-                  borderRadius: "18px",
-                  padding: "18px 20px",
-                  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.03)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <h2
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      color: "#312e81",
-                    }}
-                  >
-                    Content stats
-                  </h2>
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#9ca3af",
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    }}
-                  >
-                    For Nursing Test Bank
-                  </span>
+              </AdminCard>
+              <AdminCard className="p-4 sm:p-5">
+                <div className="mb-4">
+                  <h2 className="admin-section-title">Content Stats</h2>
+                  <p className="admin-body mt-1">
+                    Current records loaded for this Test Bank pillar.
+                  </p>
                 </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                    gap: "10px",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "12px 12px",
-                      borderRadius: "14px",
-                      background:
-                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
-                      border: "1px dashed #e2e4f0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "#9ca3af",
-                        marginBottom: "4px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      }}
-                    >
-                      Sub pages
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        marginBottom: "2px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        color: "#111827",
-                      }}
-                    >
-                      {subPages.length}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      padding: "12px 12px",
-                      borderRadius: "14px",
-                      background:
-                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
-                      border: "1px dashed #e2e4f0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "#9ca3af",
-                        marginBottom: "4px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      }}
-                    >
-                      Nested sub pages
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        marginBottom: "2px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        color: "#111827",
-                      }}
-                    >
-                      {nestedSubPages.length}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      padding: "12px 12px",
-                      borderRadius: "14px",
-                      background:
-                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
-                      border: "1px dashed #e2e4f0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "#9ca3af",
-                        marginBottom: "4px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      }}
-                    >
-                      Linked topics
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        marginBottom: "2px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        color: "#111827",
-                      }}
-                    >
-                      {topicsCount}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      padding: "12px 12px",
-                      borderRadius: "14px",
-                      background:
-                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
-                      border: "1px dashed #e2e4f0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "#9ca3af",
-                        marginBottom: "4px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      }}
-                    >
-                      Linked quizzes
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        marginBottom: "2px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        color: "#111827",
-                      }}
-                    >
-                      {quizzesCount}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#6b7280",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      }}
-                    >
-                      {quizzesCount > 0
-                        ? `${quizzesCount} quiz${
-                            quizzesCount !== 1 ? "zes" : ""
-                          } linked`
-                        : "No quizzes linked"}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      padding: "12px 12px",
-                      borderRadius: "14px",
-                      background:
-                        "linear-gradient(135deg, #f9fafb 0%, #f5f5ff 60%, #eef2ff 100%)",
-                      border: "1px dashed #e2e4f0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "#9ca3af",
-                        marginBottom: "4px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      }}
-                    >
-                      KB Articles
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        marginBottom: "2px",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        color: "#111827",
-                      }}
-                    >
-                      {kbArticlesCount}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#6b7280",
-                        fontFamily:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                      }}
-                    >
-                      {kbArticlesCount > 0
-                        ? `${kbArticlesCount} article${
-                            kbArticlesCount !== 1 ? "s" : ""
-                          } linked`
-                        : "No articles linked"}
-                    </div>
-                  </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <AdminStatCard label="Sub Pages" value={subPages.length} />
+                  <AdminStatCard label="Nested Sub Pages" value={nestedSubPages.length} />
+                  <AdminStatCard label="Topics" value={topicsCount} />
+                  <AdminStatCard label="Quiz Metadata" value={quizzesCount} />
+                  <AdminStatCard label="Knowledge Base Articles" value={kbArticlesCount} />
                 </div>
-              </div>
+              </AdminCard>
             </div>
-
-            {/* Tabs Row */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                marginBottom: "12px",
-              }}
-            >
-              <button
-                onClick={() => setActiveTab("sub-pages")}
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  border:
-                    activeTab === "sub-pages"
-                      ? "1px solid #c7d2fe"
-                      : "1px solid transparent",
-                  cursor: "pointer",
-                  color: activeTab === "sub-pages" ? "#4338ca" : "#6b7280",
-                  background:
-                    activeTab === "sub-pages" ? "#eef2ff" : "transparent",
-                  fontWeight: activeTab === "sub-pages" ? 500 : 400,
-                  fontFamily:
-                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                }}
-              >
-                Sub Pages
-              </button>
-              <button
-                onClick={() => setActiveTab("nested")}
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  border:
-                    activeTab === "nested"
-                      ? "1px solid #c7d2fe"
-                      : "1px solid transparent",
-                  cursor: "pointer",
-                  color: activeTab === "nested" ? "#4338ca" : "#6b7280",
-                  background:
-                    activeTab === "nested" ? "#eef2ff" : "transparent",
-                  fontWeight: activeTab === "nested" ? 500 : 400,
-                  fontFamily:
-                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                }}
-              >
-                Nested Sub Pages
-              </button>
-              <button
-                onClick={() => setActiveTab("topics")}
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  border:
-                    activeTab === "topics"
-                      ? "1px solid #c7d2fe"
-                      : "1px solid transparent",
-                  cursor: "pointer",
-                  color: activeTab === "topics" ? "#4338ca" : "#6b7280",
-                  background:
-                    activeTab === "topics" ? "#eef2ff" : "transparent",
-                  fontWeight: activeTab === "topics" ? 500 : 400,
-                  fontFamily:
-                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                }}
-              >
-                Topics
-              </button>
-              <button
-                onClick={() => setActiveTab("kb")}
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  border:
-                    activeTab === "kb"
-                      ? "1px solid #c7d2fe"
-                      : "1px solid transparent",
-                  cursor: "pointer",
-                  color: activeTab === "kb" ? "#4338ca" : "#6b7280",
-                  background: activeTab === "kb" ? "#eef2ff" : "transparent",
-                  fontWeight: activeTab === "kb" ? 500 : 400,
-                  fontFamily:
-                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                }}
-              >
-                KB Articles
-              </button>
-              <button
-                onClick={() => setActiveTab("quizzes")}
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  border:
-                    activeTab === "quizzes"
-                      ? "1px solid #c7d2fe"
-                      : "1px solid transparent",
-                  cursor: "pointer",
-                  color: activeTab === "quizzes" ? "#4338ca" : "#6b7280",
-                  background:
-                    activeTab === "quizzes" ? "#eef2ff" : "transparent",
-                  fontWeight: activeTab === "quizzes" ? 500 : 400,
-                  fontFamily:
-                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                }}
-              >
-                Quizzes
-              </button>
-              <button
-                onClick={() => setActiveTab("settings")}
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  border:
-                    activeTab === "settings"
-                      ? "1px solid #c7d2fe"
-                      : "1px solid transparent",
-                  cursor: "pointer",
-                  color: activeTab === "settings" ? "#4338ca" : "#6b7280",
-                  background:
-                    activeTab === "settings" ? "#eef2ff" : "transparent",
-                  fontWeight: activeTab === "settings" ? 500 : 400,
-                  fontFamily:
-                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                }}
-              >
-                Main Page Settings
-              </button>
-            </div>
+            <AdminTabs
+              tabs={nursingTestBankAdminTabs}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+              label="Nursing Test Bank content sections"
+            />
 
             {/* Sub Pages Table Card */}
             <div
@@ -2062,24 +1616,43 @@ function NursingTestBankAdminPageContent() {
                 marginTop: "8px",
               }}
             >
-              {/* Toolbar */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "12px",
-                }}
+              <AdminToolbar
+                actions={
+                  activeTab === "kb" ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateKbModal(true)}
+                      className="admin-button-primary"
+                    >
+                      New Knowledge Base Article
+                    </button>
+                  ) : activeTab === "topics" ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateTopicModal(true)}
+                      className="admin-button-primary"
+                    >
+                      New Topic
+                    </button>
+                  ) : activeTab === "quizzes" ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateQuizModal(true)}
+                      className="admin-button-primary"
+                    >
+                      New Quiz Metadata
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateModal(true)}
+                      className="admin-button-primary"
+                    >
+                      {activeTab === "nested" ? "New Nested Sub Page" : "New Sub Page"}
+                    </button>
+                  )
+                }
               >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                  }}
-                >
                   <input
                     type="text"
                     placeholder={
@@ -2088,41 +1661,21 @@ function NursingTestBankAdminPageContent() {
                         : activeTab === "topics"
                         ? "Search topics..."
                         : activeTab === "quizzes"
-                        ? "Search quizzes..."
+                        ? "Search quiz metadata..."
                         : activeTab === "kb"
-                        ? "Search KB articles..."
+                        ? "Search Knowledge Base Articles..."
                         : "Search sub pages..."
                     }
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      fontSize: "13px",
-                      padding: "6px 12px",
-                      borderRadius: "999px",
-                      border: "1px solid #e5e7eb",
-                      background: "#ffffff",
-                      color: "#111827",
-                      minWidth: "120px",
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    }}
+                    className="admin-input min-w-[220px]"
                   />
                   <select
                     value={examFilter}
                     onChange={(e) => setExamFilter(e.target.value)}
-                    style={{
-                      fontSize: "13px",
-                      padding: "6px 10px",
-                      borderRadius: "999px",
-                      border: "1px solid #e5e7eb",
-                      background: "#ffffff",
-                      color: "#111827",
-                      minWidth: "120px",
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    }}
+                    className="admin-input min-w-[180px]"
                   >
-                    <option value="">All exams</option>
+                    <option value="">All Sub Pages</option>
                     {uniqueSubPageNames.map((name) => (
                       <option key={name} value={name}>
                         {name}
@@ -2132,174 +1685,42 @@ function NursingTestBankAdminPageContent() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    style={{
-                      fontSize: "13px",
-                      padding: "6px 10px",
-                      borderRadius: "999px",
-                      border: "1px solid #e5e7eb",
-                      background: "#ffffff",
-                      color: "#111827",
-                      minWidth: "120px",
-                      fontFamily:
-                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    }}
+                    className="admin-input min-w-[160px]"
                   >
                     <option value="">All statuses</option>
                     <option value="published">Published</option>
                     <option value="draft">Draft</option>
                     <option value="archived">Archived</option>
                   </select>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {activeTab === "kb" ? (
-                    <button
-                      onClick={() => setShowCreateKbModal(true)}
-                      className="admin-button-primary !min-h-[44px] w-full !px-4 sm:w-auto"
-                    >
-                      + New KB Article
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setShowCreateModal(true)}
-                      className="admin-button-primary !min-h-[44px] w-full !px-4 sm:w-auto"
-                    >
-                      {activeTab === "nested"
-                        ? "+ New Nested Sub-page"
-                        : activeTab === "quizzes"
-                        ? "+ New Quiz"
-                        : "+ New Sub Page"}
-                    </button>
-                  )}
-                </div>
-              </div>
+              </AdminToolbar>
 
-              {/* Table */}
-              <div
-                style={{
-                  borderRadius: "14px",
-                  border: "1px solid #e5e7eb",
-                  overflow: "hidden",
-                  background: "#ffffff",
-                  overflowX: "auto",
-                }}
-              >
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: "13px",
-                    fontFamily:
-                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                    minWidth: "800px",
-                  }}
-                >
-                  <thead style={{ background: "#f9fafb" }}>
+              <AdminTable tableClassName="min-w-[960px]">
+                  <thead>
                     <tr>
-                      <th
-                        style={{
-                          padding: "10px 12px",
-                          textAlign: "left",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          fontWeight: 500,
-                          minWidth: "210px",
-                        }}
-                      >
+                      <th className="admin-table-heading min-w-[210px] px-4 py-3 text-left">
                         Title
                       </th>
-                      <th
-                        style={{
-                          padding: "10px 12px",
-                          textAlign: "left",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          fontWeight: 500,
-                        }}
-                      >
+                      <th className="admin-table-heading px-4 py-3 text-left">
                         Exam
                       </th>
-                      <th
-                        style={{
-                          padding: "10px 12px",
-                          textAlign: "left",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          fontWeight: 500,
-                        }}
-                      >
+                      <th className="admin-table-heading px-4 py-3 text-left">
                         Level
                       </th>
                       {(activeTab === "topics" || activeTab === "quizzes") && (
-                        <th
-                          style={{
-                            padding: "10px 12px",
-                            textAlign: "left",
-                            borderBottom: "1px solid #f3f4f6",
-                            fontSize: "12px",
-                            color: "#6b7280",
-                            fontWeight: 500,
-                          }}
-                        >
+                        <th className="admin-table-heading px-4 py-3 text-left">
                           Questions
                         </th>
                       )}
-                      <th
-                        style={{
-                          padding: "10px 12px",
-                          textAlign: "left",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          fontWeight: 500,
-                          minWidth: "180px",
-                        }}
-                      >
+                      <th className="admin-table-heading min-w-[180px] px-4 py-3 text-left">
                         URL slug
                       </th>
-                      <th
-                        style={{
-                          padding: "10px 12px",
-                          textAlign: "left",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          fontWeight: 500,
-                        }}
-                      >
+                      <th className="admin-table-heading px-4 py-3 text-left">
                         Status
                       </th>
-                      <th
-                        style={{
-                          padding: "10px 12px",
-                          textAlign: "left",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          fontWeight: 500,
-                        }}
-                      >
+                      <th className="admin-table-heading px-4 py-3 text-left">
                         Last updated
                       </th>
-                      <th
-                        style={{
-                          padding: "10px 12px",
-                          textAlign: "left",
-                          borderBottom: "1px solid #f3f4f6",
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          fontWeight: 500,
-                        }}
-                      >
+                      <th className="admin-table-heading min-w-[180px] px-4 py-3 text-left">
                         Actions
                       </th>
                     </tr>
@@ -2378,18 +1799,11 @@ function NursingTestBankAdminPageContent() {
                         );
 
                         return sortedTopics.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={8}
-                              style={{
-                                padding: "40px 12px",
-                                textAlign: "center",
-                                color: "#6b7280",
-                              }}
-                            >
-                              No topics found.
-                            </td>
-                          </tr>
+                          <AdminTableEmptyState
+                            colSpan={8}
+                            title="No Topics Found"
+                            description="Create a Topic from a Nested Sub Page row or adjust the current filters."
+                          />
                         ) : (
                           paginatedTopics.map((topic) => {
                             const topicName =
@@ -2407,7 +1821,7 @@ function NursingTestBankAdminPageContent() {
                                     year: "numeric",
                                   }
                                 ) +
-                                " · " +
+                                " - " +
                                 new Date(topic.lastUpdated).toLocaleTimeString(
                                   "en-US",
                                   {
@@ -2415,7 +1829,7 @@ function NursingTestBankAdminPageContent() {
                                     minute: "2-digit",
                                   }
                                 )
-                              : "—";
+                              : "N/A";
 
                             // Get sub-page name from subPages array
                             const parentSubPage = subPages.find(
@@ -2434,114 +1848,45 @@ function NursingTestBankAdminPageContent() {
 
                             return (
                               <tr key={topic.id}>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "210px",
-                                  }}
-                                >
-                                  {topicName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {examName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                <AdminTableCell className="min-w-[210px]">
+                                  <span
+                                    className="admin-table-title-truncate"
+                                    title={topicName}
+                                  >
+                                    {topicName}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <span
+                                    className="admin-table-title-truncate"
+                                    title={examName}
+                                  >
+                                    {examName}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   Topic
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   {topic.questionCount !== undefined
                                     ? topic.questionCount
-                                    : "—"}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#6b7280",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "180px",
-                                    fontFamily:
-                                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                                    fontSize: "12px",
-                                  }}
-                                >
-                                  /{topic.slug || topic.id}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                    : "N/A"}
+                                </AdminTableCell>
+                                <AdminTableCell className="min-w-[180px]" mono>
                                   <span
-                                    style={{
-                                      fontSize: "11px",
-                                      padding: "3px 8px",
-                                      borderRadius: "999px",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      background: "#dcfce7",
-                                      color: "#15803d",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                    }}
+                                    className="admin-table-slug-truncate"
+                                    title={`/${topic.slug || topic.id}`}
                                   >
-                                    Published
+                                    /{topic.slug || topic.id}
                                   </span>
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <AdminStatusBadge label={topic.status || "Published"} />
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   {lastUpdated}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   <div className="admin-crud-actions">
                                     <button
                                       type="button"
@@ -2576,7 +1921,7 @@ function NursingTestBankAdminPageContent() {
                                       Delete
                                     </button>
                                   </div>
-                                </td>
+                                </AdminTableCell>
                               </tr>
                             );
                           })
@@ -2654,18 +1999,11 @@ function NursingTestBankAdminPageContent() {
                         );
 
                         return sortedQuizzes.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={6}
-                              style={{
-                                padding: "40px 12px",
-                                textAlign: "center",
-                                color: "#6b7280",
-                              }}
-                            >
-                              No quizzes found.
-                            </td>
-                          </tr>
+                          <AdminTableEmptyState
+                            colSpan={8}
+                            title="No Quiz Metadata Found"
+                            description="Create Quiz Metadata from a Topic row or adjust the current filters."
+                          />
                         ) : (
                           paginatedQuizzes.map((quiz) => {
                             const quizName =
@@ -2683,7 +2021,7 @@ function NursingTestBankAdminPageContent() {
                                     year: "numeric",
                                   }
                                 ) +
-                                " · " +
+                                " - " +
                                 new Date(quiz.lastUpdated).toLocaleTimeString(
                                   "en-US",
                                   {
@@ -2691,7 +2029,7 @@ function NursingTestBankAdminPageContent() {
                                     minute: "2-digit",
                                   }
                                 )
-                              : "—";
+                              : "N/A";
 
                             // Get sub-page name from subPages array
                             const parentSubPage = subPages.find(
@@ -2709,105 +2047,43 @@ function NursingTestBankAdminPageContent() {
 
                             return (
                               <tr key={quiz.id}>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "210px",
-                                  }}
-                                >
-                                  {quizName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {examName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  Quiz
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {quiz.questionCount || 0}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "180px",
-                                  }}
-                                >
-                                  {quiz.slug || quiz.id}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                <AdminTableCell className="min-w-[210px]">
                                   <span
-                                    style={{
-                                      fontSize: "11px",
-                                      padding: "2px 8px",
-                                      borderRadius: "999px",
-                                      background: "#d1fae5",
-                                      color: "#065f46",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                    }}
+                                    className="admin-table-title-truncate"
+                                    title={quizName}
                                   >
-                                    Published
+                                    {quizName}
                                   </span>
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#6b7280",
-                                    whiteSpace: "nowrap",
-                                    fontSize: "12px",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <span
+                                    className="admin-table-title-truncate"
+                                    title={examName}
+                                  >
+                                    {examName}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  Quiz
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  {quiz.questionCount || 0}
+                                </AdminTableCell>
+                                <AdminTableCell className="min-w-[180px]" mono>
+                                  <span
+                                    className="admin-table-slug-truncate"
+                                    title={`/${quiz.slug || quiz.id}`}
+                                  >
+                                    /{quiz.slug || quiz.id}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <AdminStatusBadge label={quiz.status || "Published"} />
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   {lastUpdated}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   <div className="admin-crud-actions">
                                     <Link
                                       href={`/admin/nursing-test-bank/${
@@ -2836,7 +2112,7 @@ function NursingTestBankAdminPageContent() {
                                       Delete
                                     </button>
                                   </div>
-                                </td>
+                                </AdminTableCell>
                               </tr>
                             );
                           })
@@ -2904,18 +2180,11 @@ function NursingTestBankAdminPageContent() {
                         );
 
                         return sortedKbArticles.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={7}
-                              style={{
-                                padding: "40px 12px",
-                                textAlign: "center",
-                                color: "#6b7280",
-                              }}
-                            >
-                              No KB articles found.
-                            </td>
-                          </tr>
+                          <AdminTableEmptyState
+                            colSpan={7}
+                            title="No Knowledge Base Articles Found"
+                            description="Create a Knowledge Base Article when this test bank area needs supporting student-facing content."
+                          />
                         ) : (
                           paginatedKbArticles.map((kbArticle) => {
                             const pageName =
@@ -2931,7 +2200,7 @@ function NursingTestBankAdminPageContent() {
                                     year: "numeric",
                                   }
                                 ) +
-                                " · " +
+                                " - " +
                                 new Date(kbArticle.lastUpdated).toLocaleTimeString(
                                   "en-US",
                                   {
@@ -2939,7 +2208,7 @@ function NursingTestBankAdminPageContent() {
                                     minute: "2-digit",
                                   }
                                 )
-                              : "—";
+                              : "N/A";
 
                             // Get sub-page name from subPages array
                             const parentSubPage = subPages.find(
@@ -2950,105 +2219,44 @@ function NursingTestBankAdminPageContent() {
                                 parentSubPage.hero?.title ||
                                 parentSubPage.title ||
                                 parentSubPage.id
-                              : "—";
+                              : "N/A";
 
                             return (
                               <tr key={kbArticle.id}>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "210px",
-                                  }}
-                                >
-                                  {pageName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {examName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  KB Article
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#6b7280",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "180px",
-                                    fontFamily:
-                                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                                    fontSize: "12px",
-                                  }}
-                                >
-                                  /{kbArticle.slug || kbArticle.id}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                <AdminTableCell className="min-w-[210px]">
                                   <span
-                                    style={{
-                                      fontSize: "11px",
-                                      padding: "3px 8px",
-                                      borderRadius: "999px",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      background: "#dcfce7",
-                                      color: "#15803d",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                    }}
+                                    className="admin-table-title-truncate"
+                                    title={pageName}
                                   >
-                                    {kbArticle.status || "Published"}
+                                    {pageName}
                                   </span>
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <span
+                                    className="admin-table-title-truncate"
+                                    title={examName}
+                                  >
+                                    {examName}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  Knowledge Base Article
+                                </AdminTableCell>
+                                <AdminTableCell className="min-w-[180px]" mono>
+                                  <span
+                                    className="admin-table-slug-truncate"
+                                    title={`/${kbArticle.slug || kbArticle.id}`}
+                                  >
+                                    /{kbArticle.slug || kbArticle.id}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <AdminStatusBadge label={kbArticle.status || "Published"} />
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   {lastUpdated}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   <div className="admin-crud-actions">
                                     <Link
                                       href={`/${kbArticle.slug || kbArticle.id}`}
@@ -3075,7 +2283,7 @@ function NursingTestBankAdminPageContent() {
                                       Delete
                                     </button>
                                   </div>
-                                </td>
+                                </AdminTableCell>
                               </tr>
                             );
                           })
@@ -3153,18 +2361,11 @@ function NursingTestBankAdminPageContent() {
                           sortedNestedSubPages.slice(startIndex, endIndex);
 
                         return sortedNestedSubPages.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={7}
-                              style={{
-                                padding: "40px 12px",
-                                textAlign: "center",
-                                color: "#6b7280",
-                              }}
-                            >
-                              No nested sub-pages found.
-                            </td>
-                          </tr>
+                          <AdminTableEmptyState
+                            colSpan={7}
+                            title="No Nested Sub Pages Found"
+                            description="Create a Nested Sub Page from a Sub Page row or adjust the current filters."
+                          />
                         ) : (
                           paginatedNestedSubPages.map((nestedSubPage) => {
                             const pageName =
@@ -3180,14 +2381,14 @@ function NursingTestBankAdminPageContent() {
                                   day: "numeric",
                                   year: "numeric",
                                 }) +
-                                " · " +
+                                " - " +
                                 new Date(
                                   nestedSubPage.lastUpdated
                                 ).toLocaleTimeString("en-US", {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })
-                              : "—";
+                              : "N/A";
 
                             // Get sub-page name from subPages array
                             const parentSubPage = subPages.find(
@@ -3206,101 +2407,40 @@ function NursingTestBankAdminPageContent() {
 
                             return (
                               <tr key={nestedSubPage.id}>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "210px",
-                                  }}
-                                >
-                                  {pageName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {examName}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  Nested Sub Page
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#6b7280",
-                                    whiteSpace: "nowrap",
-                                    minWidth: "180px",
-                                    fontFamily:
-                                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                                    fontSize: "12px",
-                                  }}
-                                >
-                                  /{nestedSubPage.slug || nestedSubPage.id}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                <AdminTableCell className="min-w-[210px]">
                                   <span
-                                    style={{
-                                      fontSize: "11px",
-                                      padding: "3px 8px",
-                                      borderRadius: "999px",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      background: "#dcfce7",
-                                      color: "#15803d",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                    }}
+                                    className="admin-table-title-truncate"
+                                    title={pageName}
                                   >
-                                    Published
+                                    {pageName}
                                   </span>
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <span
+                                    className="admin-table-title-truncate"
+                                    title={examName}
+                                  >
+                                    {examName}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  Nested Sub Page
+                                </AdminTableCell>
+                                <AdminTableCell className="min-w-[180px]" mono>
+                                  <span
+                                    className="admin-table-slug-truncate"
+                                    title={`/${nestedSubPage.slug || nestedSubPage.id}`}
+                                  >
+                                    /{nestedSubPage.slug || nestedSubPage.id}
+                                  </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                  <AdminStatusBadge label={nestedSubPage.status || "Published"} />
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   {lastUpdated}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "10px 12px",
-                                    textAlign: "left",
-                                    borderBottom: "1px solid #f3f4f6",
-                                    color: "#4b5563",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                </AdminTableCell>
+                                <AdminTableCell>
                                   <div className="admin-crud-actions">
                                     <button
                                       type="button"
@@ -3339,25 +2479,18 @@ function NursingTestBankAdminPageContent() {
                                       Delete
                                     </button>
                                   </div>
-                                </td>
+                                </AdminTableCell>
                               </tr>
                             );
                           })
                         );
                       })()
                     ) : subPages.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          style={{
-                            padding: "40px 12px",
-                            textAlign: "center",
-                            color: "#6b7280",
-                          }}
-                        >
-                          No sub-pages found. Create a sub-page to get started.
-                        </td>
-                      </tr>
+                      <AdminTableEmptyState
+                        colSpan={7}
+                        title="No Sub Pages Found"
+                        description="Create a Sub Page to get started."
+                      />
                     ) : (
                       subPages
                         .filter((sp) => {
@@ -3426,7 +2559,7 @@ function NursingTestBankAdminPageContent() {
                                   year: "numeric",
                                 }
                               ) +
-                              " · " +
+                              " - " +
                               new Date(subPage.lastUpdated).toLocaleTimeString(
                                 "en-US",
                                 {
@@ -3434,105 +2567,44 @@ function NursingTestBankAdminPageContent() {
                                   minute: "2-digit",
                                 }
                               )
-                            : "—";
+                            : "N/A";
 
                           return (
                             <tr key={subPage.id}>
-                              <td
-                                style={{
-                                  padding: "10px 12px",
-                                  textAlign: "left",
-                                  borderBottom: "1px solid #f3f4f6",
-                                  color: "#4b5563",
-                                  whiteSpace: "nowrap",
-                                  minWidth: "210px",
-                                }}
-                              >
-                                {pageName}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "10px 12px",
-                                  textAlign: "left",
-                                  borderBottom: "1px solid #f3f4f6",
-                                  color: "#4b5563",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {pageName}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "10px 12px",
-                                  textAlign: "left",
-                                  borderBottom: "1px solid #f3f4f6",
-                                  color: "#4b5563",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                Sub Page
-                              </td>
-                              <td
-                                style={{
-                                  padding: "10px 12px",
-                                  textAlign: "left",
-                                  borderBottom: "1px solid #f3f4f6",
-                                  color: "#6b7280",
-                                  whiteSpace: "nowrap",
-                                  minWidth: "180px",
-                                  fontFamily:
-                                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                                  fontSize: "12px",
-                                }}
-                              >
-                                /{subPage.slug || subPage.id}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "10px 12px",
-                                  textAlign: "left",
-                                  borderBottom: "1px solid #f3f4f6",
-                                  color: "#4b5563",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
+                              <AdminTableCell className="min-w-[210px]">
                                 <span
-                                  style={{
-                                    fontSize: "11px",
-                                    padding: "3px 8px",
-                                    borderRadius: "999px",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                    background: "#dcfce7",
-                                    color: "#15803d",
-                                    fontFamily:
-                                      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                  }}
+                                  className="admin-table-title-truncate"
+                                  title={pageName}
                                 >
-                                  Published
+                                  {pageName}
                                 </span>
-                              </td>
-                              <td
-                                style={{
-                                  padding: "10px 12px",
-                                  textAlign: "left",
-                                  borderBottom: "1px solid #f3f4f6",
-                                  color: "#4b5563",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
+                              </AdminTableCell>
+                              <AdminTableCell>
+                                <span
+                                  className="admin-table-title-truncate"
+                                  title={pageName}
+                                >
+                                  {pageName}
+                                </span>
+                              </AdminTableCell>
+                              <AdminTableCell>
+                                Sub Page
+                              </AdminTableCell>
+                              <AdminTableCell className="min-w-[180px]" mono>
+                                <span
+                                  className="admin-table-slug-truncate"
+                                  title={`/${subPage.slug || subPage.id}`}
+                                >
+                                  /{subPage.slug || subPage.id}
+                                </span>
+                              </AdminTableCell>
+                              <AdminTableCell>
+                                <AdminStatusBadge label={subPage.status || "Published"} />
+                              </AdminTableCell>
+                              <AdminTableCell>
                                 {lastUpdated}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "10px 12px",
-                                  textAlign: "left",
-                                  borderBottom: "1px solid #f3f4f6",
-                                  color: "#4b5563",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
+                              </AdminTableCell>
+                              <AdminTableCell>
                                 <div className="admin-crud-actions">
                                   <button
                                     type="button"
@@ -3565,1060 +2637,50 @@ function NursingTestBankAdminPageContent() {
                                     Delete
                                   </button>
                                 </div>
-                              </td>
+                              </AdminTableCell>
                             </tr>
                           );
                         })
                     )}
                   </tbody>
-                </table>
-              </div>
+              </AdminTable>
 
-              {/* Pagination Controls */}
-              {(activeTab === "nested" ||
-                activeTab === "topics" ||
-                activeTab === "quizzes" ||
-                activeTab === "kb") &&
-                (() => {
-                  if (activeTab === "kb") {
-                    const filteredKbArticles = kbArticles.filter((kb) => {
-                      if (searchQuery) {
-                        const name = kb.pageName || kb.title || kb.id;
-                        if (!name.toLowerCase().includes(searchQuery.toLowerCase())) {
-                          return false;
-                        }
-                      }
-                      if (examFilter) {
-                        const parentSubPage = subPages.find(
-                          (sp) => sp.id === kb.parentId
-                        );
-                        const examName = parentSubPage
-                          ? parentSubPage.pageName ||
-                            parentSubPage.hero?.title ||
-                            parentSubPage.title ||
-                            parentSubPage.id
-                          : "";
-                        if (examName !== examFilter) {
-                          return false;
-                        }
-                      }
-                      if (statusFilter) {
-                        const status = kb.status || "published";
-                        if (statusFilter !== status.toLowerCase()) {
-                          return false;
-                        }
-                      }
-                      return true;
-                    });
-                    const sortedKbArticles = [...filteredKbArticles].sort((a, b) => {
-                      const dateA = a.lastUpdated
-                        ? new Date(a.lastUpdated).getTime()
-                        : 0;
-                      const dateB = b.lastUpdated
-                        ? new Date(b.lastUpdated).getTime()
-                        : 0;
-                      return dateB - dateA;
-                    });
-                    const totalPages = Math.ceil(
-                      sortedKbArticles.length / itemsPerPage
-                    );
-                    if (totalPages <= 1) return null;
-
-                    return (
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginTop: "16px",
-                          padding: "12px 0",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            fontFamily:
-                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                          }}
-                        >
-                          Showing {(kbArticlesPage - 1) * itemsPerPage + 1} to{" "}
-                          {Math.min(
-                            kbArticlesPage * itemsPerPage,
-                            sortedKbArticles.length
-                          )}{" "}
-                          of {sortedKbArticles.length} KB articles
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                            alignItems: "center",
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setKbArticlesPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={kbArticlesPage === 1}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border: "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                kbArticlesPage === 1 ? "#f9fafb" : "transparent",
-                              color: kbArticlesPage === 1 ? "#9ca3af" : "#6b7280",
-                              cursor:
-                                kbArticlesPage === 1 ? "not-allowed" : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (kbArticlesPage !== 1) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (kbArticlesPage !== 1) {
-                                e.currentTarget.style.background = "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Previous
-                          </button>
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            {Array.from(
-                              { length: totalPages },
-                              (_, i) => i + 1
-                            ).map((page) => {
-                              if (
-                                page === 1 ||
-                                page === totalPages ||
-                                (page >= kbArticlesPage - 1 &&
-                                  page <= kbArticlesPage + 1)
-                              ) {
-                                return (
-                                  <button
-                                    key={page}
-                                    onClick={() => setKbArticlesPage(page)}
-                                    style={{
-                                      padding: "6px 12px",
-                                      fontSize: "13px",
-                                      border:
-                                        kbArticlesPage === page
-                                          ? "1px solid #c7d2fe"
-                                          : "1px solid transparent",
-                                      borderRadius: "999px",
-                                      background:
-                                        kbArticlesPage === page
-                                          ? "#eef2ff"
-                                          : "transparent",
-                                      color:
-                                        kbArticlesPage === page
-                                          ? "#4338ca"
-                                          : "#6b7280",
-                                      cursor: "pointer",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                      fontWeight:
-                                        kbArticlesPage === page ? 500 : 400,
-                                      minWidth: "36px",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      if (kbArticlesPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "#eef2ff";
-                                        e.currentTarget.style.borderColor =
-                                          "#c7d2fe";
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (kbArticlesPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "transparent";
-                                        e.currentTarget.style.borderColor =
-                                          "transparent";
-                                      }
-                                    }}
-                                  >
-                                    {page}
-                                  </button>
-                                );
-                              } else if (
-                                page === kbArticlesPage - 2 ||
-                                page === kbArticlesPage + 2
-                              ) {
-                                return (
-                                  <span
-                                    key={page}
-                                    style={{
-                                      padding: "6px 4px",
-                                      color: "#9ca3af",
-                                      fontSize: "13px",
-                                    }}
-                                  >
-                                    ...
-                                  </span>
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
-                          <button
-                            onClick={() =>
-                              setKbArticlesPage((prev) =>
-                                Math.min(totalPages, prev + 1)
-                              )
-                            }
-                            disabled={kbArticlesPage === totalPages}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border: "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                kbArticlesPage === totalPages
-                                  ? "#f9fafb"
-                                  : "transparent",
-                              color:
-                                kbArticlesPage === totalPages
-                                  ? "#9ca3af"
-                                  : "#6b7280",
-                              cursor:
-                                kbArticlesPage === totalPages
-                                  ? "not-allowed"
-                                  : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (kbArticlesPage !== totalPages) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (kbArticlesPage !== totalPages) {
-                                e.currentTarget.style.background = "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  } else if (activeTab === "topics") {
-                    const filteredTopics = topics.filter((topic) => {
-                      // Search filter
-                      if (searchQuery) {
-                        const name =
-                          topic.topicName ||
-                          topic.pageName ||
-                          topic.title ||
-                          topic.name ||
-                          topic.id;
-                        if (
-                          !name
-                            .toLowerCase()
-                            .includes(searchQuery.toLowerCase())
-                        ) {
-                          return false;
-                        }
-                      }
-
-                      // Exam filter - compare against Exam column value (sub-page name)
-                      if (examFilter) {
-                        // Get sub-page name from subPages array (same logic as Exam column)
-                        const parentSubPage = subPages.find(
-                          (sp) =>
-                            sp.id === topic.parentSubPageDocId ||
-                            sp.slug === topic.parentSubPageId ||
-                            sp.id === topic.parentSubPageId
-                        );
-                        const examName = parentSubPage
-                          ? parentSubPage.pageName ||
-                            parentSubPage.hero?.title ||
-                            parentSubPage.title ||
-                            parentSubPage.id
-                          : topic.parentSubPageName || topic.parentSubPageId;
-
-                        // Compare exact match with filter value
-                        if (examName !== examFilter) {
-                          return false;
-                        }
-                      }
-
-                      // Status filter
-                      if (statusFilter) {
-                        const status = topic.status || "published";
-                        if (statusFilter !== status.toLowerCase()) {
-                          return false;
-                        }
-                      }
-
-                      return true;
-                    });
-                    const sortedTopics = [...filteredTopics].sort((a, b) => {
-                      const dateA = a.lastUpdated
-                        ? new Date(a.lastUpdated).getTime()
-                        : 0;
-                      const dateB = b.lastUpdated
-                        ? new Date(b.lastUpdated).getTime()
-                        : 0;
-                      return dateB - dateA; // Descending order (newest first)
-                    });
-                    const totalPages = Math.ceil(
-                      sortedTopics.length / itemsPerPage
-                    );
-                    if (totalPages <= 1) return null;
-
-                    return (
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginTop: "16px",
-                          padding: "12px 0",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            fontFamily:
-                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                          }}
-                        >
-                          Showing {(topicsPage - 1) * itemsPerPage + 1} to{" "}
-                          {Math.min(
-                            topicsPage * itemsPerPage,
-                            sortedTopics.length
-                          )}{" "}
-                          of {sortedTopics.length} topics
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                            alignItems: "center",
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setTopicsPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={topicsPage === 1}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border:
-                                topicsPage === 1
-                                  ? "1px solid #e5e7eb"
-                                  : "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                topicsPage === 1 ? "#f9fafb" : "transparent",
-                              color: topicsPage === 1 ? "#9ca3af" : "#6b7280",
-                              cursor:
-                                topicsPage === 1 ? "not-allowed" : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (topicsPage !== 1) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (topicsPage !== 1) {
-                                e.currentTarget.style.background =
-                                  "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Previous
-                          </button>
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            {Array.from(
-                              { length: totalPages },
-                              (_, i) => i + 1
-                            ).map((page) => {
-                              if (
-                                page === 1 ||
-                                page === totalPages ||
-                                (page >= topicsPage - 1 &&
-                                  page <= topicsPage + 1)
-                              ) {
-                                return (
-                                  <button
-                                    key={page}
-                                    onClick={() => setTopicsPage(page)}
-                                    style={{
-                                      padding: "6px 12px",
-                                      fontSize: "13px",
-                                      border:
-                                        topicsPage === page
-                                          ? "1px solid #c7d2fe"
-                                          : "1px solid transparent",
-                                      borderRadius: "999px",
-                                      background:
-                                        topicsPage === page
-                                          ? "#eef2ff"
-                                          : "transparent",
-                                      color:
-                                        topicsPage === page
-                                          ? "#4338ca"
-                                          : "#6b7280",
-                                      cursor: "pointer",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                      fontWeight:
-                                        topicsPage === page ? 500 : 400,
-                                      minWidth: "36px",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      if (topicsPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "#eef2ff";
-                                        e.currentTarget.style.borderColor =
-                                          "#c7d2fe";
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (topicsPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "transparent";
-                                        e.currentTarget.style.borderColor =
-                                          "transparent";
-                                      }
-                                    }}
-                                  >
-                                    {page}
-                                  </button>
-                                );
-                              } else if (
-                                page === topicsPage - 2 ||
-                                page === topicsPage + 2
-                              ) {
-                                return (
-                                  <span
-                                    key={page}
-                                    style={{
-                                      padding: "6px 4px",
-                                      fontSize: "13px",
-                                      color: "#6b7280",
-                                    }}
-                                  >
-                                    ...
-                                  </span>
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
-                          <button
-                            onClick={() =>
-                              setTopicsPage((prev) =>
-                                Math.min(totalPages, prev + 1)
-                              )
-                            }
-                            disabled={topicsPage === totalPages}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border:
-                                topicsPage === totalPages
-                                  ? "1px solid #e5e7eb"
-                                  : "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                topicsPage === totalPages
-                                  ? "#f9fafb"
-                                  : "transparent",
-                              color:
-                                topicsPage === totalPages
-                                  ? "#9ca3af"
-                                  : "#6b7280",
-                              cursor:
-                                topicsPage === totalPages
-                                  ? "not-allowed"
-                                  : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (topicsPage !== totalPages) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (topicsPage !== totalPages) {
-                                e.currentTarget.style.background =
-                                  "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  } else if (activeTab === "quizzes") {
-                    const filteredQuizzes = quizzes.filter((quiz) => {
-                      // Search filter
-                      if (searchQuery) {
-                        const name =
-                          quiz.pageName ||
-                          quiz.hero?.title ||
-                          quiz.title ||
-                          quiz.name ||
-                          quiz.id;
-                        if (
-                          !name
-                            .toLowerCase()
-                            .includes(searchQuery.toLowerCase())
-                        ) {
-                          return false;
-                        }
-                      }
-
-                      // Exam filter - compare against Exam column value (sub-page name)
-                      if (examFilter) {
-                        // Get sub-page name from subPages array (same logic as Exam column)
-                        const parentSubPage = subPages.find(
-                          (sp) =>
-                            sp.id === quiz.parentSubPageDocId ||
-                            sp.slug === quiz.parentSubPageId ||
-                            sp.id === quiz.parentSubPageId
-                        );
-                        const examName = parentSubPage
-                          ? parentSubPage.pageName ||
-                            parentSubPage.hero?.title ||
-                            parentSubPage.title ||
-                            parentSubPage.id
-                          : quiz.parentSubPageName || quiz.parentSubPageId;
-
-                        // Compare exact match with filter value
-                        if (examName !== examFilter) {
-                          return false;
-                        }
-                      }
-
-                      // Status filter
-                      if (statusFilter) {
-                        const status = quiz.status || "published";
-                        if (statusFilter !== status.toLowerCase()) {
-                          return false;
-                        }
-                      }
-
-                      return true;
-                    });
-                    const sortedQuizzes = [...filteredQuizzes].sort((a, b) => {
-                      const dateA = a.lastUpdated
-                        ? new Date(a.lastUpdated).getTime()
-                        : 0;
-                      const dateB = b.lastUpdated
-                        ? new Date(b.lastUpdated).getTime()
-                        : 0;
-                      return dateB - dateA; // Descending order (newest first)
-                    });
-                    const totalPages = Math.ceil(
-                      sortedQuizzes.length / itemsPerPage
-                    );
-                    if (totalPages <= 1) return null;
-
-                    return (
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginTop: "16px",
-                          padding: "12px 0",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            fontFamily:
-                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                          }}
-                        >
-                          Showing {(quizzesPage - 1) * itemsPerPage + 1} to{" "}
-                          {Math.min(
-                            quizzesPage * itemsPerPage,
-                            sortedQuizzes.length
-                          )}{" "}
-                          of {sortedQuizzes.length} quizzes
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                            alignItems: "center",
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setQuizzesPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={quizzesPage === 1}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border:
-                                quizzesPage === 1
-                                  ? "1px solid #e5e7eb"
-                                  : "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                quizzesPage === 1 ? "#f9fafb" : "transparent",
-                              color: quizzesPage === 1 ? "#9ca3af" : "#6b7280",
-                              cursor:
-                                quizzesPage === 1 ? "not-allowed" : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (quizzesPage !== 1) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (quizzesPage !== 1) {
-                                e.currentTarget.style.background =
-                                  "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Previous
-                          </button>
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            {Array.from(
-                              { length: totalPages },
-                              (_, i) => i + 1
-                            ).map((page) => {
-                              if (
-                                page === 1 ||
-                                page === totalPages ||
-                                (page >= quizzesPage - 1 &&
-                                  page <= quizzesPage + 1)
-                              ) {
-                                return (
-                                  <button
-                                    key={page}
-                                    onClick={() => setQuizzesPage(page)}
-                                    style={{
-                                      padding: "6px 12px",
-                                      fontSize: "13px",
-                                      border:
-                                        quizzesPage === page
-                                          ? "1px solid #c7d2fe"
-                                          : "1px solid transparent",
-                                      borderRadius: "999px",
-                                      background:
-                                        quizzesPage === page
-                                          ? "#eef2ff"
-                                          : "transparent",
-                                      color:
-                                        quizzesPage === page
-                                          ? "#4338ca"
-                                          : "#6b7280",
-                                      cursor: "pointer",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                      fontWeight:
-                                        quizzesPage === page ? 500 : 400,
-                                      minWidth: "36px",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      if (quizzesPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "#eef2ff";
-                                        e.currentTarget.style.borderColor =
-                                          "#c7d2fe";
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (quizzesPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "transparent";
-                                        e.currentTarget.style.borderColor =
-                                          "transparent";
-                                      }
-                                    }}
-                                  >
-                                    {page}
-                                  </button>
-                                );
-                              } else if (
-                                page === quizzesPage - 2 ||
-                                page === quizzesPage + 2
-                              ) {
-                                return (
-                                  <span
-                                    key={page}
-                                    style={{
-                                      padding: "6px 4px",
-                                      fontSize: "13px",
-                                      color: "#6b7280",
-                                    }}
-                                  >
-                                    ...
-                                  </span>
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
-                          <button
-                            onClick={() =>
-                              setQuizzesPage((prev) =>
-                                Math.min(totalPages, prev + 1)
-                              )
-                            }
-                            disabled={quizzesPage === totalPages}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border:
-                                quizzesPage === totalPages
-                                  ? "1px solid #e5e7eb"
-                                  : "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                quizzesPage === totalPages
-                                  ? "#f9fafb"
-                                  : "transparent",
-                              color:
-                                quizzesPage === totalPages
-                                  ? "#9ca3af"
-                                  : "#6b7280",
-                              cursor:
-                                quizzesPage === totalPages
-                                  ? "not-allowed"
-                                  : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (quizzesPage !== totalPages) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (quizzesPage !== totalPages) {
-                                e.currentTarget.style.background =
-                                  "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  } else if (activeTab === "nested") {
-                    const filteredNestedSubPages = nestedSubPages.filter(
-                      (nsp) => {
-                        // Search filter
-                        if (searchQuery) {
-                          const name =
-                            nsp.pageName ||
-                            nsp.hero?.title ||
-                            nsp.title ||
-                            nsp.id;
-                          if (
-                            !name
-                              .toLowerCase()
-                              .includes(searchQuery.toLowerCase())
-                          ) {
-                            return false;
-                          }
-                        }
-
-                        // Exam filter - compare against Exam column value (sub-page name)
-                        if (examFilter) {
-                          // Get sub-page name from subPages array (same logic as Exam column)
-                          const parentSubPage = subPages.find(
-                            (sp) =>
-                              sp.id === nsp.parentSubPageDocId ||
-                              sp.slug === nsp.parentSubPageId ||
-                              sp.id === nsp.parentSubPageId
-                          );
-                          const examName = parentSubPage
-                            ? parentSubPage.pageName ||
-                              parentSubPage.hero?.title ||
-                              parentSubPage.title ||
-                              parentSubPage.id
-                            : nsp.parentSubPageName || nsp.parentSubPageId;
-
-                          // Compare exact match with filter value
-                          if (examName !== examFilter) {
-                            return false;
-                          }
-                        }
-
-                        // Status filter
-                        if (statusFilter) {
-                          const status = nsp.status || "published";
-                          if (statusFilter !== status.toLowerCase()) {
-                            return false;
-                          }
-                        }
-
-                        return true;
-                      }
-                    );
-                    const sortedNestedSubPages = [
-                      ...filteredNestedSubPages,
-                    ].sort((a, b) => {
-                      const dateA = a.lastUpdated
-                        ? new Date(a.lastUpdated).getTime()
-                        : 0;
-                      const dateB = b.lastUpdated
-                        ? new Date(b.lastUpdated).getTime()
-                        : 0;
-                      return dateB - dateA; // Descending order (newest first)
-                    });
-                    const totalPages = Math.ceil(
-                      sortedNestedSubPages.length / itemsPerPage
-                    );
-                    if (totalPages <= 1) return null;
-
-                    return (
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginTop: "16px",
-                          padding: "12px 0",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            fontFamily:
-                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                          }}
-                        >
-                          Showing {(nestedSubPagesPage - 1) * itemsPerPage + 1}{" "}
-                          to{" "}
-                          {Math.min(
-                            nestedSubPagesPage * itemsPerPage,
-                            sortedNestedSubPages.length
-                          )}{" "}
-                          of {sortedNestedSubPages.length} nested sub-pages
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                            alignItems: "center",
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setNestedSubPagesPage((prev) =>
-                                Math.max(1, prev - 1)
-                              )
-                            }
-                            disabled={nestedSubPagesPage === 1}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border:
-                                nestedSubPagesPage === 1
-                                  ? "1px solid #e5e7eb"
-                                  : "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                nestedSubPagesPage === 1
-                                  ? "#f9fafb"
-                                  : "transparent",
-                              color:
-                                nestedSubPagesPage === 1
-                                  ? "#9ca3af"
-                                  : "#6b7280",
-                              cursor:
-                                nestedSubPagesPage === 1
-                                  ? "not-allowed"
-                                  : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (nestedSubPagesPage !== 1) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (nestedSubPagesPage !== 1) {
-                                e.currentTarget.style.background =
-                                  "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Previous
-                          </button>
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            {Array.from(
-                              { length: totalPages },
-                              (_, i) => i + 1
-                            ).map((page) => {
-                              if (
-                                page === 1 ||
-                                page === totalPages ||
-                                (page >= nestedSubPagesPage - 1 &&
-                                  page <= nestedSubPagesPage + 1)
-                              ) {
-                                return (
-                                  <button
-                                    key={page}
-                                    onClick={() => setNestedSubPagesPage(page)}
-                                    style={{
-                                      padding: "6px 12px",
-                                      fontSize: "13px",
-                                      border:
-                                        nestedSubPagesPage === page
-                                          ? "1px solid #c7d2fe"
-                                          : "1px solid transparent",
-                                      borderRadius: "999px",
-                                      background:
-                                        nestedSubPagesPage === page
-                                          ? "#eef2ff"
-                                          : "transparent",
-                                      color:
-                                        nestedSubPagesPage === page
-                                          ? "#4338ca"
-                                          : "#6b7280",
-                                      cursor: "pointer",
-                                      fontFamily:
-                                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                                      fontWeight:
-                                        nestedSubPagesPage === page ? 500 : 400,
-                                      minWidth: "36px",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      if (nestedSubPagesPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "#eef2ff";
-                                        e.currentTarget.style.borderColor =
-                                          "#c7d2fe";
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (nestedSubPagesPage !== page) {
-                                        e.currentTarget.style.background =
-                                          "transparent";
-                                        e.currentTarget.style.borderColor =
-                                          "transparent";
-                                      }
-                                    }}
-                                  >
-                                    {page}
-                                  </button>
-                                );
-                              } else if (
-                                page === nestedSubPagesPage - 2 ||
-                                page === nestedSubPagesPage + 2
-                              ) {
-                                return (
-                                  <span
-                                    key={page}
-                                    style={{
-                                      padding: "6px 4px",
-                                      fontSize: "13px",
-                                      color: "#6b7280",
-                                    }}
-                                  >
-                                    ...
-                                  </span>
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
-                          <button
-                            onClick={() =>
-                              setNestedSubPagesPage((prev) =>
-                                Math.min(totalPages, prev + 1)
-                              )
-                            }
-                            disabled={nestedSubPagesPage === totalPages}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "13px",
-                              border:
-                                nestedSubPagesPage === totalPages
-                                  ? "1px solid #e5e7eb"
-                                  : "1px solid #e5e7eb",
-                              borderRadius: "999px",
-                              background:
-                                nestedSubPagesPage === totalPages
-                                  ? "#f9fafb"
-                                  : "transparent",
-                              color:
-                                nestedSubPagesPage === totalPages
-                                  ? "#9ca3af"
-                                  : "#6b7280",
-                              cursor:
-                                nestedSubPagesPage === totalPages
-                                  ? "not-allowed"
-                                  : "pointer",
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (nestedSubPagesPage !== totalPages) {
-                                e.currentTarget.style.background = "#eef2ff";
-                                e.currentTarget.style.borderColor = "#c7d2fe";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (nestedSubPagesPage !== totalPages) {
-                                e.currentTarget.style.background =
-                                  "transparent";
-                                e.currentTarget.style.borderColor = "#e5e7eb";
-                              }
-                            }}
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+              {activeTab === "nested" && (
+                <AdminPagination
+                  currentPage={nestedSubPagesPage}
+                  totalItems={filteredNestedSubPagesCount}
+                  itemsPerPage={itemsPerPage}
+                  itemLabel="Nested Sub Pages"
+                  onPageChange={setNestedSubPagesPage}
+                />
+              )}
+              {activeTab === "topics" && (
+                <AdminPagination
+                  currentPage={topicsPage}
+                  totalItems={filteredTopicsCount}
+                  itemsPerPage={itemsPerPage}
+                  itemLabel="Topics"
+                  onPageChange={setTopicsPage}
+                />
+              )}
+              {activeTab === "quizzes" && (
+                <AdminPagination
+                  currentPage={quizzesPage}
+                  totalItems={filteredQuizzesCount}
+                  itemsPerPage={itemsPerPage}
+                  itemLabel="Quiz Metadata"
+                  onPageChange={setQuizzesPage}
+                />
+              )}
+              {activeTab === "kb" && (
+                <AdminPagination
+                  currentPage={kbArticlesPage}
+                  totalItems={filteredKbArticlesCount}
+                  itemsPerPage={itemsPerPage}
+                  itemLabel="Knowledge Base Articles"
+                  onPageChange={setKbArticlesPage}
+                />
+              )}
 
               <div
                 style={{
@@ -4652,2381 +2714,491 @@ function NursingTestBankAdminPageContent() {
             </div>
           </div>
 
-          {/* Delete Confirmation Modal */}
+{/* Delete Confirmation Modal */}
           {showDeleteModal && subPageToDelete && (
-            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
-                  <svg
-                    className="w-8 h-8 text-red-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                  Delete Sub-page
-                </h2>
-                <p className="text-gray-600 mb-6 text-center">
-                  Are you sure you want to delete the sub-page{" "}
-                  <span className="font-semibold text-gray-900">
-                    "
-                    {subPageToDelete.pageName ||
-                      subPageToDelete.hero?.title ||
-                      subPageToDelete.title ||
-                      subPageToDelete.id}
-                    "
-                  </span>
-                  ? This action cannot be undone.
-                </p>
-                <div className="flex items-center space-x-4">
+            <AdminDestructiveDialog
+              title="Delete Sub Page"
+              itemName={
+                subPageToDelete.pageName ||
+                subPageToDelete.hero?.title ||
+                subPageToDelete.title ||
+                subPageToDelete.id
+              }
+              confirmLabel="Delete Sub Page"
+              confirming={deleting}
+              onCancel={handleDeleteCancel}
+              onConfirm={handleDeleteConfirm}
+            />
+          )}
+
+                    {/* Create Sub-page Modal */}
+          {showCreateModal && (
+            <AdminModal
+              title="Create New Sub Page"
+              description="Add a top-level Nursing Test Bank category."
+            >
+              <form onSubmit={handleCreateSubPage} className="space-y-4">
+                {validationError && (
+                  <AdminValidationMessage>{validationError}</AdminValidationMessage>
+                )}
+                <AdminFieldGroup
+                  label="Sub Page Name"
+                  required
+                  helper="The display name for this sub page."
+                >
+                  <input
+                    type="text"
+                    value={newSubPageName}
+                    onChange={(e) => setNewSubPageName(e.target.value)}
+                    className="admin-field"
+                    placeholder="e.g., Math Review, Reading Strategies"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminFieldGroup label="Exam Access Product">
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                    <p className="text-sm font-semibold text-gray-950">
+                      {contentAccessProductLabel("nursing_test_bank")}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      All Nursing Test Bank content is unlocked by the Nursing Test Bank access product.
+                    </p>
+                  </div>
+                </AdminFieldGroup>
+                <AdminFieldGroup
+                  label="Slug URL"
+                  required
+                  helper={<>This will create a page at /{newSubPageId || "sub-page-id"}</>}
+                >
+                  <AdminSlugField
+                    origin={getSiteUrl()}
+                    value={newSubPageId}
+                    onChange={(value) => setNewSubPageId(value.toLowerCase().replace(/\s+/g, "-"))}
+                    placeholder="e.g., math-review"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminModalFooter>
                   <button
-                    onClick={handleDeleteCancel}
-                    disabled={deleting}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setNewSubPageId("");
+                      setNewSubPageName("");
+                      setValidationError("");
+                    }}
+                    className="admin-button-cancel"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={handleDeleteConfirm}
-                    disabled={deleting}
-                    className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    type="submit"
+                    disabled={saving}
+                    className="admin-button-primary"
                   >
-                    {deleting ? (
-                      <>
-                        <svg
-                          className="animate-spin h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        <span>Deleting...</span>
-                      </>
-                    ) : (
-                      <span>Delete</span>
-                    )}
+                    {saving ? "Creating..." : "Create Sub Page"}
                   </button>
-                </div>
-              </div>
-            </div>
+                </AdminModalFooter>
+              </form>
+            </AdminModal>
           )}
 
-          {/* Create Sub-page Modal */}
-          {showCreateModal && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
-            >
-              <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "24px 26px 20px",
-                }}
-              >
-                <div style={{ marginBottom: "18px" }}>
-                  <h2
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      marginBottom: "4px",
-                      color: "#111827",
-                    }}
-                  >
-                    Create New Sub-page
-                  </h2>
-                </div>
-                <form onSubmit={handleCreateSubPage}>
-                  {validationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">{validationError}</p>
-                    </div>
-                  )}
-                  <div style={{ marginBottom: "18px" }}>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Sub-page Name
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <input
-                        type="text"
-                        value={newSubPageName}
-                        onChange={(e) => setNewSubPageName(e.target.value)}
-                        style={{
-                          width: "100%",
-                          borderRadius: "999px",
-                          border: "1px solid #e5e7eb",
-                          padding: "11px 13px",
-                          fontSize: "14px",
-                          color: "#111827",
-                          background: "#f9fafb",
-                          outline: "none",
-                          transition:
-                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.background = "#ffffff";
-                          e.target.style.borderColor = "#4f46e5";
-                          e.target.style.boxShadow =
-                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.background = "#f9fafb";
-                          e.target.style.borderColor = "#e5e7eb";
-                          e.target.style.boxShadow = "none";
-                        }}
-                        placeholder="e.g., Math Review, Reading Strategies"
-                        required
-                      />
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        The display name for this sub-page.
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color: "#111827",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        Exam Access Product
-                      </label>
-                      <div
-                        style={{
-                          borderRadius: "14px",
-                          border: "1px solid #e5e7eb",
-                          background: "#f8fafc",
-                          padding: "12px 14px",
-                        }}
-                      >
-                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>
-                          {contentAccessProductLabel("nursing_test_bank")}
-                        </p>
-                        <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-                          All Nursing Test Bank content is unlocked by the Nursing Test Bank access product.
-                        </p>
-                      </div>
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Slug URL
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "stretch",
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          style={{
-                            padding: "11px 12px",
-                            borderRadius: "999px 0 0 999px",
-                            border: "1px solid #e5e7eb",
-                            borderRight: "none",
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            background: "#f9fafb",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {getSiteUrl()}/
-                        </div>
-                        <input
-                          type="text"
-                          value={newSubPageId}
-                          onChange={(e) =>
-                            setNewSubPageId(
-                              e.target.value.toLowerCase().replace(/\s+/g, "-")
-                            )
-                          }
-                          style={{
-                            flex: 1,
-                            borderRadius: "0 999px 999px 0",
-                            border: "1px solid #e5e7eb",
-                            borderLeft: "none",
-                            padding: "11px 13px",
-                            fontSize: "14px",
-                            color: "#111827",
-                            background: "#f9fafb",
-                            outline: "none",
-                            transition:
-                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.background = "#ffffff";
-                            e.target.style.borderColor = "#4f46e5";
-                            e.target.style.boxShadow =
-                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.background = "#f9fafb";
-                            e.target.style.borderColor = "#e5e7eb";
-                            e.target.style.boxShadow = "none";
-                          }}
-                          placeholder="e.g., math-review"
-                          required
-                        />
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        This will create a page at /
-                        {newSubPageId || "sub-page-id"}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      gap: "10px",
-                      marginTop: "4px",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateModal(false);
-                        setNewSubPageId("");
-                        setNewSubPageName("");
-                        setValidationError("");
-                      }}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid #e5e7eb",
-                        padding: "11px 18px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        background: "#ffffff",
-                        color: "#374151",
-                        transition: "background 0.15s, transform 0.08s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#f9fafb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid transparent",
-                        padding: "11px 18px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: saving ? "not-allowed" : "pointer",
-                        background: saving ? "#9ca3af" : "#4f46e5",
-                        color: "#ffffff",
-                        boxShadow: saving
-                          ? "none"
-                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
-                        transition: "background 0.15s, transform 0.08s",
-                        opacity: saving ? 0.5 : 1,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!saving) {
-                          e.currentTarget.style.background = "#4338ca";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!saving) {
-                          e.currentTarget.style.background = "#4f46e5";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }
-                      }}
-                    >
-                      {saving ? "Creating..." : "Create Sub-page"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Create Nested Sub-page Modal */}
+                    {/* Create Nested Sub-page Modal */}
           {showCreateNestedModal && selectedSubPageForNested && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            <AdminModal
+              title="Create New Nested Sub Page"
+              description="Add a child page under the selected Nursing Test Bank Sub Page."
             >
-              <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "24px 26px 20px",
-                }}
-              >
-                <div style={{ marginBottom: "18px" }}>
-                  <h2
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      marginBottom: "4px",
-                      color: "#111827",
+              <form onSubmit={handleCreateNestedSubPage} className="space-y-4">
+                {nestedValidationError && (
+                  <AdminValidationMessage>{nestedValidationError}</AdminValidationMessage>
+                )}
+                <AdminFieldGroup
+                  label="Nested Sub Page Name"
+                  required
+                  helper="The display name for this nested sub page."
+                >
+                  <input
+                    type="text"
+                    value={newNestedSubPageName}
+                    onChange={(e) => setNewNestedSubPageName(e.target.value)}
+                    className="admin-field"
+                    placeholder="e.g., Medical-Surgical Nursing, Pediatric Nursing"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminFieldGroup
+                  label="Slug URL"
+                  required
+                  helper={<>This will create a page at /{newNestedSubPageId || "nested-sub-page-id"}</>}
+                >
+                  <AdminSlugField
+                    origin={getSiteUrl()}
+                    value={newNestedSubPageId}
+                    onChange={(value) => setNewNestedSubPageId(value.toLowerCase().replace(/\s+/g, "-"))}
+                    placeholder="e.g., medical-surgical-nursing"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminModalFooter>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateNestedModal(false);
+                      setSelectedSubPageForNested(null);
+                      setNewNestedSubPageId("");
+                      setNewNestedSubPageName("");
+                      setNestedValidationError("");
                     }}
+                    className="admin-button-cancel"
                   >
-                    Create New Nested Sub-page
-                  </h2>
-                </div>
-                <form onSubmit={handleCreateNestedSubPage}>
-                  {nestedValidationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">
-                        {nestedValidationError}
-                      </p>
-                    </div>
-                  )}
-                  <div style={{ marginBottom: "18px" }}>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Nested Sub-page Name
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <input
-                        type="text"
-                        value={newNestedSubPageName}
-                        onChange={(e) =>
-                          setNewNestedSubPageName(e.target.value)
-                        }
-                        style={{
-                          width: "100%",
-                          borderRadius: "999px",
-                          border: "1px solid #e5e7eb",
-                          padding: "11px 13px",
-                          fontSize: "14px",
-                          color: "#111827",
-                          background: "#f9fafb",
-                          outline: "none",
-                          transition:
-                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.background = "#ffffff";
-                          e.target.style.borderColor = "#4f46e5";
-                          e.target.style.boxShadow =
-                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.background = "#f9fafb";
-                          e.target.style.borderColor = "#e5e7eb";
-                          e.target.style.boxShadow = "none";
-                        }}
-                        placeholder="e.g., Medical-Surgical Nursing, Pediatric Nursing"
-                        required
-                      />
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        The display name for this nested sub-page.
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Slug URL
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "stretch",
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          style={{
-                            padding: "11px 12px",
-                            borderRadius: "999px 0 0 999px",
-                            border: "1px solid #e5e7eb",
-                            borderRight: "none",
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            background: "#f9fafb",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {getSiteUrl()}/
-                        </div>
-                        <input
-                          type="text"
-                          value={newNestedSubPageId}
-                          onChange={(e) =>
-                            setNewNestedSubPageId(
-                              e.target.value.toLowerCase().replace(/\s+/g, "-")
-                            )
-                          }
-                          style={{
-                            flex: 1,
-                            borderRadius: "0 999px 999px 0",
-                            border: "1px solid #e5e7eb",
-                            borderLeft: "none",
-                            padding: "11px 13px",
-                            fontSize: "14px",
-                            color: "#111827",
-                            background: "#f9fafb",
-                            outline: "none",
-                            transition:
-                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.background = "#ffffff";
-                            e.target.style.borderColor = "#4f46e5";
-                            e.target.style.boxShadow =
-                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.background = "#f9fafb";
-                            e.target.style.borderColor = "#e5e7eb";
-                            e.target.style.boxShadow = "none";
-                          }}
-                          placeholder="e.g., medical-surgical-nursing"
-                          required
-                        />
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        This will create a page at /
-                        {newNestedSubPageId || "nested-sub-page-id"}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      gap: "10px",
-                      marginTop: "4px",
-                    }}
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingNested}
+                    className="admin-button-primary"
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateNestedModal(false);
-                        setSelectedSubPageForNested(null);
-                        setNewNestedSubPageId("");
-                        setNewNestedSubPageName("");
-                        setNestedValidationError("");
-                      }}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid #e5e7eb",
-                        padding: "11px 16px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        background: "#f3f4f6",
-                        color: "#111827",
-                        transition:
-                          "background 0.15s, border-color 0.15s, transform 0.08s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#e5e7eb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#f3f4f6";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingNested}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid transparent",
-                        padding: "11px 16px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: savingNested ? "not-allowed" : "pointer",
-                        background: savingNested ? "#9ca3af" : "#4f46e5",
-                        color: "#ffffff",
-                        boxShadow: savingNested
-                          ? "none"
-                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
-                        transition: "background 0.15s, transform 0.08s",
-                        opacity: savingNested ? 0.5 : 1,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!savingNested) {
-                          e.currentTarget.style.background = "#4338ca";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!savingNested) {
-                          e.currentTarget.style.background = "#4f46e5";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }
-                      }}
-                    >
-                      {savingNested ? "Creating..." : "Create Nested Sub-page"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+                    {savingNested ? "Creating..." : "Create Nested Sub Page"}
+                  </button>
+                </AdminModalFooter>
+              </form>
+            </AdminModal>
           )}
 
-          {/* Create Topic Modal */}
+                    {/* Create Topic Modal */}
           {showCreateTopicModal && selectedNestedSubPageForTopic && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            <AdminModal
+              title="Create New Topic"
+              description="Add a topic under the selected Nursing Test Bank nested page."
             >
-              <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "24px 26px 20px",
-                }}
-              >
-                <div style={{ marginBottom: "18px" }}>
-                  <h2
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      marginBottom: "4px",
-                      color: "#111827",
+              <form onSubmit={handleCreateTopic} className="space-y-4">
+                {topicValidationError && (
+                  <AdminValidationMessage>{topicValidationError}</AdminValidationMessage>
+                )}
+                <AdminFieldGroup
+                  label="Topic Name"
+                  required
+                  helper="The display name for this topic."
+                >
+                  <input
+                    type="text"
+                    value={newTopicName}
+                    onChange={(e) => setNewTopicName(e.target.value)}
+                    className="admin-field"
+                    placeholder="e.g., Cardiovascular System, Respiratory System"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminFieldGroup
+                  label="Slug URL"
+                  required
+                  helper={<>This will create a page at /{newTopicId || "topic-id"}</>}
+                >
+                  <AdminSlugField
+                    origin={getSiteUrl()}
+                    value={newTopicId}
+                    onChange={(value) => setNewTopicId(value.toLowerCase().replace(/\s+/g, "-"))}
+                    placeholder="e.g., cardiovascular-system"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminModalFooter>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateTopicModal(false);
+                      setSelectedNestedSubPageForTopic(null);
+                      setNewTopicId("");
+                      setNewTopicName("");
+                      setTopicValidationError("");
                     }}
+                    className="admin-button-cancel"
                   >
-                    Create New Topic
-                  </h2>
-                </div>
-                <form onSubmit={handleCreateTopic}>
-                  {topicValidationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">
-                        {topicValidationError}
-                      </p>
-                    </div>
-                  )}
-                  <div style={{ marginBottom: "18px" }}>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Topic Name
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <input
-                        type="text"
-                        value={newTopicName}
-                        onChange={(e) => setNewTopicName(e.target.value)}
-                        style={{
-                          width: "100%",
-                          borderRadius: "999px",
-                          border: "1px solid #e5e7eb",
-                          padding: "11px 13px",
-                          fontSize: "14px",
-                          color: "#111827",
-                          background: "#f9fafb",
-                          outline: "none",
-                          transition:
-                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.background = "#ffffff";
-                          e.target.style.borderColor = "#4f46e5";
-                          e.target.style.boxShadow =
-                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.background = "#f9fafb";
-                          e.target.style.borderColor = "#e5e7eb";
-                          e.target.style.boxShadow = "none";
-                        }}
-                        placeholder="e.g., Cardiovascular System, Respiratory System"
-                        required
-                      />
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        The display name for this topic.
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Slug URL
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "stretch",
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          style={{
-                            padding: "11px 12px",
-                            borderRadius: "999px 0 0 999px",
-                            border: "1px solid #e5e7eb",
-                            borderRight: "none",
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            background: "#f9fafb",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {getSiteUrl()}/
-                        </div>
-                        <input
-                          type="text"
-                          value={newTopicId}
-                          onChange={(e) =>
-                            setNewTopicId(
-                              e.target.value.toLowerCase().replace(/\s+/g, "-")
-                            )
-                          }
-                          style={{
-                            flex: 1,
-                            borderRadius: "0 999px 999px 0",
-                            border: "1px solid #e5e7eb",
-                            borderLeft: "none",
-                            padding: "11px 13px",
-                            fontSize: "14px",
-                            color: "#111827",
-                            background: "#f9fafb",
-                            outline: "none",
-                            transition:
-                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.background = "#ffffff";
-                            e.target.style.borderColor = "#4f46e5";
-                            e.target.style.boxShadow =
-                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.background = "#f9fafb";
-                            e.target.style.borderColor = "#e5e7eb";
-                            e.target.style.boxShadow = "none";
-                          }}
-                          placeholder="e.g., cardiovascular-system"
-                          required
-                        />
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        This will create a topic at /{newTopicId || "topic-id"}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      gap: "10px",
-                      marginTop: "4px",
-                    }}
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingTopic}
+                    className="admin-button-primary"
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateTopicModal(false);
-                        setSelectedNestedSubPageForTopic(null);
-                        setNewTopicId("");
-                        setNewTopicName("");
-                        setTopicValidationError("");
-                      }}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid #e5e7eb",
-                        padding: "11px 16px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        background: "#f3f4f6",
-                        color: "#111827",
-                        transition:
-                          "background 0.15s, border-color 0.15s, transform 0.08s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#e5e7eb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#f3f4f6";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingTopic}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid transparent",
-                        padding: "11px 16px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: savingTopic ? "not-allowed" : "pointer",
-                        background: savingTopic ? "#9ca3af" : "#4f46e5",
-                        color: "#ffffff",
-                        boxShadow: savingTopic
-                          ? "none"
-                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
-                        transition: "background 0.15s, transform 0.08s",
-                        opacity: savingTopic ? 0.5 : 1,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!savingTopic) {
-                          e.currentTarget.style.background = "#4338ca";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!savingTopic) {
-                          e.currentTarget.style.background = "#4f46e5";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }
-                      }}
-                    >
-                      {savingTopic ? "Creating..." : "Create Topic"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+                    {savingTopic ? "Creating..." : "Create Topic"}
+                  </button>
+                </AdminModalFooter>
+              </form>
+            </AdminModal>
           )}
 
           {/* Delete Nested Sub-page Modal */}
           {showDeleteNestedModal && nestedSubPageToDelete && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
-            >
-              <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "26px 26px 20px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    borderRadius: "999px",
-                    margin: "0 auto 14px",
-                    background: "#fee2e2",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "999px",
-                      border: "2px solid #ef4444",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ef4444",
-                      fontSize: "18px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    !
-                  </div>
-                </div>
-                <h2
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: 700,
-                    marginBottom: "8px",
-                    color: "#111827",
-                  }}
-                >
-                  Delete Nested Sub-page
-                </h2>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    lineHeight: 1.5,
-                    marginBottom: "18px",
-                  }}
-                >
-                  Are you sure you want to delete the nested sub-page{" "}
-                  <strong>
-                    "
-                    {nestedSubPageToDelete.pageName ||
-                      nestedSubPageToDelete.hero?.title ||
-                      nestedSubPageToDelete.title ||
-                      nestedSubPageToDelete.id}
-                    "
-                  </strong>
-                  ?<br />
-                  This action cannot be undone.
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "12px",
-                    marginTop: "6px",
-                  }}
-                >
-                  <button
-                    onClick={handleDeleteNestedCancel}
-                    disabled={deletingNested}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid #e5e7eb",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingNested ? "not-allowed" : "pointer",
-                      background: "#ffffff",
-                      color: "#111827",
-                      boxShadow: "0 3px 8px rgba(148, 163, 184, 0.25)",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingNested ? 0.5 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingNested) {
-                        e.currentTarget.style.background = "#f9fafb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingNested) {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeleteNestedConfirm}
-                    disabled={deletingNested}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid transparent",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingNested ? "not-allowed" : "pointer",
-                      background: deletingNested ? "#9ca3af" : "#ef4444",
-                      color: "#ffffff",
-                      boxShadow: deletingNested
-                        ? "none"
-                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingNested ? 0.5 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingNested) {
-                        e.currentTarget.style.background = "#dc2626";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingNested) {
-                        e.currentTarget.style.background = "#ef4444";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    {deletingNested ? (
-                      <>
-                        <svg
-                          className="animate-spin h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        <span>Deleting...</span>
-                      </>
-                    ) : (
-                      <span>Delete</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <AdminDestructiveDialog
+              title="Delete Nested Sub Page"
+              itemName={
+                nestedSubPageToDelete.pageName ||
+                nestedSubPageToDelete.hero?.title ||
+                nestedSubPageToDelete.title ||
+                nestedSubPageToDelete.id
+              }
+              confirmLabel="Delete Nested Sub Page"
+              confirming={deletingNested}
+              onCancel={handleDeleteNestedCancel}
+              onConfirm={handleDeleteNestedConfirm}
+            />
           )}
 
           {/* Delete Topic Modal */}
           {showDeleteTopicModal && topicToDelete && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
-            >
-              <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "26px 26px 20px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    borderRadius: "999px",
-                    margin: "0 auto 14px",
-                    background: "#fee2e2",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "999px",
-                      border: "2px solid #ef4444",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ef4444",
-                      fontSize: "18px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    !
-                  </div>
-                </div>
-                <h2
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: 700,
-                    marginBottom: "8px",
-                    color: "#111827",
-                  }}
-                >
-                  Delete Topic
-                </h2>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    lineHeight: 1.5,
-                    marginBottom: "18px",
-                  }}
-                >
-                  Are you sure you want to delete the topic{" "}
-                  <strong>
-                    "
-                    {topicToDelete.topicName ||
-                      topicToDelete.pageName ||
-                      topicToDelete.title ||
-                      topicToDelete.name ||
-                      topicToDelete.id}
-                    "
-                  </strong>
-                  ?<br />
-                  This action cannot be undone.
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "12px",
-                    marginTop: "6px",
-                  }}
-                >
-                  <button
-                    onClick={handleDeleteTopicCancel}
-                    disabled={deletingTopic}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid #e5e7eb",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingTopic ? "not-allowed" : "pointer",
-                      background: "#ffffff",
-                      color: "#111827",
-                      boxShadow: "0 3px 8px rgba(148, 163, 184, 0.25)",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingTopic ? 0.5 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingTopic) {
-                        e.currentTarget.style.background = "#f9fafb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingTopic) {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeleteTopicConfirm}
-                    disabled={deletingTopic}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid transparent",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingTopic ? "not-allowed" : "pointer",
-                      background: deletingTopic ? "#9ca3af" : "#ef4444",
-                      color: "#ffffff",
-                      boxShadow: deletingTopic
-                        ? "none"
-                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingTopic ? 0.5 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingTopic) {
-                        e.currentTarget.style.background = "#dc2626";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingTopic) {
-                        e.currentTarget.style.background = "#ef4444";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    {deletingTopic ? (
-                      <>
-                        <svg
-                          className="animate-spin h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        <span>Deleting...</span>
-                      </>
-                    ) : (
-                      <span>Delete</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <AdminDestructiveDialog
+              title="Delete Topic"
+              itemName={
+                topicToDelete.topicName ||
+                topicToDelete.pageName ||
+                topicToDelete.title ||
+                topicToDelete.name ||
+                topicToDelete.id
+              }
+              confirmLabel="Delete Topic"
+              confirming={deletingTopic}
+              onCancel={handleDeleteTopicCancel}
+              onConfirm={handleDeleteTopicConfirm}
+            />
           )}
 
           {/* Create Quiz Modal */}
           {showCreateQuizModal && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            <AdminModal
+              title="Create New Quiz Metadata"
+              description="Create quiz metadata under a Nursing Test Bank topic."
             >
-              <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "24px 26px 20px",
-                }}
-              >
-                <div style={{ marginBottom: "18px" }}>
-                  <h2
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      marginBottom: "4px",
-                      color: "#111827",
-                    }}
-                  >
-                    Create New Quiz
-                  </h2>
-                </div>
-                <form onSubmit={handleCreateQuiz}>
-                  {quizValidationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">
-                        {quizValidationError}
-                      </p>
-                    </div>
-                  )}
-                  <div style={{ marginBottom: "18px" }}>
-                    {!selectedTopicForQuiz && (
-                      <div style={{ marginBottom: "16px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            marginBottom: "6px",
-                          }}
-                        >
-                          <label
-                            style={{
-                              fontSize: "14px",
-                              fontWeight: 500,
-                              color: "#374151",
-                            }}
+              <form onSubmit={handleCreateQuiz} className="space-y-4">
+                {quizValidationError && (
+                  <AdminValidationMessage>{quizValidationError}</AdminValidationMessage>
+                )}
+                {!selectedTopicForQuiz && (
+                  <AdminFieldGroup label="Topic" helper="Select the topic this quiz metadata belongs to.">
+                    <select
+                      value={
+                        selectedTopicForQuiz
+                          ? `${selectedTopicForQuiz.parentSubPageId}_${
+                              selectedTopicForQuiz.nestedSubPageId
+                            }_${
+                              selectedTopicForQuiz.slug ||
+                              selectedTopicForQuiz.id
+                            }`
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const [parentId, nestedId, topicId] = e.target.value.split("_");
+                        const topic = topics.find(
+                          (t) =>
+                            t.parentSubPageId === parentId &&
+                            t.nestedSubPageId === nestedId &&
+                            (t.slug === topicId || t.id === topicId)
+                        );
+                        if (topic) {
+                          setSelectedTopicForQuiz(topic);
+                        }
+                      }}
+                      className="admin-field"
+                    >
+                      <option value="">Select a topic...</option>
+                      {topics.map((topic) => {
+                        const topicName =
+                          topic.topicName ||
+                          topic.pageName ||
+                          topic.title ||
+                          topic.name ||
+                          topic.id;
+                        return (
+                          <option
+                            key={`${topic.parentSubPageId}_${
+                              topic.nestedSubPageId
+                            }_${topic.slug || topic.id}`}
+                            value={`${topic.parentSubPageId}_${
+                              topic.nestedSubPageId
+                            }_${topic.slug || topic.id}`}
                           >
-                            Topic
-                          </label>
-                        </div>
-                        <select
-                          value={
-                            selectedTopicForQuiz
-                              ? `${selectedTopicForQuiz.parentSubPageId}_${
-                                  selectedTopicForQuiz.nestedSubPageId
-                                }_${
-                                  selectedTopicForQuiz.slug ||
-                                  selectedTopicForQuiz.id
-                                }`
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const [parentId, nestedId, topicId] =
-                              e.target.value.split("_");
-                            const topic = topics.find(
-                              (t) =>
-                                t.parentSubPageId === parentId &&
-                                t.nestedSubPageId === nestedId &&
-                                (t.slug === topicId || t.id === topicId)
-                            );
-                            if (topic) {
-                              setSelectedTopicForQuiz(topic);
-                            }
-                          }}
-                          style={{
-                            width: "100%",
-                            padding: "10px 12px",
-                            borderRadius: "10px",
-                            border: "1px solid #e5e7eb",
-                            fontSize: "14px",
-                            background: "#ffffff",
-                            color: "#111827",
-                            fontFamily:
-                              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                            cursor: "pointer",
-                          }}
-                        >
-                          <option value="">Select a topic...</option>
-                          {topics.map((topic) => {
-                            const topicName =
-                              topic.topicName ||
-                              topic.pageName ||
-                              topic.title ||
-                              topic.name ||
-                              topic.id;
-                            return (
-                              <option
-                                key={`${topic.parentSubPageId}_${
-                                  topic.nestedSubPageId
-                                }_${topic.slug || topic.id}`}
-                                value={`${topic.parentSubPageId}_${
-                                  topic.nestedSubPageId
-                                }_${topic.slug || topic.id}`}
-                              >
-                                {topicName} (under {topic.parentSubPageName} →{" "}
-                                {topic.nestedSubPageName})
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-                    )}
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Quiz Name
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <input
-                        type="text"
-                        value={newQuizName}
-                        onChange={(e) => setNewQuizName(e.target.value)}
-                        style={{
-                          width: "100%",
-                          borderRadius: "999px",
-                          border: "1px solid #e5e7eb",
-                          padding: "11px 13px",
-                          fontSize: "14px",
-                          color: "#111827",
-                          background: "#f9fafb",
-                          outline: "none",
-                          transition:
-                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.background = "#ffffff";
-                          e.target.style.borderColor = "#4f46e5";
-                          e.target.style.boxShadow =
-                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.background = "#f9fafb";
-                          e.target.style.borderColor = "#e5e7eb";
-                          e.target.style.boxShadow = "none";
-                        }}
-                        placeholder="e.g., Cardiovascular Quiz, Respiratory Quiz"
-                        required
-                      />
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        The display name for this quiz.
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Set Number
-                        </label>
-                      </div>
-                      <input
-                        type="number"
-                        min="1"
-                        value={newQuizSetNumber}
-                        onChange={(e) => setNewQuizSetNumber(e.target.value)}
-                        style={{
-                          width: "100%",
-                          borderRadius: "999px",
-                          border: "1px solid #e5e7eb",
-                          padding: "11px 13px",
-                          fontSize: "14px",
-                          color: "#111827",
-                          background: "#f9fafb",
-                          outline: "none",
-                          transition:
-                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                        }}
-                        placeholder="e.g., 1"
-                      />
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Slug URL
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "stretch",
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          style={{
-                            padding: "11px 12px",
-                            borderRadius: "999px 0 0 999px",
-                            border: "1px solid #e5e7eb",
-                            borderRight: "none",
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            background: "#f9fafb",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {getSiteUrl()}/
-                        </div>
-                        <input
-                          type="text"
-                          value={newQuizId}
-                          onChange={(e) =>
-                            setNewQuizId(
-                              e.target.value.toLowerCase().replace(/\s+/g, "-")
-                            )
-                          }
-                          style={{
-                            flex: 1,
-                            borderRadius: "0 999px 999px 0",
-                            border: "1px solid #e5e7eb",
-                            borderLeft: "none",
-                            padding: "11px 13px",
-                            fontSize: "14px",
-                            color: "#111827",
-                            background: "#f9fafb",
-                            outline: "none",
-                            transition:
-                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.background = "#ffffff";
-                            e.target.style.borderColor = "#4f46e5";
-                            e.target.style.boxShadow =
-                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.background = "#f9fafb";
-                            e.target.style.borderColor = "#e5e7eb";
-                            e.target.style.boxShadow = "none";
-                          }}
-                          placeholder="e.g., cardiovascular-quiz"
-                          required
-                        />
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        This will create a page at /{newQuizId || "quiz-id"}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      gap: "10px",
-                      marginTop: "4px",
+                            {topicName} (under {topic.parentSubPageName} - {topic.nestedSubPageName})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </AdminFieldGroup>
+                )}
+                <AdminFieldGroup
+                  label="Quiz Name"
+                  required
+                  helper="The display name for this quiz metadata record."
+                >
+                  <input
+                    type="text"
+                    value={newQuizName}
+                    onChange={(e) => setNewQuizName(e.target.value)}
+                    className="admin-field"
+                    placeholder="e.g., Cardiovascular Quiz, Respiratory Quiz"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminFieldGroup
+                  label="Slug URL"
+                  required
+                  helper={<>This will create a page at /{newQuizId || "quiz-id"}</>}
+                >
+                  <AdminSlugField
+                    origin={getSiteUrl()}
+                    value={newQuizId}
+                    onChange={(value) => setNewQuizId(value.toLowerCase().replace(/\s+/g, "-"))}
+                    placeholder="e.g., cardiovascular-quiz"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminModalFooter>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateQuizModal(false);
+                      setSelectedTopicForQuiz(null);
+                      setNewQuizId("");
+                      setNewQuizName("");
+                      setQuizValidationError("");
                     }}
+                    className="admin-button-cancel"
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateQuizModal(false);
-                        setSelectedTopicForQuiz(null);
-                        setNewQuizId("");
-                        setNewQuizName("");
-                        setNewQuizSetNumber("");
-                        setQuizValidationError("");
-                      }}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid #e5e7eb",
-                        padding: "11px 18px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        background: "#ffffff",
-                        color: "#374151",
-                        transition: "background 0.15s, transform 0.08s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#f9fafb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingQuiz}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid transparent",
-                        padding: "11px 18px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: savingQuiz ? "not-allowed" : "pointer",
-                        background: savingQuiz ? "#9ca3af" : "#4f46e5",
-                        color: "#ffffff",
-                        boxShadow: savingQuiz
-                          ? "none"
-                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
-                        transition: "background 0.15s, transform 0.08s",
-                        opacity: savingQuiz ? 0.5 : 1,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!savingQuiz) {
-                          e.currentTarget.style.background = "#4338ca";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!savingQuiz) {
-                          e.currentTarget.style.background = "#4f46e5";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }
-                      }}
-                    >
-                      {savingQuiz ? "Creating..." : "Create Quiz"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingQuiz}
+                    className="admin-button-primary"
+                  >
+                    {savingQuiz ? "Creating..." : "Create Quiz Metadata"}
+                  </button>
+                </AdminModalFooter>
+              </form>
+            </AdminModal>
           )}
 
           {/* Delete Quiz Modal */}
           {showDeleteQuizModal && quizToDelete && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
-            >
-              <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "26px 26px 20px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    borderRadius: "999px",
-                    margin: "0 auto 14px",
-                    background: "#fee2e2",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "999px",
-                      border: "2px solid #ef4444",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ef4444",
-                      fontSize: "18px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    !
-                  </div>
-                </div>
-                <h2
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: 700,
-                    marginBottom: "8px",
-                    color: "#111827",
-                  }}
-                >
-                  Delete Quiz
-                </h2>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    lineHeight: 1.5,
-                    marginBottom: "18px",
-                  }}
-                >
-                  Are you sure you want to delete the quiz{" "}
-                  <strong>
-                    "
-                    {quizToDelete.pageName ||
-                      quizToDelete.hero?.title ||
-                      quizToDelete.title ||
-                      quizToDelete.name ||
-                      quizToDelete.id}
-                    "
-                  </strong>
-                  ?<br />
-                  This action cannot be undone.
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "12px",
-                    marginTop: "6px",
-                  }}
-                >
-                  <button
-                    onClick={handleDeleteQuizCancel}
-                    disabled={deletingQuiz}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid #e5e7eb",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingQuiz ? "not-allowed" : "pointer",
-                      background: "#ffffff",
-                      color: "#374151",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingQuiz ? 0.5 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingQuiz) {
-                        e.currentTarget.style.background = "#f9fafb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingQuiz) {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeleteQuizConfirm}
-                    disabled={deletingQuiz}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid transparent",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingQuiz ? "not-allowed" : "pointer",
-                      background: deletingQuiz ? "#9ca3af" : "#ef4444",
-                      color: "#ffffff",
-                      boxShadow: deletingQuiz
-                        ? "none"
-                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingQuiz ? 0.5 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingQuiz) {
-                        e.currentTarget.style.background = "#dc2626";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingQuiz) {
-                        e.currentTarget.style.background = "#ef4444";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    {deletingQuiz ? (
-                      <>
-                        <svg
-                          className="animate-spin h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        <span>Deleting...</span>
-                      </>
-                    ) : (
-                      <span>Delete</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <AdminDestructiveDialog
+              title="Delete Quiz Metadata"
+              itemName={
+                quizToDelete.pageName ||
+                quizToDelete.hero?.title ||
+                quizToDelete.title ||
+                quizToDelete.name ||
+                quizToDelete.id
+              }
+              confirmLabel="Delete Quiz Metadata"
+              confirming={deletingQuiz}
+              onCancel={handleDeleteQuizCancel}
+              onConfirm={handleDeleteQuizConfirm}
+            />
           )}
 
           {/* Delete KB Article Modal */}
           {showDeleteKbModal && kbArticleToDelete && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
-            >
-              <div
-                className="bg-white w-full max-w-[460px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "26px 26px 20px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    borderRadius: "999px",
-                    margin: "0 auto 14px",
-                    background: "#fee2e2",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "999px",
-                      border: "2px solid #ef4444",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ef4444",
-                      fontSize: "18px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    !
-                  </div>
-                </div>
-                <h2
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: 700,
-                    marginBottom: "8px",
-                    color: "#111827",
-                  }}
-                >
-                  Delete KB Article
-                </h2>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    lineHeight: 1.5,
-                    marginBottom: "18px",
-                  }}
-                >
-                  Are you sure you want to delete the KB article{" "}
-                  <strong>
-                    "
-                    {kbArticleToDelete.pageName ||
-                      kbArticleToDelete.title ||
-                      kbArticleToDelete.id}
-                    "
-                  </strong>
-                  ?<br />
-                  This action cannot be undone.
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "12px",
-                    marginTop: "6px",
-                  }}
-                >
-                  <button
-                    onClick={handleDeleteKbCancel}
-                    disabled={deletingKb}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid #e5e7eb",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingKb ? "not-allowed" : "pointer",
-                      background: "#ffffff",
-                      color: "#111827",
-                      boxShadow: "0 3px 8px rgba(148, 163, 184, 0.25)",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingKb ? 0.5 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingKb) {
-                        e.currentTarget.style.background = "#f9fafb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingKb) {
-                        e.currentTarget.style.background = "#ffffff";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeleteKbArticle}
-                    disabled={deletingKb}
-                    style={{
-                      minWidth: "120px",
-                      borderRadius: "999px",
-                      border: "1px solid transparent",
-                      padding: "11px 18px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: deletingKb ? "not-allowed" : "pointer",
-                      background: deletingKb ? "#9ca3af" : "#ef4444",
-                      color: "#ffffff",
-                      boxShadow: deletingKb
-                        ? "none"
-                        : "0 10px 24px rgba(239, 68, 68, 0.45)",
-                      transition: "background 0.15s, transform 0.08s",
-                      opacity: deletingKb ? 0.5 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deletingKb) {
-                        e.currentTarget.style.background = "#dc2626";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deletingKb) {
-                        e.currentTarget.style.background = "#ef4444";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    {deletingKb ? (
-                      <>
-                        <svg
-                          className="animate-spin h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        <span>Deleting...</span>
-                      </>
-                    ) : (
-                      <span>Delete KB Article</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <AdminDestructiveDialog
+              title="Delete Knowledge Base Article"
+              itemName={
+                kbArticleToDelete.pageName ||
+                kbArticleToDelete.title ||
+                kbArticleToDelete.id
+              }
+              confirmLabel="Delete Knowledge Base Article"
+              confirming={deletingKb}
+              onCancel={handleDeleteKbCancel}
+              onConfirm={handleDeleteKbArticle}
+            />
           )}
 
           {/* Create KB Article Modal */}
           {showCreateKbModal && (
-            <div
-              className="fixed inset-0 flex items-center justify-center z-[100] overflow-y-auto p-4"
-              style={{ background: "rgba(15, 23, 42, 0.45)" }}
+            <AdminModal
+              title="Create New Knowledge Base Article"
+              description="Create a supporting article under a Nursing Test Bank Sub Page."
             >
-              <div
-                className="bg-white w-full max-w-[520px] mx-auto my-auto"
-                style={{
-                  borderRadius: "20px",
-                  boxShadow:
-                    "0 20px 50px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-                  padding: "24px 26px 20px",
-                }}
-              >
-                <div style={{ marginBottom: "18px" }}>
-                  <h2
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      marginBottom: "4px",
-                      color: "#111827",
-                    }}
+              <form onSubmit={handleCreateKbArticle} className="space-y-4">
+                {kbValidationError && (
+                  <AdminValidationMessage>{kbValidationError}</AdminValidationMessage>
+                )}
+                <AdminFieldGroup
+                  label="Sub Page"
+                  required
+                  helper="Select the Sub Page this Knowledge Base Article belongs to."
+                >
+                  <select
+                    value={selectedSubPageForKb}
+                    onChange={(e) => setSelectedSubPageForKb(e.target.value)}
+                    className="admin-field"
+                    required
                   >
-                    Create New KB Article
-                  </h2>
-                </div>
-                <form onSubmit={handleCreateKbArticle}>
-                  {kbValidationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-red-800">
-                        {kbValidationError}
-                      </p>
-                    </div>
-                  )}
-                  <div style={{ marginBottom: "18px" }}>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Sub-page
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <select
-                        value={selectedSubPageForKb}
-                        onChange={(e) =>
-                          setSelectedSubPageForKb(e.target.value)
-                        }
-                        style={{
-                          width: "100%",
-                          borderRadius: "999px",
-                          border: "1px solid #e5e7eb",
-                          padding: "11px 13px",
-                          fontSize: "14px",
-                          color: "#111827",
-                          background: "#f9fafb",
-                          outline: "none",
-                          transition:
-                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                          cursor: "pointer",
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.background = "#ffffff";
-                          e.target.style.borderColor = "#4f46e5";
-                          e.target.style.boxShadow =
-                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.background = "#f9fafb";
-                          e.target.style.borderColor = "#e5e7eb";
-                          e.target.style.boxShadow = "none";
-                        }}
-                        required
-                      >
-                        <option value="">Select a sub-page</option>
-                        {subPages.map((subPage) => {
-                          const pageName =
-                            subPage.pageName ||
-                            subPage.hero?.title ||
-                            subPage.title ||
-                            subPage.id;
-                          return (
-                            <option key={subPage.id} value={subPage.id}>
-                              {pageName}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        Select the sub-page this KB article belongs to.
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          KB Article Name
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <input
-                        type="text"
-                        value={newKbArticleName}
-                        onChange={(e) => setNewKbArticleName(e.target.value)}
-                        style={{
-                          width: "100%",
-                          borderRadius: "999px",
-                          border: "1px solid #e5e7eb",
-                          padding: "11px 13px",
-                          fontSize: "14px",
-                          color: "#111827",
-                          background: "#f9fafb",
-                          outline: "none",
-                          transition:
-                            "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.background = "#ffffff";
-                          e.target.style.borderColor = "#4f46e5";
-                          e.target.style.boxShadow =
-                            "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.background = "#f9fafb";
-                          e.target.style.borderColor = "#e5e7eb";
-                          e.target.style.boxShadow = "none";
-                        }}
-                        placeholder="e.g., How to Study for TEAS Math"
-                        required
-                      />
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        The display name for this KB article.
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#111827",
-                          }}
-                        >
-                          Slug URL
-                          <span style={{ color: "#ef4444", marginLeft: "2px" }}>
-                            *
-                          </span>
-                        </label>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "stretch",
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          style={{
-                            padding: "11px 12px",
-                            borderRadius: "999px 0 0 999px",
-                            border: "1px solid #e5e7eb",
-                            borderRight: "none",
-                            fontSize: "13px",
-                            color: "#6b7280",
-                            background: "#f9fafb",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {getSiteUrl()}/
-                        </div>
-                        <input
-                          type="text"
-                          value={newKbArticleId}
-                          onChange={(e) =>
-                            setNewKbArticleId(
-                              e.target.value.toLowerCase().replace(/\s+/g, "-")
-                            )
-                          }
-                          style={{
-                            flex: 1,
-                            borderRadius: "0 999px 999px 0",
-                            border: "1px solid #e5e7eb",
-                            borderLeft: "none",
-                            padding: "11px 13px",
-                            fontSize: "14px",
-                            color: "#111827",
-                            background: "#f9fafb",
-                            outline: "none",
-                            transition:
-                              "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.background = "#ffffff";
-                            e.target.style.borderColor = "#4f46e5";
-                            e.target.style.boxShadow =
-                              "0 0 0 1px rgba(79, 70, 229, 0.18)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.background = "#f9fafb";
-                            e.target.style.borderColor = "#e5e7eb";
-                            e.target.style.boxShadow = "none";
-                          }}
-                          placeholder="e.g., how-to-study-teas-math"
-                          required
-                        />
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginTop: "5px",
-                        }}
-                      >
-                        This will create a page at /{newKbArticleId || "kb-article-id"}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      gap: "10px",
-                      marginTop: "4px",
+                    <option value="">Select a Sub Page</option>
+                    {subPages.map((subPage) => {
+                      const pageName =
+                        subPage.pageName ||
+                        subPage.hero?.title ||
+                        subPage.title ||
+                        subPage.id;
+                      return (
+                        <option key={subPage.id} value={subPage.id}>
+                          {pageName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </AdminFieldGroup>
+                <AdminFieldGroup
+                  label="Knowledge Base Article Name"
+                  required
+                  helper="The display name for this Knowledge Base Article."
+                >
+                  <input
+                    type="text"
+                    value={newKbArticleName}
+                    onChange={(e) => setNewKbArticleName(e.target.value)}
+                    className="admin-field"
+                    placeholder="e.g., How to Study for Nursing Test Bank Questions"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminFieldGroup
+                  label="Slug URL"
+                  required
+                  helper={<>This will create a page at /{newKbArticleId || "knowledge-base-article-id"}</>}
+                >
+                  <AdminSlugField
+                    origin={getSiteUrl()}
+                    value={newKbArticleId}
+                    onChange={(value) => setNewKbArticleId(value.toLowerCase().replace(/\s+/g, "-"))}
+                    placeholder="e.g., how-to-study-nursing-test-bank-questions"
+                    required
+                  />
+                </AdminFieldGroup>
+                <AdminModalFooter>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateKbModal(false);
+                      setNewKbArticleId("");
+                      setNewKbArticleName("");
+                      setSelectedSubPageForKb("");
+                      setKbValidationError("");
                     }}
+                    className="admin-button-cancel"
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateKbModal(false);
-                        setNewKbArticleId("");
-                        setNewKbArticleName("");
-                        setSelectedSubPageForKb("");
-                        setKbValidationError("");
-                      }}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid #e5e7eb",
-                        padding: "11px 16px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        background: "#f3f4f6",
-                        color: "#111827",
-                        transition:
-                          "background 0.15s, border-color 0.15s, transform 0.08s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#e5e7eb";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#f3f4f6";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingKb}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid transparent",
-                        padding: "11px 16px",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: savingKb ? "not-allowed" : "pointer",
-                        background: savingKb ? "#9ca3af" : "#4f46e5",
-                        color: "#ffffff",
-                        boxShadow: savingKb
-                          ? "none"
-                          : "0 10px 24px rgba(79, 70, 229, 0.45)",
-                        transition: "background 0.15s, transform 0.08s",
-                        opacity: savingKb ? 0.5 : 1,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!savingKb) {
-                          e.currentTarget.style.background = "#4338ca";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!savingKb) {
-                          e.currentTarget.style.background = "#4f46e5";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }
-                      }}
-                    >
-                      {savingKb ? "Creating..." : "Create KB Article"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingKb}
+                    className="admin-button-primary"
+                  >
+                    {savingKb ? "Creating..." : "Create Knowledge Base Article"}
+                  </button>
+                </AdminModalFooter>
+              </form>
+            </AdminModal>
           )}
         </div>
       </div>

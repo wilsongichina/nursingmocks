@@ -17,16 +17,16 @@ export default function ContactPageSchema() {
               url: `${siteUrl}/`,
               logo: `${siteUrl}/nursing-mocks-logo.png`,
               sameAs: [
-                "https://instagram.com/teasgurus",
-                "https://www.linkedin.com/company/teasgurus",
+                "https://instagram.com/nursingmocks",
+                "https://www.linkedin.com/company/nursingmocks",
                 "https://tiktok.com/@teas.gurus",
-                "https://www.youtube.com/@teasgurus",
+                "https://www.youtube.com/@nursingmocks",
               ],
               contactPoint: {
                 "@type": "ContactPoint",
                 contactType: "Customer Support",
                 telephone: "+1-579-501-1983",
-                email: "teasgurus@gmail.com",
+                email: "support@nursingmocks.com",
                 url: `${siteUrl}/contact`,
                 availableLanguage: "English",
                 hoursAvailable: {
@@ -59,9 +59,9 @@ export default function ContactPageSchema() {
               "@type": "WebPage",
               "@id": `${siteUrl}/contact#webpage`,
               url: `${siteUrl}/contact`,
-              name: "Contact TeasGurus | Get Help with Your TEAS Exam Today | TEAS Gurus",
+              name: "Contact NursingMocks | Get Help with Your TEAS Exam Today | NursingMocks",
               description:
-                "Have questions or need help with your TEAS exam? Contact TeasGurus for expert support, real ATI TEAS questions, and professional exam-taking services. We're here to assist you 24/7.",
+                "Have questions or need help with your TEAS exam? Contact NursingMocks for expert support, real ATI TEAS questions, and professional exam-taking services. We're here to assist you 24/7.",
               isPartOf: {
                 "@id": `${siteUrl}/#website`,
               },

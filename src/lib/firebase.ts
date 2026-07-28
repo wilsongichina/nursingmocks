@@ -20,7 +20,7 @@ if (requiredFirebaseEnv.length > 0 && process.env.NODE_ENV !== "production") {
 }
 
 // Firebase web app configuration. Values must come from the independent
-// NursingMocks Firebase project, not the previous TEAS Gurus project.
+// NursingMocks Firebase project, not the previous NursingMocks project.
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",

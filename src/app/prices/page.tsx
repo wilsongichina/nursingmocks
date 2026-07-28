@@ -33,7 +33,7 @@ export default function PricesPage() {
             <div className="text-center">
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-4">
                 <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                We are Teas Gurus
+                We are NursingMocks
               </div>
               <h1 className="text-5xl md:text-6xl font-bold mb-4">
                 Our Pricing

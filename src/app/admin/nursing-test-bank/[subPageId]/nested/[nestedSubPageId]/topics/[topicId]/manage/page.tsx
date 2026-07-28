@@ -10,7 +10,15 @@ import {
   getNursingTestBankNestedSubPage,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminInlineLoading } from "@/components/admin/AdminUi";
+import {
+  AdminDestructiveDialog,
+  AdminInlineLoading,
+  AdminNotificationRegion,
+  AdminPageHeader,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
+import AdminSidebar from "@/components/layout/AdminSidebar";
+import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 
 interface Quiz {
   id: string;
@@ -24,11 +32,12 @@ interface Quiz {
   };
 }
 
-export default function ManageQuizzes({
+function ManageQuizzesContent({
   params,
 }: {
   params: Promise<{ subPageId: string; nestedSubPageId: string; topicId: string }>;
 }) {
+  const { isCollapsed } = useSidebar();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +50,6 @@ export default function ManageQuizzes({
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
   const [newQuizId, setNewQuizId] = useState("");
   const [newQuizName, setNewQuizName] = useState("");
-  const [newQuizSetNumber, setNewQuizSetNumber] = useState("");
   const [validationError, setValidationError] = useState("");
   const [saving, setSaving] = useState(false);
   const [parentSubPageName, setParentSubPageName] = useState("");
@@ -55,6 +63,8 @@ export default function ManageQuizzes({
   // const [parentSubPageContent, setParentSubPageContent] = useState<any>(null);
   // const [nestedSubPageContent, setNestedSubPageContent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteQuizTarget, setDeleteQuizTarget] = useState<string | null>(null);
+  const [deletingQuiz, setDeletingQuiz] = useState(false);
 
   useEffect(() => {
     const resolveParams = async () => {
@@ -136,11 +146,8 @@ export default function ManageQuizzes({
   const handleDeleteQuiz = async (quizId: string) => {
     if (!resolvedParams) return;
 
-    if (!confirm(`Are you sure you want to delete the quiz "${quizId}"?`)) {
-      return;
-    }
-
     try {
+      setDeletingQuiz(true);
       const result = await deleteNursingTestBankQuiz(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
@@ -149,6 +156,7 @@ export default function ManageQuizzes({
       );
       if (result.success) {
         setSuccess("Quiz deleted successfully!");
+        setDeleteQuizTarget(null);
         loadQuizzes();
         setTimeout(() => setSuccess(""), 3000);
       } else {
@@ -157,6 +165,8 @@ export default function ManageQuizzes({
     } catch (err) {
       setError("Failed to delete quiz");
       console.error("Error deleting:", err);
+    } finally {
+      setDeletingQuiz(false);
     }
   };
 
@@ -194,17 +204,16 @@ export default function ManageQuizzes({
       const defaultQuizContent = {
         pageName: newQuizName,
         slug: normalizedQuizId, // User-entered slug (no prefix)
-        setNumber: newQuizSetNumber ? Number(newQuizSetNumber) : undefined,
         meta: {
-          title: `${newQuizName} | TeasGurus`,
+          title: `${newQuizName} | NursingMocks`,
           description: `Content for ${newQuizName} under ${
             topicName || resolvedParams.topicId
           }.`,
           keywords: `${newQuizName}, ${topicName}, ${nestedSubPageName}, ${parentSubPageName}, nursing test bank`,
-          ogTitle: `${newQuizName} | TeasGurus`,
+          ogTitle: `${newQuizName} | NursingMocks`,
           ogDescription: `Content for ${newQuizName}`,
           ogImage: "/nursing-mocks-logo.png",
-          canonicalUrl: `https://teasgurus.com/${finalSlug}`,
+          canonicalUrl: `https://www.nursingmocks.com/${finalSlug}`,
         },
         hero: {
           title: newQuizName,
@@ -225,7 +234,6 @@ export default function ManageQuizzes({
         setShowCreateQuizModal(false);
         setNewQuizId("");
         setNewQuizName("");
-        setNewQuizSetNumber("");
         setValidationError("");
         loadQuizzes();
         setTimeout(() => setSuccess(""), 3000);
@@ -242,10 +250,19 @@ export default function ManageQuizzes({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
-        <div className="admin-loading-state">
-          <div className="admin-loading-spinner"></div>
-          <AdminInlineLoading label="Loading Content" />
+      <div className="min-h-screen overflow-x-hidden bg-white">
+        <AdminSidebar />
+        <div
+          className={`transition-all duration-300 ${
+            isCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          <AdminTopBar breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Nursing Test Bank", href: "/admin/nursing-test-bank" }, { label: "Quizzes" }]} />
+          <main className="admin-content min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <AdminInlineLoading label="Loading Content" />
+            </div>
+          </main>
         </div>
       </div>
     );
@@ -255,20 +272,23 @@ export default function ManageQuizzes({
   const topicPageUrl = topicSlug || resolvedParams.topicId;
 
   return (
-    <div className="admin-page min-h-screen">
-      {/* Header */}
-      <div className="admin-card mb-6 p-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="admin-page-title">
-                Manage Quizzes: {topicName || resolvedParams.topicId}
-              </h1>
-              <p className="admin-body mt-1">
-                Manage quizzes for this topic
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
+    <div className="min-h-screen overflow-x-hidden bg-white">
+      <AdminSidebar />
+      <div
+        className={`transition-all duration-300 ${
+          isCollapsed ? "md:ml-20" : "md:ml-64"
+        }`}
+      >
+        <AdminTopBar breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Nursing Test Bank", href: "/admin/nursing-test-bank" }, { label: "Quizzes" }]} />
+        <main className="admin-content min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="w-full max-w-none space-y-6">
+            <AdminNotificationRegion error={error} success={success} />
+            <AdminPageHeader
+              eyebrow="Nursing Test Bank"
+              title={`Manage Quizzes: ${topicName || resolvedParams.topicId}`}
+              description="Manage quiz metadata and question tools for this Test Bank topic."
+              actions={
+                <>
               <Link
                 href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}`}
                 className="admin-button-secondary flex items-center space-x-2"
@@ -316,25 +336,12 @@ export default function ManageQuizzes({
                   <span>View Topic Page</span>
                 </Link>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
+                </>
+              }
+            />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-green-800">{success}</p>
-          </div>
-        )}
+      <div className="space-y-6">
 
         {/* Topic Section */}
         <div className="admin-card mb-6 p-5">
@@ -574,12 +581,12 @@ export default function ManageQuizzes({
                         className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
                       >
                         Edit
-                      </Link>
-                      <button
-                        onClick={() => handleDeleteQuiz(quiz.id)}
-                        className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                      >
-                        Delete
+                    </Link>
+                    <button
+                      onClick={() => setDeleteQuizTarget(quiz.id)}
+                      className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                    >
+                      Delete
                       </button>
                     </div>
                     <div className="mt-4">
@@ -589,7 +596,7 @@ export default function ManageQuizzes({
                         rel="noopener noreferrer"
                         className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                       >
-                        View Page →
+                        View Page
                       </Link>
                       <p className="admin-helper mt-1">
                         URL: {quizUrl}
@@ -636,7 +643,7 @@ export default function ManageQuizzes({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="admin-helper whitespace-nowrap">
-                    https://teasgurus.com/
+                    https://www.nursingmocks.com/
                   </span>
                   <input
                     type="text"
@@ -655,19 +662,6 @@ export default function ManageQuizzes({
                   This will create a quiz at /{newQuizId || "quiz-id"}
                 </p>
               </div>
-              <div>
-                <label className="admin-field-label mb-2 block">
-                  Set Number
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newQuizSetNumber}
-                  onChange={(e) => setNewQuizSetNumber(e.target.value)}
-                  className="admin-field"
-                  placeholder="e.g., 1"
-                />
-              </div>
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
@@ -682,7 +676,6 @@ export default function ManageQuizzes({
                     setShowCreateQuizModal(false);
                     setNewQuizId("");
                     setNewQuizName("");
-                    setNewQuizSetNumber("");
                     setValidationError("");
                   }}
                   className="admin-button-cancel flex-1"
@@ -694,9 +687,40 @@ export default function ManageQuizzes({
           </div>
         </div>
       )}
+      {deleteQuizTarget && (
+        <AdminDestructiveDialog
+          title="Delete Quiz Metadata"
+          itemName={deleteQuizTarget}
+          consequence="This removes the quiz metadata from this Test Bank topic. Question records tied to this quiz may no longer be reachable from this management view."
+          confirmLabel="Delete Quiz"
+          confirming={deletingQuiz}
+          onCancel={() => {
+            if (!deletingQuiz) setDeleteQuizTarget(null);
+          }}
+          onConfirm={() => handleDeleteQuiz(deleteQuizTarget)}
+        />
+      )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
+
+export default function ManageQuizzes({
+  params,
+}: {
+  params: Promise<{ subPageId: string; nestedSubPageId: string; topicId: string }>;
+}) {
+  return (
+    <SidebarProvider>
+      <ManageQuizzesContent params={params} />
+    </SidebarProvider>
+  );
+}
+
+
+
 
 
 

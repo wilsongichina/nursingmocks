@@ -13,7 +13,11 @@ import {
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import {
+  AdminDestructiveDialog,
+  AdminLoadingShell,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -66,7 +70,6 @@ export default function ManageQuizQuestions({
   const [validationError, setValidationError] = useState("");
   const [saving, setSaving] = useState(false);
   const [quizName, setQuizName] = useState("");
-  const [quizSetNumber, setQuizSetNumber] = useState<string | number>("");
   const [_parentSlug, setParentSlug] = useState("");
   const [_nestedSlug, setNestedSlug] = useState("");
   const [_topicSlug, setTopicSlug] = useState("");
@@ -84,6 +87,10 @@ export default function ManageQuizQuestions({
   const [typeFilter, setTypeFilter] = useState("all");
   const [skillFilter, setSkillFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteQuestionTarget, setDeleteQuestionTarget] = useState<
+    string | null
+  >(null);
+  const [deletingQuestion, setDeletingQuestion] = useState(false);
   const questionsPerPage = 10;
 
   // Helper function to strip HTML tags
@@ -170,7 +177,6 @@ export default function ManageQuizQuestions({
         const quizData = quizResult.data as any;
         setQuizName(quizData.pageName || resolvedParams.quizId);
         setQuizSlug(quizData.slug || resolvedParams.quizId);
-        setQuizSetNumber(quizData.setNumber ?? "");
       }
 
       // Load parent sub-page content
@@ -233,13 +239,8 @@ export default function ManageQuizQuestions({
   const handleDeleteQuestion = async (questionId: string) => {
     if (!resolvedParams) return;
 
-    if (
-      !confirm(`Are you sure you want to delete the question "${questionId}"?`)
-    ) {
-      return;
-    }
-
     try {
+      setDeletingQuestion(true);
       const result = await deleteNursingTestBankQuizQuestion(
         resolvedParams.subPageId,
         resolvedParams.nestedSubPageId,
@@ -249,6 +250,7 @@ export default function ManageQuizQuestions({
       );
       if (result.success) {
         setSuccess("Question deleted successfully!");
+        setDeleteQuestionTarget(null);
         setCurrentPage(1);
         loadQuestions();
         setTimeout(() => setSuccess(""), 3000);
@@ -258,6 +260,8 @@ export default function ManageQuizQuestions({
     } catch (err) {
       setError("Failed to delete question");
       console.error("Error deleting:", err);
+    } finally {
+      setDeletingQuestion(false);
     }
   };
 
@@ -346,7 +350,7 @@ export default function ManageQuizQuestions({
   if (loading || !resolvedParams) {
     return (
       <div className="admin-page">
-        <AdminLoadingState
+        <AdminLoadingShell
           title="Loading Admin Content"
           description="Preparing admin data and management controls."
         />
@@ -470,7 +474,7 @@ export default function ManageQuizQuestions({
               <div className="admin-header-copy flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="admin-page-title">
-                    Quiz Questions – {quizBreadcrumb}
+                    Quiz Questions - {quizBreadcrumb}
                   </h1>
                 </div>
                 <div className="admin-body flex flex-wrap items-center gap-3">
@@ -490,7 +494,7 @@ export default function ManageQuizQuestions({
                   href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/manage`}
                   className="admin-button-secondary"
                 >
-                  ← Back to Admin
+                  Back to Admin
                 </Link>
                 <Link
                   href={`/${quizSlug || resolvedParams.quizId}`}
@@ -528,7 +532,7 @@ export default function ManageQuizQuestions({
               Edit Quiz Info
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
             <div>
               <div className="admin-info-tile-label mb-1">
                 Exam
@@ -551,14 +555,6 @@ export default function ManageQuizQuestions({
             </div>
             <div>
               <div className="admin-info-tile-label mb-1">
-                Set Number
-              </div>
-              <div className="admin-info-tile-value">
-                {quizSetNumber !== "" ? quizSetNumber : "—"}
-              </div>
-            </div>
-            <div>
-              <div className="admin-info-tile-label mb-1">
                 URL
               </div>
               <div className="admin-info-tile-value break-words">
@@ -576,7 +572,7 @@ export default function ManageQuizQuestions({
                 Questions
               </div>
               <div className="admin-helper mt-1">
-                Showing {totalQuestions === 0 ? 0 : startIndex + 1}–
+                Showing {totalQuestions === 0 ? 0 : startIndex + 1}-
                 {endIndex} of {totalQuestions} questions.
               </div>
             </div>
@@ -771,7 +767,9 @@ export default function ManageQuizQuestions({
                                 </Link>
                               )}
                               <button
-                                onClick={() => handleDeleteQuestion(question.id)}
+                                onClick={() =>
+                                  setDeleteQuestionTarget(question.id)
+                                }
                                 className="admin-button-danger px-3 py-1.5 text-xs"
                               >
                                 Delete
@@ -786,7 +784,7 @@ export default function ManageQuizQuestions({
               </div>
               <div className="admin-pagination">
                 <span>
-                  Showing {totalQuestions === 0 ? 0 : startIndex + 1}–{endIndex} of{" "}
+                  Showing {totalQuestions === 0 ? 0 : startIndex + 1}-{endIndex} of{" "}
                   {totalQuestions} questions
                 </span>
                 <div className="inline-flex items-center gap-1">
@@ -976,10 +974,26 @@ export default function ManageQuizQuestions({
             </div>
           </div>
         )}
+        {deleteQuestionTarget && (
+          <AdminDestructiveDialog
+            title="Delete Question"
+            itemName={deleteQuestionTarget}
+            consequence="This removes the question from this Test Bank quiz."
+            confirmLabel="Delete Question"
+            confirming={deletingQuestion}
+            onCancel={() => {
+              if (!deletingQuestion) setDeleteQuestionTarget(null);
+            }}
+            onConfirm={() => handleDeleteQuestion(deleteQuestionTarget)}
+          />
+        )}
       </LayoutShell>
     </SidebarProvider>
   );
 }
+
+
+
 
 
 

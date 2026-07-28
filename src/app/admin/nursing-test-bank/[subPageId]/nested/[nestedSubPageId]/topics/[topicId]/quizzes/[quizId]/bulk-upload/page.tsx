@@ -7,7 +7,12 @@ import {
   getNursingTestBankQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import {
+  AdminLoadingShell,
+  AdminModal,
+  AdminModalFooter,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -49,6 +54,7 @@ export default function BulkUploadQuestions({
   const [success, setSuccess] = useState("");
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showUploadConfirm, setShowUploadConfirm] = useState(false);
   const questionsPerPage = 10;
 
   useEffect(() => {
@@ -144,6 +150,17 @@ export default function BulkUploadQuestions({
     reader.readAsText(file);
   };
 
+  const requestBulkUpload = () => {
+    if (parsedQuestions.length === 0) {
+      setError("No questions to upload. Please parse JSON first.");
+      return;
+    }
+
+    if (!resolvedParams) return;
+
+    setShowUploadConfirm(true);
+  };
+
   const handleBulkUpload = async () => {
     if (parsedQuestions.length === 0) {
       setError("No questions to upload. Please parse JSON first.");
@@ -152,16 +169,9 @@ export default function BulkUploadQuestions({
 
     if (!resolvedParams) return;
 
-    if (
-      !confirm(
-        `Are you sure you want to upload ${parsedQuestions.length} questions?`
-      )
-    ) {
-      return;
-    }
-
     try {
       setUploading(true);
+      setShowUploadConfirm(false);
       setError("");
       setSuccess("");
 
@@ -217,9 +227,7 @@ export default function BulkUploadQuestions({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
-        <AdminLoadingState title="Loading bulk upload" description="Preparing quiz details and upload workspace." />
-      </div>
+      <AdminLoadingShell title="Loading bulk upload" description="Preparing quiz details and upload workspace." />
     );
   }
 
@@ -304,7 +312,7 @@ export default function BulkUploadQuestions({
                 href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="admin-button-secondary"
               >
-                ← Back to Admin
+                Back to Admin
               </Link>
               <Link
                 href={`/${resolvedParams.quizId}`}
@@ -315,7 +323,7 @@ export default function BulkUploadQuestions({
               </Link>
               <button
                 type="button"
-                onClick={handleBulkUpload}
+                onClick={requestBulkUpload}
                 disabled={uploading || parsedQuestions.length === 0}
                 className="admin-button-primary disabled:opacity-50"
               >
@@ -783,7 +791,7 @@ export default function BulkUploadQuestions({
                   </button>
                   <button
                     type="button"
-                    onClick={handleBulkUpload}
+                    onClick={requestBulkUpload}
                     disabled={uploading || parsedQuestions.length === 0}
                     className="rounded-full bg-indigo-600 text-white px-4 py-2 text-xs font-semibold shadow hover:bg-indigo-700 disabled:opacity-50"
                   >
@@ -806,11 +814,48 @@ export default function BulkUploadQuestions({
               {success}
             </div>
           )}
+          {showUploadConfirm && (
+            <AdminModal
+              title="Import Questions"
+              description="Confirm this import after reviewing the parsed question preview."
+              maxWidthClassName="max-w-[460px]"
+            >
+              <div className="space-y-4">
+                <p className="admin-body-sm">
+                  This will import {parsedQuestions.length} question
+                  {parsedQuestions.length === 1 ? "" : "s"} into{" "}
+                  <strong>{quizName || resolvedParams?.quizId}</strong>.
+                </p>
+                <AdminModalFooter>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!uploading) setShowUploadConfirm(false);
+                    }}
+                    disabled={uploading}
+                    className="admin-button-cancel"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkUpload}
+                    disabled={uploading}
+                    className="admin-button-primary disabled:opacity-50"
+                  >
+                    {uploading ? "Importing..." : "Import Questions"}
+                  </button>
+                </AdminModalFooter>
+              </div>
+            </AdminModal>
+          )}
         </div>
       </LayoutShell>
     </SidebarProvider>
   );
 }
+
+
 
 
 

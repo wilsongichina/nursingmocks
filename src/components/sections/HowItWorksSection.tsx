@@ -238,7 +238,7 @@ export default function HowItWorksSection() {
                 Join thousands of nursing students who have reached their goals with the help of our trusted TEAS test help. 
                 Hundreds of students have gained confidence and improved their skills with our proven method of teaching all 
                 subjects, from math and language to science and reading. You can do well in your nursing program and nursing 
-                school if you grasp things clearly, get advice from professionals, and pay a fair price. With Teas Gurus, you
+                school if you grasp things clearly, get advice from professionals, and pay a fair price. With NursingMocks, you
                  may start today and become closer to your career goals.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

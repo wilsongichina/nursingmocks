@@ -14,7 +14,12 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/layout/SidebarContext";
-import { AdminAlert, AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import {
+  AdminAlert,
+  AdminLoadingShell,
+  AdminLoadingState,
+  AdminTopBar,
+} from "@/components/admin/AdminUi";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
 
@@ -111,7 +116,7 @@ function EditKbArticleContent({
             pageData.seoSlug || pageData.slug || resolvedParams.kbArticleId,
           meta: {
             title:
-              pageData.meta?.title || `${resolvedParams.kbArticleId} | TeasGurus`,
+              pageData.meta?.title || `${resolvedParams.kbArticleId} | NursingMocks`,
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
@@ -144,10 +149,10 @@ function EditKbArticleContent({
           heading: "",
           description: "",
           meta: {
-            title: `${resolvedParams.kbArticleId} | TeasGurus`,
+            title: `${resolvedParams.kbArticleId} | NursingMocks`,
             description: `Content for ${resolvedParams.kbArticleId}`,
             keywords: `${resolvedParams.kbArticleId}, nursing exit exam`,
-            ogTitle: `${resolvedParams.kbArticleId} | TeasGurus`,
+            ogTitle: `${resolvedParams.kbArticleId} | NursingMocks`,
             ogDescription: `Content for ${resolvedParams.kbArticleId}`,
             ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/${resolvedParams.kbArticleId}`,
@@ -262,12 +267,10 @@ function EditKbArticleContent({
 
   if (loading) {
     return (
-      <div className="admin-page">
-        <AdminLoadingState
-          title="Loading KB article content"
-          description="Preparing article details, SEO fields, schema markup, and the editor."
-        />
-      </div>
+      <AdminLoadingShell
+        title="Loading KB article content"
+        description="Preparing article details, SEO fields, schema markup, and the editor."
+      />
     );
   }
 

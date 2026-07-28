@@ -6,16 +6,16 @@ import GifSlider from "@/components/ui/GifSlider";
 import GetStartedButton from "@/components/ui/GetStartedButton";
 
 export const metadata: Metadata = {
-  title: "TEAS 7 Exam Questions & Preparation | TeasGurus",
+  title: "TEAS 7 Exam Questions & Preparation | NursingMocks",
   description:
     "Get exact TEAS 7 exam questions with answers. Access the most current TEAS test materials with lifetime updates. Pass your nursing entrance exam with confidence.",
   keywords:
     "TEAS 7 exam questions, TEAS 7 practice test, TEAS 7 study materials, nursing entrance exam, TEAS 7 preparation",
   openGraph: {
-    title: "TEAS 7 Exam Questions & Preparation | TeasGurus",
+    title: "TEAS 7 Exam Questions & Preparation | NursingMocks",
     description:
       "Get exact TEAS 7 exam questions with answers. Access the most current TEAS test materials with lifetime updates. Pass your nursing entrance exam with confidence.",
-    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/teas`,
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"}/teas`,
   },
   alternates: {
     canonical: "/teas",
@@ -69,7 +69,7 @@ export default function TEASPage() {
               How it Works
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Work Process of Teas Gurus
+              Work Process of NursingMocks
             </p>
           </div>
 

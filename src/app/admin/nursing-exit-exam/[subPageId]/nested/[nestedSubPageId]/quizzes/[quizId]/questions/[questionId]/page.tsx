@@ -8,7 +8,7 @@ import {
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import { AdminLoadingShell, AdminTopBar } from "@/components/admin/AdminUi";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
@@ -446,7 +446,7 @@ export default function EditQuestion({
   if (loading || !resolvedParams) {
     return (
       <div className="admin-page">
-        <AdminLoadingState
+        <AdminLoadingShell
           title="Loading Admin Content"
           description="Preparing admin data and management controls."
         />
@@ -1026,6 +1026,7 @@ const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
     </SidebarProvider>
   );
 }
+
 
 
 

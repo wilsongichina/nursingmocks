@@ -113,7 +113,7 @@ export default function EditQuestionPage() {
               .replace(/[^a-z0-9]+/g, "-")
               .replace(/^-+|-+$/g, "");
 
-          const questionUrl = `https://www.teasgurus.com/questions/${questionSlug}`;
+          const questionUrl = `https://www.nursingmocks.com/questions/${questionSlug}`;
           const serviceName = prev.service === "hesi" ? "HESI" : "TEAS";
 
           const schema = {
@@ -121,26 +121,26 @@ export default function EditQuestionPage() {
             "@graph": [
               {
                 "@type": "Organization",
-                "@id": "https://www.teasgurus.com/#organization",
-                name: "Teas Gurus",
-                url: "https://www.teasgurus.com",
+                "@id": "https://www.nursingmocks.com/#organization",
+                name: "NursingMocks",
+                url: "https://www.nursingmocks.com",
                 logo: {
                   "@type": "ImageObject",
-                  url: "https://teasgurus.com/nursing-mocks-logo.png",
+                  url: "https://www.nursingmocks.com/nursing-mocks-logo.png",
                 },
               },
               {
                 "@type": "WebSite",
-                "@id": "https://www.teasgurus.com/#website",
-                url: "https://www.teasgurus.com",
-                name: "Teas Gurus",
+                "@id": "https://www.nursingmocks.com/#website",
+                url: "https://www.nursingmocks.com",
+                name: "NursingMocks",
                 publisher: {
-                  "@id": "https://www.teasgurus.com/#organization",
+                  "@id": "https://www.nursingmocks.com/#organization",
                 },
                 potentialAction: {
                   "@type": "SearchAction",
                   target:
-                    "https://www.teasgurus.com/search?q={search_term_string}",
+                    "https://www.nursingmocks.com/search?q={search_term_string}",
                   "query-input": "required name=search_term_string",
                 },
               },
@@ -150,10 +150,10 @@ export default function EditQuestionPage() {
                 url: questionUrl,
                 name: cleanQuestionText,
                 isPartOf: {
-                  "@id": "https://www.teasgurus.com/#website",
+                  "@id": "https://www.nursingmocks.com/#website",
                 },
                 about: {
-                  "@id": "https://www.teasgurus.com/#organization",
+                  "@id": "https://www.nursingmocks.com/#organization",
                 },
                 breadcrumb: {
                   "@id": `${questionUrl}#breadcrumb`,
@@ -162,7 +162,7 @@ export default function EditQuestionPage() {
                   "@type": "ImageObject",
                   url:
                     prev.image ||
-                    "https://www.teasgurus.com/images/question-banner.jpg",
+                    "https://www.nursingmocks.com/images/question-banner.jpg",
                 },
               },
               {
@@ -173,13 +173,13 @@ export default function EditQuestionPage() {
                     "@type": "ListItem",
                     position: 1,
                     name: "Home",
-                    item: "https://www.teasgurus.com",
+                    item: "https://www.nursingmocks.com",
                   },
                   {
                     "@type": "ListItem",
                     position: 2,
                     name: `${serviceName} Questions`,
-                    item: `https://www.teasgurus.com/questions`,
+                    item: `https://www.nursingmocks.com/questions`,
                   },
                   {
                     "@type": "ListItem",

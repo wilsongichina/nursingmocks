@@ -68,7 +68,7 @@ export const mathPageContent = {
         title: "Healthcare Applications",
         content: [
           "A lot of these questions are based on real-life situations in healthcare, like figuring out how much medicine to give someone or how fast an IV drip should go. The most important thing is to practice the same kinds of questions that will be on the TEAS test so you aren't caught off guard.",
-          "Some students may be wondering, can i pay someone to take my TEAS exam for me? The truth is that their are a number of services that provide this service Teas Gurus being one of them. If you don't want to hire someone, then the best way to pass is to practice the most common TEAS math questions a lot. If you can answer these kinds of questions, you'll be ready for the 2025 TEAS exam.",
+          "Some students may be wondering, can i pay someone to take my TEAS exam for me? The truth is that their are a number of services that provide this service NursingMocks being one of them. If you don't want to hire someone, then the best way to pass is to practice the most common TEAS math questions a lot. If you can answer these kinds of questions, you'll be ready for the 2025 TEAS exam.",
         ],
       },
     ],

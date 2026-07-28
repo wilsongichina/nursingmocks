@@ -185,7 +185,7 @@ export default function CreateBlogPage() {
     setFormData({
       title: "Sample Blog Post",
       date: new Date().toISOString().split("T")[0],
-      author: "TeasGurus Team",
+      author: "NursingMocks Team",
       image:
         "https://images.unsplash.com/photo-1544787219-7f47ccb76574?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
       imageAlt: "Sample blog post image",

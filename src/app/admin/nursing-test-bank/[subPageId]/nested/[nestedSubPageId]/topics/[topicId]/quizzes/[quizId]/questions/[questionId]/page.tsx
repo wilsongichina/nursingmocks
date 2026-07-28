@@ -8,7 +8,7 @@ import {
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import { AdminLoadingShell, AdminTopBar } from "@/components/admin/AdminUi";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
@@ -450,7 +450,7 @@ export default function EditQuestion({
   if (loading || !resolvedParams) {
     return (
       <div className="admin-page">
-        <AdminLoadingState
+        <AdminLoadingShell
           title="Loading Admin Content"
           description="Preparing admin data and management controls."
         />
@@ -460,12 +460,14 @@ export default function EditQuestion({
 
   if (!questionData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Question not found</p>
+      <div className="admin-page flex min-h-screen items-center justify-center bg-gray-50 px-4 py-6">
+        <div className="admin-card max-w-md p-6 text-center">
+          <p className="mb-4 text-sm font-medium text-red-600">
+            Question not found
+          </p>
           <Link
             href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
-            className="text-indigo-600 hover:underline"
+            className="admin-button-secondary inline-flex"
           >
             Back to Questions
           </Link>
@@ -546,7 +548,7 @@ const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
                 href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="admin-button-secondary"
               >
-                ← Back to Admin
+                Back to Admin
               </Link>
               <button
                 type="button"
@@ -1030,6 +1032,9 @@ const ANSWER_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
     </SidebarProvider>
   );
 }
+
+
+
 
 
 

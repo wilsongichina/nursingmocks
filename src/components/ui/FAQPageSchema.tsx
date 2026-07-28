@@ -17,16 +17,16 @@ export default function FAQPageSchema() {
               url: `${siteUrl}/`,
               logo: `${siteUrl}/nursing-mocks-logo.png`,
               sameAs: [
-                "https://instagram.com/teasgurus",
-                "https://www.linkedin.com/company/teasgurus",
+                "https://instagram.com/nursingmocks",
+                "https://www.linkedin.com/company/nursingmocks",
                 "https://tiktok.com/@teas.gurus",
-                "https://www.youtube.com/@teasgurus",
+                "https://www.youtube.com/@nursingmocks",
               ],
               contactPoint: {
                 "@type": "ContactPoint",
                 contactType: "Customer Support",
                 telephone: "+1-579-501-1983",
-                email: "teasgurus@gmail.com",
+                email: "support@nursingmocks.com",
                 url: `${siteUrl}/contact`,
                 availableLanguage: "English",
               },
@@ -45,9 +45,9 @@ export default function FAQPageSchema() {
               "@type": "WebPage",
               "@id": `${siteUrl}/faqs#webpage`,
               url: `${siteUrl}/faqs`,
-              name: "Frequently Asked Questions | TEAS Exam Help & Services – TeasGurus",
+              name: "Frequently Asked Questions | TEAS Exam Help & Services – NursingMocks",
               description:
-                "Got questions about our TEAS exam services? TeasGurus explains everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
+                "Got questions about our TEAS exam services? NursingMocks explains everything from pricing and guarantees to how we take your TEAS test for you—confidentially and professionally.",
               isPartOf: {
                 "@id": `${siteUrl}/#website`,
               },
@@ -94,7 +94,7 @@ export default function FAQPageSchema() {
                   name: "How can the security and confidentiality of a student's exam be guaranteed?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Security and confidentiality are very important to us. Your identity is fully protected when working with Teas Gurus. No personal information about the students they are helping is ever given to our exam takers. They see it as just another exam that needs to be passed in a discrete and professional manner. To ensure that your data is secure from the first message to the end result, we employ private access systems, secure login processes, and encrypted communication. You can rest assured that your privacy will be completely protected, and neither your school nor the testing platform will ever be aware that you received assistance. Our professional promise is that.",
+                    text: "Security and confidentiality are very important to us. Your identity is fully protected when working with NursingMocks. No personal information about the students they are helping is ever given to our exam takers. They see it as just another exam that needs to be passed in a discrete and professional manner. To ensure that your data is secure from the first message to the end result, we employ private access systems, secure login processes, and encrypted communication. You can rest assured that your privacy will be completely protected, and neither your school nor the testing platform will ever be aware that you received assistance. Our professional promise is that.",
                   },
                 },
                 {
@@ -110,7 +110,7 @@ export default function FAQPageSchema() {
                   name: "Even if I'm not in the US, can I still get help with the TEAS exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Indeed! Anywhere in the world, you can get professional TEAS exam assistance. Teas Gurus is a worldwide service that works around the clock to accommodate students' needs in all time zones. We can help you whether you're studying in the UK, Canada, Australia, Africa, or Asia. All you need is a laptop or desktop computer and a reliable internet connection because our system is fully online. No matter where you are, we will walk you through every step once you get in touch with us. Our services have been successfully utilized by students from more than 20 countries. Even though it is midnight your time, we are only a message away.",
+                    text: "Indeed! Anywhere in the world, you can get professional TEAS exam assistance. NursingMocks is a worldwide service that works around the clock to accommodate students' needs in all time zones. We can help you whether you're studying in the UK, Canada, Australia, Africa, or Asia. All you need is a laptop or desktop computer and a reliable internet connection because our system is fully online. No matter where you are, we will walk you through every step once you get in touch with us. Our services have been successfully utilized by students from more than 20 countries. Even though it is midnight your time, we are only a message away.",
                   },
                 },
                 {
@@ -118,7 +118,7 @@ export default function FAQPageSchema() {
                   name: "Can I retake the TEAS exam for free?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Unfortunately, there is a cost associated with retaking the TEAS exam. The exam fee is the same whether you are taking it for the first time or again, and you will need to pay it through ATI Testing or your test center. This can be discouraging, particularly if you failed by a slim margin. Because of this, we advise students to do things correctly the first time, and our team assists you in doing just that. When you use Teas Gurus, you're investing in outcomes that save you money, time, and stress by removing the need for pricey retakes. You're not just paying someone to take your test.",
+                    text: "Unfortunately, there is a cost associated with retaking the TEAS exam. The exam fee is the same whether you are taking it for the first time or again, and you will need to pay it through ATI Testing or your test center. This can be discouraging, particularly if you failed by a slim margin. Because of this, we advise students to do things correctly the first time, and our team assists you in doing just that. When you use NursingMocks, you're investing in outcomes that save you money, time, and stress by removing the need for pricey retakes. You're not just paying someone to take your test.",
                   },
                 },
                 {
@@ -126,7 +126,7 @@ export default function FAQPageSchema() {
                   name: "What TEAS score is regarded as passing?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Depending on your school's requirements, a passing score on the TEAS test can vary, but it usually hovers around 65%. While some nursing programs may accept a lower score, others may require a minimum of 70% or even 75% for admission. But why settle for less? Our professionals at Teas Gurus routinely receive scores of 85% and higher, and many of our clients end up in the 90th percentile. Therefore, we help you stand out as a top applicant rather than just meeting the cutoff. Our goal is to get you recognized for your excellence, so don't worry about merely 'passing.'",
+                    text: "Depending on your school's requirements, a passing score on the TEAS test can vary, but it usually hovers around 65%. While some nursing programs may accept a lower score, others may require a minimum of 70% or even 75% for admission. But why settle for less? Our professionals at NursingMocks routinely receive scores of 85% and higher, and many of our clients end up in the 90th percentile. Therefore, we help you stand out as a top applicant rather than just meeting the cutoff. Our goal is to get you recognized for your excellence, so don't worry about merely 'passing.'",
                   },
                 },
               ],

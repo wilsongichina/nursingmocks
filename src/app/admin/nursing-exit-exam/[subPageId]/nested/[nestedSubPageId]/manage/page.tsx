@@ -176,15 +176,15 @@ export default function ManageQuizzes({
         slug: normalizedQuizId, // User-entered slug (no prefix)
         setNumber: newQuizSetNumber ? Number(newQuizSetNumber) : undefined,
         meta: {
-          title: `${newQuizName} | TeasGurus`,
+          title: `${newQuizName} | NursingMocks`,
           description: `Content for ${newQuizName} under ${
             nestedSubPageName || resolvedParams.nestedSubPageId
           }.`,
           keywords: `${newQuizName}, ${nestedSubPageName}, ${parentSubPageName}, nursing exit exam`,
-          ogTitle: `${newQuizName} | TeasGurus`,
+          ogTitle: `${newQuizName} | NursingMocks`,
           ogDescription: `Content for ${newQuizName}`,
           ogImage: "/nursing-mocks-logo.png",
-          canonicalUrl: `https://teasgurus.com/${finalSlug}`,
+          canonicalUrl: `https://www.nursingmocks.com/${finalSlug}`,
         },
         hero: {
           title: newQuizName,
@@ -717,7 +717,7 @@ export default function ManageQuizzes({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="admin-helper whitespace-nowrap">
-                    https://teasgurus.com/
+                    https://www.nursingmocks.com/
                   </span>
                   <input
                     type="text"

@@ -17,10 +17,10 @@ export default function HowItWorksPageSchema() {
               url: `${siteUrl}/`,
               logo: `${siteUrl}/nursing-mocks-logo.png`,
               sameAs: [
-                "https://instagram.com/teasgurus",
-                "https://www.linkedin.com/company/teasgurus",
+                "https://instagram.com/nursingmocks",
+                "https://www.linkedin.com/company/nursingmocks",
                 "https://tiktok.com/@teas.gurus",
-                "https://www.youtube.com/@teasgurus",
+                "https://www.youtube.com/@nursingmocks",
               ],
             },
             {
@@ -37,9 +37,9 @@ export default function HowItWorksPageSchema() {
               "@type": "WebPage",
               "@id": `${siteUrl}/how-it-works#webpage`,
               url: `${siteUrl}/how-it-works`,
-              name: "How It Works - TEAS Exam Process | TEAS Gurus",
+              name: "How It Works - TEAS Exam Process | NursingMocks",
               description:
-                "Learn how our 6-step TEAS exam process works. From registration to payment, discover how TEAS Gurus helps you pass your nursing entrance exam with guaranteed results.",
+                "Learn how our 6-step TEAS exam process works. From registration to payment, discover how NursingMocks helps you pass your nursing entrance exam with guaranteed results.",
               isPartOf: {
                 "@id": `${siteUrl}/#website`,
               },
@@ -74,7 +74,7 @@ export default function HowItWorksPageSchema() {
               "@id": `${siteUrl}/how-it-works#howto`,
               name: "How It Works: Pay Someone to Take Your Online TEAS Exam",
               description:
-                "Learn how Teas Gurus handles your ATI TEAS exam in 6 simple steps, from registering to making your final payment after results.",
+                "Learn how NursingMocks handles your ATI TEAS exam in 6 simple steps, from registering to making your final payment after results.",
               image: `${siteUrl}/logo.png`,
               totalTime: "PT15M",
               supply: [],

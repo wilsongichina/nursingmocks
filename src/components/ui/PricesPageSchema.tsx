@@ -17,10 +17,10 @@ export default function PricesPageSchema() {
               url: `${siteUrl}/`,
               logo: `${siteUrl}/nursing-mocks-logo.png`,
               sameAs: [
-                "https://instagram.com/teasgurus",
-                "https://www.linkedin.com/company/teasgurus",
+                "https://instagram.com/nursingmocks",
+                "https://www.linkedin.com/company/nursingmocks",
                 "https://tiktok.com/@teas.gurus",
-                "https://www.youtube.com/@teasgurus",
+                "https://www.youtube.com/@nursingmocks",
               ],
             },
             {
@@ -37,7 +37,7 @@ export default function PricesPageSchema() {
               "@type": "WebPage",
               "@id": `${siteUrl}/prices#webpage`,
               url: `${siteUrl}/prices`,
-              name: "Pricing | Take My TEAS Exam Cost – TeasGurus",
+              name: "Pricing | Take My TEAS Exam Cost – NursingMocks",
               description:
                 "Explore our pricing for TEAS exam services including Math, Science, Reading & English help. Affordable rates to take your TEAS test or get real ATI TEAS practice questions.",
               isPartOf: {

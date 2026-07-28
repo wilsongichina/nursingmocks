@@ -2,15 +2,15 @@
 {
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
-  "name": "TEAS Gurus",
-  "description": "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at Teas Gurus.",
-  "url": "https://teasgurus.com/",
-  "logo": "https://teasgurus.com/nursing-mocks-logo.png",
+  "name": "NursingMocks",
+  "description": "Looking to pay someone to take my teas exam for me? Get expert help, guaranteed results, and full confidentiality from trusted exam professionals at NursingMocks.",
+  "url": "https://www.nursingmocks.com/",
+  "logo": "https://www.nursingmocks.com/nursing-mocks-logo.png",
   "sameAs": [
-    "https://instagram.com/teasgurus",
-    "https://www.linkedin.com/company/teasgurus",
+    "https://instagram.com/nursingmocks",
+    "https://www.linkedin.com/company/nursingmocks",
     "https://tiktok.com/@teas.gurus",
-    "https://www.youtube.com/@teasgurus"
+    "https://www.youtube.com/@nursingmocks"
   ],
   "contactPoint": {
     "@type": "ContactPoint",

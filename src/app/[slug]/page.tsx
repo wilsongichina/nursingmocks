@@ -926,7 +926,7 @@ export async function generateMetadata({
 
   if (pillarPageSlugs.includes(slug)) {
     return {
-      title: `${slug} | TeasGurus`,
+      title: `${slug} | NursingMocks`,
       description: `Content for ${slug}`,
     };
   }
@@ -934,7 +934,7 @@ export async function generateMetadata({
   const routeMappingResult = await getRouteMappingBySlugOnly(slug);
   if (!routeMappingResult.success || !routeMappingResult.data) {
     return {
-      title: `${slug} | TeasGurus`,
+      title: `${slug} | NursingMocks`,
       description: `Content for ${slug}`,
     };
   }
@@ -946,11 +946,11 @@ export async function generateMetadata({
     const data = contentResult.data as any;
     if (data.meta) {
       return {
-        title: data.meta.title || `${slug} | TeasGurus`,
+        title: data.meta.title || `${slug} | NursingMocks`,
         description: data.meta.description || "",
         keywords: data.meta.keywords || "",
         openGraph: {
-          title: data.meta.ogTitle || data.meta.title || `${slug} | TeasGurus`,
+          title: data.meta.ogTitle || data.meta.title || `${slug} | NursingMocks`,
           description: data.meta.ogDescription || data.meta.description || "",
           url:
             data.meta.canonicalUrl ||
@@ -972,7 +972,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${slug} | TeasGurus`,
+    title: `${slug} | NursingMocks`,
     description: `Content for ${slug}`,
   };
 }
@@ -1760,10 +1760,10 @@ export default async function DynamicPage({
   const content: ServiceContent = {
     pageName: pageData.seoLabel || pageData.pageName || slug,
     meta: pageData.meta || {
-      title: `${slug} | TeasGurus`,
+      title: `${slug} | NursingMocks`,
       description: `Content for ${slug}`,
       keywords: `${slug}`,
-      ogTitle: `${slug} | TeasGurus`,
+      ogTitle: `${slug} | NursingMocks`,
       ogDescription: `Content for ${slug}`,
       ogImage: getImageUrl("/nursing-mocks-logo.png"),
       canonicalUrl: `${getSiteUrl()}/${slug}`,

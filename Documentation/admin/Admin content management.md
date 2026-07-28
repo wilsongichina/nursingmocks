@@ -61,6 +61,181 @@ Validation run:
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
 
+## Follow-up: Nursing Test Bank Topic Editor Optimization
+
+Optimized the Test Bank topic editor used by routes such as:
+
+```text
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/topics/[topicId]
+```
+
+Changed:
+
+- kept the existing Firestore topic load/save behavior unchanged
+- loaded the parent Sub Page and Nested Sub Page names so breadcrumbs and parent tiles show readable labels instead of raw IDs where Firestore data is available
+- standardized the full topic editor form with shared `AdminFormSection`, `AdminFieldGroup`, `AdminSlugField`, and `AdminSelectField` components
+- replaced the remaining custom topic form input, select, textarea, label, helper, card, and section-header classes with admin-standard controls
+- improved mobile behavior by using stacked field groups, safer grid breakpoints, truncating parent tiles, and wrapping header actions cleanly
+- corrected the `Back to Admin` action to return to the nested relationship manage page for this topic context
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Nested Sub Page Editor Optimization
+
+Optimized the Test Bank nested sub-page editor used by routes such as:
+
+```text
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]
+```
+
+Changed:
+
+- kept the existing Firestore nested sub-page load/save behavior and document path unchanged
+- loaded the parent Sub Page name so breadcrumbs and parent structure tiles show readable labels instead of raw IDs when available
+- standardized the full nested sub-page editor with shared `AdminFormSection`, `AdminFieldGroup`, `AdminSlugField`, and `AdminSelectField` controls
+- replaced the remaining custom nested-page form input, select, textarea, card, and section-header styling with admin-standard controls
+- added automatic `CollectionPage` and `BreadcrumbList` JSON-LD generation when saved schema is blank
+- added a `Regenerate Schema` action beside the schema field and a `Clean Legacy Branding` action in the page header
+- sanitized legacy brand/domain/email/logo text on load and before save so old metadata does not continue to appear in the editor
+- corrected breadcrumb and header actions to return to the correct Test Bank parent and nested manage routes
+- improved mobile behavior with stacked field groups, wrapped header actions, stable slug controls, and safer editor containers
+
+Validation run:
+
+```text
+rg -n 'https://nursingmocks.com|rounded-2xl|shadow-sm|bg-gradient|p-4\.5|py-2\.25|\[#|AdminLoadingState|useAuth|currentUser|label: "Home"|label: "Content"' 'src/app/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/page.tsx'
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Sub Page Editor Optimization
+
+Optimized the Test Bank sub-page editor used by routes such as:
+
+```text
+/admin/nursing-test-bank/[subPageId]
+```
+
+Changed:
+
+- kept the existing Firestore sub-page load/save behavior, slug redirect behavior, and document path unchanged
+- standardized the full sub-page editor with shared `AdminFormSection`, `AdminFieldGroup`, `AdminSlugField`, and `AdminSelectField` controls
+- replaced the remaining custom sub-page form input, select, textarea, card, and section-header styling with admin-standard controls
+- removed the stale route-context helper copy and old breadcrumb labels
+- added automatic `CollectionPage` and `BreadcrumbList` JSON-LD generation when saved schema is blank
+- added a `Regenerate Schema` action beside the schema field and a `Clean Legacy Branding` action in the page header
+- sanitized legacy brand/domain/email/logo text on load and before save
+- added a direct `Manage Nested Sub Pages` header action for the sub-page relationship screen
+- improved mobile behavior with stacked field groups, wrapped header actions, stable slug controls, and safer editor containers
+
+Validation run:
+
+```text
+rg -n 'rounded-2xl|shadow-sm|bg-gradient|p-4\.5|py-2\.25|\[#|AdminLoadingState|useAuth|currentUser|label: "Home"|label: "Content"|â|ATI TEAS|TEAS Reading' 'src/app/admin/nursing-test-bank/[subPageId]/page.tsx'
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Scoped Topic Manager Removal
+
+Removed the duplicate scoped topic-management UI for routes such as:
+
+```text
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/manage
+```
+
+Changed:
+
+- replaced the scoped manage page implementation with a redirect to `/admin/nursing-test-bank?tab=topics`
+- added `?tab=` URL support to the main Nursing Test Bank admin page so `/admin/nursing-test-bank?tab=topics` opens the global Topics tab directly
+- changed nested sub-page editor topic navigation to the global Topics tab instead of the removed scoped manager
+- changed topic editor breadcrumb/back navigation to the global Topics tab
+- kept topic creation, editing, viewing, deleting, and quiz-metadata creation available through `/admin/nursing-test-bank`
+
+Validation run:
+
+```text
+rg -n "Manage Topics" src/app/admin/nursing-test-bank -g "*.tsx"
+rg -n "tab=topics|useSearchParams" src/app/admin/nursing-test-bank -g "*.tsx"
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Topic Schema And Legacy Brand Cleanup
+
+Completed a stricter pass after finding legacy TeasGurus traces and blank schema behavior.
+
+Changed:
+
+- added automatic JSON-LD schema generation for Test Bank topic editors when a topic has no saved schema
+- added a `Regenerate Schema` action beside the schema field so admins can refresh the generated schema after editing topic metadata
+- generated topic schema now includes `WebPage` and `BreadcrumbList` graph nodes using NursingMocks URLs and the topic hierarchy
+- removed remaining TeasGurus/NursingMocks migration leftovers from live `src` and `public` files, including old domain, email, logo-path, and brand-name strings
+- cleaned the non-shipped Test Bank backup page so repository scans no longer report TeasGurus under the Test Bank admin path
+
+Validation run:
+
+```text
+rg -n "TeasGurus|Teas Gurus|teasgurus|teas-gurus|support@teasgurus|teas-gurus-logo" src public -g "*"
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Saved Metadata Cleanup
+
+Cleaned saved Firestore metadata after old branding still appeared in the admin meta fields.
+
+Changed:
+
+- added `scripts/clean-legacy-branding-firestore.js`
+- the script defaults to a dry run and targets the Nursing Test Bank content tree
+- `--apply` replaces legacy TeasGurus brand/domain/email/logo strings in top-level Firestore fields that contain saved legacy values
+- added topic editor load/save sanitization so legacy branding is normalized before it appears in the editor and before future saves
+- added a `Clean Legacy Branding` action to the topic editor header for one-click cleanup of the current topic form
+
+Applied cleanup:
+
+```text
+UPDATE pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi: meta
+UPDATE pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz: meta
+UPDATE pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/ToLSmb6DG83NTZWXEJxt: meta
+UPDATE pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/ToLSmb6DG83NTZWXEJxt/topics/dFodSKImOYmvFZmdWFMu: meta
+UPDATE pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT: meta
+UPDATE pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/84LuQWRglNeaT6Etsokn: meta
+UPDATE pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/84LuQWRglNeaT6Etsokn/quizzes/3ctCY4m4antViEUTRNZA: meta
+```
+
+Validation run:
+
+```text
+node scripts/clean-legacy-branding-firestore.js
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Post-apply dry run result:
+
+```text
+Dry run complete: 0 docs, 0 top-level fields.
+```
+
+## Follow-up: Test Bank And Exit Exam Loading Placement
+
+Fixed loading states that appeared in the top-left corner before the admin page shell finished rendering.
+
+Changed:
+
+- added shared `AdminLoadingShell` in `src/components/admin/AdminUi.tsx`
+- replaced bare `admin-page` loading wrappers in Nursing Test Bank and Nursing Exit Exam editor/manager routes with the centered loading shell
+- covered sub-page, nested-page, topic, KB article, quiz manager, bulk upload, question create, and question edit loading states across Test Bank and Exit Exam
+- kept the existing loading titles/descriptions and data-fetching behavior unchanged
+
+Validation run:
+
+```text
+rg -n "<div className=\"admin-page\">\\s*$|<AdminLoadingState|AdminLoadingState" src/app/admin/nursing-test-bank src/app/admin/nursing-exit-exam -g "*.tsx"
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
 ## Follow-up: Nursing Exit Exam Main Listing Shared Controls
 
 Continued the Nursing Exit Exam admin page upgrade so the main listing uses the same shared controls as the refreshed Nursing Entrance Exam page.
@@ -5961,6 +6136,249 @@ Validation run:
 ```text
 npx eslint src/app/admin/nursing-entrance-exam/page.tsx src/app/admin/nursing-entrance-exam/[subPageId]/page.tsx src/app/admin/nursing-entrance-exam/[subPageId]/manage/page.tsx src/app/admin/nursing-entrance-exam/edit/page.tsx
 .\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Main Listing Phase 1
+
+Started the Nursing Test Bank admin main listing upgrade.
+
+Affected page:
+
+```text
+/admin/nursing-test-bank
+```
+
+Changed:
+
+- added the shared admin notification region above the main content
+- added `AdminPageHeader` with a direct `Edit Main Page` action
+- added shared overview cards for the Test Bank hierarchy and content stats
+- added shared tabs for `Sub Pages`, `Nested Sub Pages`, `Topics`, `Quiz Metadata`, and `Knowledge Base Articles`
+- corrected the visible top-level create actions so the Topics tab opens the Topic modal and the Quiz Metadata tab opens the Quiz Metadata modal
+- kept existing Test Bank Firestore reads, route mappings, filters, table body rendering, pagination, create/delete handlers, and child routes unchanged
+
+Remaining follow-up:
+
+- replace the remaining inline toolbar and table shell with `AdminToolbar`, `AdminTable`, `AdminTableCell`, `AdminTableEmptyState`, `AdminStatusBadge`, and `AdminPagination`
+- replace the remaining create/delete overlays with shared admin modal and destructive-dialog components
+- remove the hidden legacy header/tabs block after the table and modal pass is complete
+- standardize terminology from `KB` and `Quizzes` to `Knowledge Base Articles` and `Quiz Metadata`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+Invoke-WebRequest http://localhost:3000/admin/nursing-test-bank
+```
+
+## Follow-up: Nursing Test Bank Internal Pages And Data Rules
+
+Completed the remaining Nursing Test Bank admin UI pass after the main listing upgrade.
+
+Affected pages:
+
+```text
+/admin/nursing-test-bank/edit
+/admin/nursing-test-bank/[subPageId]
+/admin/nursing-test-bank/[subPageId]/manage
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/manage
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/topics/[topicId]
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/topics/[topicId]/manage
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/topics/[topicId]/quizzes/[quizId]/manage
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/topics/[topicId]/quizzes/[quizId]/bulk-upload
+/admin/nursing-test-bank/[subPageId]/nested/[nestedSubPageId]/topics/[topicId]/quizzes/[quizId]/questions/[questionId]
+```
+
+Changed:
+
+- wrapped the main Test Bank edit page and relationship manage pages in the shared admin sidebar, top bar, notification region, and full-width admin content shell
+- added shared `AdminPageHeader` usage to the Test Bank main edit page, sub-page manage page, nested sub-page manage page, and topic quiz manage page
+- replaced browser delete confirmations with `AdminDestructiveDialog` for nested sub-pages, topics, quiz metadata, and quiz questions
+- replaced the bulk question import browser confirmation with a neutral shared `AdminModal` confirmation that shows the parsed question count and destination quiz
+- normalized Test Bank admin link labels to ASCII arrows and replaced the old question-not-found gradient fallback with an admin-style empty state
+- removed Test Bank quiz `setNumber` creation/edit state from the main listing and topic quiz manage flow
+- confirmed Test Bank admin `.tsx` files no longer contain `TeasGurus`, `teasgurus.com`, `setNumber`, `examYear`, `Set Number`, or browser `confirm()` usage
+
+Data rule:
+
+- Nursing Test Bank quiz metadata now follows the Exit Exam rule: quiz names come from the source file name, and Test Bank quizzes should not store `setNumber`, `year`, or `examYear`.
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Main Listing Phase 2
+
+Continued the Nursing Test Bank admin main listing upgrade.
+
+Affected page:
+
+```text
+/admin/nursing-test-bank
+```
+
+Changed:
+
+- replaced the visible inline search/filter/action toolbar with `AdminToolbar`
+- kept the existing search, Sub Page filter, status filter, and active-tab state unchanged
+- corrected active-tab create actions for Sub Pages, Nested Sub Pages, Topics, Quiz Metadata, and Knowledge Base Articles
+- added shared `AdminPagination` for Nested Sub Pages, Topics, Quiz Metadata, and Knowledge Base Articles
+- disabled the old manual pagination block while preserving it for the remaining table-body conversion pass
+- cleaned visible table terminology from `quizzes` and `KB articles` to `Quiz Metadata` and `Knowledge Base Articles`
+- kept existing Test Bank Firestore reads, route mappings, filtering logic, table body rendering, and create/delete handlers unchanged
+
+Remaining follow-up:
+
+- replace the remaining inline table shell and row cells with shared table primitives
+- convert create/delete overlays to shared admin modal and destructive-dialog components
+- remove the disabled legacy header/tabs/pagination blocks after the table and modal conversion is complete
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+Invoke-WebRequest http://localhost:3000/admin/nursing-test-bank
+```
+
+## Follow-up: Nursing Test Bank Main Listing Phase 3
+
+Continued the Nursing Test Bank admin main listing upgrade.
+
+Affected page:
+
+```text
+/admin/nursing-test-bank
+```
+
+Changed:
+
+- replaced the visible inline table shell with the shared `AdminTable`
+- standardized the active table header with admin table heading classes
+- replaced plain empty rows with `AdminTableEmptyState` across Sub Pages, Nested Sub Pages, Topics, Quiz Metadata, and Knowledge Base Articles
+- added `AdminStatusBadge` for active table status cells
+- added title and URL slug truncation with hover titles so long Test Bank records do not push the action buttons or adjacent rows out of alignment
+- normalized broken encoded date fallback/separator text in the active Test Bank table display
+- kept existing Test Bank Firestore reads, route mappings, filtering, pagination, create/delete handlers, and row action routes unchanged
+
+Remaining follow-up:
+
+- convert the remaining visible table row cells from inline `td` styles to `AdminTableCell`
+- convert create/delete overlays to shared admin modal and destructive-dialog components
+- remove the disabled legacy header/tabs/pagination blocks after the table and modal conversion is complete
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+Invoke-WebRequest http://localhost:3000/admin/nursing-test-bank
+```
+
+## Follow-up: Nursing Test Bank Main Listing Phase 4
+
+Continued the Nursing Test Bank admin main listing upgrade.
+
+Affected page:
+
+```text
+/admin/nursing-test-bank
+```
+
+Changed:
+
+- converted the active table body cells from inline `td` styles to `AdminTableCell`
+- preserved title and slug truncation, status badges, action links, and active-tab table behavior
+- kept existing Test Bank Firestore reads, route mappings, filtering, pagination, create/delete handlers, and row action routes unchanged
+
+Remaining follow-up:
+
+- convert create/delete overlays to shared admin modal and destructive-dialog components
+- remove the disabled legacy header/tabs/pagination blocks after the modal conversion is complete
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Main Listing Phase 5
+
+Continued the Nursing Test Bank admin main listing upgrade.
+
+Affected page:
+
+```text
+/admin/nursing-test-bank
+```
+
+Changed:
+
+- replaced the five custom delete confirmation overlays with `AdminDestructiveDialog`
+- standardized destructive actions for Sub Pages, Nested Sub Pages, Topics, Quiz Metadata, and Knowledge Base Articles
+- kept existing delete handlers, loading flags, Firestore delete calls, silent refresh behavior, and row action routes unchanged
+
+Remaining follow-up:
+
+- convert the create overlays to shared `AdminModal`, `AdminFieldGroup`, `AdminSlugField`, `AdminValidationMessage`, and `AdminModalFooter`
+- remove the disabled legacy header/tabs/pagination blocks after create modal conversion is complete
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Test Bank Main Listing Phase 6
+
+Completed the Nursing Test Bank main listing modal cleanup.
+
+Affected page:
+
+```text
+/admin/nursing-test-bank
+```
+
+Changed:
+
+- converted the five create overlays to shared `AdminModal`, `AdminFieldGroup`, `AdminSlugField`, `AdminValidationMessage`, and `AdminModalFooter` components
+- standardized visible labels to `Sub Page`, `Nested Sub Page`, `Topic`, `Quiz Metadata`, and `Knowledge Base Article`
+- preserved existing create handlers, parent selection logic, slug normalization, optional quiz set number handling, validation messages, state resets, and Firestore writes
+- removed old fixed-position create overlay wrappers from the Test Bank main listing
+
+Remaining follow-up:
+
+- remove the disabled legacy header/tabs/pagination blocks now that the visible table and modals use shared admin primitives
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+Invoke-WebRequest http://localhost:3000/admin/nursing-test-bank
+```
+
+## Follow-up: Nursing Test Bank Main Listing Phase 7
+
+Completed dead-code cleanup for the Nursing Test Bank main listing UI upgrade.
+
+Affected page:
+
+```text
+/admin/nursing-test-bank
+```
+
+Changed:
+
+- removed disabled legacy header, alert, overview, tabs, and pagination blocks that were kept during the phased migration
+- kept the active shared notification, page header, overview, tabs, toolbar, table, pagination, create modal, and delete dialog flows unchanged
+- confirmed the page no longer contains old fixed-position create modal overlay wrappers
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+Invoke-WebRequest http://localhost:3000/admin/nursing-test-bank
 ```
 
 Affected files:

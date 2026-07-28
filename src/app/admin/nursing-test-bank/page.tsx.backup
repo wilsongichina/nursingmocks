@@ -624,10 +624,10 @@ function NursingEntranceExamAdminPageContent() {
         pageName: newQuizName,
         slug: normalizedQuizId,
         meta: {
-          title: `${newQuizName} | TeasGurus`,
+          title: `${newQuizName} | NursingMocks`,
           description: `Content for ${newQuizName} under ${nestedSubPageName}.`,
           keywords: `${newQuizName}, ${nestedSubPageName}, nursing entrance exam`,
-          ogTitle: `${newQuizName} | TeasGurus`,
+          ogTitle: `${newQuizName} | NursingMocks`,
           ogDescription: `Content for ${newQuizName}`,
           ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedQuizId}`,
@@ -709,10 +709,10 @@ function NursingEntranceExamAdminPageContent() {
       const defaultNestedSubPageContent = {
         pageName: newNestedSubPageName,
         meta: {
-          title: `${newNestedSubPageName} | TeasGurus`,
+          title: `${newNestedSubPageName} | NursingMocks`,
           description: `Content for ${newNestedSubPageName} under ${parentSubPageName}.`,
           keywords: `${newNestedSubPageName}, ${parentSubPageId}, nursing entrance exam`,
-          ogTitle: `${newNestedSubPageName} | TeasGurus`,
+          ogTitle: `${newNestedSubPageName} | NursingMocks`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${getSiteUrl()}/${normalizedNestedSubPageId}`,

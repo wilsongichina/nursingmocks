@@ -78,16 +78,16 @@ export default function EditPillarPage({
         const initializedContent: PillarPageContent = {
           pageName: pageData.pageName || "",
           meta: pageData.meta || {
-            title: `${resolvedParams.pillarPageId} Services - TeasGurus`,
+            title: `${resolvedParams.pillarPageId} Services - NursingMocks`,
             description: `Get guaranteed ${resolvedParams.pillarPageId} exam support with real questions and expert help.`,
             keywords: `${resolvedParams.pillarPageId} services, ${resolvedParams.pillarPageId} practice tests`,
-            ogTitle: `${resolvedParams.pillarPageId} Services - TeasGurus`,
+            ogTitle: `${resolvedParams.pillarPageId} Services - NursingMocks`,
             ogDescription: `Get guaranteed ${resolvedParams.pillarPageId} exam support with real questions and expert help.`,
             ogImage: `/nursing-mocks-logo.png`,
-            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${resolvedParams.pillarPageId}`,
+            canonicalUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"}/${resolvedParams.pillarPageId}`,
           },
           hero: pageData.hero || {
-            badge: "We are Teas Gurus",
+            badge: "We are NursingMocks",
             title: `${resolvedParams.pillarPageId} Services`,
             subtitle: `Comprehensive ${resolvedParams.pillarPageId} exam services designed to help you succeed.`,
           },
@@ -485,7 +485,7 @@ export default function EditPillarPage({
               </label>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-500">
-                  https://teasgurus.com/
+                  https://www.nursingmocks.com/
                 </span>
                 <input
                   type="text"
@@ -609,7 +609,7 @@ export default function EditPillarPage({
                     handleMetaChange("canonicalUrl", e.target.value)
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                  placeholder={`${process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"}/${
+                  placeholder={`${process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"}/${
                     resolvedParams?.pillarPageId || "pillar-page-id"
                   }`}
                 />
@@ -656,7 +656,7 @@ export default function EditPillarPage({
                 value={content.hero.badge}
                 onChange={(e) => handleHeroChange("badge", e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-gray-900"
-                placeholder="e.g., We are Teas Gurus"
+                placeholder="e.g., We are NursingMocks"
               />
             </div>
             <div>

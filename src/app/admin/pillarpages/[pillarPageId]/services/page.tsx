@@ -73,13 +73,13 @@ export default function PillarServicePagesPage() {
       // Create a basic service page template
       const newServicePage = {
         meta: {
-          title: `${newServicePageTitle} - ${pillarPageId.toUpperCase()} | TeasGurus`,
+          title: `${newServicePageTitle} - ${pillarPageId.toUpperCase()} | NursingMocks`,
           description: `Get expert help with ${newServicePageTitle} for ${pillarPageId.toUpperCase()}. Practice tests, study guides, and comprehensive preparation.`,
           keywords: `${pillarPageId} ${newServicePageTitle}, ${pillarPageId} ${newServicePageTitle} questions, ${pillarPageId} ${newServicePageTitle} practice test`,
           ogTitle: `${newServicePageTitle} - ${pillarPageId.toUpperCase()}`,
           ogDescription: `Get expert help with ${newServicePageTitle} for ${pillarPageId.toUpperCase()}.`,
           ogImage: `/nursing-mocks-logo.png`,
-          canonicalUrl: `https://teasgurus.com/${pillarPageId}/${newServicePageId}`,
+          canonicalUrl: `https://www.nursingmocks.com/${pillarPageId}/${newServicePageId}`,
         },
         hero: {
           badge: `${newServicePageTitle} Practice`,

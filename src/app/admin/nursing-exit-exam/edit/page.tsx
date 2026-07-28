@@ -7,7 +7,7 @@ import {
 } from "@/lib/firestore-operations";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import Link from "next/link";
-import { AdminLoadingState } from "@/components/admin/AdminUi";
+import { AdminLoadingShell } from "@/components/admin/AdminUi";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
 
 interface ServiceContent {
@@ -97,7 +97,7 @@ export default function EditNursingExitExamPage() {
         // Ensure all required fields exist with defaults
         const initializedContent: ServiceContent = {
           meta: {
-            title: pageData.meta?.title || "Nursing Exit Exam | TeasGurus",
+            title: pageData.meta?.title || "Nursing Exit Exam | NursingMocks",
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
@@ -145,10 +145,10 @@ export default function EditNursingExitExamPage() {
         // Initialize with default content structure
         const defaultContent: ServiceContent = {
           meta: {
-            title: "Nursing Exit Exam | TeasGurus",
+            title: "Nursing Exit Exam | NursingMocks",
             description: "Comprehensive guide to nursing exit exams",
             keywords: "nursing exit exam, nursing school, exam preparation",
-            ogTitle: "Nursing Exit Exam | TeasGurus",
+            ogTitle: "Nursing Exit Exam | NursingMocks",
             ogDescription: "Comprehensive guide to nursing exit exams",
             ogImage: getImageUrl("/nursing-mocks-logo.png"),
             canonicalUrl: `${getSiteUrl()}/nursing-exit-exam`,
@@ -334,12 +334,10 @@ export default function EditNursingExitExamPage() {
 
   if (loading) {
     return (
-      <div className="admin-page">
-        <AdminLoadingState
-          title="Loading Content"
-          description="Preparing admin content, metadata, and editor fields."
-        />
-      </div>
+      <AdminLoadingShell
+        title="Loading Content"
+        description="Preparing admin content, metadata, and editor fields."
+      />
     );
   }
 

@@ -12,7 +12,7 @@ import {
   getAllQuestionTypes,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import { AdminLoadingShell, AdminTopBar } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -319,7 +319,7 @@ export default function ManageQuizQuestions({
   if (loading || !resolvedParams) {
     return (
       <div className="admin-page">
-        <AdminLoadingState
+        <AdminLoadingShell
           title="Loading Admin Content"
           description="Preparing admin data and management controls."
         />
@@ -952,6 +952,7 @@ export default function ManageQuizQuestions({
     </SidebarProvider>
   );
 }
+
 
 
 

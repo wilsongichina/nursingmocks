@@ -24,7 +24,7 @@
       "name": "Where can I pay someone to take my TEAS entrance exam?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Online platforms like Teas Gurus are the most convenient and secure option for hiring someone to take your TEAS entrance exam. We offer 24/7 access, confidentiality, and reliability."
+        "text": "Online platforms like NursingMocks are the most convenient and secure option for hiring someone to take your TEAS entrance exam. We offer 24/7 access, confidentiality, and reliability."
       }
     },
     {
@@ -32,23 +32,23 @@
       "name": "How much should I pay someone to take my online TEAS exam?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "While some services charge up to $500, TeasGurus offers affordable pricing at $400 per exam. We provide a secure test environment, no hidden fees, and an optional payment plan with a money-back guarantee."
+        "text": "While some services charge up to $500, NursingMocks offers affordable pricing at $400 per exam. We provide a secure test environment, no hidden fees, and an optional payment plan with a money-back guarantee."
       }
     },
     {
       "@type": "Question",
-      "name": "Is Teas Gurus legit?",
+      "name": "Is NursingMocks legit?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Teas Gurus is a legitimate service provider with verified student testimonials, a proven success record, and transparent payment and service policies."
+        "text": "Yes. NursingMocks is a legitimate service provider with verified student testimonials, a proven success record, and transparent payment and service policies."
       }
     },
     {
       "@type": "Question",
-      "name": "Is Teas Gurus legit and does it have enough exam takers?",
+      "name": "Is NursingMocks legit and does it have enough exam takers?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Absolutely. Teas Gurus is 100% legit and has helped thousands of students. We have a large pool of qualified exam takers ready to assist with your TEAS tests."
+        "text": "Absolutely. NursingMocks is 100% legit and has helped thousands of students. We have a large pool of qualified exam takers ready to assist with your TEAS tests."
       }
     },
     {
@@ -72,7 +72,7 @@
       "name": "Are there legit TEAS taker experts?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes, Teas Gurus has a team of experienced TEAS experts who offer professional assistance, resources, and exam-taking support to help you pass with confidence."
+        "text": "Yes, NursingMocks has a team of experienced TEAS experts who offer professional assistance, resources, and exam-taking support to help you pass with confidence."
       }
     }
   ]

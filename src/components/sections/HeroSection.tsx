@@ -15,7 +15,7 @@ export default function HeroSection() {
               Pay Someone to Take My TEAS Exam for Me
             </h1>
             <h2 className="text-xl md:text-2xl mb-8 w-full text-center">
-              Teas Gurus is a reliable and flexible online TEAS exam help site for nursing students who want to take their tests in a more organized and 
+              NursingMocks is a reliable and flexible online TEAS exam help site for nursing students who want to take their tests in a more organized and 
               smart way.  We make it easy and stress-free to deal with tests, quizzes, and proctored exams.  
             </h2>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

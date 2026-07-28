@@ -138,7 +138,7 @@ export default function ManageSubPage({
           pageName: pageData.pageName || resolvedParams.subPageId,
           meta: {
             title:
-              pageData.meta?.title || `${resolvedParams.subPageId} | TeasGurus`,
+              pageData.meta?.title || `${resolvedParams.subPageId} | NursingMocks`,
             description: pageData.meta?.description || "",
             keywords: pageData.meta?.keywords || "",
             ogTitle: pageData.meta?.ogTitle || "",
@@ -147,7 +147,7 @@ export default function ManageSubPage({
             canonicalUrl:
               pageData.meta?.canonicalUrl ||
               `${
-                process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+                process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"
               }/nursing-exit-exam/${resolvedParams.subPageId}`,
           },
           schema: pageData.schema || "",
@@ -193,14 +193,14 @@ export default function ManageSubPage({
         const defaultContent: ServiceContent = {
           pageName: resolvedParams.subPageId,
           meta: {
-            title: `${resolvedParams.subPageId} | TeasGurus`,
+            title: `${resolvedParams.subPageId} | NursingMocks`,
             description: `Content for ${resolvedParams.subPageId}`,
             keywords: `${resolvedParams.subPageId}, nursing exit exam`,
-            ogTitle: `${resolvedParams.subPageId} | TeasGurus`,
+            ogTitle: `${resolvedParams.subPageId} | NursingMocks`,
             ogDescription: `Content for ${resolvedParams.subPageId}`,
             ogImage: "/nursing-mocks-logo.png",
             canonicalUrl: `${
-              process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+              process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"
             }/${resolvedParams.subPageId}`,
           },
           schema: "",
@@ -339,16 +339,16 @@ export default function ManageSubPage({
         createdAt: new Date().toISOString(),
         bodyContent: "",
         meta: {
-          title: `${newNestedSubPageName} | TeasGurus`,
+          title: `${newNestedSubPageName} | NursingMocks`,
           description: `Content for ${newNestedSubPageName} under ${
             content?.pageName || resolvedParams.subPageId
           }.`,
           keywords: `${newNestedSubPageName}, ${resolvedParams.subPageId}, nursing exit exam`,
-          ogTitle: `${newNestedSubPageName} | TeasGurus`,
+          ogTitle: `${newNestedSubPageName} | NursingMocks`,
           ogDescription: `Content for ${newNestedSubPageName}`,
           ogImage: "/nursing-mocks-logo.png",
           canonicalUrl: `${
-            process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+            process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"
           }/${normalizedNestedSubPageId}`,
         },
         schema: "",
@@ -712,7 +712,7 @@ export default function ManageSubPage({
                 </label>
                 <div className="flex items-center space-x-2 flex-wrap gap-2">
                   <span className="admin-helper whitespace-nowrap">
-                    https://teasgurus.com/
+                    https://www.nursingmocks.com/
                   </span>
                   <input
                     type="text"

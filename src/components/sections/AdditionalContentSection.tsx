@@ -75,7 +75,7 @@ export default function AdditionalContentSection() {
                 every section of the ATI TEAS or HESI exam with our expert teas prep support.
               </p>
               <p className="text-gray-600 leading-relaxed">
-                At Teas Gurus, we handle everything—from exam details, study materials, and resources to payment 
+                At NursingMocks, we handle everything—from exam details, study materials, and resources to payment 
                 methods, prices, and discounts. We even assist you with instructions, rules, and punctuation, ensuring 
                 your language and grammar are perfect. Our solutions are designed to fit your needs, location, and plans, 
                 giving you every opportunity to succeed without stress.
@@ -83,7 +83,7 @@ export default function AdditionalContentSection() {
               <p className="text-gray-600 leading-relaxed">
                 So, whether you’re preparing for your first TEAS exam or retaking it, let our exam help services guide you. 
                 We give you the strength, support, and guidance you need to reach your nursing goals with confidence. 
-                With Teas Gurus, you get a trusted platform that guarantees success in every section and helps you reach 
+                With NursingMocks, you get a trusted platform that guarantees success in every section and helps you reach 
                 your dream nursing program with no mistakes, no interruptions, and total accuracy.
               </p>
             </div>
@@ -196,7 +196,7 @@ export default function AdditionalContentSection() {
               </div>
               <div className="flex-1">
                 <div className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-3">
-                  We Are Teas Gurus
+                  We Are NursingMocks
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">
                   We Settle For At least a 90 In Your Teas Exam
@@ -231,7 +231,7 @@ export default function AdditionalContentSection() {
                   </p>
                    <p className="text-gray-600 leading-relaxed">
                     Rest assured, your progress is vital to us. That’s why our support team is always available day 
-                    or night to give you updates, answer your requests, and provide reliable guidance. With Teas Gurus, 
+                    or night to give you updates, answer your requests, and provide reliable guidance. With NursingMocks, 
                     success in your TEAS exam isn’t just a chance; it’s a guarantee.
                   </p>
                 </div>
@@ -249,7 +249,7 @@ export default function AdditionalContentSection() {
               </div>
               <div className="flex-1">
                 <div className="inline-flex items-center px-3 py-1 bg-yellow-500 bg-opacity-20 text-gray-900 rounded-full text-sm font-semibold mb-3">
-                  We Are Teas Gurus
+                  We Are NursingMocks
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-white">
                   Teas Exam Takers by Top Qualified MSN Tutors
@@ -258,7 +258,7 @@ export default function AdditionalContentSection() {
                   <p className="text-white mb-4 leading-relaxed">
                     Every day, we get inquiries from students all over the country about our TEAS exam help service, 
                     with questions like, “Can I pay someone to take my TEAS exam?” or “Is it possible to take my TEAS 
-                    exam for me?” The answer is simple, Teas Gurus is here to make it happen.
+                    exam for me?” The answer is simple, NursingMocks is here to make it happen.
                   </p>
                   <p className="text-gray-200 leading-relaxed">
                     Our tutors specialize in all areas of ATI TEAS exams, including reading, math, science, and English 
@@ -280,7 +280,7 @@ export default function AdditionalContentSection() {
                   </p>
                   <p className="text-gray-200 leading-relaxed">
                     If you’ve ever wondered, “Can I really pay someone to take my TEAS exam for me and get guaranteed results?”
-                     the answer is yes , with Teas Gurus, you can. Our trusted exam help services are built on experience, critical 
+                     the answer is yes , with NursingMocks, you can. Our trusted exam help services are built on experience, critical 
                      thinking skills, and dedication to helping every nursing student reach their goals.
                   </p>
                 </div>
@@ -298,7 +298,7 @@ export default function AdditionalContentSection() {
               </div>
               <div className="flex-1">
                 <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold mb-3">
-                  We Are Teas Gurus
+                  We Are NursingMocks
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">
                   Why Should I Pay Someone to Do My Teas Exam for Me?
@@ -307,7 +307,7 @@ export default function AdditionalContentSection() {
                   <p className="text-gray-600 mb-4 leading-relaxed">
                     Paying someone to take my TEAS exam for me brings you a step closer to your nursing school goals and future career. 
                     The truth is, tight schedules, anxiety, study difficulties, and constant pressure from classes can easily distance 
-                    you from your dream of becoming a nurse. That’s where Teas Gurus, a trusted TEAS exam help service, comes in as your 
+                    you from your dream of becoming a nurse. That’s where NursingMocks, a trusted TEAS exam help service, comes in as your 
                     complete solution with only a small fee to pay and guaranteed results.
                   </p>
                   <p className="text-gray-600 mb-4 leading-relaxed">
@@ -324,7 +324,7 @@ export default function AdditionalContentSection() {
                   </p>
                   <p className="text-gray-600 leading-relaxed">
                     You no longer need to deal with the stress of mastering complex subjects when you are already exhausted from long 
-                    days or night shifts at work. Our team at Teas Gurus is always available to take the load off your shoulders and 
+                    days or night shifts at work. Our team at NursingMocks is always available to take the load off your shoulders and 
                     deliver the best possible results. We do all the hard work while you rest, recharge, and focus on your nursing 
                     education and career growth.
                   </p>
@@ -343,7 +343,7 @@ export default function AdditionalContentSection() {
               </div>
               <div className="flex-1">
                 <div className="inline-flex items-center px-3 py-1 bg-white bg-opacity-20 text-purple-600 rounded-full text-sm font-semibold mb-3">
-                  We Are Teas Gurus
+                  We Are NursingMocks
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-white">
                   Take My Teas Test for Me by Qualified and Professional MSN
@@ -352,7 +352,7 @@ export default function AdditionalContentSection() {
                 <div className="max-w-none">
                   <p className="text-gray-200 mb-4 leading-relaxed">
                     If you feel stressed about your TEAS exam or ever wish you could just hit a button and have someone 
-                    take your TEAS exam for you, rest easy because now, you can! At Teas Gurus, our TEAS exam help service 
+                    take your TEAS exam for you, rest easy because now, you can! At NursingMocks, our TEAS exam help service 
                     allows you to pay someone to take my TEAS exam safely, professionally, and with guaranteed results. 
                     All you need to do is share your online coursework or ATI TEAS login with us, and our exam takers will 
                     handle everything with precision and confidentiality.
@@ -363,7 +363,7 @@ export default function AdditionalContentSection() {
                      family members, focus on your career goals, or recharge for your next shift.
                   </p>
                   <p className="text-gray-200 leading-relaxed">
-                    With us, there are no gimmicks or false promises. Teas Gurus values the trust you place in our exam help
+                    With us, there are no gimmicks or false promises. NursingMocks values the trust you place in our exam help
                      services. Here, you don’t just get a tutor—you gain a partner in your academic success and nursing 
                      education. Each assigned tutor has years of exam-taking experience, understands the ATI TEAS format, 
                      and uses tested exam strategies, critical thinking skills, and time management skills to guarantee top results.
@@ -372,7 +372,7 @@ export default function AdditionalContentSection() {
                     Our tutors will take your online TEAS exams, manage every section from reading and math to science and English language
                      usage; and ensure you achieve the high scores you need to advance in your nursing program. Their deep understanding
                       of concepts, questions, and rules helps them navigate the exam format effectively to secure that coveted score of 
-                      90 and above. With Teas Gurus, you get more than just exam help you get peace of mind, expert guidance, and guaranteed
+                      90 and above. With NursingMocks, you get more than just exam help you get peace of mind, expert guidance, and guaranteed
                        results that take your nursing career to the next level.
                   </p>
                 </div>
@@ -390,14 +390,14 @@ export default function AdditionalContentSection() {
               </div>
               <div className="flex-1">
                 <div className="inline-flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold mb-3">
-                  We Are Teas Gurus
+                  We Are NursingMocks
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">
                   What Is in The Space of Hiring an Expert to Take My Teas Exam?
                 </h2>
                 <div className="prose prose-lg max-w-none">
                   <p className="text-gray-600 mb-4 leading-relaxed">
-                    Hiring Teas Gurus to take your TEAS exam can be a smart and tempting solution for any nursing student 
+                    Hiring NursingMocks to take your TEAS exam can be a smart and tempting solution for any nursing student 
                     looking to balance tight schedules and achieve high scores. When you decide to pay someone to take your 
                     TEAS exam, you’re not just getting help, you’re partnering with a TEAS exam help service that values 
                     accuracy, professionalism, and results.
@@ -410,7 +410,7 @@ export default function AdditionalContentSection() {
                   </p>
                   <p className="text-gray-600 mb-4 leading-relaxed">
                     Also, entrust us with your TEAS test help or exam help services as early as possible, this gives our test
-                     takers enough time to plan, prepare, and ensure top results. With Teas Gurus, you don’t just hire anyone;
+                     takers enough time to plan, prepare, and ensure top results. With NursingMocks, you don’t just hire anyone;
                       you hire experts who understand nursing education, the exam-taking process, and the value of achieving 
                       excellence in every section.
                   </p>
@@ -419,7 +419,7 @@ export default function AdditionalContentSection() {
                       Important Note:
                     </h4>
                     <p className="text-blue-800">
-                      Be sure to also give Teas Gurus a considerable period to provide you with the best of our TEAS exam help 
+                      Be sure to also give NursingMocks a considerable period to provide you with the best of our TEAS exam help 
                       services. Online exams can vary, and therefore, depending on the nature of the ATI TEAS test or online class, 
                       we will need ample time to take my TEAS exam for me and guarantee the best score. But if you need a quick order, 
                       contact our exam help service and fill out our quote form. We will only accept it if there is enough time for our 
@@ -439,19 +439,19 @@ export default function AdditionalContentSection() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-xl text-center">
             <div className="max-w-3xl mx-auto">
               <div className="inline-flex items-center px-3 py-1 bg-white bg-opacity-20 text-gray-700 rounded-full text-sm font-semibold mb-4">
-                We Are Teas Gurus
+                We Are NursingMocks
               </div>
               <h2 className="text-3xl font-bold mb-4 text-white">
                 So, Can You Take My Remote Teas Exam?
               </h2>
               <p className="text-xl text-blue-100 mb-6 leading-relaxed">
-                Absolutely! Our Teas Gurus team has qualified professionals ready to take my TEAS exam for me and handle 
+                Absolutely! Our NursingMocks team has qualified professionals ready to take my TEAS exam for me and handle 
                 your remote ATI TEAS exams with precision. They are highly knowledgeable about the TEAS exam content, 
                 structure, and exam-taking process; hence, you can be sure they will deliver exceptional results. We combine 
                 years of experience in exam help services with advanced study methods and critical thinking skills to ensure 
                 top scores every time.
 
-                We prioritize your success, maintain strict confidentiality, and uphold high ethical standards, making Teas Gurus 
+                We prioritize your success, maintain strict confidentiality, and uphold high ethical standards, making NursingMocks 
                 the most trusted TEAS exam help service for every nursing student. Wait no more—reach out today, fill out our quote 
                 request, and let us help you achieve that high score you need to advance in your nursing education and career.
               </p>

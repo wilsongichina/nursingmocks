@@ -12,11 +12,11 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
   if (schema) {
     // If schema is a string, try to replace hardcoded URLs and site names
     if (typeof schema === "string") {
-      let processedSchema = schema.replace(/https:\/\/teasgurus\.com/g, siteUrl);
+      let processedSchema = schema.replace(/https:\/\/nursingmocks\.com/g, siteUrl);
       // Replace common site name variations
-      processedSchema = processedSchema.replace(/"Teas Gurus"/g, `"${siteName}"`);
-      processedSchema = processedSchema.replace(/"TEAS Gurus"/g, `"${siteName}"`);
-      processedSchema = processedSchema.replace(/"TeasGurus"/g, `"${siteName}"`);
+      processedSchema = processedSchema.replace(/"NursingMocks"/g, `"${siteName}"`);
+      processedSchema = processedSchema.replace(/"NursingMocks"/g, `"${siteName}"`);
+      processedSchema = processedSchema.replace(/"NursingMocks"/g, `"${siteName}"`);
       return (
         <script
           type="application/ld+json"
@@ -51,10 +51,10 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               url: `${siteUrl}/`,
               logo: `${siteUrl}/nursing-mocks-logo.png`,
               sameAs: [
-                "https://instagram.com/teasgurus",
-                "https://www.linkedin.com/company/teasgurus",
+                "https://instagram.com/nursingmocks",
+                "https://www.linkedin.com/company/nursingmocks",
                 "https://tiktok.com/@teas.gurus",
-                "https://www.youtube.com/@teasgurus",
+                "https://www.youtube.com/@nursingmocks",
               ],
             },
             {
@@ -73,7 +73,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               url: `${siteUrl}/`,
               name: "Take My TEAS Exam for Me | Guaranteed High Scores Online",
               description:
-                "Need to pay someone to take my TEAS exam? Teas Gurus can take my TEAS test for me with U.S.-based professionals, top results, and guaranteed confidentiality.",
+                "Need to pay someone to take my TEAS exam? NursingMocks can take my TEAS test for me with U.S.-based professionals, top results, and guaranteed confidentiality.",
               isPartOf: {
                 "@id": `${siteUrl}/#website`,
               },
@@ -104,7 +104,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               provider: { "@id": `${siteUrl}/#organization` },
               areaServed: { "@type": "Country", name: "United States" },
               description:
-                "Looking to pay someone to take your TEAS exam online? Teas Gurus connects you with qualified ATI TEAS exam takers who ensure top scores in Reading, Math, Science, and English. We guarantee confidentiality and success when you pay someone to take your TEAS test through us.",
+                "Looking to pay someone to take your TEAS exam online? NursingMocks connects you with qualified ATI TEAS exam takers who ensure top scores in Reading, Math, Science, and English. We guarantee confidentiality and success when you pay someone to take your TEAS test through us.",
               availableChannel: {
                 "@type": "ServiceChannel",
                 serviceUrl: `${siteUrl}/`,
@@ -118,7 +118,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               provider: { "@id": `${siteUrl}/#organization` },
               areaServed: { "@type": "Country", name: "United States" },
               description:
-                "Need someone to take your TEAS exam? Teas Gurus offers expert ATI TEAS exam takers who will handle your online or proctored TEAS test professionally. If you're searching for 'take my TEAS exam' services, we provide a reliable and secure solution.",
+                "Need someone to take your TEAS exam? NursingMocks offers expert ATI TEAS exam takers who will handle your online or proctored TEAS test professionally. If you're searching for 'take my TEAS exam' services, we provide a reliable and secure solution.",
               availableChannel: {
                 "@type": "ServiceChannel",
                 serviceUrl: `${siteUrl}/`,
@@ -132,7 +132,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
               provider: { "@id": `${siteUrl}/#organization` },
               areaServed: { "@type": "Country", name: "United States" },
               description:
-                "Want a professional to take your TEAS exam for you? Teas Gurus provides reliable, confidential, and high-score guaranteed ATI TEAS test-taking services. Whether it's a proctored exam or remote, our experts will take your TEAS exam for you safely and discreetly.",
+                "Want a professional to take your TEAS exam for you? NursingMocks provides reliable, confidential, and high-score guaranteed ATI TEAS test-taking services. Whether it's a proctored exam or remote, our experts will take your TEAS exam for you safely and discreetly.",
               availableChannel: {
                 "@type": "ServiceChannel",
                 serviceUrl: `${siteUrl}/`,
@@ -147,7 +147,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "Can I pay someone to take my TEAS exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes. You can pay someone to take your TEAS exam online with Teas Gurus. We provide experienced and professional exam takers who ensure top scores in a safe, secure, and discreet environment.",
+                    text: "Yes. You can pay someone to take your TEAS exam online with NursingMocks. We provide experienced and professional exam takers who ensure top scores in a safe, secure, and discreet environment.",
                   },
                 },
                 {
@@ -155,7 +155,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "How do I find someone to take my TEAS exam for me?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "You can hire a trusted expert at Teas Gurus to take your TEAS exam for you. Just contact us through our homepage, provide your test details, and we'll handle the rest—including proctored exams.",
+                    text: "You can hire a trusted expert at NursingMocks to take your TEAS exam for you. Just contact us through our homepage, provide your test details, and we'll handle the rest—including proctored exams.",
                   },
                 },
                 {
@@ -163,7 +163,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "Is it safe to have someone take my TEAS exam online?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes. At Teas Gurus, all TEAS exams taken on your behalf are managed with complete confidentiality, privacy, and professionalism. Our process is secure, even for proctored exams.",
+                    text: "Yes. At NursingMocks, all TEAS exams taken on your behalf are managed with complete confidentiality, privacy, and professionalism. Our process is secure, even for proctored exams.",
                   },
                 },
                 {
@@ -179,7 +179,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "Can I pay someone to take my remote TEAS exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes. You can pay someone to take your remote TEAS exams through Teas Gurus. Our expert MSN tutors handle the full process and guarantee high scores while maintaining complete discretion.",
+                    text: "Yes. You can pay someone to take your remote TEAS exams through NursingMocks. Our expert MSN tutors handle the full process and guarantee high scores while maintaining complete discretion.",
                   },
                 },
                 {
@@ -187,7 +187,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "Where can I pay someone to take my TEAS entrance exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "The best place to pay someone to take your TEAS entrance exam is online. Teas Gurus offers confidential, professional help with flexible access and a wide range of exam services.",
+                    text: "The best place to pay someone to take your TEAS entrance exam is online. NursingMocks offers confidential, professional help with flexible access and a wide range of exam services.",
                   },
                 },
                 {
@@ -195,23 +195,23 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "How much should I pay someone to take my online TEAS exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "While others may charge over $500, Teas Gurus offers affordable pricing at $400 per exam. You also get a money-back guarantee, secure testing, and the option to pay in installments.",
+                    text: "While others may charge over $500, NursingMocks offers affordable pricing at $400 per exam. You also get a money-back guarantee, secure testing, and the option to pay in installments.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Is Teas Gurus legit?",
+                  name: "Is NursingMocks legit?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes. Teas Gurus is a legitimate and trusted platform with real student testimonials. Our pricing is transparent, our services are proven, and our results speak for themselves.",
+                    text: "Yes. NursingMocks is a legitimate and trusted platform with real student testimonials. Our pricing is transparent, our services are proven, and our results speak for themselves.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "Is Teas Gurus legit and do they have enough exam takers?",
+                  name: "Is NursingMocks legit and do they have enough exam takers?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Absolutely. Teas Gurus has been helping students for years. We have a strong team of expert exam takers ready to assist with your TEAS test anytime you need.",
+                    text: "Absolutely. NursingMocks has been helping students for years. We have a strong team of expert exam takers ready to assist with your TEAS test anytime you need.",
                   },
                 },
                 {
@@ -219,7 +219,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "Can I take my TEAS exam online or remotely?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes. The TEAS exam can be taken online or remotely. Most institutions now support remote proctoring. Teas Gurus offers support to help you complete your exam from anywhere with ease.",
+                    text: "Yes. The TEAS exam can be taken online or remotely. Most institutions now support remote proctoring. NursingMocks offers support to help you complete your exam from anywhere with ease.",
                   },
                 },
                 {
@@ -227,7 +227,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "How do you properly take the TEAS exam?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "To take the TEAS exam properly, register through the ATI website, choose the remote option, and select your date. Teas Gurus can help install software like AnyDesk and Respondus bypass to handle the exam securely on your behalf.",
+                    text: "To take the TEAS exam properly, register through the ATI website, choose the remote option, and select your date. NursingMocks can help install software like AnyDesk and Respondus bypass to handle the exam securely on your behalf.",
                   },
                 },
                 {
@@ -235,7 +235,7 @@ export default function SchemaScripts({ schema }: SchemaScriptsProps) {
                   name: "Are there legit TEAS taker experts?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes. Teas Gurus is home to expert TEAS exam takers who are qualified, experienced, and available to help you pass your test professionally and securely.",
+                    text: "Yes. NursingMocks is home to expert TEAS exam takers who are qualified, experienced, and available to help you pass your test professionally and securely.",
                   },
                 },
               ],

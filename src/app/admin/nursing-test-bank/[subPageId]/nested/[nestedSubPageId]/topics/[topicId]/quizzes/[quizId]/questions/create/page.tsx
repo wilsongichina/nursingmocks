@@ -8,7 +8,7 @@ import {
   getNursingTestBankQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import { AdminLoadingShell, AdminTopBar } from "@/components/admin/AdminUi";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
@@ -393,7 +393,7 @@ export default function CreateQuestion({
   if (loading || !resolvedParams) {
     return (
       <div className="admin-page">
-        <AdminLoadingState
+        <AdminLoadingShell
           title="Loading Admin Content"
           description="Preparing admin data and management controls."
         />
@@ -474,7 +474,7 @@ export default function CreateQuestion({
                 href={`/admin/nursing-test-bank/${resolvedParams.subPageId}/nested/${resolvedParams.nestedSubPageId}/topics/${resolvedParams.topicId}/quizzes/${resolvedParams.quizId}/manage`}
                 className="admin-button-secondary"
               >
-                ← Back to Admin
+                Back to Admin
               </Link>
               <button
                 type="button"
@@ -964,6 +964,9 @@ export default function CreateQuestion({
     </SidebarProvider>
   );
 }
+
+
+
 
 
 

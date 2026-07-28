@@ -7,7 +7,7 @@ import {
   getNursingExitExamQuiz,
 } from "@/lib/firestore-operations";
 import Link from "next/link";
-import { AdminLoadingState, AdminTopBar } from "@/components/admin/AdminUi";
+import { AdminLoadingShell, AdminTopBar } from "@/components/admin/AdminUi";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import UserProfileBadge from "@/components/layout/UserProfileBadge";
@@ -209,9 +209,7 @@ export default function BulkUploadQuestions({
 
   if (loading || !resolvedParams) {
     return (
-      <div className="admin-page flex min-h-screen items-center justify-center px-4 py-6">
-        <AdminLoadingState title="Loading bulk upload" description="Preparing quiz details and upload workspace." />
-      </div>
+      <AdminLoadingShell title="Loading bulk upload" description="Preparing quiz details and upload workspace." />
     );
   }
 

@@ -1148,22 +1148,22 @@ export const initializeNursingExitExamContent = async () => {
   try {
     const dummyContent = {
       meta: {
-        title: "Nursing Exit Exam | TeasGurus",
+        title: "Nursing Exit Exam | NursingMocks",
         description:
           "Comprehensive guide to nursing exit exams. Prepare for your nursing exit exam with expert resources, practice questions, and study guides.",
         keywords:
           "nursing exit exam, nursing school exit exam, NCLEX preparation, nursing graduation exam, exit exam study guide",
-        ogTitle: "Nursing Exit Exam | TeasGurus",
+        ogTitle: "Nursing Exit Exam | NursingMocks",
         ogDescription:
           "Comprehensive guide to nursing exit exams. Prepare for your nursing exit exam with expert resources, practice questions, and study guides.",
         ogImage: "/nursing-mocks-logo.png",
         canonicalUrl: `${
-          process.env.NEXT_PUBLIC_SITE_URL || "https://teasgurus.com"
+          process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com"
         }/nursing-exit-exam`,
       },
       schema: "",
       hero: {
-        badge: "We are Teas Gurus",
+        badge: "We are NursingMocks",
         title: "Nursing Exit Exam",
         subtitle: "Your comprehensive guide to success",
         description:
