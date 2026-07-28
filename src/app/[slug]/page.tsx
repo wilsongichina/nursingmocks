@@ -1449,7 +1449,7 @@ export default async function DynamicPage({
   let quizzes: any[] = [];
   let _nestedPageSlugMap: Record<string, string> = {};
   let _topicSlugMap: Record<string, string> = {};
-  const _quizSlugMap: Record<string, string> = {};
+  let _quizSlugMap: Record<string, string> = {};
 
   if (pageType === "nested") {
     // Fetch question count for the nested page
@@ -1482,7 +1482,7 @@ export default async function DynamicPage({
           nestedPageId: mapping.nestedPageId,
         });
         if (slugMapResult.success) {
-          const _quizSlugMap = slugMapResult.slugMap;
+          _quizSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for quizzes
         quizzes = await Promise.all(
@@ -1518,7 +1518,7 @@ export default async function DynamicPage({
           nestedPageId: mapping.nestedPageId,
         });
         if (slugMapResult.success) {
-          const _quizSlugMap = slugMapResult.slugMap;
+          _quizSlugMap = slugMapResult.slugMap;
         }
         // Fetch question counts for quizzes
         quizzes = await Promise.all(
@@ -1616,7 +1616,7 @@ export default async function DynamicPage({
         topicId: mapping.topicId,
       });
       if (slugMapResult.success) {
-        const _quizSlugMap = slugMapResult.slugMap;
+        _quizSlugMap = slugMapResult.slugMap;
       }
       // Fetch question counts for quizzes
       quizzes = await Promise.all(
@@ -1813,6 +1813,34 @@ export default async function DynamicPage({
   const pageName = titleCaseWords(stripHtml(content.pageName || pageHeading || slug));
   const examBadge = getExamBadgeLabel(pageData, pageName);
   const actionLabels = getSubPageActionLabels(examBadge);
+  const childItemLabel =
+    pageType === "nested"
+      ? pillarId === "nursing-test-bank"
+        ? "Topic"
+        : "Exam"
+      : "Subject";
+  const childItemPlural =
+    childItemLabel === "Topic"
+      ? "topics"
+      : childItemLabel === "Exam"
+        ? "exams"
+        : "subjects";
+  const childSectionEyebrow =
+    childItemLabel === "Subject"
+      ? "Start By Subject"
+      : `Start By ${childItemLabel}`;
+  const childSectionTitle =
+    childItemLabel === "Subject"
+      ? actionLabels.sectionTitle
+      : `${examBadge} Practice ${childItemPlural.charAt(0).toUpperCase()}${childItemPlural.slice(1)}`;
+  const primaryChildAction =
+    childItemLabel === "Subject"
+      ? actionLabels.primary
+      : `Start ${examBadge} Practice`;
+  const secondaryChildAction =
+    childItemLabel === "Subject"
+      ? actionLabels.secondary
+      : `View ${examBadge} ${childItemPlural.charAt(0).toUpperCase()}${childItemPlural.slice(1)}`;
   const publishedNestedPages = nestedPages.filter((nestedPage: any) => {
     const status = String(nestedPage?.status || "Published").toLowerCase();
     const hasPublicRoute = Boolean(_nestedPageSlugMap[nestedPage.id]);
@@ -1830,25 +1858,42 @@ export default async function DynamicPage({
 
     return true;
   });
-  const childCards = publishedNestedPages.map((nestedPage: any) => {
+  const publishedTopics = topics.filter((topic: any) => {
+    const status = String(topic?.status || "Published").toLowerCase();
+    return topic.active !== false && status !== "archived";
+  });
+  const publishedQuizzes = quizzes.filter((quiz: any) => {
+    const status = String(quiz?.status || "Published").toLowerCase();
+    return quiz.active !== false && status !== "archived";
+  });
+  const childSource =
+    pageType === "nested"
+      ? pillarId === "nursing-test-bank"
+        ? publishedTopics
+        : publishedQuizzes
+      : publishedNestedPages;
+  const childCards = childSource.map((child: any) => {
     const rawName =
-      nestedPage.seoLabel ||
-      nestedPage.pageName ||
-      nestedPage.heading ||
-      nestedPage.title ||
-      nestedPage.slug ||
-      nestedPage.id;
+      child.seoLabel ||
+      child.pageName ||
+      child.heading ||
+      child.title ||
+      child.quizName ||
+      child.topicName ||
+      child.slug ||
+      child.id;
     const title = titleCaseWords(stripHtml(rawName));
     const slugValue =
-      _nestedPageSlugMap[nestedPage.id] ||
-      nestedPage.slug ||
-      nestedPage.seoSlug ||
-      nestedPage.id;
-    const questionCount = typeof nestedPage.questionCount === "number" ? nestedPage.questionCount : null;
-    const description = getPublicCardDescription(nestedPage, title);
+      pageType === "nested" && pillarId === "nursing-test-bank"
+        ? _topicSlugMap[child.id] || child.slug || child.seoSlug || child.id
+        : pageType === "nested"
+          ? _quizSlugMap[child.id] || child.slug || child.seoSlug || child.id
+          : _nestedPageSlugMap[child.id] || child.slug || child.seoSlug || child.id;
+    const questionCount = typeof child.questionCount === "number" ? child.questionCount : null;
+    const description = getPublicCardDescription(child, title);
 
     return {
-      id: nestedPage.id || slugValue,
+      id: child.id || slugValue,
       title,
       href: `/${String(slugValue).replace(/^\/+/, "")}`,
       questionCount,
@@ -1898,13 +1943,13 @@ export default async function DynamicPage({
               <section id="practice-paths" className="mb-5">
                 <div className="mx-auto mb-5 flex max-w-3xl flex-col items-center gap-3 text-center">
                   <div>
-                    <p className="user-eyebrow m-0">Start By Subject</p>
+                    <p className="user-eyebrow m-0">{childSectionEyebrow}</p>
                     <h2 className="user-section-title public-section-heading mt-2">
-                      {actionLabels.sectionTitle}
+                      {childSectionTitle}
                     </h2>
                   </div>
                   <p className="user-helper max-w-2xl">
-                    Pick the subject that matches your study plan. Each link opens the exact practice page for that subject.
+                    Pick the {childItemLabel.toLowerCase()} that matches your study plan. Each link opens the exact practice page for that {childItemLabel.toLowerCase()}.
                   </p>
                 </div>
 
@@ -1913,7 +1958,7 @@ export default async function DynamicPage({
                     {childCards.map((card) => (
                       <article key={card.id} className="user-card flex min-h-[210px] flex-col p-4 shadow-none">
                         <div className="mb-4">
-                          <span className="user-pill user-pill-purple">Subject</span>
+                          <span className="user-pill user-pill-purple">{childItemLabel}</span>
                           {card.questionCount !== null && (
                             <span className="mt-3 block text-base font-bold leading-6 text-[#0f766e]">
                               {card.questionCount} questions
@@ -2036,17 +2081,17 @@ export default async function DynamicPage({
                 <span className="user-badge user-badge-green">Free preview available</span>
                 {childCards.length > 0 && (
                   <span className="user-badge">
-                    {childCards.length} {childCards.length === 1 ? "subject" : "subjects"}
+                    {childCards.length} {childCards.length === 1 ? childItemLabel.toLowerCase() : childItemPlural}
                   </span>
                 )}
               </div>
             </div>
             <div className="user-page-header-actions w-full sm:w-auto">
               <a href={firstChildHref} className="user-button-primary w-full sm:w-auto">
-                {actionLabels.primary}
+                {primaryChildAction}
               </a>
               <a href="#practice-paths" className="user-button-secondary w-full sm:w-auto">
-                {actionLabels.secondary}
+                {secondaryChildAction}
               </a>
             </div>
           </div>
@@ -2072,7 +2117,7 @@ export default async function DynamicPage({
               {/* Hero Pill */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/85 border border-[#d9d7ff] backdrop-blur-sm text-[11px] font-semibold uppercase tracking-wider text-[#5548e0] mb-[14px] shadow-sm">
                 <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf]" />
-                <span>{examBadge} - Subject-Based Practice Hub</span>
+                <span>{examBadge} - {childItemLabel}-Based Practice Hub</span>
                 {false && (
                 <span>
                   {pageData.badge ||
@@ -2118,19 +2163,19 @@ export default async function DynamicPage({
                   <span className="hidden">
                     ▶
                   </span>
-                  {actionLabels.primary}
+                  {primaryChildAction}
                 </a>
                 <a
                   href="#practice-paths"
                   className="inline-flex items-center justify-center gap-[6px] px-4 py-[9px] rounded-full border border-dashed border-[rgba(106,92,255,0.32)] bg-[rgba(255,255,255,0.96)] text-[13px] font-medium text-[#202437] no-underline shadow-[0_10px_24px_rgba(15,23,42,0.12)] hover:bg-[#f3f4ff]"
                 >
-                  {actionLabels.secondary}
+                  {secondaryChildAction}
                 </a>
               </div>
 
               {/* Hero Footnote */}
               <p className="text-[11.5px] text-[#7a819c] max-w-[520px] mt-[2px]">
-                Choose a subject, start with the available preview, and continue deeper practice when your access is active.
+                Choose a {childItemLabel.toLowerCase()}, start with the available preview, and continue deeper practice when your access is active.
               </p>
             </div>
 
@@ -2142,7 +2187,7 @@ export default async function DynamicPage({
                     Practice Paths
                   </div>
                   <div className="text-[11px] py-1 px-2.5 rounded-full bg-[#dcfce7] text-[#166534] border border-[#bbf7d0] whitespace-nowrap">
-                    {childCards.length || "New"} Subjects
+                    {childCards.length || "New"} {childCards.length === 1 ? childItemLabel : `${childItemLabel}s`}
                   </div>
                 </div>
 
@@ -2226,14 +2271,14 @@ export default async function DynamicPage({
             <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <div>
                 <p className="text-sm font-bold uppercase text-[#6a5cff]">
-                  Start By Subject
+                  {childSectionEyebrow}
                 </p>
                 <h2 className="text-2xl font-extrabold tracking-tight text-[#202437] sm:text-3xl">
-                  {actionLabels.sectionTitle}
+                  {childSectionTitle}
                 </h2>
               </div>
               <p className="max-w-[520px] text-sm leading-6 text-[#68708a]">
-                Pick the subject that matches your study plan. Each link opens the exact practice page for that subject.
+                Pick the {childItemLabel.toLowerCase()} that matches your study plan. Each link opens the exact practice page for that {childItemLabel.toLowerCase()}.
               </p>
             </div>
 
@@ -2245,7 +2290,7 @@ export default async function DynamicPage({
                 >
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <span className="rounded-full bg-[#f1efff] px-3 py-1 text-xs font-bold text-[#5548e0]">
-                      Subject
+                      {childItemLabel}
                     </span>
                     {card.questionCount !== null && (
                       <span className="rounded-full bg-[#ecfeff] px-3 py-1 text-xs font-bold text-[#0f766e]">

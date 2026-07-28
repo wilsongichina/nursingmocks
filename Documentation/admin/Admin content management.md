@@ -48,6 +48,263 @@ cmd /c node scripts\tmp-order-reading-passage-groups.mjs --dry-run
 
 Admin pages should apply the NursingMocks typography system while keeping the layout optimized for data management.
 
+Applied main listing cleanup to:
+
+- `/admin/nursing-exit-exam` now uses shared admin notification, page header, overview card, stat card, tab, and toolbar primitives for the main management screen.
+- `/admin/nursing-exit-exam` now exposes `Edit Main Page` as a header action instead of a duplicated `Main Page Settings` tab.
+- `/admin/nursing-exit-exam` now uses `Quiz Metadata` and `Knowledge Base Articles` naming in the main tab and toolbar labels.
+- `/admin/nursing-exit-exam` keeps existing Firestore reads, route mappings, filters, pagination, create/delete handlers, and child admin routes unchanged during this UI alignment phase.
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Exit Exam Main Listing Shared Controls
+
+Continued the Nursing Exit Exam admin page upgrade so the main listing uses the same shared controls as the refreshed Nursing Entrance Exam page.
+
+Affected page:
+
+```text
+/admin/nursing-exit-exam
+```
+
+Changed:
+
+- replaced the remaining custom pagination controls for Nested Sub Pages, Quiz Metadata, and Knowledge Base Articles with `AdminPagination`
+- replaced the four custom delete confirmation overlays with `AdminDestructiveDialog`
+- kept existing Firestore reads, create/delete handlers, filters, sorting, route mappings, and child route links unchanged
+- normalized remaining visible `KB article` text to `Knowledge Base Article`
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Exit Exam Create Modal Cleanup
+
+Converted the Nursing Exit Exam main listing create dialogs to the shared admin modal and form primitives.
+
+Affected page:
+
+```text
+/admin/nursing-exit-exam
+```
+
+Changed:
+
+- replaced custom create overlays for Sub Pages, Nested Sub Pages, Quiz Metadata, and Knowledge Base Articles with `AdminModal`
+- used `AdminFormSection`, `AdminFieldGroup`, `AdminSlugField`, `AdminModalFooter`, and `AdminValidationMessage` for consistent form layout, field spacing, validation styling, and footer actions
+- kept existing submit handlers, required fields, slug change behavior, selected parent state, and reset behavior unchanged
+- kept the Nursing Exit Exams access product display in the Sub Page create dialog
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Exit Exam Table Cell Cleanup
+
+Continued the Nursing Exit Exam main listing polish by aligning table data cells with the shared admin table system.
+
+Affected page:
+
+```text
+/admin/nursing-exit-exam
+```
+
+Changed:
+
+- replaced inline table data cell wrappers with `AdminTableCell`
+- preserved existing action buttons, action routes, row filters, sorting, pagination, and status badges
+- kept slug cells in the monospace table style and retained existing minimum widths for dense name and slug columns
+- replaced corrupted dash fallback text in table rows with `N/A`
+- normalized remaining visible Sub Page loading and duplicate-slug validation messages
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Admin Table Long Title Truncation
+
+Added a shared table title truncation utility for dense admin tables where long quiz, Sub Page, Nested Sub Page, or Knowledge Base Article names can push action buttons out of alignment.
+
+Affected page:
+
+```text
+/admin/nursing-exit-exam
+```
+
+Changed:
+
+- added `admin-table-title-truncate` in global admin styles
+- applied it to long display-name columns on the Nursing Exit Exam main listing
+- added native `title` attributes so hovering the truncated value shows the full text
+- kept row actions, links, table ordering, and saved data unchanged
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Admin Table Slug And Action Containment
+
+Tightened dense admin table rows so long slugs and action groups do not distort row height.
+
+Affected page:
+
+```text
+/admin/nursing-exit-exam
+```
+
+Changed:
+
+- added `admin-table-slug-truncate` for URL slug cells
+- applied hover `title` attributes to truncated slug cells so admins can inspect the full URL
+- changed admin content action groups from wrapping to a single-line button row
+- kept table overflow behavior responsible for horizontal scrolling instead of pushing later records lower
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Exit Exam Nested Sub Page Editor UI
+
+Updated the internal Nursing Exit Exam Nested Sub Page editor route to match the refreshed admin UI used by the Nursing Entrance Exam editor.
+
+Affected page:
+
+```text
+/admin/nursing-exit-exam/[subPageId]/nested/[nestedSubPageId]
+```
+
+Changed:
+
+- replaced the old gradient/local editor shell with the standard admin sidebar, top bar, workspace, and content wrapper
+- added `AdminPageHeader`, `AdminNotificationRegion`, `AdminCard`, `AdminFormSection`, `AdminFieldGroup`, `AdminSlugField`, `AdminSelectField`, `AdminStatusBadge`, and `AdminInfoTile`
+- aligned loading state with the full admin shell and `AdminLoadingState`
+- kept Nursing Exit Exam Firestore reads and saves on the exit exam collections
+- added parent Sub Page lookup for clearer breadcrumbs and parent-structure display
+- removed old visible encoding artifacts from the editor copy
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Exit Exam Sub Page Editor UI
+
+Updated the Nursing Exit Exam Sub Page editor route to match the refreshed admin UI used by the Nursing Entrance Exam Sub Page editor.
+
+Affected page:
+
+```text
+/admin/nursing-exit-exam/[subPageId]
+```
+
+Changed:
+
+- replaced the old local editor shell with the standard admin sidebar, top bar, workspace, and content wrapper
+- added shared admin components for header, notifications, cards, form sections, fields, slug field, status select, status badge, and parent-structure summary
+- kept Nursing Exit Exam Firestore reads, saves, redirect behavior, public preview, content editor, FAQ editor, and schema editor intact
+- normalized save-time names and slugs using the shared admin content naming helpers
+- replaced remaining entrance-exam placeholders with nursing-exit examples
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Follow-up: Nursing Exit Exam Quiz Imports
+
+Reset and reimported the Nursing Exit Exam quiz data from the local Naxlex source files after stale records were removed.
+
+Source root:
+
+```text
+C:\Users\wilso\OneDrive\Desktop\Naxlex\Nursing Exit Exams
+```
+
+Import naming rule:
+
+- Exit Exam and Test Bank quizzes use the source JSON file name as the quiz name.
+- Exit Exam and Test Bank quiz metadata should not include `setNumber`, `year`, or `examYear`.
+
+Imported mappings:
+
+```text
+lpn-exit-exams / ati-lpn-comprehensive-predictor
+- ATI PN Comprehensive Predictor 2023 Proctored Exam: 168 questions
+- ATI LPN Comprehensive Predictor 2023 Proctored Exam: 32 questions
+- ATI PN Comprehensive Predictor 2023 Proctored Exam Form 2: 178 questions
+- ATI LPN Comprehensive Predictor 2023 Proctored Exam Form 2: 178 questions
+
+lpn-exit-exams / hesi-lpn-exit-exam
+- HESI LPN Exit Proctored Exam: 291 questions
+- HESI LPN Exit Proctored Exam Form 2: 110 questions
+- HESI LPN Exit Exam IV Proctored Exam: 126 questions
+- HESI LPN Exit Test 11 Proctored Exam: 71 questions
+
+rn-exit-exams / ati-rn-comprehensive-predictor
+- RN Comprehensive Predictor 2023 Proctored Exam - St. Joseph: 176 questions
+- RN Comprehensive Predictor Proctored Exam (National U CA San Diego): 177 questions
+- RN Comprehensive Predictor 2023 Proctored Exam: 145 questions
+- ATI RN Comprehensive Predictor 2023 Retake Proctored Exam: 176 questions
+
+rn-exit-exams / hesi-rn-exit-exam
+- HESI RN Exit Proctored Exam: 127 questions
+- HESI Compass B Exit Proctored Exam: 68 questions
+- HESI RN Compass Exit B Proctored Exam: 121 questions
+- HESI RN Exit Proctored Exam Form 2: 130 questions
+```
+
+Validation:
+
+- existing Exit Exam quiz records, question subcollections, and quiz route mappings were removed before reimport
+- each nested Sub Page has exactly four imported Naxlex quiz records
+- each quiz has one route mapping
+- each quiz `questionCount` matches the actual Firestore question document count
+- no imported quiz has `setNumber`, `year`, or `examYear`
+- leading numeric source prefixes such as `1-` and `2-` were removed from quiz display names
+- duplicate names created by prefix removal were made unique with a `Form 2` suffix
+- no blocking question issues were found for missing question text, options, or correct answers
+
+## Follow-up: Public Nested Page Child Lists
+
+Fixed the public dynamic `[slug]` page so nested exam pages render their direct children from the correct collection.
+
+Affected public route:
+
+```text
+/ati-lpn-comprehensive-predictor
+```
+
+Changed:
+
+- parent Sub Pages still list Nested Sub Pages as subjects
+- nested Nursing Entrance Exam and Nursing Exit Exam pages now list their child quizzes as exams
+- nested Nursing Test Bank pages now list their child topics
+- quiz route slugs are read from route mappings instead of falling back only to quiz document slugs
+- section labels now switch between Subject, Exam, and Topic based on the page type
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+Invoke-WebRequest http://localhost:3000/ati-lpn-comprehensive-predictor
+```
+
 The central source of truth for reusable admin UI primitives is:
 
 ```text

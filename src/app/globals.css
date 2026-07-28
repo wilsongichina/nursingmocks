@@ -1530,6 +1530,34 @@ body {
   font-size: 0.8125rem;
 }
 
+.admin-table-title-truncate {
+  display: inline-block;
+  max-width: min(22rem, 38vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.admin-table-slug-truncate {
+  display: inline-block;
+  max-width: min(16rem, 28vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .admin-table-title-truncate {
+    max-width: 14rem;
+  }
+
+  .admin-table-slug-truncate {
+    max-width: 11rem;
+  }
+}
+
 .admin-table tbody tr:hover {
   background: rgba(79, 70, 229, 0.025);
 }
@@ -1836,10 +1864,11 @@ body {
 
 .admin-content-management-page .admin-crud-actions {
   display: flex !important;
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
   align-items: center !important;
   justify-content: flex-start !important;
   gap: 0.5rem !important;
+  min-width: max-content !important;
 }
 
 .admin-content-management-page .admin-crud-button {
@@ -1948,11 +1977,11 @@ body {
   }
 
   .admin-content-management-page .admin-crud-actions {
-    align-items: stretch !important;
+    align-items: center !important;
   }
 
   .admin-content-management-page .admin-crud-button {
-    flex: 1 1 auto !important;
+    flex: 0 0 auto !important;
   }
 }
 
