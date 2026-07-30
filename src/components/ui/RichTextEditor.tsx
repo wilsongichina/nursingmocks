@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import {
+  escapeHtmlText,
+  sanitizeAdminEditorHtml,
+  sanitizePlainTextPaste,
+} from "@/lib/admin/editor-html-sanitizer";
 
 interface RichTextEditorProps {
   value: string;
@@ -33,7 +38,7 @@ export default function RichTextEditor({
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      onChange(sanitizeAdminEditorHtml(editorRef.current.innerHTML));
     }
   };
 
@@ -82,6 +87,30 @@ export default function RichTextEditor({
 
     // Reset file input
     event.target.value = "";
+  };
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const clipboardData = event.clipboardData;
+    const html = clipboardData.getData("text/html");
+    const plainText = clipboardData.getData("text/plain");
+
+    if (!html && !plainText) return;
+
+    event.preventDefault();
+
+    // Pasted Word/Docs HTML often carries font family, size, color, and mso
+    // classes. Strip those so public content inherits the site typography.
+    const contentToInsert = html
+      ? sanitizeAdminEditorHtml(html)
+      : sanitizePlainTextPaste(plainText)
+          .split(/\n{2,}/)
+          .map(
+            (paragraph) =>
+              `<p>${escapeHtmlText(paragraph).replace(/\n/g, "<br>")}</p>`
+          )
+          .join("");
+
+    execCommand("insertHTML", contentToInsert);
   };
 
   return (
@@ -220,6 +249,7 @@ export default function RichTextEditor({
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onPaste={handlePaste}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className="admin-rich-text-content rich-text-editor-content"

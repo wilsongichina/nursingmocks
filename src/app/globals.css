@@ -1248,7 +1248,22 @@ body {
   min-height: 200px;
   background: linear-gradient(180deg, #ffffff, #fbfcff);
   color: #202437;
+  font-family: var(--font-outfit), "Outfit", Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  line-height: 1.75;
   padding: 1rem;
+}
+
+.admin-rich-text-content :where(p, li, div) {
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.admin-rich-text-content :where(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
+  color: #111827;
+  letter-spacing: 0;
 }
 
 .admin-rich-text-content:focus {
@@ -3744,6 +3759,7 @@ details[open] .faq-chevron {
 /* Tiptap Editor Styles */
 .tiptap-editor {
   color: #111827;
+  font-family: var(--font-outfit), "Outfit", Arial, Helvetica, sans-serif;
   font-size: 1rem;
   line-height: 1.75;
 }
@@ -3767,6 +3783,7 @@ details[open] .faq-chevron {
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
   color: #111827;
+  font-family: inherit;
 }
 
 .tiptap-editor h2 {
@@ -3776,6 +3793,7 @@ details[open] .faq-chevron {
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
   color: #111827;
+  font-family: inherit;
 }
 
 .tiptap-editor h3 {
@@ -3785,6 +3803,7 @@ details[open] .faq-chevron {
   margin-top: 1rem;
   margin-bottom: 0.5rem;
   color: #111827;
+  font-family: inherit;
 }
 
 .tiptap-editor h4 {
@@ -3794,6 +3813,7 @@ details[open] .faq-chevron {
   margin-top: 0.75rem;
   margin-bottom: 0.5rem;
   color: #111827;
+  font-family: inherit;
 }
 
 .tiptap-editor h5 {
@@ -3803,6 +3823,7 @@ details[open] .faq-chevron {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
   color: #111827;
+  font-family: inherit;
 }
 
 .tiptap-editor h6 {
@@ -3812,6 +3833,7 @@ details[open] .faq-chevron {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
   color: #111827;
+  font-family: inherit;
 }
 
 /* Custom Heading Styles - Show ID badge in editor only */
@@ -3861,6 +3883,9 @@ details[open] .faq-chevron {
 .tiptap-editor p {
   margin-bottom: 0.75rem;
   color: #111827;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.75;
 }
 
 .tiptap-editor ul,
@@ -3880,6 +3905,9 @@ details[open] .faq-chevron {
 .tiptap-editor li {
   margin-bottom: 0.25rem;
   color: #111827;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.75;
 }
 
 .tiptap-editor li p {
@@ -4867,6 +4895,11 @@ details[open] .faq-chevron {
   margin-top: 1.25rem;
 }
 
+#practice-paths,
+#exam-details {
+  scroll-margin-top: 1rem;
+}
+
 .public-guide-shell {
   overflow: hidden;
   border: 1px solid rgba(225, 229, 242, 0.88);
@@ -4919,6 +4952,7 @@ details[open] .faq-chevron {
   padding: 0.65rem 0.75rem;
   text-align: left;
   text-decoration: none;
+  overflow-wrap: anywhere;
   transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
@@ -5041,6 +5075,7 @@ details[open] .faq-chevron {
   min-width: 0;
   text-align: left;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .public-faq-toggle {
@@ -5183,6 +5218,31 @@ details[open] .faq-chevron {
 @media (max-width: 640px) {
   .public-guide-shell {
     border-radius: 1.125rem;
+  }
+
+  .public-guide-layout {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .public-guide-content {
+    border-radius: 0.95rem;
+    padding: 1rem;
+  }
+
+  .public-guide-content h3 {
+    font-size: 1.25rem;
+    line-height: 1.22;
+  }
+
+  .public-guide-nav {
+    margin-inline: -0.15rem;
+    padding: 0.5rem;
+  }
+
+  .public-guide-tab {
+    max-width: min(76vw, 18rem);
+    white-space: normal;
   }
 
   .public-faq-section {

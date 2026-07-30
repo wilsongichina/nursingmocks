@@ -17,6 +17,7 @@ const INDEXABLE_PAGES = [
   { path: "/reset-password", changeFrequency: "yearly" as const, priority: 0.3 },
   { path: "/onboarding", changeFrequency: "monthly" as const, priority: 0.4 },
   { path: "/thank-you", changeFrequency: "monthly" as const, priority: 0.3 },
+  { path: "/ati-teas-practice-test", changeFrequency: "weekly" as const, priority: 0.9 },
 ];
 
 const ATI_TEAS_INDEXABLE_SETS = [1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];

@@ -61,6 +61,83 @@ Validation run:
 .\node_modules\.bin\tsc.cmd --noEmit
 ```
 
+## Follow-up: Admin Editor Paste Style Normalization
+
+Standardized rich content added through Nursing Entrance nested page editors so pasted content does not carry external font families, font sizes, colors, or Word/Docs styling into saved public page HTML.
+
+## Follow-up: Public Practice Card Actions
+
+Updated public nested practice cards so quiz/set cards stay action-focused:
+
+- removed card description text from the public exam cards
+- replaced the single text link with separate `Review Mode` and `Exam Mode` button controls
+- preserved the existing card destination route; `Review Mode` opens the clean set URL and `Exam Mode` appends `mode=exam`
+- show a quiet `Updated for {year}` badge on cards when the quiz record has `examYear` or `year`
+- sort nested public quiz cards by set number descending so newer sets appear first
+- parent subject cards, such as `/ati-teas-practice-test`, use one subject-specific action like `View Math Sets` instead of quiz-mode buttons or year badges
+
+## Follow-up: Nested Nursing Entrance FAQ Copy Editor
+
+Aligned the nested Nursing Entrance editor with the parent sub-page editor:
+
+- separated the body `Content Editor` from the `FAQ Section`
+- added editable FAQ title and description fields above the nested FAQ list
+- kept the existing `displayCopy.faqTitle` and `displayCopy.faqDescription` storage keys so public rendering remains unchanged
+
+Affected route:
+
+```text
+/admin/nursing-entrance-exam/[subPageId]/nested/[nestedSubPageId]
+```
+
+Changed:
+
+- added a shared admin editor HTML sanitizer for pasted rich text
+- stripped pasted font family, font size, line height, color/background styling, event handlers, and Word/Docs classes while preserving normal content structure
+- made admin Tiptap and rich-text editors use the NursingMocks default Outfit font stack, body size, line height, and heading inheritance while editing
+- applied the sanitizer to the shared Tiptap editor paste pipeline
+- applied the sanitizer to the smaller rich text description editor paste/input flow
+- sanitized nested page `description` and `bodyContent` again before save so existing pasted styling is cleaned on the next update
+- added an `Edit Public Copy` header action on Nursing Entrance nested page editors that opens the same display-copy modal pattern used by parent Sub Page editors
+- updated public page intro/description blocks to use the larger hero-style typography so long practice copy does not look squeezed above cards or inside page headers
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## Nursing Entrance Content Strategy Modal
+
+Added the first reusable admin content-strategy layer for Koray-style content planning.
+
+Affected page:
+
+```text
+/admin/nursing-entrance-exam/[subPageId]
+```
+
+Changed:
+
+- added a `Content Strategy` header action beside `Edit Public Copy`
+- added a completion badge that shows `Complete` when core strategy fields are filled and `Needs Work` otherwise
+- stores internal planning data on the sub-page document as `contentStrategy`
+- added reusable `ContentStrategyModal` for page role, primary intent, contextual vector/header/structure/connection, query terms, volume, coverage boundaries, internal links, CTA role, and publication phase
+- kept public rendering unchanged; these fields are internal admin planning data for future brief and content generation
+
+Affected files:
+
+```text
+src/components/admin/ContentStrategyModal.tsx
+src/app/admin/nursing-entrance-exam/[subPageId]/page.tsx
+```
+
+Validation run:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
 ## Follow-up: Nursing Test Bank Topic Editor Optimization
 
 Optimized the Test Bank topic editor used by routes such as:

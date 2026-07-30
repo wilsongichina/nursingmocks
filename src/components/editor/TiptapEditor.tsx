@@ -18,6 +18,10 @@ import { TableHeader } from "@tiptap/extension-table-header";
 
 // Import text align extension
 import TextAlign from "@tiptap/extension-text-align";
+import {
+  sanitizeAdminEditorHtml,
+  sanitizePlainTextPaste,
+} from "@/lib/admin/editor-html-sanitizer";
 
 // Import custom extensions
 import { Callout } from "./extensions/Callout";
@@ -110,6 +114,8 @@ export default function TiptapEditor({
           editable ? "min-h-[300px] px-4 py-3" : "px-0 py-0"
         } ${!editable ? "tiptap-readonly" : ""}`,
       },
+      transformPastedHTML: (html) => sanitizeAdminEditorHtml(html),
+      transformPastedText: (text) => sanitizePlainTextPaste(text),
     },
   });
 

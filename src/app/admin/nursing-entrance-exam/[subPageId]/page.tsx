@@ -9,6 +9,9 @@ import TiptapEditor from "@/components/editor/TiptapEditor";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
 import ContentQualityWarnings from "@/components/admin/ContentQualityWarnings";
+import ContentStrategyModal, {
+  type ContentStrategy,
+} from "@/components/admin/ContentStrategyModal";
 import PublicContentPreview from "@/components/admin/PublicContentPreview";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -64,6 +67,7 @@ interface SubPageContent {
   };
   bodyContent: string; // Tiptap editor content
   faqs?: FaqItem[];
+  contentStrategy?: ContentStrategy;
   displayCopy?: {
     primaryCtaLabel?: string;
     secondaryCtaLabel?: string;
@@ -116,6 +120,7 @@ function EditSubPageContent({
   const [slug, setSlug] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [publicCopyModalOpen, setPublicCopyModalOpen] = useState(false);
+  const [contentStrategyModalOpen, setContentStrategyModalOpen] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [status, setStatus] = useState<"Draft" | "Published" | "Archived">(
     "Draft"
@@ -195,6 +200,25 @@ function EditSubPageContent({
           },
           bodyContent: pageData.bodyContent || "",
           faqs: Array.isArray(pageData.faqs) ? pageData.faqs : [],
+          contentStrategy:
+            pageData.contentStrategy && typeof pageData.contentStrategy === "object"
+              ? {
+                  pageRole: pageData.contentStrategy.pageRole || "",
+                  primaryIntent: pageData.contentStrategy.primaryIntent || "",
+                  contextualVector: pageData.contentStrategy.contextualVector || "",
+                  contextualHeader: pageData.contentStrategy.contextualHeader || "",
+                  contextualStructure: pageData.contentStrategy.contextualStructure || "",
+                  contextualConnection: pageData.contentStrategy.contextualConnection || "",
+                  queryTerms: pageData.contentStrategy.queryTerms || "",
+                  volume: pageData.contentStrategy.volume || "",
+                  mustCover: pageData.contentStrategy.mustCover || "",
+                  mustNotCover: pageData.contentStrategy.mustNotCover || "",
+                  internalLinksIn: pageData.contentStrategy.internalLinksIn || "",
+                  internalLinksOut: pageData.contentStrategy.internalLinksOut || "",
+                  ctaRole: pageData.contentStrategy.ctaRole || "",
+                  publicationPhase: pageData.contentStrategy.publicationPhase || "",
+                }
+              : {},
           displayCopy:
             pageData.displayCopy && typeof pageData.displayCopy === "object"
               ? {
@@ -243,6 +267,7 @@ function EditSubPageContent({
           },
           bodyContent: "",
           faqs: [],
+          contentStrategy: {},
           displayCopy: {},
         };
         setContent(defaultContent);
@@ -283,8 +308,9 @@ function EditSubPageContent({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  const handleSave = async () => {
-    if (!content || !resolvedParams) return;
+  const handleSave = async (contentOverride?: SubPageContent) => {
+    const sourceContent = contentOverride || content;
+    if (!sourceContent || !resolvedParams) return;
 
     try {
       setSaving(true);
@@ -292,22 +318,23 @@ function EditSubPageContent({
       setSuccess("");
 
       // Normalize naming before save so public/admin labels follow the project convention.
-      const normalizedPageName = normalizeAdminContentName(content.pageName || resolvedParams.subPageId);
+      const normalizedPageName = normalizeAdminContentName(sourceContent.pageName || resolvedParams.subPageId);
       const savedSlug = normalizeAdminContentSlug(slug || normalizedPageName || resolvedParams.subPageId);
       const contentToSave: SubPageContent = {
         pageName: normalizedPageName,
         slug: savedSlug,
         status,
-        heading: content.heading || "",
-        description: content.description || "",
-        seoLabel: normalizeAdminContentName(content.seoLabel || normalizedPageName || ""),
-        seoSlug: normalizeAdminContentSlug(content.seoSlug || savedSlug),
-        meta: content.meta,
-        schema: content.schema,
-        hero: content.hero,
-        bodyContent: content.bodyContent || "",
-        faqs: Array.isArray(content.faqs) ? content.faqs : [],
-        displayCopy: content.displayCopy || {},
+        heading: sourceContent.heading || "",
+        description: sourceContent.description || "",
+        seoLabel: normalizeAdminContentName(sourceContent.seoLabel || normalizedPageName || ""),
+        seoSlug: normalizeAdminContentSlug(sourceContent.seoSlug || savedSlug),
+        meta: sourceContent.meta,
+        schema: sourceContent.schema,
+        hero: sourceContent.hero,
+        bodyContent: sourceContent.bodyContent || "",
+        faqs: Array.isArray(sourceContent.faqs) ? sourceContent.faqs : [],
+        contentStrategy: sourceContent.contentStrategy || {},
+        displayCopy: sourceContent.displayCopy || {},
       };
 
       const result = await uploadNursingEntranceExamSubPage(
@@ -400,6 +427,21 @@ function EditSubPageContent({
     );
   };
 
+  const updateContentStrategy = (value: ContentStrategy) => {
+    setContent((current) =>
+      current
+        ? {
+            ...current,
+            contentStrategy: value,
+          }
+        : current
+    );
+  };
+
+  const clearContentStrategy = () => {
+    updateContentStrategy({});
+  };
+
   const handlePageNameBlur = () => {
     if (!content) return;
     const normalizedName = normalizeAdminContentName(content.pageName || "");
@@ -455,6 +497,15 @@ function EditSubPageContent({
 
   const publicCopyDefaults = getGeneratedPublicCopyDefaults(content);
   const displayCopy = content.displayCopy || {};
+  const contentStrategy = content.contentStrategy || {};
+  const contentStrategyComplete = Boolean(
+    contentStrategy.pageRole &&
+      contentStrategy.primaryIntent &&
+      contentStrategy.contextualVector &&
+      contentStrategy.contextualStructure &&
+      contentStrategy.mustCover &&
+      contentStrategy.mustNotCover
+  );
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
@@ -504,6 +555,22 @@ function EditSubPageContent({
                   >
                     Edit Public Copy
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setContentStrategyModalOpen(true)}
+                    className="admin-button-secondary"
+                  >
+                    Content Strategy
+                    <span
+                      className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        contentStrategyComplete
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {contentStrategyComplete ? "Complete" : "Needs Work"}
+                    </span>
+                  </button>
                   {resolvedParams?.subPageId && (
                     <Link
                       href={`/${slug || resolvedParams.subPageId}`}
@@ -516,7 +583,7 @@ function EditSubPageContent({
                   )}
                   <button
                     type="button"
-                    onClick={handleSave}
+                    onClick={() => handleSave()}
                     disabled={saving}
                     className="admin-button-primary"
                   >
@@ -532,6 +599,25 @@ function EditSubPageContent({
               errorTitle="Unable To Save Content"
               successTitle="Content Saved"
             />
+
+            {contentStrategyModalOpen && (
+              <ContentStrategyModal
+                value={contentStrategy}
+                onChange={updateContentStrategy}
+                onClose={() => setContentStrategyModalOpen(false)}
+                onReset={clearContentStrategy}
+                saving={saving}
+                onSave={async (nextStrategy) => {
+                  const nextContent = {
+                    ...content,
+                    contentStrategy: nextStrategy,
+                  };
+                  setContent(nextContent);
+                  await handleSave(nextContent);
+                  setContentStrategyModalOpen(false);
+                }}
+              />
+            )}
 
             {publicCopyModalOpen && (
               <AdminModal

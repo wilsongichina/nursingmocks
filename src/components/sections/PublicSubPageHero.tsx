@@ -25,6 +25,8 @@ interface PublicSubPageHeroProps {
   childSummaryLabel?: string;
   firstChildHref: string;
   actionLabels: PublicSubPageHeroActionLabels;
+  primaryActionHref?: string;
+  secondaryActionHref?: string;
   totalChildQuestions: number;
 }
 
@@ -112,9 +114,13 @@ export default function PublicSubPageHero({
   childSummaryLabel = "Subjects",
   firstChildHref,
   actionLabels,
+  primaryActionHref,
+  secondaryActionHref,
   totalChildQuestions,
 }: PublicSubPageHeroProps) {
   const formattedQuestionCount = totalChildQuestions.toLocaleString("en-US");
+  const primaryHref = primaryActionHref || firstChildHref;
+  const secondaryHref = secondaryActionHref || "#practice-paths";
 
   return (
     <section className="mb-7">
@@ -136,11 +142,11 @@ export default function PublicSubPageHero({
           </div>
 
           <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <h1 className="max-w-[850px] text-center text-[2.35rem] font-extrabold leading-[1.04] text-[#202437] sm:text-[3.2rem] lg:text-[4rem]">
+            <h1 className="max-w-[850px] text-center text-[2rem] font-extrabold leading-[1.06] text-[#202437] [overflow-wrap:anywhere] sm:text-[3.2rem] sm:leading-[1.04] lg:text-[4rem]">
               <HighlightedPublicHeading heading={pageHeading} examBadge={examBadge} />
             </h1>
 
-            <div className="mt-5 max-w-[78ch] text-center text-base leading-8 text-[#3b4058] sm:text-lg [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
+            <div className="mt-5 max-w-[78ch] text-center text-base leading-7 text-[#3b4058] sm:text-lg sm:leading-8 [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
               <ContentRenderer content={pageDescription} />
             </div>
 
@@ -160,11 +166,11 @@ export default function PublicSubPageHero({
               )}
             </div>
 
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
-              <a href={firstChildHref} className="user-button-primary">
+            <div className="mt-7 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+              <a href={primaryHref} className="user-button-primary w-full max-w-[20rem] sm:w-auto">
                 {actionLabels.primary}
               </a>
-              <a href="#practice-paths" className="user-button-secondary">
+              <a href={secondaryHref} className="user-button-secondary w-full max-w-[20rem] sm:w-auto">
                 {actionLabels.secondary}
               </a>
             </div>

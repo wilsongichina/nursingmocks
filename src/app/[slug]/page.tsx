@@ -42,6 +42,33 @@ import {
 } from "@/lib/content-access-state";
 import { buildQuizSchemaMarkup } from "@/lib/seo/structured-data";
 
+const ATI_TEAS_PARENT_CANONICAL_SLUG = "ati-teas-practice-test";
+const ATI_TEAS_PARENT_CANONICAL_PATH = `/${ATI_TEAS_PARENT_CANONICAL_SLUG}`;
+
+const getCanonicalUrlForSlug = (
+  slug: string,
+  savedCanonicalUrl?: string
+) => {
+  if (slug === ATI_TEAS_PARENT_CANONICAL_SLUG) {
+    return `${getSiteUrl()}${ATI_TEAS_PARENT_CANONICAL_PATH}`;
+  }
+
+  return savedCanonicalUrl || `${getSiteUrl()}/${slug}`;
+};
+
+const normalizeSchemaCanonicalUrls = (schema: string, slug: string) => {
+  if (!schema || slug !== ATI_TEAS_PARENT_CANONICAL_SLUG) {
+    return schema;
+  }
+
+  const canonicalUrl = `${getSiteUrl()}${ATI_TEAS_PARENT_CANONICAL_PATH}`;
+
+  return schema.replace(
+    /https?:\/\/(?:www\.)?nursingmocks\.com\/teas-7-practice(?:-test)?/g,
+    canonicalUrl
+  );
+};
+
 // Icon components for dashboard-style cards
 const _LaptopIcon = ({ className }: { className?: string }) => (
   <svg
@@ -578,6 +605,17 @@ const getDisplayCopyOverride = (displayCopy: any, key: string) => {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 };
 
+const getSubjectSetsActionLabel = (title: string) => {
+  const normalizedTitle = title.toLowerCase();
+
+  if (normalizedTitle.includes("reading")) return "View Reading Sets";
+  if (normalizedTitle.includes("math")) return "View Math Sets";
+  if (normalizedTitle.includes("science")) return "View Science Sets";
+  if (normalizedTitle.includes("english")) return "View English Sets";
+
+  return "View Practice Sets";
+};
+
 const isGeneratedPlaceholderDescription = (value: string) =>
   /^content for\b.+\bunder\b/i.test(value.trim());
 
@@ -950,6 +988,8 @@ export async function generateMetadata({
   if (contentResult.success && contentResult.data) {
     const data = contentResult.data as any;
     if (data.meta) {
+      const canonicalUrl = getCanonicalUrlForSlug(slug, data.meta.canonicalUrl);
+
       return {
         title: data.meta.title || `${slug} | NursingMocks`,
         description: data.meta.description || "",
@@ -957,9 +997,7 @@ export async function generateMetadata({
         openGraph: {
           title: data.meta.ogTitle || data.meta.title || `${slug} | NursingMocks`,
           description: data.meta.ogDescription || data.meta.description || "",
-          url:
-            data.meta.canonicalUrl ||
-            `${getSiteUrl()}/${slug}`,
+          url: canonicalUrl,
           images: [
             {
               url: data.meta.ogImage ? getImageUrl(data.meta.ogImage) : getImageUrl("/nursing-mocks-logo.png"),
@@ -970,7 +1008,7 @@ export async function generateMetadata({
           ],
         },
         alternates: {
-          canonical: data.meta.canonicalUrl || `${getSiteUrl()}/${slug}`,
+          canonical: canonicalUrl,
         },
       };
     }
@@ -1807,6 +1845,7 @@ export default async function DynamicPage({
       questions: [],
     },
   };
+  const renderedSchema = normalizeSchemaCanonicalUrls(content.schema || "", slug);
 
   // Get heading and description from Firebase
   const pageHeading = pageData.heading || pageData.pageName || slug;
@@ -1814,6 +1853,8 @@ export default async function DynamicPage({
   const bodyContent = pageData.bodyContent || "";
   const { tocItems, contentWithHeadingIds } = buildTocAndBodyContent(bodyContent);
   const isPublicSubPage = pageType === "sub" || pageType === "nested";
+  const isAtiTeasPracticeParent =
+    pageType === "sub" && slug === ATI_TEAS_PARENT_CANONICAL_SLUG;
   const pillarLabel = getPublicPillarLabel(pillarId);
   const pageName = titleCaseWords(stripHtml(content.pageName || pageHeading || slug));
   const examBadge = getExamBadgeLabel(pageData, pageName);
@@ -1857,11 +1898,13 @@ export default async function DynamicPage({
     getDisplayCopyOverride(displayCopy, "faqDescription") ||
     `Answers to common questions students ask before starting ${examBadge} practice on NursingMocks.`;
   const primaryChildAction =
+    (isAtiTeasPracticeParent ? "Start ATI TEAS Practice" : "") ||
     getDisplayCopyOverride(displayCopy, "primaryCtaLabel") ||
     (childItemLabel === "Subject"
       ? actionLabels.primary
       : `Start ${examBadge} Practice`);
   const secondaryChildAction =
+    (isAtiTeasPracticeParent ? "See Exam Details" : "") ||
     getDisplayCopyOverride(displayCopy, "secondaryCtaLabel") ||
     (childItemLabel === "Subject"
       ? actionLabels.secondary
@@ -1902,7 +1945,28 @@ export default async function DynamicPage({
         ? publishedTopics
         : publishedQuizzes
       : publishedNestedPages;
-  const childCards = childSource.map((child: any) => {
+  const orderedChildSource =
+    pageType === "nested" && pillarId !== "nursing-test-bank"
+      ? [...childSource].sort((first: any, second: any) => {
+          const firstSet = Number(first.setNumber);
+          const secondSet = Number(second.setNumber);
+          const firstHasSet = Number.isFinite(firstSet);
+          const secondHasSet = Number.isFinite(secondSet);
+
+          if (firstHasSet && secondHasSet && firstSet !== secondSet) {
+            return secondSet - firstSet;
+          }
+
+          if (firstHasSet !== secondHasSet) {
+            return firstHasSet ? -1 : 1;
+          }
+
+          const firstName = String(first.seoLabel || first.pageName || first.title || first.quizName || first.id);
+          const secondName = String(second.seoLabel || second.pageName || second.title || second.quizName || second.id);
+          return firstName.localeCompare(secondName);
+        })
+      : childSource;
+  const childCards = orderedChildSource.map((child: any) => {
     const rawName =
       child.seoLabel ||
       child.pageName ||
@@ -1921,6 +1985,7 @@ export default async function DynamicPage({
           : _nestedPageSlugMap[child.id] || child.slug || child.seoSlug || child.id;
     const questionCount = typeof child.questionCount === "number" ? child.questionCount : null;
     const description = getPublicCardDescription(child, title);
+    const updateYear = Number(child.examYear || child.year);
 
     return {
       id: child.id || slugValue,
@@ -1928,9 +1993,16 @@ export default async function DynamicPage({
       href: `/${String(slugValue).replace(/^\/+/, "")}`,
       questionCount,
       description,
+      updateYear: Number.isFinite(updateYear) ? updateYear : null,
     };
   });
   const firstChildHref = childCards[0]?.href || "#content";
+  const primaryHeroActionHref = isAtiTeasPracticeParent
+    ? "#practice-paths"
+    : firstChildHref;
+  const secondaryHeroActionHref = isAtiTeasPracticeParent
+    ? "#exam-details"
+    : "#practice-paths";
   const totalChildQuestions = childCards.reduce(
     (total, card) => total + (card.questionCount ?? 0),
     0
@@ -1944,11 +2016,11 @@ export default async function DynamicPage({
   if (isPublicSubPage) {
     return (
       <Layout initialBreadcrumbItems={initialBreadcrumbItems}>
-        {content.schema && (
+        {renderedSchema && (
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: content.schema,
+              __html: renderedSchema,
             }}
           />
         )}
@@ -1965,6 +2037,8 @@ export default async function DynamicPage({
               childSummaryLabel={childSummaryLabel}
               firstChildHref={firstChildHref}
               actionLabels={effectiveActionLabels}
+              primaryActionHref={primaryHeroActionHref}
+              secondaryActionHref={secondaryHeroActionHref}
               totalChildQuestions={totalChildQuestions}
             />
 
@@ -1972,14 +2046,14 @@ export default async function DynamicPage({
 
             {childCards.length > 0 && (
               <section id="practice-paths" className="mb-5">
-                <div className="mx-auto mb-5 flex max-w-3xl flex-col items-center gap-3 text-center">
+                <div className="mx-auto mb-5 flex max-w-[980px] flex-col items-center gap-3 text-center">
                   <div>
                     <p className="user-eyebrow m-0">{childSectionEyebrow}</p>
                     <h2 className="user-section-title public-section-heading mt-2">
                       {childSectionTitle}
                     </h2>
                   </div>
-                  <p className="user-helper max-w-2xl">
+                  <p className="max-w-[78ch] text-center text-base leading-8 text-[#3b4058] sm:text-lg">
                     {childSectionDescription}
                   </p>
                 </div>
@@ -1987,7 +2061,7 @@ export default async function DynamicPage({
                 <div className="user-card p-4 sm:p-5">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {childCards.map((card) => (
-                      <article key={card.id} className="user-card flex min-h-[210px] flex-col p-4 shadow-none">
+                      <article key={card.id} className="user-card flex min-h-[190px] min-w-0 flex-col p-4 shadow-none">
                         <div className="mb-4">
                           <span className="user-pill user-pill-purple">{childItemLabel}</span>
                           {card.questionCount !== null && (
@@ -1996,17 +2070,53 @@ export default async function DynamicPage({
                             </span>
                           )}
                         </div>
-                        <h3 className="user-card-title">{card.title}</h3>
-                        <p className="user-helper public-card-description mt-2 flex-1">
-                          {card.description}
-                        </p>
-                        <Link
-                          href={card.href}
-                          className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#5548e0] no-underline"
-                        >
-                          {card.title}
-                          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                        </Link>
+                        <h3 className="user-card-title [overflow-wrap:anywhere]">
+                          <Link
+                            href={card.href}
+                            className="text-inherit no-underline hover:text-[#5548e0]"
+                          >
+                            {card.title}
+                          </Link>
+                        </h3>
+                        {pageType === "sub" ? (
+                          <Link
+                            href={card.href}
+                            className="mt-auto inline-flex min-h-[44px] w-full cursor-pointer items-center justify-center rounded-full border border-[#d8d5ff] bg-[#f4f2ff] px-3 py-2 text-center text-xs font-extrabold leading-5 text-[#4338ca] no-underline transition hover:border-[#b8b1ff] hover:bg-[#ece9ff]"
+                          >
+                            {getSubjectSetsActionLabel(card.title)}
+                          </Link>
+                        ) : (
+                          <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
+                            <form action={card.href} method="get">
+                              <button
+                                type="submit"
+                                className="inline-flex min-h-[40px] w-full cursor-pointer items-center justify-center rounded-full border border-[#d8d5ff] bg-white px-3 py-2 text-xs font-extrabold text-[#5548e0] transition hover:border-[#b8b1ff] hover:bg-[#f7f6ff]"
+                              >
+                                Review Mode
+                              </button>
+                            </form>
+                            <form action={card.href} method="get">
+                              <input type="hidden" name="mode" value="exam" />
+                              <button
+                                type="submit"
+                                className="inline-flex min-h-[40px] w-full cursor-pointer items-center justify-center rounded-full border border-[#d8d5ff] bg-[#f4f2ff] px-3 py-2 text-xs font-extrabold text-[#4338ca] transition hover:border-[#b8b1ff] hover:bg-[#ece9ff]"
+                              >
+                                Exam Mode
+                              </button>
+                            </form>
+                          </div>
+                        )}
+                        {pageType !== "sub" && card.updateYear && (
+                          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#d8f3ed] bg-[#f4fffc] px-3 py-2 text-[11px] font-bold text-[#0f766e]">
+                            <span
+                              className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ccfbf1] text-[10px]"
+                              aria-hidden="true"
+                            >
+                              !
+                            </span>
+                            Updated for {card.updateYear}
+                          </div>
+                        )}
                       </article>
                     ))}
                   </div>
@@ -2014,7 +2124,10 @@ export default async function DynamicPage({
               </section>
             )}
 
-            <section className="space-y-5">
+            <section
+              id={isAtiTeasPracticeParent ? "exam-details" : undefined}
+              className="space-y-5"
+            >
               {bodyContent && guideSections.length > 0 && (
                 <PublicSubPageGuide
                   title={guideSectionTitle}
@@ -2071,11 +2184,11 @@ export default async function DynamicPage({
   return (
     <Layout initialBreadcrumbItems={initialBreadcrumbItems}>
       {/* Schema Script */}
-      {content.schema && (
+      {renderedSchema && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: content.schema,
+            __html: renderedSchema,
           }}
         />
       )}
@@ -2100,7 +2213,7 @@ export default async function DynamicPage({
               <h1 className="user-page-title mt-2">
                 <ContentRenderer content={pageHeading} />
               </h1>
-              <div className="user-body-sm mt-3 max-w-[88ch] [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
+              <div className="mt-5 max-w-[78ch] text-base leading-8 text-[#3b4058] sm:text-lg [&_.rich-text-content_p]:mb-0 [&_.rich-text-content_p:last-child]:mb-0 [&_.pb-25]:!pb-0 [&_div.pb-25]:!pb-0">
                 <ContentRenderer content={pageDescription} />
               </div>
               <div className="user-page-header-meta mt-4">

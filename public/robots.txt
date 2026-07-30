@@ -12,6 +12,7 @@ Allow: /privacy-policy$
 Allow: /cookie-policy$
 
 # Public practice-test pages
+Allow: /ati-teas-practice-test$
 Allow: /teas-english-practice-test-set-
 Allow: /teas-reading-practice-test-set-
 Allow: /teas-science-practice-test-set-

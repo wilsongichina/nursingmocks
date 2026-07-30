@@ -23,6 +23,8 @@ import {
   AdminFormSection,
   AdminInfoTile,
   AdminLoadingState,
+  AdminModal,
+  AdminModalFooter,
   AdminNotificationRegion,
   AdminPageHeader,
   AdminSelectField,
@@ -37,6 +39,7 @@ import {
   normalizeAdminContentNameInput,
   normalizeAdminContentSlug,
 } from "@/lib/admin/content-naming";
+import { sanitizeAdminEditorHtml } from "@/lib/admin/editor-html-sanitizer";
 
 interface NestedPageContent {
   pageName?: string;
@@ -63,7 +66,41 @@ interface NestedPageContent {
   };
   bodyContent: string; // Tiptap editor content
   faqs?: FaqItem[];
+  displayCopy?: {
+    primaryCtaLabel?: string;
+    secondaryCtaLabel?: string;
+    practiceEyebrow?: string;
+    practiceTitle?: string;
+    practiceDescription?: string;
+    guideTitle?: string;
+    guideDescription?: string;
+    faqTitle?: string;
+    faqDescription?: string;
+  };
 }
+
+const getNestedPublicCopyDefaults = (
+  content: NestedPageContent | null,
+  parentSubPageName: string
+) => {
+  const pageName =
+    content?.pageName || content?.seoLabel || content?.heading || "Practice Page";
+  const parentName = parentSubPageName || "Nursing Entrance Exam";
+
+  return {
+    primaryCtaLabel: `Start ${pageName} Practice`,
+    secondaryCtaLabel: `View ${parentName}`,
+    practiceEyebrow: "Start Practice",
+    practiceTitle: `${pageName} Practice Sets`,
+    practiceDescription:
+      "Choose a practice set that matches your study plan. Each link opens the exact questions for this page.",
+    guideTitle: `${pageName} Guide`,
+    guideDescription:
+      "Use the guide navigation to move through the saved content without scrolling through one long article.",
+    faqTitle: `${pageName} Questions`,
+    faqDescription: `Answers to common questions students ask before starting ${pageName} practice on NursingMocks.`,
+  };
+};
 
 function EditNestedSubPageContent({
   params,
@@ -77,6 +114,7 @@ function EditNestedSubPageContent({
   const [success, setSuccess] = useState("");
   const [slug, setSlug] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [publicCopyModalOpen, setPublicCopyModalOpen] = useState(false);
   const [parentSubPageName, setParentSubPageName] = useState("");
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [status, setStatus] = useState<"Draft" | "Published" | "Archived">(
@@ -179,6 +217,20 @@ function EditNestedSubPageContent({
           },
           bodyContent: pageData.bodyContent || "",
           faqs: Array.isArray(pageData.faqs) ? pageData.faqs : [],
+          displayCopy:
+            pageData.displayCopy && typeof pageData.displayCopy === "object"
+              ? {
+                  primaryCtaLabel: pageData.displayCopy.primaryCtaLabel || "",
+                  secondaryCtaLabel: pageData.displayCopy.secondaryCtaLabel || "",
+                  practiceEyebrow: pageData.displayCopy.practiceEyebrow || "",
+                  practiceTitle: pageData.displayCopy.practiceTitle || "",
+                  practiceDescription: pageData.displayCopy.practiceDescription || "",
+                  guideTitle: pageData.displayCopy.guideTitle || "",
+                  guideDescription: pageData.displayCopy.guideDescription || "",
+                  faqTitle: pageData.displayCopy.faqTitle || "",
+                  faqDescription: pageData.displayCopy.faqDescription || "",
+                }
+              : {},
         };
 
         setContent(initializedContent);
@@ -217,6 +269,7 @@ function EditNestedSubPageContent({
           },
           bodyContent: "",
           faqs: [],
+          displayCopy: {},
         };
         setContent(defaultContent);
         setSlug(defaultSlug);
@@ -242,6 +295,12 @@ function EditNestedSubPageContent({
 
   const hasUnsavedChanges = Boolean(
     savedSnapshot && currentSnapshot && savedSnapshot !== currentSnapshot
+  );
+
+  const displayCopy = content?.displayCopy || {};
+  const publicCopyDefaults = getNestedPublicCopyDefaults(
+    content,
+    parentSubPageName
   );
 
   useEffect(() => {
@@ -276,7 +335,7 @@ function EditNestedSubPageContent({
         slug: savedSlug,
         status,
         heading: content.heading || "",
-        description: content.description || "",
+        description: sanitizeAdminEditorHtml(content.description || ""),
         cardDescription: content.cardDescription || "",
         seoLabel: normalizeAdminContentName(content.seoLabel || normalizedPageName || ""),
         seoSlug:
@@ -284,8 +343,9 @@ function EditNestedSubPageContent({
         meta: content.meta,
         schema: content.schema,
         hero: content.hero,
-        bodyContent: content.bodyContent || "",
+        bodyContent: sanitizeAdminEditorHtml(content.bodyContent || ""),
         faqs: Array.isArray(content.faqs) ? content.faqs : [],
+        displayCopy: content.displayCopy || {},
       };
 
       const result = await uploadNestedSubPage(
@@ -338,6 +398,34 @@ function EditNestedSubPageContent({
       current[lastKey] = value;
       return newContent;
     });
+  };
+
+  const updateDisplayCopy = (
+    key: keyof NonNullable<NestedPageContent["displayCopy"]>,
+    value: string
+  ) => {
+    setContent((current) =>
+      current
+        ? {
+            ...current,
+            displayCopy: {
+              ...(current.displayCopy || {}),
+              [key]: value,
+            },
+          }
+        : current
+    );
+  };
+
+  const clearDisplayCopy = () => {
+    setContent((current) =>
+      current
+        ? {
+            ...current,
+            displayCopy: {},
+          }
+        : current
+    );
   };
 
   const handlePageNameBlur = () => {
@@ -458,6 +546,13 @@ function EditNestedSubPageContent({
                   )}
                   <button
                     type="button"
+                    onClick={() => setPublicCopyModalOpen(true)}
+                    className="admin-button-secondary"
+                  >
+                    Edit Public Copy
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleSave}
                     disabled={saving}
                     className="admin-button-primary"
@@ -474,6 +569,236 @@ function EditNestedSubPageContent({
               errorTitle="Unable To Save Content"
               successTitle="Content Saved"
             />
+
+            {publicCopyModalOpen && (
+              <AdminModal
+                title="Edit Public Copy"
+                description="Override generated public-page labels only when this nested page needs custom copy. Empty fields use the generated default."
+                maxWidthClassName="max-w-[1040px]"
+                onClose={() => setPublicCopyModalOpen(false)}
+              >
+                <div className="space-y-5">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="mb-4">
+                      <h3 className="admin-card-title">Hero Buttons</h3>
+                      <p className="admin-helper">
+                        Optional labels for the two buttons shown in the public hero.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <AdminFieldGroup
+                        label="Primary Button"
+                        helper={`Default: ${publicCopyDefaults.primaryCtaLabel}`}
+                      >
+                        <input
+                          type="text"
+                          value={displayCopy.primaryCtaLabel || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("primaryCtaLabel", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.primaryCtaLabel}
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Secondary Button"
+                        helper={`Default: ${publicCopyDefaults.secondaryCtaLabel}`}
+                      >
+                        <input
+                          type="text"
+                          value={displayCopy.secondaryCtaLabel || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("secondaryCtaLabel", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.secondaryCtaLabel}
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div className="mb-4">
+                        <h3 className="admin-card-title">Practice Section</h3>
+                        <p className="admin-helper">
+                          Copy shown above the practice cards for this nested page.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <AdminFieldGroup
+                          label="Eyebrow"
+                          helper={`Default: ${publicCopyDefaults.practiceEyebrow}`}
+                        >
+                          <input
+                            type="text"
+                            value={displayCopy.practiceEyebrow || ""}
+                            onChange={(event) =>
+                              updateDisplayCopy("practiceEyebrow", event.target.value)
+                            }
+                            placeholder={publicCopyDefaults.practiceEyebrow}
+                            className="admin-field"
+                          />
+                        </AdminFieldGroup>
+
+                        <AdminFieldGroup
+                          label="Title"
+                          helper={`Default: ${publicCopyDefaults.practiceTitle}`}
+                        >
+                          <input
+                            type="text"
+                            value={displayCopy.practiceTitle || ""}
+                            onChange={(event) =>
+                              updateDisplayCopy("practiceTitle", event.target.value)
+                            }
+                            placeholder={publicCopyDefaults.practiceTitle}
+                            className="admin-field"
+                          />
+                        </AdminFieldGroup>
+                      </div>
+
+                      <AdminFieldGroup
+                        label="Description"
+                        helper={`Default: ${publicCopyDefaults.practiceDescription}`}
+                      >
+                        <textarea
+                          value={displayCopy.practiceDescription || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("practiceDescription", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.practiceDescription}
+                          rows={3}
+                          className="admin-field mt-4 min-h-[96px] resize-y"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div className="mb-4">
+                        <h3 className="admin-card-title">Guide Section</h3>
+                        <p className="admin-helper">
+                          Copy shown above the saved long-form guide content.
+                        </p>
+                      </div>
+                      <AdminFieldGroup
+                        label="Title"
+                        helper={`Default: ${publicCopyDefaults.guideTitle}`}
+                      >
+                        <input
+                          type="text"
+                          value={displayCopy.guideTitle || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("guideTitle", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.guideTitle}
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="Description"
+                        helper={`Default: ${publicCopyDefaults.guideDescription}`}
+                      >
+                        <textarea
+                          value={displayCopy.guideDescription || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("guideDescription", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.guideDescription}
+                          rows={3}
+                          className="admin-field mt-4 min-h-[96px] resize-y"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="mb-4">
+                      <h3 className="admin-card-title">FAQ Section</h3>
+                      <p className="admin-helper">
+                        Copy shown above the public FAQ block.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <AdminFieldGroup
+                        label="FAQ Title"
+                        helper={`Default: ${publicCopyDefaults.faqTitle}`}
+                      >
+                        <input
+                          type="text"
+                          value={displayCopy.faqTitle || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("faqTitle", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.faqTitle}
+                          className="admin-field"
+                        />
+                      </AdminFieldGroup>
+
+                      <AdminFieldGroup
+                        label="FAQ Description"
+                        helper={`Default: ${publicCopyDefaults.faqDescription}`}
+                      >
+                        <textarea
+                          value={displayCopy.faqDescription || ""}
+                          onChange={(event) =>
+                            updateDisplayCopy("faqDescription", event.target.value)
+                          }
+                          placeholder={publicCopyDefaults.faqDescription}
+                          rows={3}
+                          className="admin-field min-h-[96px] resize-y"
+                        />
+                      </AdminFieldGroup>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="admin-helper font-semibold text-gray-700">
+                      Current effective copy
+                    </p>
+                    <div className="mt-2 grid grid-cols-1 gap-2 text-sm text-gray-700 sm:grid-cols-2">
+                      <span>{displayCopy.primaryCtaLabel || publicCopyDefaults.primaryCtaLabel}</span>
+                      <span>{displayCopy.secondaryCtaLabel || publicCopyDefaults.secondaryCtaLabel}</span>
+                      <span>{displayCopy.practiceEyebrow || publicCopyDefaults.practiceEyebrow}</span>
+                      <span>{displayCopy.practiceTitle || publicCopyDefaults.practiceTitle}</span>
+                      <span>{displayCopy.guideTitle || publicCopyDefaults.guideTitle}</span>
+                      <span>{displayCopy.faqTitle || publicCopyDefaults.faqTitle}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <AdminModalFooter>
+                  <button
+                    type="button"
+                    onClick={() => setPublicCopyModalOpen(false)}
+                    disabled={saving}
+                    className="admin-button-cancel"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearDisplayCopy}
+                    disabled={saving}
+                    className="admin-button-secondary"
+                  >
+                    Reset To Defaults
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await handleSave();
+                      setPublicCopyModalOpen(false);
+                    }}
+                    disabled={saving}
+                    className="admin-button-primary"
+                  >
+                    {saving ? "Saving..." : "Save Public Copy"}
+                  </button>
+                </AdminModalFooter>
+              </AdminModal>
+            )}
 
             {/* Top Grid: Sub-Page Settings + SEO */}
             <section className="grid grid-cols-1 lg:grid-cols-[3fr_2.2fr] gap-4.5 mb-1 items-start">
@@ -800,10 +1125,11 @@ function EditNestedSubPageContent({
               </AdminCard>
             </section>
 
+            <div id="public-copy-editor" className="scroll-mt-24">
             <AdminCard
               className="mb-5"
               title="Content Editor"
-              description="Use the Tiptap editor for full body content, custom content blocks, and FAQs."
+              description="Use the Tiptap editor for full body content and custom content blocks."
             >
 
               <ContentQualityWarnings
@@ -825,6 +1151,52 @@ function EditNestedSubPageContent({
                   editable={true}
                 />
               </div>
+            </AdminCard>
+
+            <AdminCard
+              className="mb-5"
+              title="FAQ Section"
+              description="Manage the public FAQ heading copy and the question-and-answer list shown below the page content."
+            >
+              <AdminFormSection
+                title="FAQ Section Copy"
+                description="These fields are prefilled from generated defaults and can be edited for this nested page."
+              >
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <AdminFieldGroup
+                    label="FAQ Title"
+                    helper="Shown as the heading above the public FAQ list."
+                  >
+                    <input
+                      type="text"
+                      value={displayCopy.faqTitle || publicCopyDefaults.faqTitle}
+                      onChange={(event) =>
+                        updateDisplayCopy("faqTitle", event.target.value)
+                      }
+                      placeholder={publicCopyDefaults.faqTitle}
+                      className="admin-field"
+                    />
+                  </AdminFieldGroup>
+
+                  <AdminFieldGroup
+                    label="FAQ Description"
+                    helper="Shown below the FAQ heading on the public page."
+                  >
+                    <textarea
+                      value={
+                        displayCopy.faqDescription ||
+                        publicCopyDefaults.faqDescription
+                      }
+                      onChange={(event) =>
+                        updateDisplayCopy("faqDescription", event.target.value)
+                      }
+                      placeholder={publicCopyDefaults.faqDescription}
+                      rows={3}
+                      className="admin-field min-h-[96px] resize-y"
+                    />
+                  </AdminFieldGroup>
+                </div>
+              </AdminFormSection>
 
               <FaqEditor
                 label="FAQs (shown on the live page)"
@@ -832,6 +1204,7 @@ function EditNestedSubPageContent({
                 onChange={(faqs) => setContent({ ...content, faqs })}
               />
             </AdminCard>
+            </div>
           </div>
         </div>
         </main>

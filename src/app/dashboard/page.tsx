@@ -82,7 +82,7 @@ const DASHBOARD_EXAM_OPTIONS: DashboardExamOption[] = [
     id: "ati_teas",
     name: "ATI TEAS 7",
     description: "Reading, math, science, and English entrance exam practice.",
-    href: "/teas-7-practice",
+    href: "/ati-teas-practice-test",
     packageIds: ["ati_teas"],
   },
   {

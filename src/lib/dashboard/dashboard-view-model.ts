@@ -151,7 +151,7 @@ const PACKAGE_CATALOG: Omit<DashboardPackage, "status" | "actionLabel" | "access
     family: "Nursing Entrance Exams",
     name: "ATI TEAS 7",
     description: "Entrance exam practice for ATI TEAS 7 reading, math, science, and English.",
-    href: "/teas-7-practice",
+    href: "/ati-teas-practice-test",
     modes: ["Timed mode", "Review mode"],
   },
   {
@@ -197,7 +197,7 @@ const PRIMARY_FOCUS_RECOMMENDATIONS: Record<
   ati_teas_7: {
     id: "primary-ati-teas",
     title: "ATI TEAS practice",
-    href: "/teas-7-practice",
+    href: "/ati-teas-practice-test",
     actionLabel: "Start practice",
   },
   hesi_a2: {
@@ -411,7 +411,7 @@ function buildContinueAction(
     return {
       title: "Start ATI TEAS 7 practice",
       description: "Use your selected Primary Exam to begin with TEAS practice.",
-      href: "/teas-7-practice",
+      href: "/ati-teas-practice-test",
     };
   }
 

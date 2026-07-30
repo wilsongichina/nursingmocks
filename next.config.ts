@@ -5,6 +5,20 @@ const firebaseStorageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 const nextConfig: NextConfig = {
   /* config options here */
   serverExternalPackages: ["firebase"],
+  async redirects() {
+    return [
+      {
+        source: "/teas-7-practice",
+        destination: "/ati-teas-practice-test",
+        permanent: true,
+      },
+      {
+        source: "/teas-7-practice-test",
+        destination: "/ati-teas-practice-test",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
