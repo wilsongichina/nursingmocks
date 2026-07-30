@@ -326,3 +326,18 @@ Expected result:
 
 - `auth/iframe.js` and `relyingparty/getProjectConfig` should not appear in the initial critical chain for `/ati-teas-practice-test` after deployment.
 - Cache TTL warnings for `auth/iframe.js` should disappear from this public page only if the Firebase Auth iframe is no longer requested. Its cache headers are controlled by Firebase, not by NursingMocks.
+
+## Related Text LCP Work
+
+The `/ati-teas-practice-test` LCP element was reported as above-fold paragraph text. For text LCP pages, font loading can affect when the final text paint is eligible for LCP.
+
+Completed on 2026-07-30:
+
+- Updated the root `Outfit` setup in `src/app/layout.tsx` to use the variable font default instead of explicitly listing seven static weights.
+- Preserved the existing `display: "swap"` behavior.
+
+Rule:
+
+- Prefer the variable font configuration for the global UI font.
+- Do not list every static weight unless a specific browser or rendering issue requires it.
+- Keep checking the actual LCP element before changing image, server, or JavaScript behavior.
