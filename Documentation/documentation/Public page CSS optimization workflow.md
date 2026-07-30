@@ -6,6 +6,90 @@ This document records the safe process for reducing render-blocking CSS on publi
 
 The goal is to reduce first-render CSS without breaking public pages, admin pages, Tiptap content rendering, quiz cards, or mobile layouts.
 
+## Proven Result
+
+The first completed `/ati-teas-practice-test` optimization pass produced the following PageSpeed result after deployment:
+
+```text
+Performance: 98
+Accessibility: 100
+Best Practices: 100
+SEO: 100
+Agentic Browsing: 3/3
+```
+
+This result came from targeted fixes that preserved the existing user page shell, sidebar, top menu, and pagination behavior.
+
+## Reusable PageSpeed Playbook
+
+Use this order when optimizing another public page:
+
+1. Measure the page first.
+   - Record the PageSpeed scores.
+   - Record FCP, LCP, TBT, CLS, Speed Index.
+   - Identify the actual LCP element.
+   - Copy the render-blocking, unused JS, console error, contrast, SEO, and agent-accessibility findings.
+
+2. Keep the visible page shell unless the task is explicitly to redesign it.
+   - Do not replace `Layout` or remove the sidebar/top menu just to reduce JavaScript.
+   - If the page needs the user sidebar, optimize inside that shell instead of swapping the shell.
+
+3. Remove route-irrelevant global CSS first.
+   - Move admin-only CSS into `src/app/admin/admin.css`.
+   - Keep shared `.user-*`, public content, public guide, FAQ, and read-only Tiptap styles global until a route-specific renderer/style split is complete.
+   - Move editor-authoring styles away from public global CSS when they are only needed in admin/editor routes.
+
+4. Keep Firebase Auth out of first paint on indexable public SEO pages.
+   - Add the page path to `src/lib/public-route-performance.ts` when it should not need auth state at first paint.
+   - Public SEO pages should use the lightweight anonymous auth context.
+   - Quiz set pages that can unlock full questions for signed-in users should lazy-load Firebase Auth after first paint instead of deferring it permanently.
+   - Protected, dashboard, admin, login, register, onboarding, billing, and account pages must keep immediate Firebase-backed auth behavior.
+
+5. Skip third-party chat on indexable public SEO pages.
+   - Tawk should not inject on pages where it hurts public LCP and is not needed before user interaction.
+
+6. Treat Firebase-hosted cache warnings correctly.
+   - `auth/iframe.js` cache headers are controlled by Firebase, not NursingMocks or Vercel.
+   - The correct fix is preventing the request on public pages, not trying to set headers for it.
+
+7. Treat font changes as a separate compatibility test.
+   - Do not switch `next/font/google` to the variable font default while Turbopack is used locally.
+   - The variable Outfit default caused a Turbopack resolution error for `@vercel/turbopack-next/internal/font/google/font`.
+   - Keep the explicit Outfit weight list until a font-loading change passes local dev and production build.
+
+8. Avoid unnecessary client Firestore reads on server-rendered public pages.
+   - If `src/app/[slug]/page.tsx` passes `initialBreadcrumbItems`, `LayoutWithSidebar` must skip client-side breadcrumb/pillar preloading.
+   - Console errors like `firestore.googleapis.com Listen/channel net::ERR_TIMED_OUT` usually mean a client component is still starting Firestore Web SDK work after hydration.
+
+9. Fix audit-specific public files and accessibility findings.
+   - `public/llms.txt` must be Markdown-like, have an H1, and contain useful links.
+   - `robots.txt` should allow `/llms.txt`, `/robots.txt`, `/sitemap.xml`, static assets, and intended public pages.
+   - Footer and shared low-contrast text must pass contrast on dark backgrounds.
+
+10. Validate after each small batch.
+    - Run `.\node_modules\.bin\tsc.cmd --noEmit`.
+    - Run `npm run lint`.
+    - Run `npm run build` as a compile smoke when changing Next/font, layout, route, or provider behavior. If static generation times out after successful compilation, restore unrelated generated sidebar data.
+    - Re-run PageSpeed after deployment and compare against the recorded baseline.
+
+## What Worked For `/ati-teas-practice-test`
+
+- Admin CSS was split out of `globals.css` and imported only from `src/app/admin/layout.tsx`.
+- Editor-authoring CSS was moved out of the public global path.
+- Firebase Auth was split so public SEO pages use a lightweight anonymous context.
+- TEAS set pages use a lazy auth pattern so public preview renders first while signed-in full-access checks can still run after idle.
+- Tawk chat injection was skipped on public SEO pages.
+- Outfit font loading was tested as a variable font default, but this was reverted because it broke Turbopack.
+- Client breadcrumb/pillar preload was skipped when server breadcrumbs are already provided.
+- `llms.txt` was added with a valid H1 and links.
+- `robots.txt` was updated to allow `/llms.txt`.
+- Compact footer text contrast was raised on the dark footer.
+
+## What Did Not Work
+
+- Replacing the generated public page with a lightweight custom layout reduced page-shell JavaScript but broke the expected sidebar menu, top menu, and pagination behavior.
+- Do not repeat that approach unless the replacement layout fully reproduces the existing user UI shell.
+
 ## Current Finding
 
 PageSpeed reports render-blocking first-party CSS on the ATI TEAS practice page:
@@ -331,15 +415,15 @@ Expected result:
 
 The `/ati-teas-practice-test` LCP element was reported as above-fold paragraph text. For text LCP pages, font loading can affect when the final text paint is eligible for LCP.
 
-Completed on 2026-07-30:
+Tested on 2026-07-30:
 
-- Updated the root `Outfit` setup in `src/app/layout.tsx` to use the variable font default instead of explicitly listing seven static weights.
-- Preserved the existing `display: "swap"` behavior.
+- Updating the root `Outfit` setup in `src/app/layout.tsx` to use the variable font default instead of explicitly listing seven static weights.
+- This compiled in a production build smoke but failed in Turbopack local dev with `@vercel/turbopack-next/internal/font/google/font`.
+- The change was reverted and the explicit weight list was restored.
 
 Rule:
 
-- Prefer the variable font configuration for the global UI font.
-- Do not list every static weight unless a specific browser or rendering issue requires it.
+- Keep the explicit weight list until a font-loading change passes both local dev and production build.
 - Keep checking the actual LCP element before changing image, server, or JavaScript behavior.
 
 ## Related Console Error Work
@@ -361,3 +445,25 @@ Reason:
 - `src/app/[slug]/page.tsx` already builds public breadcrumbs on the server for generated pages.
 - Running the layout preload again in the browser can create unnecessary Firestore transport requests and console noise.
 - This keeps the existing sidebar/top menu layout while avoiding an unnecessary public-page Firestore request.
+
+## TEAS Set Page Template Optimization
+
+The TEAS set pages share the `pageType === "quiz"` branch in `src/app/[slug]/page.tsx`, so optimizing the shared quiz template and route-level providers affects all matching set URLs.
+
+Completed on 2026-07-30:
+
+- Added a TEAS set slug matcher in `src/lib/public-route-performance.ts`:
+
+```text
+/teas-{english|reading|science|math}-practice-test-set-{number}
+```
+
+- Kept chat skipped on those set pages.
+- Lazy-load Firebase Auth on those set pages instead of disabling it permanently.
+- Updated `src/contexts/AuthProviderClient.tsx` so the page can keep rendering while lazy auth resolves.
+
+Reason:
+
+- `DynamicQuizQuestions` uses auth to fetch full questions for signed-in users with access.
+- Permanently deferring auth would improve public PageSpeed but could leave paid users stuck in preview mode.
+- Lazy auth preserves the public first paint while allowing full-access checks after the page is interactive.

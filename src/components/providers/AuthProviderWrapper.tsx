@@ -1,13 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   AuthContext,
   type AuthContextType,
 } from "@/contexts/AuthContext";
-import { shouldDeferAuthForPublicPath } from "@/lib/public-route-performance";
+import {
+  shouldDeferAuthForPublicPath,
+  shouldLazyLoadAuthForPublicPath,
+} from "@/lib/public-route-performance";
 
 const FirebaseAuthProvider = dynamic(
   () => import("@/contexts/AuthProviderClient"),
@@ -23,6 +26,8 @@ export default function AuthProviderWrapper({
 }) {
   const pathname = usePathname();
   const deferAuthForPublicPath = shouldDeferAuthForPublicPath(pathname);
+  const lazyLoadAuthForPublicPath = shouldLazyLoadAuthForPublicPath(pathname);
+  const [loadLazyAuth, setLoadLazyAuth] = useState(false);
 
   const publicAuthValue = useMemo<AuthContextType>(
     () => ({
@@ -47,6 +52,30 @@ export default function AuthProviderWrapper({
     []
   );
 
+  useEffect(() => {
+    if (!lazyLoadAuthForPublicPath) {
+      setLoadLazyAuth(false);
+      return;
+    }
+
+    const windowWithIdle = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const handle =
+      windowWithIdle.requestIdleCallback?.(() => setLoadLazyAuth(true), {
+        timeout: 2500,
+      }) ?? window.setTimeout(() => setLoadLazyAuth(true), 1800);
+
+    return () => {
+      if (windowWithIdle.cancelIdleCallback && typeof handle === "number") {
+        windowWithIdle.cancelIdleCallback(handle);
+      } else {
+        window.clearTimeout(handle);
+      }
+    };
+  }, [lazyLoadAuthForPublicPath]);
+
   if (deferAuthForPublicPath) {
     return (
       <AuthContext.Provider value={publicAuthValue}>
@@ -55,6 +84,18 @@ export default function AuthProviderWrapper({
     );
   }
 
-  return <FirebaseAuthProvider>{children}</FirebaseAuthProvider>;
+  if (lazyLoadAuthForPublicPath && !loadLazyAuth) {
+    return (
+      <AuthContext.Provider value={publicAuthValue}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
+
+  return (
+    <FirebaseAuthProvider showChildrenWhileLoading={lazyLoadAuthForPublicPath}>
+      {children}
+    </FirebaseAuthProvider>
+  );
 }
 

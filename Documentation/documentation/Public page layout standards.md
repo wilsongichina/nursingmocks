@@ -68,3 +68,10 @@ The standard has been applied to:
 - Removed extra `980px` wrappers from Privacy Policy, Terms & Conditions, Cookie Policy, and Money-Back Guarantee.
 - Legal page heroes and main content now use the same shared public page width as the homepage.
 - Content cards remain inside the shared container so spacing stays aligned with other public pages.
+
+## Public Sidebar Exam Menu Follow-Up
+
+- The shared public sidebar should show all exam pillar groups together in the expanded desktop and mobile views.
+- Nursing Entrance Exams, Nursing Test Bank, and Nursing Exit Exams should not behave as mutually exclusive accordion sections.
+- The collapsed desktop sidebar can remain icon-only to preserve the compact navigation width.
+- Sidebar category data should continue to come from the existing static/sidebar data source and Firestore fallback; do not hardcode exam lists in the component.

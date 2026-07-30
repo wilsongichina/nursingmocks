@@ -20,8 +20,10 @@ import { ensureUserDocumentOnRegister } from "@/lib/user-document-firestore";
 
 export default function AuthProviderClient({
   children,
+  showChildrenWhileLoading = false,
 }: {
   children: React.ReactNode;
+  showChildrenWhileLoading?: boolean;
 }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,7 +153,7 @@ export default function AuthProviderClient({
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {(showChildrenWhileLoading || !loading) && children}
     </AuthContext.Provider>
   );
 }

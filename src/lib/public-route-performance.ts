@@ -9,17 +9,28 @@ const AUTH_DEFERRED_PUBLIC_PATHS = new Set([
   "/privacy-policy",
   "/cookie-policy",
   "/ati-teas-practice-test",
-  "/teas-english-practice-test-set-1",
-  "/teas-reading-practice-test-set-1",
-  "/teas-science-practice-test-set-1",
-  "/teas-math-practice-test-set-1",
 ]);
 
+const TEAS_SET_PAGE_PATTERN =
+  /^\/teas-(english|reading|science|math)-practice-test-set-\d+$/;
+
+function cleanPublicPath(pathname: string) {
+  return pathname.split("?")[0]?.replace(/\/+$/, "") || "/";
+}
+
 export function shouldDeferAuthForPublicPath(pathname: string) {
-  const cleanPath = pathname.split("?")[0]?.replace(/\/+$/, "") || "/";
+  const cleanPath = cleanPublicPath(pathname);
   return AUTH_DEFERRED_PUBLIC_PATHS.has(cleanPath);
 }
 
+export function shouldLazyLoadAuthForPublicPath(pathname: string) {
+  const cleanPath = cleanPublicPath(pathname);
+  return TEAS_SET_PAGE_PATTERN.test(cleanPath);
+}
+
 export function shouldSkipChatForPublicPath(pathname: string) {
-  return shouldDeferAuthForPublicPath(pathname);
+  return (
+    shouldDeferAuthForPublicPath(pathname) ||
+    shouldLazyLoadAuthForPublicPath(pathname)
+  );
 }

@@ -158,12 +158,6 @@ interface Category {
   [key: string]: any;
 }
 
-const examPillarIds = [
-  "nursing-entrance-exam",
-  "nursing-test-bank",
-  "nursing-exit-exam",
-];
-
 export default function Sidebar({
   className = "",
   initialData = null,
@@ -189,12 +183,6 @@ export default function Sidebar({
         )
       : {}
   );
-  // Keep Nursing Entrance Exams open by default; other exam pillars start closed.
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
-    const initialSet = new Set<string>();
-    initialSet.add("nursing-entrance-exam");
-    return initialSet;
-  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubPage, setSelectedSubPage] = useState<{
     id: string;
@@ -205,38 +193,6 @@ export default function Sidebar({
   const [nestedSubPages, setNestedSubPages] = useState<any[]>([]);
   const [loadingNested, setLoadingNested] = useState(false);
   const router = useRouter();
-
-  // Auto-expand sections based on current pathname
-  useEffect(() => {
-    // Data is available immediately from static build, no need to wait
-    setExpandedItems((prev) => {
-      const newSet = new Set(prev);
-
-      examPillarIds.forEach((pillarId) => {
-        if (pillarId !== "nursing-entrance-exam") {
-          newSet.delete(pillarId);
-        }
-      });
-      newSet.add("nursing-entrance-exam");
-
-      // Check if we're on dashboard or any dashboard sub-page
-      if (
-        pathname === "/dashboard" ||
-        pathname === "/profile" ||
-        pathname === "/referrals" ||
-        pathname === "/payments"
-      ) {
-        newSet.add("dashboard");
-      }
-
-      // Removed TEAS section - no longer exists
-
-      // Keep pillar pages expanded (already added above)
-      // The pathname-based expansion is handled above for all pillar pages
-
-      return newSet;
-    });
-  }, [pathname, pillarPages, pillarCategories]);
 
   const mainItems = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard", color: "blue" },
@@ -615,16 +571,6 @@ export default function Sidebar({
         setPillarPages(allPillarPages);
         setPillarCategories(categoriesByPillar);
 
-        // Expand all pillar pages by default when data is loaded
-        setExpandedItems((prev) => {
-          const newSet = new Set(prev);
-          newSet.add("nursing-exit-exam");
-          newSet.add("nursing-test-bank");
-          allPillarPages.forEach((page: PillarPage) => {
-            newSet.add(page.id);
-          });
-          return newSet;
-        });
       } catch (error) {
         console.error(
           "Error loading pillar pages and categories from Firestore:",
@@ -644,21 +590,6 @@ export default function Sidebar({
       return pathname === "/dashboard";
     }
     return pathname.startsWith(href);
-  };
-
-  const toggleExpand = (itemId: string) => {
-    setExpandedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        if (examPillarIds.includes(itemId)) {
-          examPillarIds.forEach((pillarId) => newSet.delete(pillarId));
-        }
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
   };
 
   const formatCategoryName = (id: string) => {
@@ -1120,8 +1051,6 @@ export default function Sidebar({
                 // Active state removed - no longer highlighting selected pages
                 const pillarActive = false;
 
-                const isExpanded = expandedItems.has(pillarPage.id);
-
                 // Determine icon and color based on pillar page type
                 let iconType: string;
                 let iconColor: string;
@@ -1170,7 +1099,7 @@ export default function Sidebar({
                       ) : (
                         <div>
                           <div
-                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                            className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
                               pillarActive ? activeBgColor : "text-gray-900"
                             }`}
                           >
@@ -1197,36 +1126,8 @@ export default function Sidebar({
                                 {getPillarPageName(pillarPage)}
                               </span>
                             </Link>
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                toggleExpand(pillarPage.id);
-                              }}
-                              className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
-                              aria-label={`Toggle ${getPillarPageName(
-                                pillarPage
-                              )} menu`}
-                            >
-                              <svg
-                                className={`w-4 h-4 transition-transform duration-200 ${
-                                  isExpanded ? "rotate-90" : ""
-                                }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 5l7 7-7 7"
-                                />
-                              </svg>
-                            </button>
                           </div>
-                          {isExpanded && (
-                            <ul className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
+                          <ul className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
                               {categories.map((category) => {
                                 // Get category ID and slug
                                 const categoryId =
@@ -1305,8 +1206,7 @@ export default function Sidebar({
                                   </li>
                                 );
                               })}
-                            </ul>
-                          )}
+                          </ul>
                         </div>
                       )}
                     </li>
