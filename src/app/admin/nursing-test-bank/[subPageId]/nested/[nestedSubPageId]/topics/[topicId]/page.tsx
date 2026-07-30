@@ -12,7 +12,6 @@ import TiptapEditor from "@/components/editor/TiptapEditor";
 import FaqEditor, { type FaqItem } from "@/components/admin/FaqEditor";
 import Link from "next/link";
 import {
-  AdminLoadingState,
   AdminLoadingShell,
   AdminFormSection,
   AdminFieldGroup,
@@ -28,7 +27,6 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/layout/SidebarContext";
-import { useAuth } from "@/contexts/AuthContext";
 
 const adminInputClass =
   "rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100";
@@ -225,7 +223,6 @@ function EditTopicContent({
     "Draft"
   );
   const { isCollapsed } = useSidebar();
-  const { currentUser } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{
     subPageId: string;
     nestedSubPageId: string;
