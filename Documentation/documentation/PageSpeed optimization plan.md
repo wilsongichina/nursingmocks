@@ -13,6 +13,10 @@ This document records the planned work for improving NursingMocks PageSpeed resu
 - TikTok pixel is loaded from the root layout when configured.
 - Some public media assets are very large, especially GIFs in `public/gifs`.
 - The root Google font loads many weights that are not needed on public pages.
+- Public pages currently receive a large shared stylesheet from `src/app/globals.css`. For CSS-specific render-blocking work, use `Documentation/documentation/Public page CSS optimization workflow.md`.
+- PageSpeed may report about 12 KiB of legacy JavaScript transforms/polyfills, including `Array.prototype.at`, `Array.prototype.flat`, `Array.prototype.flatMap`, `Object.fromEntries`, `Object.hasOwn`, `String.prototype.trimStart`, and `String.prototype.trimEnd`. Treat this as a separate compatibility-target audit after CSS and critical-route work. Do not change browser targets without confirming the minimum supported browsers for NursingMocks users.
+- `/ati-teas-practice-test` showed Firebase Auth in the critical network chain through `auth/iframe.js` and `relyingparty/getProjectConfig`. Indexable public SEO pages now use a lightweight anonymous auth context and dynamically load the Firebase-backed auth provider only on routes that need authentication. They also skip Tawk chat injection so Auth and chat do not block public LCP. Auth still initializes immediately on dashboard, admin, account, billing, registration, login, onboarding, and other authenticated routes.
+- PageSpeed cache-lifetime warnings for `auth/iframe.js` cannot be fixed with NursingMocks or Vercel cache headers because the file is served by Firebase. The correct optimization for public SEO pages is to prevent the Firebase Auth iframe request from loading before first paint.
 
 ## Primary Goal
 

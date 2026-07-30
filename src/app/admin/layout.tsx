@@ -1,5 +1,6 @@
 "use client";
 
+import "./admin.css";
 import { useState } from "react";
 import Link from "next/link";
 import { FirebaseError } from "firebase/app";

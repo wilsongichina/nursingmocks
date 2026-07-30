@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { shouldSkipChatForPublicPath } from "@/lib/public-route-performance";
 
 const TawkToChat = () => {
+  const pathname = usePathname();
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -16,6 +19,11 @@ const TawkToChat = () => {
     };
 
     if (currentUser) {
+      removeTawk();
+      return;
+    }
+
+    if (shouldSkipChatForPublicPath(pathname)) {
       removeTawk();
       return;
     }
@@ -44,7 +52,7 @@ const TawkToChat = () => {
       script.remove();
       style.remove();
     };
-  }, [currentUser]);
+  }, [currentUser, pathname]);
 
   return null;
 };
