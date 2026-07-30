@@ -20,6 +20,7 @@ Allow: /teas-math-practice-test-set-
 
 # Files needed for crawling and rendering
 Allow: /robots.txt$
+Allow: /llms.txt$
 Allow: /sitemap.xml$
 Allow: /_next/static/
 Allow: /_next/image

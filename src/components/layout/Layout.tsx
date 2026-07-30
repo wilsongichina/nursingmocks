@@ -73,6 +73,10 @@ function LayoutWithSidebar({
 
   // Load pillar pages and categories for breadcrumbs
   useEffect(() => {
+    if (initialBreadcrumbItems?.length) {
+      return;
+    }
+
     const loadBreadcrumbData = async () => {
       try {
         const { getAllPillarPages, getAllPillarServicePages } = await import(
@@ -106,7 +110,7 @@ function LayoutWithSidebar({
     };
 
     loadBreadcrumbData();
-  }, []);
+  }, [initialBreadcrumbItems?.length]);
 
   // Universal breadcrumb loading using refPath for all pillar pages
   // No caching - always fetches fresh data from Firebase on every pathname change

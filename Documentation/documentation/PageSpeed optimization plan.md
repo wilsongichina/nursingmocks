@@ -18,6 +18,9 @@ This document records the planned work for improving NursingMocks PageSpeed resu
 - `/ati-teas-practice-test` showed Firebase Auth in the critical network chain through `auth/iframe.js` and `relyingparty/getProjectConfig`. Indexable public SEO pages now use a lightweight anonymous auth context and dynamically load the Firebase-backed auth provider only on routes that need authentication. They also skip Tawk chat injection so Auth and chat do not block public LCP. Auth still initializes immediately on dashboard, admin, account, billing, registration, login, onboarding, and other authenticated routes.
 - PageSpeed cache-lifetime warnings for `auth/iframe.js` cannot be fixed with NursingMocks or Vercel cache headers because the file is served by Firebase. The correct optimization for public SEO pages is to prevent the Firebase Auth iframe request from loading before first paint.
 - The global Outfit font should use the variable font through `next/font` rather than listing every static weight. This keeps the visual weight range but reduces font-resource overhead for text LCP pages.
+- Console errors from `firestore.googleapis.com/Listen/channel` on server-rendered public generated pages usually mean a client layout or component is still making Firestore Web SDK reads after hydration. When `src/app/[slug]/page.tsx` passes `initialBreadcrumbItems`, the shared layout must not run its client-side breadcrumb/pillar preload.
+- Agent-accessibility audits require `llms.txt` to be Markdown-like, including at least one H1 and crawlable links. Keep `public/llms.txt` aligned with `robots.txt` and the public sitemap.
+- Accessibility audits on generated public pages include the shared compact sidebar footer. Keep footer disclaimer/link text high enough contrast against the dark `#050b19` footer background.
 
 ## Primary Goal
 

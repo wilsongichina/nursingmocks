@@ -341,3 +341,23 @@ Rule:
 - Prefer the variable font configuration for the global UI font.
 - Do not list every static weight unless a specific browser or rendering issue requires it.
 - Keep checking the actual LCP element before changing image, server, or JavaScript behavior.
+
+## Related Console Error Work
+
+PageSpeed may report console errors such as:
+
+```text
+firestore.googleapis.com Listen/channel net::ERR_TIMED_OUT
+```
+
+For server-rendered public generated pages, this usually indicates that a client component is still making Firestore Web SDK reads after hydration.
+
+Completed on 2026-07-30:
+
+- Updated `src/components/layout/Layout.tsx` so `LayoutWithSidebar` skips the client-side pillar/category breadcrumb preload when `initialBreadcrumbItems` are already provided.
+
+Reason:
+
+- `src/app/[slug]/page.tsx` already builds public breadcrumbs on the server for generated pages.
+- Running the layout preload again in the browser can create unnecessary Firestore transport requests and console noise.
+- This keeps the existing sidebar/top menu layout while avoiding an unnecessary public-page Firestore request.

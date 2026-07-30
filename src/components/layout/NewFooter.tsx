@@ -15,10 +15,10 @@ export default function NewFooter({ showSidebar = false, isCollapsed: _isCollaps
     return (
       <footer className="bg-[#050b19] text-[#e5e7eb] border-t border-[#1f2937] min-h-[88px] flex flex-col justify-center w-full py-3">
         <div className="w-full px-4 max-w-[1320px] mx-auto">
-          <p className="text-[12px] text-[#6b7280] text-center mb-3 leading-relaxed max-w-[900px] mx-auto">
+          <p className="text-[12px] text-[#cbd5e1] text-center mb-3 leading-relaxed max-w-[900px] mx-auto">
             NursingMocks is an independent resource for nursing students and is not affiliated with ATI, Elsevier, HESI, or any nursing program. All trademarks are the property of their respective owners. Always follow your school's policies and academic integrity guidelines.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-[12px] text-[#9ca3af]">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[12px] text-[#cbd5e1]">
             <Link
               href="/privacy-policy"
               className="no-underline hover:text-[#e5e7eb] transition-colors"
