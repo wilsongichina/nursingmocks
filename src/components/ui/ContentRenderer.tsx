@@ -42,16 +42,6 @@ const ContentRenderer: React.FC<ContentRendererProps> = ({
       });
     }
 
-    // Debug logging
-    if (matches.length > 0) {
-      console.log(
-        `ContentRenderer: Found ${matches.length} markdown links in content`
-      );
-      matches.forEach((match, index) => {
-        console.log(`Link ${index + 1}: "${match.text}" -> "${match.url}"`);
-      });
-    }
-
     // If no markdown links found, return the content as-is
     if (matches.length === 0) {
       return (

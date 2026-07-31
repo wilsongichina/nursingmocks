@@ -13,6 +13,10 @@ const AUTH_DEFERRED_PUBLIC_PATHS = new Set([
   "/ati-teas-math-practice-test",
   "/ati-teas-science-practice-test",
   "/ati-teas-english-practice-test",
+  "/teas-reading-practice-test",
+  "/teas-math-practice-test",
+  "/teas-science-practice-test",
+  "/teas-english-practice-test",
 ]);
 
 const TEAS_SET_PAGE_PATTERN =

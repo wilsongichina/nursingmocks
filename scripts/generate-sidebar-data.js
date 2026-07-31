@@ -360,6 +360,56 @@ function getModalCacheKey(pillarPageId, parentSubPageId) {
   return `${pillarPageId}:${parentSubPageId}`;
 }
 
+function pickDefined(source, keys) {
+  return keys.reduce((output, key) => {
+    if (source[key] !== undefined && source[key] !== null) {
+      output[key] = source[key];
+    }
+    return output;
+  }, {});
+}
+
+function toSidebarPillarPage(page) {
+  return pickDefined(page, ["id", "pageName", "title", "slug", "status", "order"]);
+}
+
+function toSidebarCategory(page) {
+  return pickDefined(page, [
+    "id",
+    "subPageId",
+    "servicePageId",
+    "pageName",
+    "title",
+    "name",
+    "slug",
+    "status",
+    "order",
+    "displayOrder",
+    "questionCount",
+    "quizCount",
+    "topicCount",
+  ]);
+}
+
+function toSidebarNestedPage(page) {
+  return pickDefined(page, [
+    "id",
+    "nestedSubPageId",
+    "pageName",
+    "title",
+    "name",
+    "slug",
+    "publicSlug",
+    "publicUrl",
+    "status",
+    "order",
+    "displayOrder",
+    "questionCount",
+    "quizCount",
+    "topicCount",
+  ]);
+}
+
 async function generateSidebarData() {
   try {
     const firebaseConfig = getFirebaseConfig();
@@ -433,12 +483,15 @@ async function generateSidebarData() {
       if (pillarPage.id === "nursing-entrance-exam") {
         const result = await getNursingEntranceExamSubPages(db);
         if (result.success && result.data) {
-          const categories = result.data.map((subPage) => ({
-            id: subPage.id || subPage.subPageId,
-            servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
-            slug: subPage.slug || subPage.id || subPage.subPageId, // Include slug if available
-            ...subPage,
-          }));
+          const categories = result.data.map((subPage) =>
+            toSidebarCategory({
+              ...subPage,
+              id: subPage.id || subPage.subPageId,
+              subPageId: subPage.subPageId || subPage.id,
+              servicePageId: subPage.id || subPage.subPageId,
+              slug: subPage.slug || subPage.id || subPage.subPageId,
+            })
+          );
           categoriesByPillar[pillarPage.id] = categories;
         } else {
           categoriesByPillar[pillarPage.id] = [];
@@ -447,12 +500,15 @@ async function generateSidebarData() {
         // For nursing-exit-exam, use the special function to get sub-pages
         const result = await getNursingExitExamSubPages(db);
         if (result.success && result.data) {
-          const categories = result.data.map((subPage) => ({
-            id: subPage.id || subPage.subPageId,
-            servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
-            slug: subPage.slug || subPage.id || subPage.subPageId, // Include slug if available
-            ...subPage,
-          }));
+          const categories = result.data.map((subPage) =>
+            toSidebarCategory({
+              ...subPage,
+              id: subPage.id || subPage.subPageId,
+              subPageId: subPage.subPageId || subPage.id,
+              servicePageId: subPage.id || subPage.subPageId,
+              slug: subPage.slug || subPage.id || subPage.subPageId,
+            })
+          );
           categoriesByPillar[pillarPage.id] = categories;
         } else {
           categoriesByPillar[pillarPage.id] = [];
@@ -461,12 +517,15 @@ async function generateSidebarData() {
         // For nursing-test-bank, use the special function to get sub-pages
         const result = await getNursingTestBankSubPages(db);
         if (result.success && result.data) {
-          const categories = result.data.map((subPage) => ({
-            id: subPage.id || subPage.subPageId,
-            servicePageId: subPage.id || subPage.subPageId, // Use the document ID as the slug
-            slug: subPage.slug || subPage.id || subPage.subPageId, // Include slug if available
-            ...subPage,
-          }));
+          const categories = result.data.map((subPage) =>
+            toSidebarCategory({
+              ...subPage,
+              id: subPage.id || subPage.subPageId,
+              subPageId: subPage.subPageId || subPage.id,
+              servicePageId: subPage.id || subPage.subPageId,
+              slug: subPage.slug || subPage.id || subPage.subPageId,
+            })
+          );
           categoriesByPillar[pillarPage.id] = categories;
         } else {
           categoriesByPillar[pillarPage.id] = [];
@@ -475,12 +534,14 @@ async function generateSidebarData() {
         // For other pillar pages, use the services collection
         const result = await getAllPillarServicePages(db, pillarPage.id);
         if (result.success && result.data) {
-          const categories = result.data.map((service) => ({
-            id: service.servicePageId || service.id,
-            servicePageId: service.servicePageId || service.id,
-            slug: service.slug || service.servicePageId || service.id, // Include slug if available
-            ...service,
-          }));
+          const categories = result.data.map((service) =>
+            toSidebarCategory({
+              ...service,
+              id: service.servicePageId || service.id,
+              servicePageId: service.servicePageId || service.id,
+              slug: service.slug || service.servicePageId || service.id,
+            })
+          );
           categoriesByPillar[pillarPage.id] = categories;
         } else {
           // Initialize empty array for pillar pages without categories
@@ -545,13 +606,14 @@ async function generateSidebarData() {
         }
 
         modalNestedPages[getModalCacheKey(pillarPage.id, categoryId)] =
-          modalPages;
+          modalPages.map(toSidebarNestedPage);
       }
     }
 
-    // Prepare the sidebar data structure - only pillar pages, no TEAS categories
+    // Keep the public sidebar payload menu-only. Full body content, schema, and
+    // SEO fields belong to page rendering, not the client navigation cache.
     const sidebarData = {
-      pillarPages: allPillarPages,
+      pillarPages: allPillarPages.map(toSidebarPillarPage),
       pillarCategories: categoriesByPillar,
       modalNestedPages,
       generatedAt: new Date().toISOString(),

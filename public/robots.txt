@@ -19,6 +19,10 @@ Allow: /ati-teas-science-practice-test$
 Allow: /ati-teas-english-practice-test$
 Allow: /teas-7-practice$
 Allow: /teas-7-practice-test$
+Allow: /teas-reading-practice-test$
+Allow: /teas-math-practice-test$
+Allow: /teas-science-practice-test$
+Allow: /teas-english-practice-test$
 Allow: /teas-english-practice-test-set-
 Allow: /teas-reading-practice-test-set-
 Allow: /teas-science-practice-test-set-

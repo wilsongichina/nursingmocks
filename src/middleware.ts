@@ -7,6 +7,12 @@ const ATI_TEAS_PARENT_LEGACY_PATHS = new Set([
   "/teas-7-practice",
   "/teas-7-practice-test",
 ]);
+const ATI_TEAS_SUBJECT_LEGACY_PATHS: Record<string, string> = {
+  "/teas-reading-practice-test": "/ati-teas-reading-practice-test",
+  "/teas-math-practice-test": "/ati-teas-math-practice-test",
+  "/teas-science-practice-test": "/ati-teas-science-practice-test",
+  "/teas-english-practice-test": "/ati-teas-english-practice-test",
+};
 
 const ATI_TEAS_QUIZ_PATHS = ATI_TEAS_SUBJECT_SLUGS.flatMap((subject) =>
   ATI_TEAS_INDEXABLE_SETS.map((setNumber) => `/teas-${subject}-practice-test-set-${setNumber}`)
@@ -49,6 +55,11 @@ export function middleware(request: NextRequest) {
       new URL(ATI_TEAS_PARENT_CANONICAL_PATH, request.url),
       308
     );
+  }
+
+  const canonicalSubjectPath = ATI_TEAS_SUBJECT_LEGACY_PATHS[pathname];
+  if (canonicalSubjectPath) {
+    return NextResponse.redirect(new URL(canonicalSubjectPath, request.url), 308);
   }
 
   // Google must be allowed to crawl a page before it can see this noindex signal.

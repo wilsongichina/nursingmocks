@@ -60,6 +60,7 @@ Use this order when optimizing another public page:
 8. Avoid unnecessary client Firestore reads on server-rendered public pages.
    - If `src/app/[slug]/page.tsx` passes `initialBreadcrumbItems`, `LayoutWithSidebar` must skip client-side breadcrumb/pillar preloading.
    - Console errors like `firestore.googleapis.com Listen/channel net::ERR_TIMED_OUT` usually mean a client component is still starting Firestore Web SDK work after hydration.
+   - Keep `public/data/sidebar-data.json` menu-only. Do not include full page body content, schema markup, meta descriptions, or other page-rendering fields in the sidebar cache.
 
 9. Fix audit-specific public files and accessibility findings.
    - `public/llms.txt` must be Markdown-like, have an H1, and contain useful links.
@@ -84,6 +85,7 @@ Use this order when optimizing another public page:
 - `llms.txt` was added with a valid H1 and links.
 - `robots.txt` was updated to allow `/llms.txt`.
 - Compact footer text contrast was raised on the dark footer.
+- The generated sidebar cache was trimmed to menu fields only so public pages do not download full page content and schema through the navigation.
 
 ## What Did Not Work
 
@@ -467,3 +469,106 @@ Reason:
 - `DynamicQuizQuestions` uses auth to fetch full questions for signed-in users with access.
 - Permanently deferring auth would improve public PageSpeed but could leave paid users stuck in preview mode.
 - Lazy auth preserves the public first paint while allowing full-access checks after the page is interactive.
+
+## ATI TEAS Subject Page Optimization
+
+Completed on 2026-07-31:
+
+- Extended public auth deferral and chat skipping to the canonical ATI TEAS subject hubs:
+  - `/ati-teas-reading-practice-test`
+  - `/ati-teas-math-practice-test`
+  - `/ati-teas-science-practice-test`
+  - `/ati-teas-english-practice-test`
+- Added 308 redirects from older subject slugs to the canonical subject URLs:
+  - `/teas-reading-practice-test` -> `/ati-teas-reading-practice-test`
+  - `/teas-math-practice-test` -> `/ati-teas-math-practice-test`
+  - `/teas-science-practice-test` -> `/ati-teas-science-practice-test`
+  - `/teas-english-practice-test` -> `/ati-teas-english-practice-test`
+- Allowed those older URLs in `robots.txt` so Google can crawl them and discover the redirects.
+- Updated `scripts/generate-sidebar-data.js` so generated sidebar files only include the fields the sidebar uses:
+  - IDs
+  - names/titles
+  - slugs/public URLs
+  - status/order
+  - question, quiz, and topic counts
+- Regenerated:
+  - `public/data/sidebar-data.json`
+  - `src/lib/data/sidebar-data.ts`
+
+Result:
+
+```text
+public/data/sidebar-data.json
+Before: 328,116 bytes
+After:    8,361 bytes
+```
+
+Reason:
+
+- The sidebar is a client component mounted by the shared user/public layout.
+- Before this pass, the sidebar cache included full `bodyContent`, schema markup, and SEO fields that are not needed to render the menu or modal.
+- Removing that payload reduces navigation JSON transfer and parsing work across public pages that use the sidebar.
+
+### 2026-07-31: Phase 4 Lightweight Public Read-Only Renderer
+
+Completed:
+
+- Replaced the public read-only renderer behind `src/components/editor/TiptapContentRenderer.tsx`.
+- The public renderer no longer imports:
+  - `TiptapEditor`
+  - `@tiptap/react`
+  - Tiptap editor extensions
+  - admin toolbar/module UI
+- Kept the same wrapper classes:
+  - `.tiptap-editor`
+  - `.tiptap-readonly`
+- Preserved saved public content rendering for:
+  - normal saved HTML
+  - headings
+  - paragraphs
+  - lists
+  - links
+  - images
+  - tables
+  - callouts
+  - dotted separators
+  - CTA blocks
+  - internal-link cards
+  - FAQ content blocks
+  - comparison-table blocks
+- Added a small public sanitization pass that removes scripts, style blocks, iframe/object/embed tags, inline event handlers, `contenteditable`, and unsafe `javascript:`, `data:`, or `vbscript:` URL attributes.
+- Added a cheap marker check before legacy empty marketing-block expansion so normal article HTML skips the broad marketing-block regex during static generation.
+- Removed public debug logging from `ContentRenderer`.
+
+Reason:
+
+- Public generated pages need to display saved article content, not mount an editable ProseMirror/Tiptap runtime.
+- This reduces public JavaScript and keeps editor behavior isolated to admin/editor routes.
+
+Important constraint:
+
+- Quiz-card modules are still handled by the existing content split in `src/app/[slug]/page.tsx` and rendered through `QuizCardRenderer` when present. Do not remove that split unless quiz-card rendering is replaced separately.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+npm run lint
+npm run build
+```
+
+Results:
+
+- TypeScript passed.
+- Lint passed with only the existing `src/components/editor/Toolbar.tsx` hook dependency warning.
+- Build completed from an external PowerShell session after the Codex command window previously timed out during static page generation.
+
+Next measurement:
+
+- Re-run PageSpeed on:
+  - `/ati-teas-practice-test`
+  - `/ati-teas-reading-practice-test`
+  - `/ati-teas-math-practice-test`
+  - `/ati-teas-science-practice-test`
+  - `/ati-teas-english-practice-test`
+- Check whether the unused JavaScript report still includes Tiptap/editor chunks on those public pages.
