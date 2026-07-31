@@ -11,6 +11,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "generate:sidebar": "node scripts/generate-sidebar-data.js",
+    "content:sidebar-counts:dry-run": "node scripts/backfill-sidebar-nested-question-counts.js",
+    "content:sidebar-counts:apply": "node scripts/backfill-sidebar-nested-question-counts.js --apply",
     "billing:exam-access:migrate:dry-run": "node scripts/migrate-billing-exam-access.js",
     "billing:exam-access:migrate:apply": "node scripts/migrate-billing-exam-access.js --apply",
     "billing:exam-access:set-user": "node scripts/set-user-exam-access.js",

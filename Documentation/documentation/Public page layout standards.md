@@ -75,3 +75,16 @@ The standard has been applied to:
 - Nursing Entrance Exams, Nursing Test Bank, and Nursing Exit Exams should not behave as mutually exclusive accordion sections.
 - The collapsed desktop sidebar can remain icon-only to preserve the compact navigation width.
 - Sidebar category data should continue to come from the existing static/sidebar data source and Firestore fallback; do not hardcode exam lists in the component.
+- Sidebar question-pool modals should prioritize click response: open the modal immediately, render nested cards as soon as nested pages load, and cache results in memory for repeat clicks.
+- Do not run live question-count aggregation from the sidebar modal. Show saved `questionCount` values when present; otherwise use a neutral view-sets state and let the destination page provide detailed counts.
+- The build-time sidebar data generator should include nested modal page groups in `modalNestedPages` so common sidebar popups can render from static data before falling back to Firestore.
+- For Nursing Test Bank sidebar modals, use lightweight saved totals or generated `topicCount`; do not walk from nested page to topics to quizzes to questions at click time.
+- After large quiz imports or content cleanup, refresh saved nested-page sidebar totals with `npm run content:sidebar-counts:dry-run`, then `npm run content:sidebar-counts:apply`, then `npm run generate:sidebar`.
+- Sidebar question-pool modals should act as subject selectors. Use a real destination action such as `Open Subject`; reserve `Review Mode`, `Exam Mode`, and set-specific actions for individual quiz/set cards or confirmed in-page anchors.
+- Nursing Entrance sidebar modal cards should link to the saved nested page slug directly, such as `/teas-math-practice-test`; do not compose parent-plus-child URLs for these subject pages.
+
+## Generated Public Page Back Links
+
+- Dynamic public generated pages should derive their back button from the previous breadcrumb item instead of hardcoding the parent pillar.
+- Nested subject pages such as `/ati-teas-math-practice-test` should point back to their parent practice hub, such as `/ati-teas-practice-test`, with the label derived from the route slug.
+- Keep category badges separate from back-link labels. A page can still belong to `Nursing Entrance Exams` while its back button points to the more specific parent hub.

@@ -463,6 +463,37 @@ type PublicBreadcrumbItem = {
   url?: string;
 };
 
+const getPublicRouteLabelFromUrl = (url?: string) => {
+  const routeSlug = String(url || "").replace(/^\/+|\/+$/g, "");
+
+  if (!routeSlug) {
+    return "";
+  }
+
+  return titleCaseWords(routeSlug.replace(/-/g, " "));
+};
+
+const getPublicBackLink = (
+  breadcrumbs: PublicBreadcrumbItem[],
+  fallback: PublicBreadcrumbItem
+) => {
+  const previousItem = breadcrumbs
+    .slice(0, -1)
+    .reverse()
+    .find((item) => item.url);
+
+  if (!previousItem?.url) {
+    return fallback;
+  }
+
+  const routeLabel = getPublicRouteLabelFromUrl(previousItem.url);
+
+  return {
+    name: routeLabel || previousItem.name,
+    url: previousItem.url,
+  };
+};
+
 const getPublicContentLabel = (pageData: any, fallback: string) =>
   titleCaseWords(
     stripHtml(
@@ -2012,6 +2043,10 @@ export default async function DynamicPage({
     tocItems,
     `${pageName} Guide`
   );
+  const backLink = getPublicBackLink(initialBreadcrumbItems, {
+    name: pillarLabel,
+    url: `/${pillarId}`,
+  });
 
   if (isPublicSubPage) {
     return (
@@ -2030,6 +2065,8 @@ export default async function DynamicPage({
             <PublicSubPageHero
               pillarHref={`/${pillarId}`}
               pillarLabel={pillarLabel}
+              backHref={backLink.url || `/${pillarId}`}
+              backLabel={backLink.name}
               examBadge={examBadge}
               pageHeading={pageHeading}
               pageDescription={pageDescription}
@@ -2200,10 +2237,10 @@ export default async function DynamicPage({
             <div className="user-page-header-copy">
               <div className="mb-4 flex flex-col items-start gap-3">
                 <Link
-                  href={`/${pillarId}`}
+                  href={backLink.url || `/${pillarId}`}
                   className="user-button-secondary min-h-[34px] w-fit px-3 py-1.5 text-sm"
                 >
-                  Back to {pillarLabel}
+                  Back to {backLink.name}
                 </Link>
                 <p className="user-eyebrow m-0 inline-flex items-center gap-2">
                   <span className="user-accent-dot shrink-0" />

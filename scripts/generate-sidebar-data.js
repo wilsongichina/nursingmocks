@@ -259,6 +259,74 @@ async function getNursingTestBankSubPages(db) {
   }
 }
 
+async function getNestedSubPagesForModal(db, pillarPageId, parentSubPageId) {
+  try {
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        pillarPageId,
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages"
+      )
+    );
+    const nestedSubPages = [];
+
+    querySnapshot.forEach((doc) => {
+      nestedSubPages.push({
+        id: doc.id,
+        nestedSubPageId: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return {
+      success: true,
+      data: nestedSubPages,
+    };
+  } catch (error) {
+    console.error(
+      `Error getting nested modal pages for ${pillarPageId}/${parentSubPageId}:`,
+      error
+    );
+    return {
+      success: false,
+      message: `Failed to retrieve nested modal pages: ${error.message}`,
+      data: [],
+    };
+  }
+}
+
+async function getTestBankTopicCountForModal(db, parentSubPageId, nestedSubPageId) {
+  try {
+    const querySnapshot = await getDocs(
+      collection(
+        db,
+        "pillarPages",
+        "nursing-test-bank",
+        "subPages",
+        parentSubPageId,
+        "nestedSubPages",
+        nestedSubPageId,
+        "topics"
+      )
+    );
+
+    return querySnapshot.size;
+  } catch (error) {
+    console.error(
+      `Error getting test bank topic count for ${parentSubPageId}/${nestedSubPageId}:`,
+      error
+    );
+    return undefined;
+  }
+}
+
+function getModalCacheKey(pillarPageId, parentSubPageId) {
+  return `${pillarPageId}:${parentSubPageId}`;
+}
+
 async function generateSidebarData() {
   try {
     const firebaseConfig = getFirebaseConfig();
@@ -382,10 +450,53 @@ async function generateSidebarData() {
       }
     }
 
+    const modalNestedPages = {};
+    for (const pillarPage of allPillarPages) {
+      const categories = categoriesByPillar[pillarPage.id] || [];
+      for (const category of categories) {
+        const categoryId = category.id || category.subPageId || category.servicePageId;
+        if (!categoryId) {
+          continue;
+        }
+
+        const result = await getNestedSubPagesForModal(
+          db,
+          pillarPage.id,
+          categoryId
+        );
+        let modalPages = result.success && result.data ? result.data : [];
+
+        if (pillarPage.id === "nursing-test-bank" && modalPages.length > 0) {
+          modalPages = await Promise.all(
+            modalPages.map(async (nestedPage) => {
+              const nestedPageId = nestedPage.id || nestedPage.nestedSubPageId;
+              if (!nestedPageId) {
+                return nestedPage;
+              }
+
+              const topicCount = await getTestBankTopicCountForModal(
+                db,
+                categoryId,
+                nestedPageId
+              );
+
+              return typeof topicCount === "number"
+                ? { ...nestedPage, topicCount }
+                : nestedPage;
+            })
+          );
+        }
+
+        modalNestedPages[getModalCacheKey(pillarPage.id, categoryId)] =
+          modalPages;
+      }
+    }
+
     // Prepare the sidebar data structure - only pillar pages, no TEAS categories
     const sidebarData = {
       pillarPages: allPillarPages,
       pillarCategories: categoriesByPillar,
+      modalNestedPages,
       generatedAt: new Date().toISOString(),
     };
 
@@ -425,6 +536,7 @@ export type SidebarData = typeof sidebarData;
       const subPagesCount = categoriesByPillar[pillarPage.id]?.length || 0;
       console.log(`   - ${pillarPage.id}: ${subPagesCount} sub-pages`);
     }
+    console.log(`   - ${Object.keys(modalNestedPages).length} modal nested page groups`);
     
     console.log(`   - JSON Output: ${jsonOutputPath}`);
     console.log(`   - TypeScript Output: ${tsOutputPath}`);

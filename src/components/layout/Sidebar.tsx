@@ -16,9 +16,6 @@ import {
   getNursingExitExamNestedSubPages,
   getNursingTestBankSubPages,
   getNursingTestBankNestedSubPages,
-  countNestedPageQuestions,
-  countTopicQuestions,
-  getNursingTestBankTopics,
 } from "@/lib/firestore-operations";
 import { useRouter } from "next/navigation";
 
@@ -139,6 +136,7 @@ const _ABCIcon = ({ className }: { className?: string }) => (
 interface SidebarData {
   pillarPages: PillarPage[];
   pillarCategories: Record<string, Category[]>;
+  modalNestedPages?: Record<string, any[]>;
 }
 
 interface SidebarProps {
@@ -193,6 +191,18 @@ export default function Sidebar({
   const [nestedSubPages, setNestedSubPages] = useState<any[]>([]);
   const [loadingNested, setLoadingNested] = useState(false);
   const router = useRouter();
+  const modalDataCacheRef = useRef<Map<string, any[]>>(new Map());
+  const modalRequestIdRef = useRef(0);
+
+  const seedModalDataCache = (modalNestedPages?: Record<string, any[]>) => {
+    if (!modalNestedPages) {
+      return;
+    }
+
+    Object.entries(modalNestedPages).forEach(([key, pages]) => {
+      modalDataCacheRef.current.set(key, pages);
+    });
+  };
 
   const mainItems = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard", color: "blue" },
@@ -475,6 +485,7 @@ export default function Sidebar({
     if (initialData) {
       setPillarPages(initialData.pillarPages || []);
       setPillarCategories(initialData.pillarCategories || {});
+      seedModalDataCache(initialData.modalNestedPages);
       return;
     }
 
@@ -487,6 +498,7 @@ export default function Sidebar({
           if (staticData.pillarPages && staticData.pillarCategories) {
             setPillarPages(staticData.pillarPages);
             setPillarCategories(staticData.pillarCategories);
+            seedModalDataCache(staticData.modalNestedPages);
             console.log("[Sidebar] Loaded static data from sidebar-data.json");
             return true;
           }
@@ -617,6 +629,42 @@ export default function Sidebar({
     );
   };
 
+  const getModalCacheKey = (parentPillarId: string, categoryId: string) =>
+    `${parentPillarId}:${categoryId}`;
+
+  const openNestedModal = (
+    categoryId: string,
+    categoryName: string,
+    parentPillarId: string,
+    categorySlug?: string
+  ) => {
+    const requestId = modalRequestIdRef.current + 1;
+    modalRequestIdRef.current = requestId;
+    const cacheKey = getModalCacheKey(parentPillarId, categoryId);
+    const cachedPages = modalDataCacheRef.current.get(cacheKey);
+
+    setSelectedSubPage({
+      id: categoryId,
+      name: categoryName,
+      parentPillarId,
+      slug: categorySlug,
+    });
+    setNestedSubPages(cachedPages || []);
+    setLoadingNested(!cachedPages);
+    setIsModalOpen(true);
+
+    return { requestId, cacheKey, cachedPages };
+  };
+
+  const isCurrentModalRequest = (requestId: number) =>
+    modalRequestIdRef.current === requestId;
+
+  const mapNestedPagesForModal = (pages: any[]) =>
+    pages.map((nestedPage: any) => ({
+      ...nestedPage,
+      isQuestionCountLoading: false,
+    }));
+
   const handleSubPageClick = async (
     e: React.MouseEvent,
     categoryId: string,
@@ -625,42 +673,41 @@ export default function Sidebar({
     categorySlug?: string
   ) => {
     e.preventDefault();
-    setSelectedSubPage({
-      id: categoryId,
-      name: categoryName,
+    const { requestId, cacheKey, cachedPages } = openNestedModal(
+      categoryId,
+      categoryName,
       parentPillarId,
-      slug: categorySlug,
-    });
-    setLoadingNested(true);
-    setIsModalOpen(true);
+      categorySlug
+    );
+
+    if (cachedPages) {
+      return;
+    }
 
     try {
       const result = await getNestedSubPages(categoryId);
       if (result.success && result.data) {
-        // Fetch question counts for nested pages
-        const nestedPagesWithCounts = await Promise.all(
-          result.data.map(async (nestedPage: any) => {
-            const nestedPageSlug = nestedPage.slug || nestedPage.id;
-            const questionCount = await countNestedPageQuestions(
-              parentPillarId as "nursing-entrance-exam",
-              categoryId,
-              nestedPageSlug
-            );
-            return {
-              ...nestedPage,
-              questionCount,
-            };
-          })
-        );
-        setNestedSubPages(nestedPagesWithCounts);
+        const nestedPages = mapNestedPagesForModal(result.data);
+
+        if (!isCurrentModalRequest(requestId)) {
+          return;
+        }
+
+        setNestedSubPages(nestedPages);
+        modalDataCacheRef.current.set(cacheKey, nestedPages);
+        setLoadingNested(false);
       } else {
-        setNestedSubPages([]);
+        if (isCurrentModalRequest(requestId)) {
+          setNestedSubPages([]);
+          setLoadingNested(false);
+        }
       }
     } catch (error) {
       console.error("Error loading nested sub-pages:", error);
-      setNestedSubPages([]);
-    } finally {
-      setLoadingNested(false);
+      if (isCurrentModalRequest(requestId)) {
+        setNestedSubPages([]);
+        setLoadingNested(false);
+      }
     }
   };
 
@@ -714,20 +761,11 @@ export default function Sidebar({
         nestedSubPageUrl = `/${nestedPageSlug}-${parentSlug}-test-bank`;
       } else if (isExitExam) {
         // Exit exam: nested slug already contains parent prefix, so just use the nested slug
-        // The nested slug format is: {parentSlug}-{nestedBaseSlug}
         nestedSubPageUrl = `/${nestedPageSlug}`;
       } else {
-        // Entrance exam URL pattern: /{parentSlug}-{nestedBaseSlug}-questions
-        // Extract nested base slug if nested slug contains parent prefix
-        let nestedBaseSlug = nestedPageSlug;
-        if (nestedPageSlug.startsWith(parentSlug + "-")) {
-          nestedBaseSlug = nestedPageSlug.substring(parentSlug.length + 1);
-        }
-        // Remove -exam suffix if present for nested sub-page URLs
-        const parentUrlSlug = parentSlug.endsWith("-exam")
-          ? parentSlug.slice(0, -5)
-          : parentSlug;
-        nestedSubPageUrl = `/${parentUrlSlug}-${nestedBaseSlug}-questions`;
+        // Entrance nested pages store their public slug directly
+        // (for example, teas-math-practice-test).
+        nestedSubPageUrl = `/${nestedPageSlug}`;
       }
     }
 
@@ -744,42 +782,41 @@ export default function Sidebar({
     categorySlug?: string
   ) => {
     e.preventDefault();
-    setSelectedSubPage({
-      id: categoryId,
-      name: categoryName,
-      parentPillarId: "nursing-exit-exam",
-      slug: categorySlug,
-    });
-    setLoadingNested(true);
-    setIsModalOpen(true);
+    const { requestId, cacheKey, cachedPages } = openNestedModal(
+      categoryId,
+      categoryName,
+      "nursing-exit-exam",
+      categorySlug
+    );
+
+    if (cachedPages) {
+      return;
+    }
 
     try {
       const result = await getNursingExitExamNestedSubPages(categoryId);
       if (result.success && result.data) {
-        // Fetch question counts for nested pages
-        const nestedPagesWithCounts = await Promise.all(
-          result.data.map(async (nestedPage: any) => {
-            const nestedPageSlug = nestedPage.slug || nestedPage.id;
-            const questionCount = await countNestedPageQuestions(
-              "nursing-exit-exam",
-              categoryId,
-              nestedPageSlug
-            );
-            return {
-              ...nestedPage,
-              questionCount,
-            };
-          })
-        );
-        setNestedSubPages(nestedPagesWithCounts);
+        const nestedPages = mapNestedPagesForModal(result.data);
+
+        if (!isCurrentModalRequest(requestId)) {
+          return;
+        }
+
+        setNestedSubPages(nestedPages);
+        modalDataCacheRef.current.set(cacheKey, nestedPages);
+        setLoadingNested(false);
       } else {
-        setNestedSubPages([]);
+        if (isCurrentModalRequest(requestId)) {
+          setNestedSubPages([]);
+          setLoadingNested(false);
+        }
       }
     } catch (error) {
       console.error("Error loading nested sub-pages:", error);
-      setNestedSubPages([]);
-    } finally {
-      setLoadingNested(false);
+      if (isCurrentModalRequest(requestId)) {
+        setNestedSubPages([]);
+        setLoadingNested(false);
+      }
     }
   };
 
@@ -790,58 +827,46 @@ export default function Sidebar({
     categorySlug?: string
   ) => {
     e.preventDefault();
-    setSelectedSubPage({
-      id: categoryId,
-      name: categoryName,
-      parentPillarId: "nursing-test-bank",
-      slug: categorySlug,
-    });
-    setLoadingNested(true);
-    setIsModalOpen(true);
+    const { requestId, cacheKey, cachedPages } = openNestedModal(
+      categoryId,
+      categoryName,
+      "nursing-test-bank",
+      categorySlug
+    );
+
+    if (cachedPages) {
+      return;
+    }
 
     try {
       const result = await getNursingTestBankNestedSubPages(categoryId);
       if (result.success && result.data) {
-        // Fetch question counts for nested pages (test bank nested pages have topics, so count through topics)
-        const nestedPagesWithCounts = await Promise.all(
-          result.data.map(async (nestedPage: any) => {
-            const nestedPageSlug = nestedPage.slug || nestedPage.id;
-            // For test bank, we need to count questions through topics
-            const topicsResult = await getNursingTestBankTopics(
-              categoryId,
-              nestedPageSlug
-            );
-            let totalCount = 0;
-            if (topicsResult.success && topicsResult.data) {
-              for (const topic of topicsResult.data) {
-                const topicSlug = topic.slug || topic.id;
-                const count = await countTopicQuestions(
-                  categoryId,
-                  nestedPageSlug,
-                  topicSlug
-                );
-                totalCount += count;
-              }
-            }
-            return {
-              ...nestedPage,
-              questionCount: totalCount,
-            };
-          })
-        );
-        setNestedSubPages(nestedPagesWithCounts);
+        const nestedPages = mapNestedPagesForModal(result.data);
+
+        if (!isCurrentModalRequest(requestId)) {
+          return;
+        }
+
+        setNestedSubPages(nestedPages);
+        modalDataCacheRef.current.set(cacheKey, nestedPages);
+        setLoadingNested(false);
       } else {
-        setNestedSubPages([]);
+        if (isCurrentModalRequest(requestId)) {
+          setNestedSubPages([]);
+          setLoadingNested(false);
+        }
       }
     } catch (error) {
       console.error("Error loading nested sub-pages:", error);
-      setNestedSubPages([]);
-    } finally {
-      setLoadingNested(false);
+      if (isCurrentModalRequest(requestId)) {
+        setNestedSubPages([]);
+        setLoadingNested(false);
+      }
     }
   };
 
   const closeModal = () => {
+    modalRequestIdRef.current += 1;
     setIsModalOpen(false);
     setSelectedSubPage(null);
     setNestedSubPages([]);
@@ -1424,12 +1449,12 @@ export default function Sidebar({
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-[20px] shadow-[0_20px_45px_rgba(15,23,42,0.22)] border border-[rgba(148,163,184,0.25)] w-full max-w-[840px] p-[14px] sm:p-4 relative max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto"
+            className="bg-white rounded-[20px] shadow-[0_20px_45px_rgba(15,23,42,0.22)] border border-[rgba(148,163,184,0.25)] w-full max-w-[920px] p-4 sm:p-5 relative max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             style={{ maxHeight: 'calc(100vh - 1rem)' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex flex-col gap-[3px]">
                 <div className="inline-flex items-center px-2 py-[2px] rounded-full bg-[rgba(106,92,255,0.06)] text-[#6a5cff] text-[10px] uppercase tracking-[0.09em] font-semibold">
                   {selectedSubPage?.parentPillarId === "nursing-entrance-exam"
@@ -1437,14 +1462,14 @@ export default function Sidebar({
                     : selectedSubPage?.parentPillarId === "nursing-exit-exam"
                     ? "Exit Exam"
                     : "Test Bank"}{" "}
-                  · Question Pools
+                  · Practice Subjects
                 </div>
-                <div className="text-base font-bold text-[#202437] tracking-[0.01em]">
-                  {selectedSubPage?.name || "Select a Page"}
+                <div className="text-lg font-bold text-[#202437] tracking-[0.01em]">
+                  Choose a Practice Subject
                 </div>
-                <div className="text-xs text-[#7a819c]">
-                  Quickly select a subject, then choose Review Mode, Exam Mode,
-                  or view all sets.
+                <div className="text-sm text-[#6b7280] max-w-[620px] leading-relaxed">
+                  Pick a subject under {selectedSubPage?.name || "this exam"} to
+                  open its practice page. Choose a specific set from there.
                 </div>
               </div>
               <button
@@ -1458,7 +1483,7 @@ export default function Sidebar({
             </div>
 
             {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {loadingNested ? (
                 <div className="col-span-1 md:col-span-2 flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6a5cff]"></div>
@@ -1479,46 +1504,40 @@ export default function Sidebar({
                   const getSubjectInfo = () => {
                     if (nameLower.includes("math")) {
                       return {
-                        tag: "M1",
-                        title: `${selectedSubPage?.name || ""} Math Questions`,
-                        subtitle: "Numbers, ratios, percentages",
+                        tag: "Math",
+                        title: nestedPageName,
+                        subtitle: "Numbers, algebra, measurement, data",
                         color: "text-[#2563eb]",
                         colorClass: "count-math",
                       };
                     } else if (nameLower.includes("reading")) {
                       return {
-                        tag: "R1",
-                        title: `${
-                          selectedSubPage?.name || ""
-                        } Reading Questions`,
-                        subtitle: "Passages, inference, main idea",
+                        tag: "Reading",
+                        title: nestedPageName,
+                        subtitle: "Passages, inference, evidence",
                         color: "text-[#a855f7]",
                         colorClass: "count-read",
                       };
                     } else if (nameLower.includes("science")) {
                       return {
-                        tag: "S1",
-                        title: `${
-                          selectedSubPage?.name || ""
-                        } Science Questions`,
-                        subtitle: "A&P, biology, chemistry",
+                        tag: "Science",
+                        title: nestedPageName,
+                        subtitle: "A&P, biology, chemistry, reasoning",
                         color: "text-[#f97316]",
                         colorClass: "count-sci",
                       };
                     } else if (nameLower.includes("english")) {
                       return {
-                        tag: "E1",
-                        title: `${
-                          selectedSubPage?.name || ""
-                        } English Questions`,
-                        subtitle: "Grammar, spelling, punctuation",
+                        tag: "English",
+                        title: nestedPageName,
+                        subtitle: "Grammar, vocabulary, revision",
                         color: "text-[#16a34a]",
                         colorClass: "count-eng",
                       };
                     } else if (nameLower.includes("all")) {
                       return {
-                        tag: "A1",
-                        title: `${selectedSubPage?.name || ""} All Subjects`,
+                        tag: "All",
+                        title: nestedPageName,
                         subtitle: "Mixed-section practice",
                         color: "text-[#6a5cff]",
                         colorClass: "count-math",
@@ -1535,7 +1554,6 @@ export default function Sidebar({
                   };
 
                   const subjectInfo = getSubjectInfo();
-                  const questionCount = nestedSubPage.questionCount || 0;
 
                   // Get nested page URL (using same logic as handleNestedSubPageClick)
                   // For Link href, we'll use the constructed URL (route mapping lookup is async)
@@ -1543,6 +1561,33 @@ export default function Sidebar({
                     selectedSubPage?.parentPillarId || "nursing-entrance-exam";
                   const isExitExam = pillarId === "nursing-exit-exam";
                   const isTestBank = pillarId === "nursing-test-bank";
+                  const hasQuestionCount =
+                    typeof nestedSubPage.questionCount === "number";
+                  const hasTopicCount =
+                    isTestBank && typeof nestedSubPage.topicCount === "number";
+                  const hasQuizCount =
+                    typeof nestedSubPage.quizCount === "number" &&
+                    nestedSubPage.quizCount > 0;
+                  const primaryCountLabel = hasQuestionCount
+                    ? `${nestedSubPage.questionCount.toLocaleString()} questions`
+                    : hasTopicCount
+                    ? `${nestedSubPage.topicCount.toLocaleString()} topics`
+                    : "Practice page";
+                  const secondaryCountLabel = hasQuizCount
+                    ? `${nestedSubPage.quizCount.toLocaleString()} sets`
+                    : hasTopicCount
+                    ? "Topic-based practice"
+                    : "Open to view sets";
+                  const metricLabel = hasQuestionCount
+                    ? nestedSubPage.questionCount.toLocaleString()
+                    : hasTopicCount
+                    ? nestedSubPage.topicCount.toLocaleString()
+                    : "--";
+                  const metricHelperLabel = hasQuestionCount
+                    ? "Questions"
+                    : hasTopicCount
+                    ? "Topics"
+                    : "Practice";
                   const parentSlug =
                     selectedSubPage?.slug || selectedSubPage?.id || "";
                   const nestedPageSlug =
@@ -1554,17 +1599,9 @@ export default function Sidebar({
                   } else if (isExitExam) {
                     nestedPageUrl = `/${nestedPageSlug}`;
                   } else {
-                    // Entrance exam
-                    let nestedBaseSlug = nestedPageSlug;
-                    if (nestedPageSlug.startsWith(parentSlug + "-")) {
-                      nestedBaseSlug = nestedPageSlug.substring(
-                        parentSlug.length + 1
-                      );
-                    }
-                    const parentUrlSlug = parentSlug.endsWith("-exam")
-                      ? parentSlug.slice(0, -5)
-                      : parentSlug;
-                    nestedPageUrl = `/${parentUrlSlug}-${nestedBaseSlug}-questions`;
+                    // Entrance nested pages store their public slug directly
+                    // (for example, teas-math-practice-test).
+                    nestedPageUrl = `/${nestedPageSlug}`;
                   }
 
                   // Ensure we have a valid URL
@@ -1575,67 +1612,60 @@ export default function Sidebar({
                   return (
                     <div
                       key={nestedPageId}
-                      className="w-full bg-white rounded-[14px] border border-[#e4e6ef] shadow-[0_10px_24px_rgba(15,23,42,0.06)] p-[10px] flex items-center gap-[10px] relative"
+                      className="user-card w-full p-4 transition hover:-translate-y-0.5 hover:border-[#4f46e5]/30"
                     >
-                      {/* Tag */}
-                      {subjectInfo.tag && (
-                        <div className="absolute top-[6px] right-[9px] px-[7px] py-[1px] rounded-full text-[10px] font-semibold bg-[rgba(106,92,255,0.06)] text-[#6a5cff]">
-                          {subjectInfo.tag}
-                        </div>
-                      )}
-
-                      {/* Left: Count Circle */}
-                      <div className="flex flex-col items-center min-w-[80px]">
-                        <div
-                          className={`w-[50px] h-[50px] rounded-full bg-[radial-gradient(circle_at_30%_0,rgba(106,92,255,0.16),rgba(106,92,255,0.04))] border border-dashed border-[rgba(148,163,184,0.45)] flex items-center justify-center text-lg font-bold ${subjectInfo.color}`}
-                        >
-                          {questionCount.toLocaleString()}
-                        </div>
-                        <div className="mt-[3px] text-[9px] text-[#a0a5bf] uppercase tracking-[0.08em] text-center">
-                          Questions Available
-                        </div>
-                      </div>
-
-                      {/* Dashed Line */}
-                      <div className="w-[1px] h-[56px] border-r border-dashed border-[#e4e6ef] flex-shrink-0"></div>
-
-                      {/* Right: Content */}
-                      <div className="flex-1 flex flex-col gap-1 pr-[26px] min-w-0">
-                        <div className="text-sm font-bold text-[#202437] whitespace-nowrap overflow-hidden text-ellipsis">
-                          {subjectInfo.title}
-                        </div>
-                        {subjectInfo.subtitle && (
-                          <div className="text-[11px] text-[#7a819c] whitespace-nowrap overflow-hidden text-ellipsis">
-                            {subjectInfo.subtitle}
+                      <div className="flex items-start gap-3">
+                        <div className="flex min-w-[62px] flex-col items-center">
+                          <div
+                            className={`flex h-[54px] w-[54px] items-center justify-center rounded-2xl border border-[#e5e7eb] bg-[#f8fafc] text-base font-bold ${subjectInfo.color}`}
+                          >
+                            {metricLabel}
                           </div>
-                        )}
+                          <div className="mt-1 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8]">
+                            {metricHelperLabel}
+                          </div>
+                        </div>
 
-                        {/* Mode Buttons */}
-                        <div className="flex flex-col items-center gap-1 mt-[2px]">
-                          <Link
-                            href={`${nestedPageUrl}?mode=review`}
-                            onClick={closeModal}
-                            className="w-[78%] px-[10px] py-[6px] rounded-full inline-flex justify-center items-center text-[11.5px] font-medium bg-[#f3f4ff] text-[#202437] cursor-pointer leading-[1.1] hover:bg-[#e7e5ff] transition-colors no-underline"
-                          >
-                            <span className="w-[7px] h-[7px] rounded-full bg-[#16a34a] mr-[6px] flex-shrink-0"></span>
-                            Review Mode
-                          </Link>
-                          <Link
-                            href={`${nestedPageUrl}?mode=exam`}
-                            onClick={closeModal}
-                            className="w-[78%] px-[10px] py-[6px] rounded-full inline-flex justify-center items-center text-[11.5px] font-medium bg-[#f3f4ff] text-[#202437] cursor-pointer leading-[1.1] hover:bg-[#e7e5ff] transition-colors no-underline"
-                          >
-                            <span className="w-[7px] h-[7px] rounded-full bg-[#2563eb] mr-[6px] flex-shrink-0"></span>
-                            Exam Mode
-                          </Link>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex items-center gap-2">
+                            {subjectInfo.tag && (
+                              <span className="user-pill">
+                                {subjectInfo.tag}
+                              </span>
+                            )}
+                            <span className="user-pill user-pill-green">
+                              Practice ready
+                            </span>
+                          </div>
                           <Link
                             href={nestedPageUrl}
                             onClick={closeModal}
-                            className="w-[78%] px-[10px] py-[6px] rounded-full inline-flex justify-center items-center text-[11.5px] font-medium bg-[rgba(106,92,255,0.10)] text-[#6a5cff] cursor-pointer leading-[1.1] hover:bg-[rgba(106,92,255,0.15)] transition-colors no-underline"
+                            className="user-card-title block text-sm no-underline transition-colors hover:text-[#4f46e5]"
                           >
-                            <span className="w-[7px] h-[7px] rounded-full bg-[#6a5cff] mr-[6px] flex-shrink-0"></span>
-                            View All Sets
+                            <span className="line-clamp-2">
+                              {subjectInfo.title}
+                            </span>
                           </Link>
+                          {subjectInfo.subtitle && (
+                            <div className="mt-1 text-[12px] leading-relaxed text-[#64748b]">
+                              {subjectInfo.subtitle}
+                            </div>
+                          )}
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#64748b]">
+                            <span>{primaryCountLabel}</span>
+                            <span className="h-1 w-1 rounded-full bg-[#cbd5e1]" />
+                            <span>{secondaryCountLabel}</span>
+                          </div>
+
+                          <div className="mt-4">
+                            <Link
+                              href={nestedPageUrl}
+                              onClick={closeModal}
+                              className="user-button-secondary w-full min-h-[38px] px-3 py-2 text-sm"
+                            >
+                              Open Subject
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </div>

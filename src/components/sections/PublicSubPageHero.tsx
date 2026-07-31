@@ -18,6 +18,8 @@ export interface PublicSubPageHeroActionLabels {
 interface PublicSubPageHeroProps {
   pillarHref: string;
   pillarLabel: string;
+  backHref?: string;
+  backLabel?: string;
   examBadge: string;
   pageHeading: string;
   pageDescription: string;
@@ -107,6 +109,8 @@ function HighlightedPublicHeading({
 export default function PublicSubPageHero({
   pillarHref,
   pillarLabel,
+  backHref,
+  backLabel,
   examBadge,
   pageHeading,
   pageDescription,
@@ -121,6 +125,8 @@ export default function PublicSubPageHero({
   const formattedQuestionCount = totalChildQuestions.toLocaleString("en-US");
   const primaryHref = primaryActionHref || firstChildHref;
   const secondaryHref = secondaryActionHref || "#practice-paths";
+  const resolvedBackHref = backHref || pillarHref;
+  const resolvedBackLabel = backLabel || pillarLabel;
 
   return (
     <section className="mb-7">
@@ -129,10 +135,10 @@ export default function PublicSubPageHero({
           <div className="mb-5 flex w-full justify-center text-center">
             <div className="inline-flex flex-wrap items-center justify-center gap-2">
               <Link
-                href={pillarHref}
+                href={resolvedBackHref}
                 className="inline-flex min-h-[34px] items-center rounded-full border border-[#e1e5f2] bg-white px-3 py-1.5 text-sm font-semibold text-[#4f5872] no-underline shadow-sm transition hover:border-[#c7c3ff] hover:text-[#4338ca]"
               >
-                Back to {pillarLabel}
+                Back to {resolvedBackLabel}
               </Link>
               <span className="inline-flex min-h-[34px] items-center gap-2 rounded-full border border-[#d8d5ff] bg-white px-3 py-1.5 text-xs font-extrabold uppercase text-[#5548e0] shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-[#2dd4bf]" />
