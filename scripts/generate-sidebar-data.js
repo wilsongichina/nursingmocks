@@ -259,6 +259,39 @@ async function getNursingTestBankSubPages(db) {
   }
 }
 
+async function getAllRouteMappings(db) {
+  try {
+    const querySnapshot = await getDocs(collection(db, "routeMappings"));
+    const byRefPath = {};
+    const byNestedKey = {};
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const mapping = { id: doc.id, ...data };
+
+      if (data.refPath) {
+        byRefPath[data.refPath] = mapping;
+      }
+
+      if (data.type === "nested" && data.pillarId && data.subPageId && data.nestedPageId) {
+        byNestedKey[`${data.pillarId}:${data.subPageId}:${data.nestedPageId}`] = mapping;
+      }
+    });
+
+    return {
+      success: true,
+      data: { byRefPath, byNestedKey },
+    };
+  } catch (error) {
+    console.error("Error getting route mappings:", error);
+    return {
+      success: false,
+      message: `Failed to retrieve route mappings: ${error.message}`,
+      data: { byRefPath: {}, byNestedKey: {} },
+    };
+  }
+}
+
 async function getNestedSubPagesForModal(db, pillarPageId, parentSubPageId) {
   try {
     const querySnapshot = await getDocs(
@@ -343,16 +376,22 @@ async function generateSidebarData() {
       throw firebaseError;
     }
 
-    // Fetch all pillar pages and all pages (categories)
-    const [pillarPagesResult, allPagesResult] = await Promise.all([
+    // Fetch all pillar pages, categories, and route mappings used by cached modal links.
+    const [pillarPagesResult, allPagesResult, routeMappingsResult] = await Promise.all([
       getAllPillarPages(db),
       getAllPages(db),
+      getAllRouteMappings(db),
     ]);
 
     if (!pillarPagesResult.success || !allPagesResult.success) {
       console.error("❌ Failed to load data from Firestore");
       process.exit(1);
     }
+
+    const routeMappings =
+      routeMappingsResult.success && routeMappingsResult.data
+        ? routeMappingsResult.data
+        : { byRefPath: {}, byNestedKey: {} };
 
     let allPillarPages = pillarPagesResult.data || [];
     
@@ -465,6 +504,24 @@ async function generateSidebarData() {
           categoryId
         );
         let modalPages = result.success && result.data ? result.data : [];
+
+        modalPages = modalPages.map((nestedPage) => {
+          const nestedPageId = nestedPage.id || nestedPage.nestedSubPageId;
+          const refPath = nestedPageId
+            ? `pillarPages/${pillarPage.id}/subPages/${categoryId}/nestedSubPages/${nestedPageId}`
+            : "";
+          const mapping =
+            routeMappings.byRefPath[refPath] ||
+            routeMappings.byNestedKey[`${pillarPage.id}:${categoryId}:${nestedPageId}`];
+
+          return mapping?.slug
+            ? {
+                ...nestedPage,
+                publicSlug: mapping.slug,
+                publicUrl: `/${String(mapping.slug).replace(/^\/+/, "")}`,
+              }
+            : nestedPage;
+        });
 
         if (pillarPage.id === "nursing-test-bank" && modalPages.length > 0) {
           modalPages = await Promise.all(

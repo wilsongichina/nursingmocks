@@ -225,3 +225,80 @@ Legacy parent URLs now permanently redirect to that canonical page:
 ```
 
 The dynamic public renderer also normalizes saved TEAS parent JSON-LD URLs and metadata canonical URLs to `/ati-teas-practice-test` so older saved schema cannot point search engines back to a legacy slug. Static sidebar data uses the same canonical URL in its saved schema strings.
+
+Search crawling rule:
+
+- Canonical public ATI TEAS hub pages are listed in `src/app/sitemap.ts`.
+- Canonical public ATI TEAS hub pages are explicitly allowed in `public/robots.txt`.
+- Legacy redirect URLs are excluded from the sitemap but allowed in `public/robots.txt` so Google can crawl them, receive the permanent redirect, and consolidate signals to `/ati-teas-practice-test`.
+- Middleware indexability must match sitemap/robots intent. Any canonical page added to the sitemap must also be included in `INDEXABLE_PATHS` in `src/middleware.ts`, otherwise the route can receive an `X-Robots-Tag: noindex, nofollow`.
+
+Current ATI TEAS hub sitemap entries:
+
+```text
+/ati-teas-practice-test
+/ati-teas-reading-practice-test
+/ati-teas-math-practice-test
+/ati-teas-science-practice-test
+/ati-teas-english-practice-test
+```
+
+Current allowed legacy redirect URLs:
+
+```text
+/teas-7-practice
+/teas-7-practice-test
+```
+
+## Nested Page SEO And Sidebar Modal URL Backfill
+
+Existing nested sub-pages across Nursing Entrance Exams, Nursing Test Bank, and Nursing Exit Exams were refreshed with production SEO fields and route-backed modal URLs.
+
+Behavior:
+
+- Nested page `meta.canonicalUrl` values use `https://www.nursingmocks.com/{slug}`.
+- Nested page `meta.ogImage` values use `https://www.nursingmocks.com/nursing-mocks-logo.png`.
+- Nested page `schema` values are regenerated as page-level JSON-LD using NursingMocks branding, production URLs, breadcrumbs, visible child records, and visible FAQs.
+- `routeMappings` are upserted by `refPath` for every nested sub-page so the saved public slug remains the URL source of truth.
+- The sidebar data generator now reads `routeMappings` and stores `publicSlug` and `publicUrl` for cached modal nested pages.
+- The left sidebar nested-page modal now prefers `nestedSubPage.publicUrl` before falling back to legacy URL construction, preventing guessed Test Bank or Exit Exam links from pointing to nonexistent routes.
+
+Files changed:
+
+- `scripts/backfill-nested-page-seo-and-routes.js`
+- `scripts/update-ati-teas-english-content.js`
+- `scripts/generate-sidebar-data.js`
+- `src/components/layout/Sidebar.tsx`
+- `src/lib/data/sidebar-data.ts`
+- `public/data/sidebar-data.json`
+
+Validation run:
+
+```text
+cmd /c node scripts\backfill-nested-page-seo-and-routes.js --apply
+cmd /c node scripts\generate-sidebar-data.js
+cmd /c node scripts\backfill-nested-page-seo-and-routes.js
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+## ATI TEAS English Content Refresh
+
+The ATI TEAS English nested page was regenerated to match the current subject-hub pattern used by Reading, Math, and Science.
+
+Behavior:
+
+- Replaced the short placeholder body content with full English and Language Usage guide content.
+- Added the official English section fact table with total questions, scored questions, unscored pretest questions, time limit, and scored content-area allocations.
+- Added NursingMocks-focused FAQs and regenerated FAQPage schema through the nested page SEO backfill.
+- Updated the English page display copy for the hero CTA, set-selector section, guide text, and FAQ header.
+- Updated the English page SEO title, description, canonical URL, OG title, OG description, OG image, and public description.
+
+Validation run:
+
+```text
+cmd /c node scripts\update-ati-teas-english-content.js --apply
+cmd /c node scripts\backfill-nested-page-seo-and-routes.js --apply
+cmd /c node scripts\generate-sidebar-data.js
+cmd /c node scripts\update-ati-teas-english-content.js
+.\node_modules\.bin\tsc.cmd --noEmit
+```

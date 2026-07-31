@@ -29,6 +29,10 @@ const INDEXABLE_PATHS = new Set([
   "/onboarding",
   "/thank-you",
   ATI_TEAS_PARENT_CANONICAL_PATH,
+  "/ati-teas-reading-practice-test",
+  "/ati-teas-math-practice-test",
+  "/ati-teas-science-practice-test",
+  "/ati-teas-english-practice-test",
   ...ATI_TEAS_QUIZ_PATHS,
 ]);
 

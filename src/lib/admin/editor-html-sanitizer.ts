@@ -24,7 +24,41 @@ const DISALLOWED_STYLE_PROPERTIES = new Set([
   "mso-fareast-font-family",
   "mso-font-charset",
   "mso-style-name",
+  "margin",
+  "margin-bottom",
+  "margin-left",
+  "margin-right",
+  "margin-top",
+  "text-align",
   "text-decoration",
+  "text-indent",
+]);
+
+const WORD_HTML_PATTERN =
+  /class="?Mso|mso-|Microsoft Word|WordDocument|urn:schemas-microsoft-com:office|xmlns:o=|<o:/i;
+
+const TABLE_ELEMENTS = new Set([
+  "table",
+  "thead",
+  "tbody",
+  "tfoot",
+  "tr",
+  "th",
+  "td",
+  "colgroup",
+  "col",
+  "caption",
+]);
+
+const TABLE_ATTRIBUTES = new Set([
+  "colspan",
+  "rowspan",
+  "scope",
+  "headers",
+  "width",
+  "height",
+  "align",
+  "valign",
 ]);
 
 const shouldRemoveClass = (className: string) =>
@@ -49,14 +83,37 @@ const sanitizeStyleAttribute = (styleValue: string) => {
   return keptRules.join("; ");
 };
 
+const stripWordDocumentShell = (html: string) =>
+  html
+    .replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, "")
+    .replace(/<\?xml[\s\S]*?\?>/gi, "")
+    .replace(/<\/?(?:o|w|v|m):[^>]*>/gi, "")
+    .replace(/<xml[\s\S]*?<\/xml>/gi, "");
+
+const removeComments = (root: DocumentFragment) => {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+  const comments: Comment[] = [];
+
+  while (walker.nextNode()) {
+    comments.push(walker.currentNode as Comment);
+  }
+
+  comments.forEach((comment) => comment.remove());
+};
+
 export const sanitizeAdminEditorHtml = (html: string) => {
   if (!html || typeof window === "undefined") return html;
 
+  const isWordHtml = WORD_HTML_PATTERN.test(html);
   const template = document.createElement("template");
-  template.innerHTML = html;
+  template.innerHTML = isWordHtml ? stripWordDocumentShell(html) : html;
+
+  removeComments(template.content);
 
   template.content.querySelectorAll("*").forEach((element) => {
-    if (DISALLOWED_ELEMENTS.has(element.tagName.toLowerCase())) {
+    const tagName = element.tagName.toLowerCase();
+
+    if (tagName.includes(":") || DISALLOWED_ELEMENTS.has(tagName)) {
       element.remove();
       return;
     }
@@ -71,6 +128,13 @@ export const sanitizeAdminEditorHtml = (html: string) => {
       }
 
       if (name === "style") {
+        // Word/Office pastes include layout/font styles that override the
+        // public template. Keep semantic tables, but remove external styling.
+        if (isWordHtml && !TABLE_ELEMENTS.has(tagName)) {
+          element.removeAttribute(attribute.name);
+          return;
+        }
+
         const sanitizedStyle = sanitizeStyleAttribute(value);
         if (sanitizedStyle) {
           element.setAttribute("style", sanitizedStyle);
@@ -91,6 +155,27 @@ export const sanitizeAdminEditorHtml = (html: string) => {
         } else {
           element.removeAttribute("class");
         }
+        return;
+      }
+
+      if (isWordHtml && name.startsWith("xmlns")) {
+        element.removeAttribute(attribute.name);
+        return;
+      }
+
+      if (isWordHtml && !TABLE_ELEMENTS.has(tagName) && name === "align") {
+        element.removeAttribute(attribute.name);
+        return;
+      }
+
+      if (
+        isWordHtml &&
+        TABLE_ELEMENTS.has(tagName) &&
+        !TABLE_ATTRIBUTES.has(name) &&
+        name !== "style" &&
+        name !== "class"
+      ) {
+        element.removeAttribute(attribute.name);
         return;
       }
 

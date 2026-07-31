@@ -1592,9 +1592,18 @@ export default function Sidebar({
                     selectedSubPage?.slug || selectedSubPage?.id || "";
                   const nestedPageSlug =
                     nestedSubPage.slug || nestedSubPage.id || nestedPageId;
+                  const routeMappedUrl =
+                    typeof nestedSubPage.publicUrl === "string" &&
+                    nestedSubPage.publicUrl.trim()
+                      ? nestedSubPage.publicUrl.trim()
+                      : "";
 
-                  let nestedPageUrl = "#";
-                  if (isTestBank) {
+                  let nestedPageUrl = routeMappedUrl || "#";
+                  if (routeMappedUrl) {
+                    nestedPageUrl = routeMappedUrl.startsWith("/")
+                      ? routeMappedUrl
+                      : `/${routeMappedUrl}`;
+                  } else if (isTestBank) {
                     nestedPageUrl = `/${nestedPageSlug}-${parentSlug}-test-bank`;
                   } else if (isExitExam) {
                     nestedPageUrl = `/${nestedPageSlug}`;

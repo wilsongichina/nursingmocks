@@ -65,6 +65,13 @@ Validation run:
 
 Standardized rich content added through Nursing Entrance nested page editors so pasted content does not carry external font families, font sizes, colors, or Word/Docs styling into saved public page HTML.
 
+Follow-up update:
+
+- Word/Office HTML is now detected by the shared admin sanitizer before it reaches the editor.
+- Word document shells, conditional comments, Office XML tags, `Mso` classes, namespace attributes, event handlers, font styles, margins, indentation, and pasted alignment styles are stripped by default.
+- Semantic tables are preserved during Word paste cleanup, including table, row, header, cell, caption, colgroup, col, rowspan, colspan, scope, width, height, and alignment attributes where applicable.
+- This prevents pasted Word content from overriding public page centering, font, size, and spacing while still allowing table-based content to remain structured.
+
 ## Follow-up: Public Practice Card Actions
 
 Updated public nested practice cards so quiz/set cards stay action-focused:

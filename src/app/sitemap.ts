@@ -18,6 +18,10 @@ const INDEXABLE_PAGES = [
   { path: "/onboarding", changeFrequency: "monthly" as const, priority: 0.4 },
   { path: "/thank-you", changeFrequency: "monthly" as const, priority: 0.3 },
   { path: "/ati-teas-practice-test", changeFrequency: "weekly" as const, priority: 0.9 },
+  { path: "/ati-teas-reading-practice-test", changeFrequency: "weekly" as const, priority: 0.85 },
+  { path: "/ati-teas-math-practice-test", changeFrequency: "weekly" as const, priority: 0.85 },
+  { path: "/ati-teas-science-practice-test", changeFrequency: "weekly" as const, priority: 0.85 },
+  { path: "/ati-teas-english-practice-test", changeFrequency: "weekly" as const, priority: 0.85 },
 ];
 
 const ATI_TEAS_INDEXABLE_SETS = [1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];

@@ -13,6 +13,12 @@ Allow: /cookie-policy$
 
 # Public practice-test pages
 Allow: /ati-teas-practice-test$
+Allow: /ati-teas-reading-practice-test$
+Allow: /ati-teas-math-practice-test$
+Allow: /ati-teas-science-practice-test$
+Allow: /ati-teas-english-practice-test$
+Allow: /teas-7-practice$
+Allow: /teas-7-practice-test$
 Allow: /teas-english-practice-test-set-
 Allow: /teas-reading-practice-test-set-
 Allow: /teas-science-practice-test-set-
