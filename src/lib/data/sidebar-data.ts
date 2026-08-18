@@ -1,5 +1,5 @@
 // This file is auto-generated at build time. Do not edit manually.
-// Generated at: 2026-07-31T20:17:40.357Z
+// Generated at: 2026-08-18T15:34:52.205Z
 
 export const sidebarData = {
   "pillarPages": [
@@ -15,6 +15,14 @@ export const sidebarData = {
   ],
   "pillarCategories": {
     "nursing-entrance-exam": [
+      {
+        "id": "jdJsAeBdy2mJO0kPibeV",
+        "subPageId": "jdJsAeBdy2mJO0kPibeV",
+        "servicePageId": "jdJsAeBdy2mJO0kPibeV",
+        "pageName": "Kaplan Admission Test",
+        "slug": "kaplan-admission-test",
+        "status": "Published"
+      },
       {
         "id": "rdYGUZ9DzFvAmo6EsrVe",
         "subPageId": "rdYGUZ9DzFvAmo6EsrVe",
@@ -70,6 +78,52 @@ export const sidebarData = {
     ]
   },
   "modalNestedPages": {
+    "nursing-entrance-exam:jdJsAeBdy2mJO0kPibeV": [
+      {
+        "id": "BT8THcHxTeoM71ANVzUH",
+        "nestedSubPageId": "BT8THcHxTeoM71ANVzUH",
+        "pageName": "Kaplan Admission Practice Test Reading",
+        "slug": "kaplan-admission-practice-test-reading",
+        "publicSlug": "kaplan-admission-practice-test-reading",
+        "publicUrl": "/kaplan-admission-practice-test-reading",
+        "status": "Draft",
+        "questionCount": 26,
+        "quizCount": 1
+      },
+      {
+        "id": "Iz4T9Aq3e9r72hKG0kUG",
+        "nestedSubPageId": "Iz4T9Aq3e9r72hKG0kUG",
+        "pageName": "Kaplan Admission Practice Test Writing",
+        "slug": "kaplan-admission-practice-test-writing",
+        "publicSlug": "kaplan-admission-practice-test-writing",
+        "publicUrl": "/kaplan-admission-practice-test-writing",
+        "status": "Draft",
+        "questionCount": 21,
+        "quizCount": 1
+      },
+      {
+        "id": "ZUuIYDcFNZSPDZk9g1I3",
+        "nestedSubPageId": "ZUuIYDcFNZSPDZk9g1I3",
+        "pageName": "Kaplan Admission Practice Test Science",
+        "slug": "kaplan-admission-practice-test-science",
+        "publicSlug": "kaplan-admission-practice-test-science",
+        "publicUrl": "/kaplan-admission-practice-test-science",
+        "status": "Draft",
+        "questionCount": 26,
+        "quizCount": 1
+      },
+      {
+        "id": "iVUj9c4WQFuO14UqurOl",
+        "nestedSubPageId": "iVUj9c4WQFuO14UqurOl",
+        "pageName": "Kaplan Admission Practice Test Math",
+        "slug": "kaplan-admission-practice-test-math",
+        "publicSlug": "kaplan-admission-practice-test-math",
+        "publicUrl": "/kaplan-admission-practice-test-math",
+        "status": "Draft",
+        "questionCount": 28,
+        "quizCount": 1
+      }
+    ],
     "nursing-entrance-exam:rdYGUZ9DzFvAmo6EsrVe": [
       {
         "id": "4f2Tydp51lxl4u4OtTlL",
@@ -232,7 +286,28 @@ export const sidebarData = {
         "quizCount": 4
       }
     ],
-    "nursing-test-bank:SuT1noZoNGEjKGR1vTbi": [],
+    "nursing-test-bank:SuT1noZoNGEjKGR1vTbi": [
+      {
+        "id": "Fnnd4c6ae0Uiurk2KUSc",
+        "nestedSubPageId": "Fnnd4c6ae0Uiurk2KUSc",
+        "pageName": "ATI RN Exams",
+        "slug": "ati-rn-exams",
+        "publicSlug": "ati-rn-exams",
+        "publicUrl": "/ati-rn-exams",
+        "status": "Draft",
+        "topicCount": 18
+      },
+      {
+        "id": "iT55qp9NAFOvZLBAiQzC",
+        "nestedSubPageId": "iT55qp9NAFOvZLBAiQzC",
+        "pageName": "HESI RN Exams",
+        "slug": "hesi-rn-exams",
+        "publicSlug": "hesi-rn-exams",
+        "publicUrl": "/hesi-rn-exams",
+        "status": "Draft",
+        "topicCount": 21
+      }
+    ],
     "nursing-test-bank:z0xzINtS3EohZNaKosBz": [
       {
         "id": "ToLSmb6DG83NTZWXEJxt",
@@ -244,23 +319,24 @@ export const sidebarData = {
         "status": "Draft",
         "questionCount": 0,
         "quizCount": 0,
-        "topicCount": 1
+        "topicCount": 0
       },
       {
         "id": "lyrHg4RBzN6UafuymMFT",
         "nestedSubPageId": "lyrHg4RBzN6UafuymMFT",
-        "pageName": "ATI LPN EXAMS",
+        "pageName": "ATI LPN Exams",
+        "title": "ATI LPN Exams",
         "slug": "ati-lpn-exams",
         "publicSlug": "ati-lpn-exams",
         "publicUrl": "/ati-lpn-exams",
         "status": "Draft",
-        "questionCount": 50,
-        "quizCount": 1,
-        "topicCount": 1
+        "questionCount": 13370,
+        "quizCount": 266,
+        "topicCount": 14
       }
     ]
   },
-  "generatedAt": "2026-07-31T20:17:40.355Z"
+  "generatedAt": "2026-08-18T15:34:51.987Z"
 } as const;
 
 export type SidebarData = typeof sidebarData;

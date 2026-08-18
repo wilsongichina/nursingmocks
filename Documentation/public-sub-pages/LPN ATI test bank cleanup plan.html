@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LPN ATI Test Bank Cleanup Plan</title>
+  <style>
+    :root {
+      --text: #172033;
+      --muted: #5d667a;
+      --line: #dfe4ee;
+      --panel: #f7f9fc;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --warn: #92400e;
+      --warn-bg: #fffbeb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.65;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      padding: 24px 18px;
+    }
+    nav h2 {
+      margin: 0 0 16px;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+    }
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    nav a:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    main {
+      max-width: 1100px;
+      padding: 40px 48px 80px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.2;
+    }
+    h2 {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 24px;
+    }
+    .lede {
+      max-width: 74ch;
+      color: var(--muted);
+      font-size: 17px;
+    }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+    }
+    pre {
+      overflow: auto;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--panel); }
+    .status {
+      display: inline-block;
+      margin: 14px 0 4px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .warn {
+      border-left: 4px solid var(--warn);
+      background: var(--warn-bg);
+      padding: 12px 16px;
+      margin: 20px 0;
+      color: var(--warn);
+    }
+    @media (max-width: 860px) {
+      .layout { display: block; }
+      nav {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      main { padding: 28px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav>
+      <h2>LPN ATI Cleanup</h2>
+      <a href="#purpose">Purpose</a>
+      <a href="#inventory">Inventory</a>
+      <a href="#summary">Folder Summary</a>
+      <a href="#flags">Review Flags</a>
+      <a href="#next">Next Step</a>
+    </nav>
+    <main>
+      <h1>LPN ATI Test Bank Cleanup Plan</h1>
+      <p class="lede">Initial inventory and review notes for cleaning the LPN ATI source folders using the same workflow as ATI RN.</p>
+      <span class="status">Step 1 complete: source inventory</span>
+
+      <section id="purpose">
+        <h2>Purpose</h2>
+        <p>Clean the LPN ATI source folders before creating Nursing Test Bank topics. The original Naxlex source remains untouched.</p>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex\Nursing Test Bank\LPN\ATI</pre>
+        <p>Cleanup outputs are staged here:</p>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI</pre>
+      </section>
+
+      <section id="inventory">
+        <h2>Inventory Results</h2>
+        <table>
+          <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr><td>Source folders</td><td>24</td></tr>
+            <tr><td>JSON exam files</td><td>267</td></tr>
+            <tr><td>Root JSON artifacts</td><td>0</td></tr>
+            <tr><td>JSON parse errors</td><td>0</td></tr>
+          </tbody>
+        </table>
+        <p>Generated files:</p>
+        <pre>lpn-ati-source-inventory.csv
+lpn-ati-source-inventory.json
+lpn-ati-source-folder-summary.csv
+lpn-ati-root-json-artifacts.csv
+lpn-ati-parse-errors.csv</pre>
+      </section>
+
+      <section id="summary">
+        <h2>Folder Summary</h2>
+        <table>
+          <thead><tr><th>Source Folder</th><th>Files</th><th>Questions</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>1 - Nursing Fundamentals</code></td><td>49</td><td>2507</td><td>PN/LPN fundamentals-heavy source folder</td></tr>
+            <tr><td><code>2 - Maternity</code></td><td>26</td><td>1373</td><td>Includes one file with RN in title</td></tr>
+            <tr><td><code>3 - Capstone Proctored Comprehensive Assessment</code></td><td>3</td><td>187</td><td>Likely comprehensive/capstone topic</td></tr>
+            <tr><td><code>4 - Medical Surgical</code></td><td>71</td><td>3604</td><td>Largest LPN ATI source folder</td></tr>
+            <tr><td><code>5 - Gastrointestinal disorders</code></td><td>0</td><td>0</td><td>Empty source folder</td></tr>
+            <tr><td><code>6 - Postpartum AMD Newborn Care</code></td><td>0</td><td>0</td><td>Empty source folder</td></tr>
+            <tr><td><code>7 - Mental Health</code></td><td>27</td><td>1265</td><td>Mental health source folder</td></tr>
+            <tr><td><code>8 - PN Pharmacology</code></td><td>22</td><td>1045</td><td>Contains one HESI-branded file</td></tr>
+            <tr><td><code>9 - PN Mobility</code></td><td>2</td><td>78</td><td>Likely Fundamentals or Mobility/Safety mapping</td></tr>
+            <tr><td><code>10 - Dosage Calculations</code></td><td>14</td><td>449</td><td>Dosage calculation topic</td></tr>
+            <tr><td><code>11 - Management</code></td><td>6</td><td>371</td><td>Likely Management/Leadership topic</td></tr>
+            <tr><td><code>12 - PN Pediatrics</code></td><td>20</td><td>1130</td><td>Pediatric/Nursing Care of Children topic</td></tr>
+            <tr><td><code>13 - Geriatric</code></td><td>1</td><td>49</td><td>Likely Gerontology topic</td></tr>
+            <tr><td><code>14 - PN Anatomy and Physiology</code></td><td>8</td><td>475</td><td>A&amp;P topic</td></tr>
+            <tr><td><code>15 - Advanced Concepts</code></td><td>2</td><td>132</td><td>Review destination</td></tr>
+            <tr><td><code>16 - Lifespan Exams</code></td><td>2</td><td>103</td><td>Review destination</td></tr>
+            <tr><td><code>17 - Physical Assessment</code></td><td>1</td><td>46</td><td>Likely Health Assessment topic</td></tr>
+            <tr><td><code>18 - Nutrition</code></td><td>3</td><td>103</td><td>Nutrition topic</td></tr>
+            <tr><td><code>19 - Critical Thinking</code></td><td>1</td><td>50</td><td>Review destination</td></tr>
+            <tr><td><code>20 - Nurse Teachings</code></td><td>1</td><td>58</td><td>Review destination</td></tr>
+            <tr><td><code>21 - Microbiology</code></td><td>1</td><td>50</td><td>Microbiology or science-support topic</td></tr>
+            <tr><td><code>22 - Leadership</code></td><td>3</td><td>182</td><td>Leadership topic</td></tr>
+            <tr><td><code>23 - Obstetrics and Pediatrics</code></td><td>3</td><td>119</td><td>Split/review between maternity and pediatrics</td></tr>
+            <tr><td><code>24 - Medication Administration</code></td><td>1</td><td>40</td><td>Medication administration/pharmacology mapping</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="flags">
+        <h2>Immediate Review Flags</h2>
+        <div class="warn">These rows should be reviewed before import because they may belong to another vendor or program.</div>
+        <table>
+          <thead><tr><th>Source Folder</th><th>File</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td><code>2 - Maternity</code></td><td><code>20-Ati PN Maternal Newborn Rn X1 Proctored Exam.json</code></td><td>LPN ATI source file contains RN in title.</td></tr>
+            <tr><td><code>8 - PN Pharmacology</code></td><td><code>5-HESI LPN phamacology proctored exam.json</code></td><td>HESI-branded file found inside ATI source folder.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="next">
+        <h2>Step 2 - Correct Public Topic Names</h2>
+        <p>ATI's official Content Mastery Series lists these PN modules: Adult Medical Surgical, Management, Maternal Newborn, Mental Health, Pediatric Nursing formerly Nursing Care of Children, and Pharmacology.</p>
+        <p>ATI also has PN dosage-calculation practice assessments by content area, and the Maternal Newborn Review Module has a PN Edition.</p>
+
+        <h3>Proposed Public Topic Names</h3>
+        <table>
+          <thead><tr><th>Clean Public Topic</th><th>Type</th><th>Initial Decision</th></tr></thead>
+          <tbody>
+            <tr><td>PN Adult Medical Surgical</td><td>official_ati_pn_module</td><td>Main destination for medical-surgical LPN/PN content.</td></tr>
+            <tr><td>PN Management</td><td>official_ati_pn_module</td><td>Use ATI's PN module wording for Management.</td></tr>
+            <tr><td>PN Maternal Newborn</td><td>official_ati_pn_module</td><td>Clean public topic for maternity, OB, and maternal newborn source files.</td></tr>
+            <tr><td>PN Mental Health</td><td>official_ati_pn_module</td><td>Clean public topic for mental health and psychosocial files.</td></tr>
+            <tr><td>PN Pediatric Nursing</td><td>official_ati_pn_module</td><td>Use ATI's newer wording; preserve Nursing Care of Children as alias/source metadata.</td></tr>
+            <tr><td>PN Pharmacology</td><td>official_ati_pn_module</td><td>Clean public topic for pharmacology and medication administration files.</td></tr>
+            <tr><td>PN Fundamentals</td><td>ati_pn_related_area</td><td>Large source area and ATI-related support topic.</td></tr>
+            <tr><td>PN Dosage Calculations</td><td>ati_product_area</td><td>Clean product/topic page for dosage and med math files.</td></tr>
+            <tr><td>PN Anatomy and Physiology</td><td>ati_product_area</td><td>Coherent A&amp;P support topic.</td></tr>
+            <tr><td>PN Nutrition</td><td>ati_product_area</td><td>Coherent nutrition support topic.</td></tr>
+            <tr><td>PN Gerontology</td><td>ati_curriculum_topic</td><td>Cleaner public wording for Geriatric source files.</td></tr>
+            <tr><td>PN Comprehensive Review</td><td>test_bank_mixed_topic</td><td>Capstone, comprehensive, critical thinking, and mixed-readiness files.</td></tr>
+            <tr><td>PN Health Assessment</td><td>ati_curriculum_topic</td><td>Clean public name for Physical Assessment files.</td></tr>
+            <tr><td>PN Microbiology</td><td>support_science_topic</td><td>Keep as support topic unless later merged.</td></tr>
+            <tr><td>Review Needed</td><td>review_bucket</td><td>Mixed or low-confidence files.</td></tr>
+            <tr><td>Excluded - HESI</td><td>exclude</td><td>HESI-branded file inside ATI source should not import as ATI.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Initial Source Folder Mapping</h3>
+        <table>
+          <thead><tr><th>Source Folder</th><th>Proposed Destination</th><th>Confidence</th></tr></thead>
+          <tbody>
+            <tr><td><code>1 - Nursing Fundamentals</code></td><td>PN Fundamentals</td><td>High</td></tr>
+            <tr><td><code>2 - Maternity</code></td><td>PN Maternal Newborn</td><td>Medium</td></tr>
+            <tr><td><code>3 - Capstone Proctored Comprehensive Assessment</code></td><td>PN Comprehensive Review</td><td>High</td></tr>
+            <tr><td><code>4 - Medical Surgical</code></td><td>PN Adult Medical Surgical</td><td>High</td></tr>
+            <tr><td><code>5 - Gastrointestinal disorders</code></td><td>No import</td><td>High</td></tr>
+            <tr><td><code>6 - Postpartum AMD Newborn Care</code></td><td>No import</td><td>High</td></tr>
+            <tr><td><code>7 - Mental Health</code></td><td>PN Mental Health</td><td>High</td></tr>
+            <tr><td><code>8 - PN Pharmacology</code></td><td>PN Pharmacology</td><td>Medium</td></tr>
+            <tr><td><code>9 - PN Mobility</code></td><td>PN Fundamentals</td><td>Medium</td></tr>
+            <tr><td><code>10 - Dosage Calculations</code></td><td>PN Dosage Calculations</td><td>High</td></tr>
+            <tr><td><code>11 - Management</code></td><td>PN Management</td><td>High</td></tr>
+            <tr><td><code>12 - PN Pediatrics</code></td><td>PN Pediatric Nursing</td><td>High</td></tr>
+            <tr><td><code>13 - Geriatric</code></td><td>PN Gerontology</td><td>Medium</td></tr>
+            <tr><td><code>14 - PN Anatomy and Physiology</code></td><td>PN Anatomy and Physiology</td><td>High</td></tr>
+            <tr><td><code>15 - Advanced Concepts</code></td><td>PN Comprehensive Review / Review Needed</td><td>Low</td></tr>
+            <tr><td><code>16 - Lifespan Exams</code></td><td>Review Needed</td><td>Low</td></tr>
+            <tr><td><code>17 - Physical Assessment</code></td><td>PN Health Assessment</td><td>Medium</td></tr>
+            <tr><td><code>18 - Nutrition</code></td><td>PN Nutrition</td><td>High</td></tr>
+            <tr><td><code>19 - Critical Thinking</code></td><td>PN Comprehensive Review / Review Needed</td><td>Low</td></tr>
+            <tr><td><code>20 - Nurse Teachings</code></td><td>Review Needed</td><td>Low</td></tr>
+            <tr><td><code>21 - Microbiology</code></td><td>PN Microbiology</td><td>Medium</td></tr>
+            <tr><td><code>22 - Leadership</code></td><td>PN Management</td><td>Medium</td></tr>
+            <tr><td><code>23 - Obstetrics and Pediatrics</code></td><td>Review Needed</td><td>Low</td></tr>
+            <tr><td><code>24 - Medication Administration</code></td><td>PN Pharmacology</td><td>Medium</td></tr>
+          </tbody>
+        </table>
+
+        <p>Next: convert this draft into the formal Step 3 topic mapping table with URLs, H1s, descriptions, metadata, source folders, counts, and import readiness.</p>
+      </section>
+
+      <section id="step3">
+        <h2>Step 3 - Topic Mapping Table</h2>
+        <p>This is the first formal LPN ATI public-topic map. Counts are based on the source inventory and proposed placement rules.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Public Topic</th>
+              <th>Type</th>
+              <th>URL Slug</th>
+              <th>Source Folders</th>
+              <th>Exams</th>
+              <th>Questions</th>
+              <th>Import Ready</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>PN Adult Medical Surgical</td><td>official_ati_pn_module</td><td><code>ati-pn-adult-medical-surgical-practice-questions</code></td><td><code>4 - Medical Surgical</code></td><td>71</td><td>3604</td><td>yes</td></tr>
+            <tr><td>PN Management</td><td>official_ati_pn_module</td><td><code>ati-pn-management-practice-questions</code></td><td><code>11 - Management</code>, <code>22 - Leadership</code></td><td>9</td><td>553</td><td>yes</td></tr>
+            <tr><td>PN Maternal Newborn</td><td>official_ati_pn_module</td><td><code>ati-pn-maternal-newborn-practice-questions</code></td><td><code>2 - Maternity</code></td><td>24</td><td>1244</td><td>review_first</td></tr>
+            <tr><td>PN Mental Health</td><td>official_ati_pn_module</td><td><code>ati-pn-mental-health-practice-questions</code></td><td><code>7 - Mental Health</code></td><td>27</td><td>1265</td><td>yes</td></tr>
+            <tr><td>PN Pediatric Nursing</td><td>official_ati_pn_module</td><td><code>ati-pn-pediatric-nursing-practice-questions</code></td><td><code>12 - PN Pediatrics</code>, child-care files from <code>2 - Maternity</code></td><td>22</td><td>1259</td><td>review_first</td></tr>
+            <tr><td>PN Pharmacology</td><td>official_ati_pn_module</td><td><code>ati-pn-pharmacology-practice-questions</code></td><td><code>8 - PN Pharmacology</code>, <code>24 - Medication Administration</code></td><td>22</td><td>1039</td><td>review_first</td></tr>
+            <tr><td>PN Fundamentals</td><td>ati_pn_related_area</td><td><code>ati-pn-fundamentals-practice-questions</code></td><td><code>1 - Nursing Fundamentals</code>, <code>9 - PN Mobility</code></td><td>51</td><td>2585</td><td>yes</td></tr>
+            <tr><td>PN Dosage Calculations</td><td>ati_product_area</td><td><code>ati-pn-dosage-calculations-practice-questions</code></td><td><code>10 - Dosage Calculations</code></td><td>14</td><td>449</td><td>yes</td></tr>
+            <tr><td>PN Anatomy and Physiology</td><td>ati_product_area</td><td><code>ati-pn-anatomy-and-physiology-practice-questions</code></td><td><code>14 - PN Anatomy and Physiology</code></td><td>8</td><td>475</td><td>yes</td></tr>
+            <tr><td>PN Nutrition</td><td>ati_product_area</td><td><code>ati-pn-nutrition-practice-questions</code></td><td><code>18 - Nutrition</code></td><td>3</td><td>103</td><td>yes</td></tr>
+            <tr><td>PN Gerontology</td><td>ati_curriculum_topic</td><td><code>ati-pn-gerontology-practice-questions</code></td><td><code>13 - Geriatric</code></td><td>1</td><td>49</td><td>yes</td></tr>
+            <tr><td>PN Comprehensive Review</td><td>test_bank_mixed_topic</td><td><code>ati-pn-comprehensive-review-practice-questions</code></td><td><code>3 - Capstone Proctored Comprehensive Assessment</code></td><td>3</td><td>187</td><td>yes</td></tr>
+            <tr><td>PN Health Assessment</td><td>ati_curriculum_topic</td><td><code>ati-pn-health-assessment-practice-questions</code></td><td><code>17 - Physical Assessment</code></td><td>1</td><td>46</td><td>yes</td></tr>
+            <tr><td>PN Microbiology</td><td>support_science_topic</td><td><code>ati-pn-microbiology-practice-questions</code></td><td><code>21 - Microbiology</code></td><td>1</td><td>50</td><td>review_first</td></tr>
+            <tr><td>Review Needed</td><td>review_bucket</td><td><code>review-needed</code></td><td>Advanced Concepts, Lifespan, Critical Thinking, Nurse Teachings, Obstetrics and Pediatrics</td><td>9</td><td>462</td><td>no</td></tr>
+            <tr><td>Excluded - HESI</td><td>exclude</td><td><code>excluded-hesi</code></td><td><code>8 - PN Pharmacology</code></td><td>1</td><td>46</td><td>no</td></tr>
+          </tbody>
+        </table>
+        <p>Next: convert this mapping into explicit folder/file placement rules for the staging script.</p>
+      </section>
+
+      <section id="step4">
+        <h2>Step 4 - Folder/File Placement Rules</h2>
+        <p>Placement script:</p>
+        <pre>scripts/stage-lpn-ati-cleanup.ps1</pre>
+        <p>The script copies files into clean destination folders and generates manifest/summary outputs. It does not move or delete original source files.</p>
+        <table>
+          <thead><tr><th>Source Rule</th><th>Destination</th><th>Action</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>HESI appears in file name or subtopic</td><td>Excluded - HESI</td><td>exclude</td><td>Do not import into ATI.</td></tr>
+            <tr><td><code>1 - Nursing Fundamentals</code></td><td>PN Fundamentals</td><td>import</td><td>Core fundamentals source.</td></tr>
+            <tr><td><code>2 - Maternity</code></td><td>PN Maternal Newborn</td><td>import</td><td>Default maternity/OB placement.</td></tr>
+            <tr><td><code>2 - Maternity</code> with child-care signal</td><td>PN Pediatric Nursing</td><td>review</td><td>Verify before import.</td></tr>
+            <tr><td><code>2 - Maternity</code> with RN signal</td><td>Review Needed</td><td>review</td><td>LPN source file contains RN in title.</td></tr>
+            <tr><td><code>3 - Capstone Proctored Comprehensive Assessment</code></td><td>PN Comprehensive Review</td><td>import</td><td>Capstone/comprehensive source.</td></tr>
+            <tr><td><code>4 - Medical Surgical</code></td><td>PN Adult Medical Surgical</td><td>import/review</td><td>Review embedded leadership, pharmacology, or gerontology signals.</td></tr>
+            <tr><td><code>7 - Mental Health</code></td><td>PN Mental Health</td><td>import</td><td>Core mental health source.</td></tr>
+            <tr><td><code>8 - PN Pharmacology</code></td><td>PN Pharmacology</td><td>import</td><td>Except HESI-branded file.</td></tr>
+            <tr><td><code>9 - PN Mobility</code></td><td>PN Fundamentals</td><td>import</td><td>Mobility/safety mapped to fundamentals.</td></tr>
+            <tr><td><code>10 - Dosage Calculations</code></td><td>PN Dosage Calculations</td><td>import</td><td>Dosage/med math source.</td></tr>
+            <tr><td><code>11 - Management</code></td><td>PN Management</td><td>import</td><td>ATI PN official module name.</td></tr>
+            <tr><td><code>12 - PN Pediatrics</code></td><td>PN Pediatric Nursing</td><td>import</td><td>ATI current wording.</td></tr>
+            <tr><td><code>13 - Geriatric</code></td><td>PN Gerontology</td><td>import</td><td>Cleaner public wording.</td></tr>
+            <tr><td><code>14 - PN Anatomy and Physiology</code></td><td>PN Anatomy and Physiology</td><td>import</td><td>Coherent A&amp;P source.</td></tr>
+            <tr><td><code>15 - Advanced Concepts</code></td><td>Review Needed</td><td>review</td><td>Requires file-level placement.</td></tr>
+            <tr><td><code>16 - Lifespan Exams</code></td><td>Review Needed</td><td>review</td><td>Could map to several topics.</td></tr>
+            <tr><td><code>17 - Physical Assessment</code></td><td>PN Health Assessment</td><td>import</td><td>Mapped to Health Assessment.</td></tr>
+            <tr><td><code>18 - Nutrition</code></td><td>PN Nutrition</td><td>import</td><td>Coherent nutrition source.</td></tr>
+            <tr><td><code>19 - Critical Thinking</code></td><td>Review Needed</td><td>review</td><td>Likely comprehensive review, but verify.</td></tr>
+            <tr><td><code>20 - Nurse Teachings</code></td><td>Review Needed</td><td>review</td><td>Needs placement review.</td></tr>
+            <tr><td><code>21 - Microbiology</code></td><td>PN Microbiology</td><td>review</td><td>Support science topic.</td></tr>
+            <tr><td><code>22 - Leadership</code></td><td>PN Management</td><td>import</td><td>Leadership source mapped to Management.</td></tr>
+            <tr><td><code>23 - Obstetrics and Pediatrics</code></td><td>Review Needed</td><td>review</td><td>Combined OB/pediatric source needs split review.</td></tr>
+            <tr><td><code>24 - Medication Administration</code></td><td>PN Pharmacology</td><td>import</td><td>Medication administration maps to Pharmacology.</td></tr>
+          </tbody>
+        </table>
+        <p>Next: run the staging script and verify clean folder counts.</p>
+      </section>
+
+      <section id="step5">
+        <h2>Step 5 - Staging Run Results</h2>
+        <p>Staging completed on 2026-08-18.</p>
+        <pre>.\scripts\stage-lpn-ati-cleanup.ps1 -SourceRoot "C:\Users\wilso\OneDrive\Desktop\Naxlex\Nursing Test Bank\LPN\ATI" -DestinationRoot "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI"</pre>
+        <table>
+          <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr><td>Source folders scanned</td><td>24</td></tr>
+            <tr><td>Staged JSON files</td><td>267</td></tr>
+            <tr><td>Root JSON artifacts</td><td>0</td></tr>
+            <tr><td>Import rows</td><td>260</td></tr>
+            <tr><td>Review rows</td><td>0</td></tr>
+            <tr><td>Excluded rows</td><td>1</td></tr>
+          </tbody>
+        </table>
+        <h3>Staged Folder Counts</h3>
+        <table>
+          <thead><tr><th>Clean Folder</th><th>JSON Files</th></tr></thead>
+          <tbody>
+            <tr><td>Excluded - HESI</td><td>1</td></tr>
+            <tr><td>PN Adult Medical Surgical</td><td>68</td></tr>
+            <tr><td>PN Anatomy and Physiology</td><td>8</td></tr>
+            <tr><td>PN Comprehensive Review</td><td>4</td></tr>
+            <tr><td>PN Dosage Calculations</td><td>14</td></tr>
+            <tr><td>PN Fundamentals</td><td>55</td></tr>
+            <tr><td>PN Gerontology</td><td>2</td></tr>
+            <tr><td>PN Health Assessment</td><td>1</td></tr>
+            <tr><td>PN Management</td><td>10</td></tr>
+            <tr><td>PN Maternal Newborn</td><td>27</td></tr>
+            <tr><td>PN Mental Health</td><td>27</td></tr>
+            <tr><td>PN Microbiology</td><td>1</td></tr>
+            <tr><td>PN Nutrition</td><td>3</td></tr>
+            <tr><td>PN Pediatric Nursing</td><td>23</td></tr>
+            <tr><td>PN Pharmacology</td><td>23</td></tr>
+            <tr><td>Review Needed</td><td>0</td></tr>
+          </tbody>
+        </table>
+        <p>Next: run the duplicate audit and inspect name collisions before creating public names.</p>
+      </section>
+
+      <section id="step6">
+        <h2>Step 6 - Duplicate Audit Results</h2>
+        <p>Duplicate audit completed on 2026-08-18.</p>
+        <pre>.\scripts\audit-nursing-test-bank-cleanup-duplicates.ps1 -CleanupRoot "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI" -ManifestPath "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\lpn-ati-cleanup-manifest.csv" -GroupSlug "lpn-ati"</pre>
+        <h3>Generated Files</h3>
+        <pre>lpn-ati-duplicate-audit-rows.csv
+lpn-ati-exact-content-duplicates.csv
+lpn-ati-clean-name-duplicates.csv
+lpn-ati-question-signature-duplicates.csv
+lpn-ati-duplicate-audit-summary.csv</pre>
+        <h3>Audit Summary</h3>
+        <table>
+          <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr><td>Audited rows</td><td>266</td></tr>
+            <tr><td>Exact content duplicate groups</td><td>0</td></tr>
+            <tr><td>Exact duplicate files</td><td>0</td></tr>
+            <tr><td>Clean-name duplicate groups</td><td>24</td></tr>
+            <tr><td>Clean-name duplicate files</td><td>110</td></tr>
+            <tr><td>Question-signature duplicate groups</td><td>0</td></tr>
+            <tr><td>Question-signature duplicate files</td><td>0</td></tr>
+          </tbody>
+        </table>
+        <h3>Interpretation</h3>
+        <p>The audit did not find exact file-content duplicates and did not find matching question-signature duplicates among import/review files.</p>
+        <p>The 24 clean-name duplicate groups are normalized-name collisions. Examples include repeated normalized names such as <code>fundamentals</code>, <code>management</code>, and <code>paediatrics</code>, but the files have different hashes and different question signatures.</p>
+        <p>Do not remove staged LPN ATI files based only on this clean-name duplicate audit. Use <code>lpn-ati-clean-name-duplicates.csv</code> as a review file when generating final quiz/public names.</p>
+        <p>Next: generate normalized public names and a simple review CSV for the 16 review rows plus the 110 clean-name collision rows.</p>
+      </section>
+
+      <section id="step7">
+        <h2>Step 7 - Normalized Public Name Preview</h2>
+        <p>Normalized-name preview completed on 2026-08-18.</p>
+        <pre>.\scripts\preview-nursing-test-bank-normalized-names.ps1 -CleanupRoot "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI" -ManifestPath "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\lpn-ati-cleanup-manifest.csv" -GroupSlug "lpn-ati" -Vendor "ATI" -Program "LPN" -PublicProgramLabel "PN"</pre>
+        <h3>Generated Files</h3>
+        <pre>lpn-ati-normalized-name-preview.csv
+lpn-ati-normalized-name-review.csv
+lpn-ati-normalized-name-review-simple.csv
+lpn-ati-normalized-name-summary.csv</pre>
+        <h3>Naming Preview Summary</h3>
+        <table>
+          <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr><td>Preview rows</td><td>266</td></tr>
+            <tr><td>Unique public quiz titles</td><td>266</td></tr>
+            <tr><td>Unique slugs</td><td>266</td></tr>
+            <tr><td>Rows requiring review</td><td>110</td></tr>
+            <tr><td>Manifest review rows represented</td><td>0</td></tr>
+            <tr><td>Clean-name collision rows represented</td><td>110</td></tr>
+          </tbody>
+        </table>
+        <p>The review count is <code>110</code> after all manifest <code>action=review</code> rows were resolved. The remaining review rows are clean-name collisions only, and they use the explicit <code>Set {sourceFileNumber}</code> suffix.</p>
+        <h3>Public Naming Rule Used</h3>
+        <pre>ATI PN {Cleaned Source Exam Title} Practice Questions</pre>
+        <p>For every clean-name collision row, append the source file number:</p>
+        <pre>ATI PN {Cleaned Source Exam Title} Practice Questions - Set {sourceFileNumber}</pre>
+        <table>
+          <thead><tr><th>Source File</th><th>Public Quiz Title</th></tr></thead>
+          <tbody>
+            <tr><td><code>10-Ati pn fundamentals 2023 proctored exam.json</code></td><td>ATI PN Fundamentals 2023 Proctored Exam Practice Questions - Set 10</td></tr>
+            <tr><td><code>12-Ati lpn fundamentals proctored exam.json</code></td><td>ATI PN Fundamentals Proctored Exam Practice Questions - Set 12</td></tr>
+            <tr><td><code>20-Ati lpn critical thinking proctored exam.json</code></td><td>ATI PN Critical Thinking Proctored Exam Practice Questions - Set 20</td></tr>
+          </tbody>
+        </table>
+        <p>The source metadata still preserves the original LPN/PN wording through <code>sourceFileName</code>, <code>sourceFolder</code>, <code>sourceSubtopic</code>, <code>sourceSubtopicSlug</code>, and <code>sourceTopicId</code>.</p>
+        <p>Use <code>lpn-ati-normalized-name-review-simple.csv</code> for manual review. No exam JSON files were renamed by this step.</p>
+        <p>Next: review the remaining manifest-review rows and clean-name collision rows before preparing an import script.</p>
+      </section>
+
+      <section id="step8">
+        <h2>Step 8 - Review Needed Placement Decisions</h2>
+        <p>The <code>Review Needed</code> folder was resolved on 2026-08-18. The 10 files were moved into final topic folders and the staging script was updated so the same decisions are reproducible.</p>
+        <table>
+          <thead><tr><th>Source File</th><th>Final Topic</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td><code>1-Ati lpn concepts of nursing proctored exam.json</code></td><td>PN Fundamentals</td><td>Broad concepts file; content scan leaned Fundamentals.</td></tr>
+            <tr><td><code>2-Ati Lpn Advanced Concept Quiz Proctored Exam.json</code></td><td>PN Fundamentals</td><td>Broad advanced-concepts file; content scan leaned Fundamentals.</td></tr>
+            <tr><td><code>1-Ati nur 213 lifespan Proctored final exam.json</code></td><td>PN Fundamentals</td><td>Lifespan final mapped to Fundamentals.</td></tr>
+            <tr><td><code>2-ATI PN Custom Lifespan Proctored Exam 1 2023.json</code></td><td>PN Pediatric Nursing</td><td>Lifespan file had pediatric/developmental content signals.</td></tr>
+            <tr><td><code>1-Ati pn critical thinking proctored exam.json</code></td><td>PN Comprehensive Review</td><td>Critical Thinking mapped to Comprehensive Review.</td></tr>
+            <tr><td><code>20-Ati PN Maternal Newborn Rn X1 Proctored Exam.json</code></td><td>PN Maternal Newborn</td><td>Filename contains RN, but source folder and content scan strongly matched Maternal Newborn.</td></tr>
+            <tr><td><code>1-Ati lpn nurse teaching proctored exam.json</code></td><td>PN Fundamentals</td><td>Nurse teaching mapped to Fundamentals.</td></tr>
+            <tr><td><code>1-Ati lpn OBSTETRICS nursing proctored exam.json</code></td><td>PN Maternal Newborn</td><td>Obstetrics/OB content.</td></tr>
+            <tr><td><code>2-Ati lpn obstetrics OB nursing cohort proctored exam Total Questions_ 35.json</code></td><td>PN Maternal Newborn</td><td>Obstetrics/OB content.</td></tr>
+            <tr><td><code>3-Ati lpn OBSTETRICS nursing proctored exam.json</code></td><td>PN Maternal Newborn</td><td>Obstetrics/OB content.</td></tr>
+          </tbody>
+        </table>
+        <h3>After Move</h3>
+        <table>
+          <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr><td>JSON files remaining in Review Needed</td><td>0</td></tr>
+            <tr><td>Import rows after regenerated manifest</td><td>260</td></tr>
+            <tr><td>Review rows after regenerated manifest</td><td>0</td></tr>
+            <tr><td>Excluded rows</td><td>1</td></tr>
+            <tr><td>Normalized-name review rows after regeneration</td><td>110</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="step9">
+        <h2>Step 9 - Content-Based Review Decisions</h2>
+        <p>The remaining 6 manifest-review rows were inspected using actual question content, not filenames alone. Keyword counts and question stems were reviewed for each file.</p>
+        <table>
+          <thead><tr><th>Source File</th><th>Previous Destination</th><th>Final Topic</th><th>Content Evidence</th></tr></thead>
+          <tbody>
+            <tr><td><code>22-ATI PN Nursing Care of Children 2020 with NGN II Proctored Exam.json</code></td><td>PN Pediatric Nursing</td><td>PN Pediatric Nursing</td><td>Child, toddler, infant, school-age, adolescent, developmental, and pediatric clinical stems dominated the file.</td></tr>
+            <tr><td><code>23-ATI PN Nursing Care of Children with NGN 2020 Proctored Exam.json</code></td><td>PN Pediatric Nursing</td><td>PN Pediatric Nursing</td><td>Pediatric care stems dominated: infant suctioning, school-age monitoring, preschool postoperative care, adolescent sickle-cell care.</td></tr>
+            <tr><td><code>1-Ati lpn microbiology proctored exam.json</code></td><td>PN Microbiology</td><td>PN Microbiology</td><td>Content centered on isolation, PPE, disinfection, sterilization, hepatitis, chicken pox, hand hygiene, bacteria, and infection control.</td></tr>
+            <tr><td><code>17-Ati lpn med surg( geriatrics) proctored exam.json</code></td><td>PN Adult Medical Surgical</td><td>PN Gerontology</td><td>Strong gerontology signal: older adult care, presbycusis, age-related changes, respiratory infection risk, Erikson older-adult stage.</td></tr>
+            <tr><td><code>29-Ati lpn med surg pharm competence proctored exam.json</code></td><td>PN Adult Medical Surgical</td><td>PN Pharmacology</td><td>Strong pharmacology/dosage signal: medication administration, IV rate, tablets per dose, insulin, naproxen, opioids, nicotine patch, baclofen.</td></tr>
+            <tr><td><code>70-ATI PN Medical Surgical Leadership Proctored Exam.json</code></td><td>PN Adult Medical Surgical</td><td>PN Management</td><td>Strong leadership/management signal: delegation, AP assignment, incident reports, malpractice, negligence, LPN role/scope, conflict handling.</td></tr>
+          </tbody>
+        </table>
+        <h3>After Content Review</h3>
+        <table>
+          <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr><td>Manifest import rows</td><td>266</td></tr>
+            <tr><td>Manifest review rows</td><td>0</td></tr>
+            <tr><td>Excluded rows</td><td>1</td></tr>
+            <tr><td>Exact duplicate groups</td><td>0</td></tr>
+            <tr><td>Question-signature duplicate groups</td><td>0</td></tr>
+            <tr><td>Clean-name collision rows needing naming sanity check</td><td>110</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="step10">
+        <h2>Step 10 - Final Title Normalization Cleanup</h2>
+        <p>Final naming cleanup completed on 2026-08-18.</p>
+        <ul>
+          <li>Removed public-title <code>RN</code> leakage from the PN batch.</li>
+          <li>Converted the awkward <code>PN X1</code> wording to <code>X1</code>.</li>
+          <li>Preserved source metadata so the original filename still shows the source contained <code>Rn X1</code>.</li>
+          <li>Normalized small-word casing in public titles, such as <code>of</code>, <code>with</code>, and <code>and</code>.</li>
+          <li>Preserved common source/course acronyms such as <code>NS117</code>, <code>NS122</code>, <code>NY</code>, <code>FA25</code>, <code>NGN</code>, and <code>SP</code>.</li>
+        </ul>
+        <table>
+          <thead><tr><th>Source File</th><th>Final Public Title</th></tr></thead>
+          <tbody>
+            <tr><td><code>20-Ati PN Maternal Newborn Rn X1 Proctored Exam.json</code></td><td>ATI PN Maternal Newborn X1 Proctored Exam Practice Questions</td></tr>
+          </tbody>
+        </table>
+        <h3>Final Validation</h3>
+        <table>
+          <thead><tr><th>Check</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Manifest import rows</td><td>266</td></tr>
+            <tr><td>Manifest review rows</td><td>0</td></tr>
+            <tr><td>Excluded rows</td><td>1</td></tr>
+            <tr><td>Duplicate public quiz titles</td><td>0</td></tr>
+            <tr><td>Duplicate slugs</td><td>0</td></tr>
+            <tr><td>Public titles containing RN or LPN</td><td>0</td></tr>
+            <tr><td>Clean-name collision rows using Set {sourceFileNumber}</td><td>110</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="step11">
+        <h2>Step 11 - Import Dry Run</h2>
+        <p>Import dry-run script created and executed on 2026-08-18.</p>
+        <pre>scripts/import-lpn-ati-test-bank-dry-run.js</pre>
+        <pre>node scripts\import-lpn-ati-test-bank-dry-run.js</pre>
+        <h3>Generated Reports</h3>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-import-dry-run-summary.json
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-import-dry-run-quizzes.csv
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-import-dry-run-topic-summary.csv
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-import-dry-run-question-issues.csv
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-import-dry-run-missing.csv
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-import-dry-run-payload-samples.json</pre>
+        <h3>Dry-Run Summary</h3>
+        <table>
+          <thead><tr><th>Check</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Preview rows</td><td>266</td></tr>
+            <tr><td>Manifest rows</td><td>267</td></tr>
+            <tr><td>Planned import rows</td><td>266</td></tr>
+            <tr><td>Excluded rows</td><td>1</td></tr>
+            <tr><td>Missing or parse-error rows</td><td>0</td></tr>
+            <tr><td>Duplicate slugs</td><td>0</td></tr>
+            <tr><td>Duplicate public titles</td><td>0</td></tr>
+            <tr><td>Total planned questions</td><td>13,370</td></tr>
+            <tr><td>Question issue rows</td><td>22</td></tr>
+          </tbody>
+        </table>
+        <h3>Question Issues Before Real Import</h3>
+        <p>The initial dry run found 25 question-shape issues: 23 missing-explanation rows, 1 missing question text row, and 1 row with too few parsed options. The two blocking non-explanation issues were repaired in the staged cleanup files.</p>
+        <table>
+          <thead><tr><th>Source File</th><th>Issue</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td><code>50-ATI PN Adult Medical Surgical 2023 Proctored Exam.json</code></td><td>Missing question text</td><td>Restored question text for source question <code>50705</code> from the existing source rationale text.</td></tr>
+            <tr><td><code>21-ATI PN Medical Surgical Proctored Exam 2023.json</code></td><td>Too few parsed options</td><td>Restored four answer choices for source question <code>59246304</code>; matching wording was verified from public search results and aligned with the existing solution rationale.</td></tr>
+          </tbody>
+        </table>
+        <p>Repair script: <code>scripts/repair-lpn-ati-blocking-question-issues.js</code>.</p>
+        <p>After rerunning the dry run, the remaining 22 question issues are missing explanations only. Missing question text rows: 0. Empty/too-few option rows: 0.</p>
+        <p>The 22 missing-explanation rows were accepted for now. Explanations will be repaired in a later pass.</p>
+      </section>
+
+      <section id="step12">
+        <h2>Step 12 - Real Firestore Import</h2>
+        <p>Status: completed on 2026-08-18.</p>
+        <p>Importer: <code>scripts/import-lpn-ati-test-bank.js</code>.</p>
+        <p>The importer writes to the existing Nursing Test Bank hierarchy under <code>pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/{topicId}/quizzes/{quizId}/questions/{questionId}</code>.</p>
+        <table>
+          <thead><tr><th>Page</th><th>Slug</th><th>Document ID</th></tr></thead>
+          <tbody>
+            <tr><td>LPN Exams</td><td><code>lpn-exams</code></td><td><code>z0xzINtS3EohZNaKosBz</code></td></tr>
+            <tr><td>ATI LPN Exams</td><td><code>ati-lpn-exams</code></td><td><code>lyrHg4RBzN6UafuymMFT</code></td></tr>
+          </tbody>
+        </table>
+        <p>The first full apply run timed out before completion. The importer was made resumable, then rerun. Completed quizzes were skipped by question-count match, and only missing or incomplete quizzes were written.</p>
+        <table>
+          <thead><tr><th>Check</th><th>Expected</th><th>Actual</th></tr></thead>
+          <tbody>
+            <tr><td>Topics</td><td>14</td><td>14</td></tr>
+            <tr><td>Quizzes</td><td>266</td><td>266</td></tr>
+            <tr><td>Questions</td><td>13,370</td><td>13,370</td></tr>
+            <tr><td>Blocking question issues</td><td>0</td><td>0</td></tr>
+            <tr><td>Missing explanations</td><td>22</td><td>22</td></tr>
+          </tbody>
+        </table>
+        <p>Post-import maintenance: updated ATI LPN nested counts to 14 topics, 266 quizzes, and 13,370 questions; regenerated <code>public/data/sidebar-data.json</code> and <code>src/lib/data/sidebar-data.ts</code>.</p>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-real-import-dry-run-summary.json
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI\import-dry-run\lpn-ati-real-import-apply-summary.json</pre>
+      </section>
+
+      <section id="step13">
+        <h2>Step 13 - Topic Display Name Normalization</h2>
+        <p>Status: completed on 2026-08-18.</p>
+        <p>Updated ATI LPN topic display names to match the ATI RN topic-selector convention.</p>
+        <p>Public topic-card names are now concise subject names:</p>
+        <ul>
+          <li>Adult Medical Surgical</li>
+          <li>Anatomy and Physiology</li>
+          <li>Comprehensive Review</li>
+          <li>Dosage Calculations</li>
+          <li>Fundamentals</li>
+          <li>Gerontology</li>
+          <li>Health Assessment</li>
+          <li>Management</li>
+          <li>Maternal Newborn</li>
+          <li>Mental Health</li>
+          <li>Microbiology</li>
+          <li>Nutrition</li>
+          <li>Pediatric Nursing</li>
+          <li>Pharmacology</li>
+        </ul>
+        <p>Topic display fields should not include <code>ATI PN</code>, <code>ATI LPN</code>, or <code>Practice Questions</code>. SEO slugs, quiz titles, meta titles, descriptions, source filenames, and route mappings can still include ATI/PN/practice-question language where useful.</p>
+        <p>This mirrors ATI RN, where the topic card displays <code>Fundamentals</code> while the route can remain <code>ati-fundamentals-proctored-exam-practice-questions</code>.</p>
+        <p>Updated Firestore fields on all 14 ATI LPN topic documents: <code>pageName</code>, <code>title</code>, <code>heading</code>, <code>seoLabel</code>, <code>hero.title</code>, and <code>sourceMetadata.officialName</code>.</p>
+        <p>Renamed staged cleanup folders under:</p>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\ATI</pre>
+        <p>from <code>PN ...</code> names to concise RN-style names, such as <code>Fundamentals</code>, <code>Maternal Newborn</code>, and <code>Pharmacology</code>.</p>
+        <p>Scripts updated for the new naming convention:</p>
+        <ul>
+          <li><code>scripts/stage-lpn-ati-cleanup.ps1</code></li>
+          <li><code>scripts/apply-lpn-ati-review-placements.ps1</code></li>
+          <li><code>scripts/repair-lpn-ati-blocking-question-issues.js</code></li>
+          <li><code>scripts/import-lpn-ati-test-bank-dry-run.js</code></li>
+          <li><code>scripts/import-lpn-ati-test-bank.js</code></li>
+          <li><code>scripts/normalize-lpn-ati-topic-display-names.js</code></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

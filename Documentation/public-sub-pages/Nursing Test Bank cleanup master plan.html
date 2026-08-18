@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nursing Test Bank Cleanup Master Plan</title>
+  <style>
+    :root {
+      --text: #172033;
+      --muted: #5d667a;
+      --line: #dfe4ee;
+      --panel: #f7f9fc;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #ffffff;
+      line-height: 1.65;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      padding: 24px 18px;
+    }
+    nav h2 {
+      margin: 0 0 16px;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      color: var(--text);
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    nav a:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    main {
+      max-width: 1080px;
+      padding: 40px 48px 80px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.2;
+    }
+    h2 {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 24px;
+    }
+    h3 {
+      margin-top: 28px;
+      font-size: 18px;
+    }
+    p, li {
+      color: var(--text);
+    }
+    .lede {
+      max-width: 74ch;
+      color: var(--muted);
+      font-size: 17px;
+    }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+    }
+    pre {
+      overflow: auto;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+      color: #253047;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--panel);
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 12px 16px;
+      margin: 20px 0;
+    }
+    @media (max-width: 860px) {
+      .layout { display: block; }
+      nav {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      main { padding: 28px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav>
+      <h2>Cleanup Plan</h2>
+      <a href="#purpose">Purpose</a>
+      <a href="#reference">Existing Reference</a>
+      <a href="#groups">Remaining Groups</a>
+      <a href="#workflow">Workflow Order</a>
+      <a href="#status">Master Status</a>
+      <a href="#html">HTML Documentation</a>
+    </nav>
+    <main>
+      <h1>Nursing Test Bank Cleanup Master Plan</h1>
+      <p class="lede">Line-by-line checklist for recreating the ATI RN cleanup workflow across the remaining Nursing Test Bank folders.</p>
+
+      <section id="purpose">
+        <h2>Purpose</h2>
+        <p>Use this plan to clean and stage the remaining Nursing Test Bank source folders while preserving the original Naxlex source files.</p>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank</pre>
+        <p>Do not move or delete files from the original source:</p>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex\Nursing Test Bank</pre>
+      </section>
+
+      <section id="reference">
+        <h2>Existing Reference</h2>
+        <p>The completed reference workflow is <code>RN\ATI</code>.</p>
+        <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\RN\ATI</pre>
+        <p>Reference files:</p>
+        <ul>
+          <li><code>Documentation/public-sub-pages/ATI RN test bank cleanup plan.md</code></li>
+          <li><code>Documentation/public-sub-pages/ATI RN topic metadata generation prompt.md</code></li>
+          <li><code>scripts/stage-ati-rn-cleanup.ps1</code></li>
+          <li><code>scripts/preview-ati-rn-normalized-names.ps1</code></li>
+        </ul>
+      </section>
+
+      <section id="groups">
+        <h2>Remaining Groups</h2>
+        <ol>
+          <li><code>LPN\ATI</code></li>
+          <li><code>RN\HESI</code></li>
+          <li><code>LPN\HESI</code></li>
+          <li><code>RN\REGULAR</code></li>
+          <li><code>LPN\REGULAR</code></li>
+          <li><code>RN\CERTIFICATIONS</code></li>
+        </ol>
+        <div class="note">Start with <code>LPN\ATI</code> because it is closest to the completed <code>RN\ATI</code> cleanup workflow.</div>
+      </section>
+
+      <section id="workflow">
+        <h2>Workflow Order</h2>
+        <h3>Important Verification Rule</h3>
+        <p>For Nursing Test Bank work, always verify the lowest relevant visible tier before moving deeper.</p>
+        <pre>Nested page
+  -&gt; topics first
+  -&gt; then quizzes
+  -&gt; then questions</pre>
+        <p>When checking whether a page such as <code>ati-lpn-exams</code> matches <code>ati-rn-exams</code>, start by confirming the topic documents and topic route mappings. Do not jump straight to quiz/question counts until the topic layer is correct.</p>
+
+        <ol>
+          <li>Inventory the source.</li>
+          <li>Identify correct public topic names.</li>
+          <li>Create the topic mapping table.</li>
+          <li>Define folder/file placement rules.</li>
+          <li>Create or reuse the cleanup script.</li>
+          <li>Stage files into clean folders.</li>
+          <li>Generate cleanup summary.</li>
+          <li>Run duplicate checks.</li>
+          <li>Generate normalized public names.</li>
+          <li>Create simple review CSV.</li>
+          <li>Review problem rows.</li>
+          <li>Update documentation.</li>
+          <li>Maintain this master cleanup index.</li>
+          <li>Only after review, build the import script.</li>
+          <li>Regenerate sidebar/public data.</li>
+          <li>Validate public pages.</li>
+        </ol>
+
+        <h3>Key Captured Fields</h3>
+        <pre>source folder
+file name
+subtopic name
+slug
+topic_id
+question count
+root JSON artifacts
+parse errors</pre>
+
+        <h3>Allowed Placement Actions</h3>
+        <pre>import
+exclude
+review
+duplicate</pre>
+      </section>
+
+      <section id="status">
+        <h2>Master Status</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>RN\ATI</code></td><td>staged</td><td>Reference workflow completed.</td></tr>
+            <tr><td><code>LPN\ATI</code></td><td>imported</td><td>Inventory, mapping, staging, duplicate audit, normalized-name preview, Review Needed placement, content-based review, final title cleanup, import dry run, blocking question repairs, Firestore import, count audit, and sidebar regeneration completed on 2026-08-18. Imported and verified 14 topics, 266 quizzes, and 13,370 questions; only 22 missing-explanation rows remain for a later explanation pass.</td></tr>
+            <tr><td><code>RN\HESI</code></td><td>pending</td><td>Requires HESI-specific public topic naming.</td></tr>
+            <tr><td><code>LPN\HESI</code></td><td>pending</td><td>Requires LPN HESI topic mapping.</td></tr>
+            <tr><td><code>RN\REGULAR</code></td><td>pending</td><td>Likely needs heavier manual mapping.</td></tr>
+            <tr><td><code>LPN\REGULAR</code></td><td>pending</td><td>Likely needs heavier manual mapping.</td></tr>
+            <tr><td><code>RN\CERTIFICATIONS</code></td><td>pending</td><td>Keep certification content separate from RN test bank topics.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="html">
+        <h2>HTML Documentation Requirement</h2>
+        <p>For every major cleanup plan, create an HTML review page as well as markdown when the content includes mapping tables, file-placement decisions, or import summaries.</p>
+        <p>The HTML pages are for easier visual review before import. They should be text-focused, simple, and documentation-style.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

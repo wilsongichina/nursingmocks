@@ -1568,25 +1568,25 @@ export default function Sidebar({
                   const hasQuizCount =
                     typeof nestedSubPage.quizCount === "number" &&
                     nestedSubPage.quizCount > 0;
-                  const primaryCountLabel = hasQuestionCount
-                    ? `${nestedSubPage.questionCount.toLocaleString()} questions`
-                    : hasTopicCount
+                  const primaryCountLabel = hasTopicCount
                     ? `${nestedSubPage.topicCount.toLocaleString()} topics`
+                    : hasQuestionCount
+                    ? `${nestedSubPage.questionCount.toLocaleString()} questions`
                     : "Practice page";
-                  const secondaryCountLabel = hasQuizCount
-                    ? `${nestedSubPage.quizCount.toLocaleString()} sets`
-                    : hasTopicCount
+                  const secondaryCountLabel = hasTopicCount
                     ? "Topic-based practice"
+                    : hasQuizCount
+                    ? `${nestedSubPage.quizCount.toLocaleString()} sets`
                     : "Open to view sets";
-                  const metricLabel = hasQuestionCount
-                    ? nestedSubPage.questionCount.toLocaleString()
-                    : hasTopicCount
+                  const metricLabel = hasTopicCount
                     ? nestedSubPage.topicCount.toLocaleString()
+                    : hasQuestionCount
+                    ? nestedSubPage.questionCount.toLocaleString()
                     : "--";
-                  const metricHelperLabel = hasQuestionCount
-                    ? "Questions"
-                    : hasTopicCount
+                  const metricHelperLabel = hasTopicCount
                     ? "Topics"
+                    : hasQuestionCount
+                    ? "Questions"
                     : "Practice";
                   const parentSlug =
                     selectedSubPage?.slug || selectedSubPage?.id || "";

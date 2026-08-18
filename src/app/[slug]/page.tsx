@@ -30,9 +30,6 @@ import {
   getAllQuestionTypes,
   getRouteMappingSlugsByIds,
   getRouteMappingById,
-  countNestedPageQuestions,
-  countTopicQuestions,
-  countSubPageQuestions,
   countQuizQuestions,
   countExitEntranceQuizQuestions,
 } from "@/lib/firestore-operations";
@@ -636,7 +633,9 @@ const getDisplayCopyOverride = (displayCopy: any, key: string) => {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 };
 
-const getSubjectSetsActionLabel = (title: string) => {
+const getSubjectSetsActionLabel = (title: string, pillarId?: string) => {
+  if (pillarId === "nursing-test-bank") return "View Topics";
+
   const normalizedTitle = title.toLowerCase();
 
   if (normalizedTitle.includes("reading")) return "View Reading Sets";
@@ -645,6 +644,26 @@ const getSubjectSetsActionLabel = (title: string) => {
   if (normalizedTitle.includes("english")) return "View English Sets";
 
   return "View Practice Sets";
+};
+
+const renderTestBankGroupTitle = (title: string) => {
+  const match = title.match(/^(HESI|ATI)\b/i);
+
+  if (!match) return title;
+
+  const vendor = match[1].toUpperCase();
+  const rest = title.slice(match[0].length);
+  const vendorClassName =
+    vendor === "HESI"
+      ? "text-[#0f766e]"
+      : "text-[#7c3aed]";
+
+  return (
+    <>
+      <span className={vendorClassName}>{vendor}</span>
+      {rest}
+    </>
+  );
 };
 
 const isGeneratedPlaceholderDescription = (value: string) =>
@@ -1526,18 +1545,6 @@ export default async function DynamicPage({
   let _quizSlugMap: Record<string, string> = {};
 
   if (pageType === "nested") {
-    // Fetch question count for the nested page
-    if (
-      pillarId === "nursing-entrance-exam" ||
-      pillarId === "nursing-exit-exam"
-    ) {
-      const _nestedPageQuestionCount = await countNestedPageQuestions(
-        pillarId as "nursing-exit-exam" | "nursing-entrance-exam",
-        mapping.subPageId!,
-        mapping.nestedPageId!
-      );
-    }
-
     // Load quizzes for nested pages (entrance and exit exams)
     if (pillarId === "nursing-entrance-exam") {
       const quizzesResult = await getNursingEntranceExamQuizzes(
@@ -1612,24 +1619,10 @@ export default async function DynamicPage({
         );
       }
     } else if (pillarId === "nursing-test-bank") {
-      // Fetch question count for the nested page (sum of all topics)
-      let totalNestedCount = 0;
       const topicsResult = await getNursingTestBankTopics(
         mapping.subPageId!,
         mapping.nestedPageId!
       );
-      if (topicsResult.success && topicsResult.data) {
-        for (const topic of topicsResult.data) {
-          const topicSlug = topic.slug || topic.id;
-          const count = await countTopicQuestions(
-            mapping.subPageId!,
-            mapping.nestedPageId!,
-            topicSlug
-          );
-          totalNestedCount += count;
-        }
-        const _nestedPageQuestionCount = totalNestedCount;
-      }
 
       // Load topics for test bank nested pages
       if (topicsResult.success && topicsResult.data) {
@@ -1646,31 +1639,9 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           _topicSlugMap = slugMapResult.slugMap;
         }
-        // Fetch question counts for topics
-        topics = await Promise.all(
-          topics.map(async (topic: any) => {
-            const topicSlug = topic.slug || topic.id;
-            const questionCount = await countTopicQuestions(
-              mapping.subPageId!,
-              mapping.nestedPageId!,
-              topicSlug
-            );
-            return {
-              ...topic,
-              questionCount,
-            };
-          })
-        );
       }
     }
   } else if (pageType === "topic" && pillarId === "nursing-test-bank") {
-    // Fetch question count for the topic
-    const _topicQuestionCount = await countTopicQuestions(
-      mapping.subPageId!,
-      mapping.nestedPageId!,
-      mapping.topicId!
-    );
-
     // Load quizzes for test bank topic pages
     const quizzesResult = await getNursingTestBankQuizzes(
       mapping.subPageId!,
@@ -1710,12 +1681,6 @@ export default async function DynamicPage({
       );
     }
   } else if (pageType === "sub") {
-    // Fetch question count for the sub-page
-    const _subPageQuestionCount = await countSubPageQuestions(
-      pillarId,
-      mapping.subPageId!
-    );
-
     // Load nested sub-pages
     if (pillarId === "nursing-entrance-exam") {
       const nestedResult = await getNestedSubPages(mapping.subPageId!);
@@ -1732,21 +1697,6 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           _nestedPageSlugMap = slugMapResult.slugMap;
         }
-        // Fetch question counts for nested pages
-        nestedPages = await Promise.all(
-          nestedPages.map(async (nestedPage: any) => {
-            const nestedPageSlug = nestedPage.slug || nestedPage.id;
-            const questionCount = await countNestedPageQuestions(
-              pillarId as "nursing-entrance-exam",
-              mapping.subPageId!,
-              nestedPageSlug
-            );
-            return {
-              ...nestedPage,
-              questionCount,
-            };
-          })
-        );
       }
     } else if (pillarId === "nursing-exit-exam") {
       const nestedResult = await getNursingExitExamNestedSubPages(
@@ -1765,21 +1715,6 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           _nestedPageSlugMap = slugMapResult.slugMap;
         }
-        // Fetch question counts for nested pages
-        nestedPages = await Promise.all(
-          nestedPages.map(async (nestedPage: any) => {
-            const nestedPageSlug = nestedPage.slug || nestedPage.id;
-            const questionCount = await countNestedPageQuestions(
-              pillarId as "nursing-exit-exam",
-              mapping.subPageId!,
-              nestedPageSlug
-            );
-            return {
-              ...nestedPage,
-              questionCount,
-            };
-          })
-        );
       }
     } else if (pillarId === "nursing-test-bank") {
       const nestedResult = await getNursingTestBankNestedSubPages(
@@ -1798,34 +1733,6 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           _nestedPageSlugMap = slugMapResult.slugMap;
         }
-        // Fetch question counts for nested pages (test bank nested pages have topics, so count through topics)
-        nestedPages = await Promise.all(
-          nestedPages.map(async (nestedPage: any) => {
-            const nestedPageSlug = nestedPage.slug || nestedPage.id;
-            // For test bank, we need to count questions through topics
-            // Get all topics for this nested page
-            const topicsResult = await getNursingTestBankTopics(
-              mapping.subPageId!,
-              nestedPageSlug
-            );
-            let totalCount = 0;
-            if (topicsResult.success && topicsResult.data) {
-              for (const topic of topicsResult.data) {
-                const topicSlug = topic.slug || topic.id;
-                const count = await countTopicQuestions(
-                  mapping.subPageId!,
-                  nestedPageSlug,
-                  topicSlug
-                );
-                totalCount += count;
-              }
-            }
-            return {
-              ...nestedPage,
-              questionCount: totalCount,
-            };
-          })
-        );
       }
     }
   }
@@ -1976,8 +1883,36 @@ export default async function DynamicPage({
         ? publishedTopics
         : publishedQuizzes
       : publishedNestedPages;
-  const orderedChildSource =
-    pageType === "nested" && pillarId !== "nursing-test-bank"
+  const useNursingTestBankTopicCardLayout =
+    pillarId === "nursing-test-bank" && pageType === "nested";
+  const getPlannedTopicExamCount = (child: any) =>
+    Number(
+      child.atiRnTopicMetadata?.plannedExamCount ||
+        child.sourceMetadata?.plannedExamCount ||
+        child.examCount ||
+        child.exams ||
+        child.quizCount
+    );
+  const orderedChildSource = useNursingTestBankTopicCardLayout
+    ? [...childSource].sort((first: any, second: any) => {
+        const firstCount = getPlannedTopicExamCount(first);
+        const secondCount = getPlannedTopicExamCount(second);
+        const firstHasCount = Number.isFinite(firstCount);
+        const secondHasCount = Number.isFinite(secondCount);
+
+        if (firstHasCount && secondHasCount && firstCount !== secondCount) {
+          return secondCount - firstCount;
+        }
+
+        if (firstHasCount !== secondHasCount) {
+          return firstHasCount ? -1 : 1;
+        }
+
+        const firstName = String(first.pageName || first.topicName || first.title || first.id);
+        const secondName = String(second.pageName || second.topicName || second.title || second.id);
+        return firstName.localeCompare(secondName);
+      })
+    : pageType === "nested" && pillarId !== "nursing-test-bank"
       ? [...childSource].sort((first: any, second: any) => {
           const firstSet = Number(first.setNumber);
           const secondSet = Number(second.setNumber);
@@ -1999,14 +1934,22 @@ export default async function DynamicPage({
       : childSource;
   const childCards = orderedChildSource.map((child: any) => {
     const rawName =
-      child.seoLabel ||
-      child.pageName ||
-      child.heading ||
-      child.title ||
-      child.quizName ||
-      child.topicName ||
-      child.slug ||
-      child.id;
+      useNursingTestBankTopicCardLayout
+        ? child.pageName ||
+          child.topicName ||
+          child.title ||
+          child.seoLabel ||
+          child.heading ||
+          child.slug ||
+          child.id
+        : child.seoLabel ||
+          child.pageName ||
+          child.heading ||
+          child.title ||
+          child.quizName ||
+          child.topicName ||
+          child.slug ||
+          child.id;
     const title = titleCaseWords(stripHtml(rawName));
     const slugValue =
       pageType === "nested" && pillarId === "nursing-test-bank"
@@ -2015,6 +1958,7 @@ export default async function DynamicPage({
           ? _quizSlugMap[child.id] || child.slug || child.seoSlug || child.id
           : _nestedPageSlugMap[child.id] || child.slug || child.seoSlug || child.id;
     const questionCount = typeof child.questionCount === "number" ? child.questionCount : null;
+    const plannedExamCount = getPlannedTopicExamCount(child);
     const description = getPublicCardDescription(child, title);
     const updateYear = Number(child.examYear || child.year);
 
@@ -2023,10 +1967,17 @@ export default async function DynamicPage({
       title,
       href: `/${String(slugValue).replace(/^\/+/, "")}`,
       questionCount,
+      topicBadgeCount: Number.isFinite(plannedExamCount) ? plannedExamCount : null,
       description,
       updateYear: Number.isFinite(updateYear) ? updateYear : null,
     };
   });
+  const isNursingTestBankTopicCardLayout = useNursingTestBankTopicCardLayout;
+  const isTestBankTwoGroupLayout =
+    pillarId === "nursing-test-bank" && pageType === "sub" && childCards.length === 2;
+  const heroDescription = isNursingTestBankTopicCardLayout
+    ? childSectionDescription
+    : pageDescription;
   const firstChildHref = childCards[0]?.href || "#content";
   const primaryHeroActionHref = isAtiTeasPracticeParent
     ? "#practice-paths"
@@ -2069,7 +2020,7 @@ export default async function DynamicPage({
               backLabel={backLink.name}
               examBadge={examBadge}
               pageHeading={pageHeading}
-              pageDescription={pageDescription}
+              pageDescription={heroDescription}
               childCards={childCards}
               childSummaryLabel={childSummaryLabel}
               firstChildHref={firstChildHref}
@@ -2077,28 +2028,69 @@ export default async function DynamicPage({
               primaryActionHref={primaryHeroActionHref}
               secondaryActionHref={secondaryHeroActionHref}
               totalChildQuestions={totalChildQuestions}
+              hideSummaryBadges={isNursingTestBankTopicCardLayout}
+              hideActions={isNursingTestBankTopicCardLayout}
             />
 
             <div className="public-hero-body-divider" aria-hidden="true" />
 
             {childCards.length > 0 && (
               <section id="practice-paths" className="mb-5">
-                <div className="mx-auto mb-5 flex max-w-[980px] flex-col items-center gap-3 text-center">
-                  <div>
-                    <p className="user-eyebrow m-0">{childSectionEyebrow}</p>
-                    <h2 className="user-section-title public-section-heading mt-2">
-                      {childSectionTitle}
-                    </h2>
+                {!isNursingTestBankTopicCardLayout && (
+                  <div className="mx-auto mb-5 flex max-w-[980px] flex-col items-center gap-3 text-center">
+                    <div>
+                      <p className="user-eyebrow m-0">{childSectionEyebrow}</p>
+                      <h2 className="user-section-title public-section-heading mt-2">
+                        {childSectionTitle}
+                      </h2>
+                    </div>
+                    <p className="max-w-[78ch] text-center text-base leading-8 text-[#3b4058] sm:text-lg">
+                      {childSectionDescription}
+                    </p>
                   </div>
-                  <p className="max-w-[78ch] text-center text-base leading-8 text-[#3b4058] sm:text-lg">
-                    {childSectionDescription}
-                  </p>
-                </div>
+                )}
 
-                <div className="user-card p-4 sm:p-5">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {childCards.map((card) => (
-                      <article key={card.id} className="user-card flex min-h-[190px] min-w-0 flex-col p-4 shadow-none">
+                <div
+                  className={
+                    isTestBankTwoGroupLayout
+                      ? "mx-auto max-w-5xl"
+                      : "user-card p-4 sm:p-5"
+                  }
+                >
+                  <div
+                    className={
+                      isNursingTestBankTopicCardLayout
+                        ? "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+                        : isTestBankTwoGroupLayout
+                        ? "grid grid-cols-1 gap-5 md:grid-cols-2"
+                        : "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                    }
+                  >
+                    {childCards.map((card) =>
+                      isNursingTestBankTopicCardLayout ? (
+                        <Link
+                          key={card.id}
+                          href={card.href}
+                          className="group flex min-h-[78px] min-w-0 items-center justify-between gap-4 rounded-[18px] border border-[#e3e5f0] bg-white px-5 py-4 text-left no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-[#b8b1ff] hover:shadow-[0_16px_36px_rgba(79,70,229,0.12)]"
+                        >
+                          <span className="min-w-0 text-base font-extrabold leading-6 text-[#111827] [overflow-wrap:anywhere] group-hover:text-[#4338ca]">
+                            {card.title}
+                          </span>
+                          {card.topicBadgeCount !== null && (
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#4338ca] text-xs font-black text-white shadow-[0_10px_22px_rgba(67,56,202,0.26)] ring-4 ring-[#eef2ff]">
+                              {card.topicBadgeCount}
+                            </span>
+                          )}
+                        </Link>
+                      ) : (
+                      <article
+                        key={card.id}
+                        className={
+                          isTestBankTwoGroupLayout
+                            ? "user-card flex min-h-[230px] min-w-0 flex-col p-5 shadow-sm sm:p-6"
+                            : "user-card flex min-h-[190px] min-w-0 flex-col p-4 shadow-none"
+                        }
+                      >
                         <div className="mb-4">
                           <span className="user-pill user-pill-purple">{childItemLabel}</span>
                           {card.questionCount !== null && (
@@ -2107,20 +2099,37 @@ export default async function DynamicPage({
                             </span>
                           )}
                         </div>
-                        <h3 className="user-card-title [overflow-wrap:anywhere]">
+                        <h3
+                          className={
+                            isTestBankTwoGroupLayout
+                              ? "text-center text-2xl font-black leading-tight text-[#111827] [overflow-wrap:anywhere] sm:text-3xl"
+                              : "user-card-title [overflow-wrap:anywhere]"
+                          }
+                        >
                           <Link
                             href={card.href}
                             className="text-inherit no-underline hover:text-[#5548e0]"
                           >
-                            {card.title}
+                            {isTestBankTwoGroupLayout
+                              ? renderTestBankGroupTitle(card.title)
+                              : card.title}
                           </Link>
                         </h3>
+                        {isTestBankTwoGroupLayout && card.description && (
+                          <p className="mt-3 text-sm leading-7 text-[#4b5268]">
+                            {card.description}
+                          </p>
+                        )}
                         {pageType === "sub" ? (
                           <Link
                             href={card.href}
-                            className="mt-auto inline-flex min-h-[44px] w-full cursor-pointer items-center justify-center rounded-full border border-[#d8d5ff] bg-[#f4f2ff] px-3 py-2 text-center text-xs font-extrabold leading-5 text-[#4338ca] no-underline transition hover:border-[#b8b1ff] hover:bg-[#ece9ff]"
+                            className={
+                              isTestBankTwoGroupLayout
+                                ? "mt-auto inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center rounded-full border border-[#d8d5ff] bg-[#f4f2ff] px-4 py-2.5 text-center text-sm font-extrabold leading-5 text-[#4338ca] no-underline transition hover:border-[#b8b1ff] hover:bg-[#ece9ff]"
+                                : "mt-auto inline-flex min-h-[44px] w-full cursor-pointer items-center justify-center rounded-full border border-[#d8d5ff] bg-[#f4f2ff] px-3 py-2 text-center text-xs font-extrabold leading-5 text-[#4338ca] no-underline transition hover:border-[#b8b1ff] hover:bg-[#ece9ff]"
+                            }
                           >
-                            {getSubjectSetsActionLabel(card.title)}
+                            {getSubjectSetsActionLabel(card.title, pillarId)}
                           </Link>
                         ) : (
                           <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
@@ -2155,7 +2164,8 @@ export default async function DynamicPage({
                           </div>
                         )}
                       </article>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
               </section>
