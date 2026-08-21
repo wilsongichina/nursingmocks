@@ -64,7 +64,9 @@
         "servicePageId": "SuT1noZoNGEjKGR1vTbi",
         "pageName": "RN Exams",
         "slug": "rn-exams",
-        "status": "Published"
+        "status": "Published",
+        "questionCount": 69956,
+        "quizCount": 1321
       },
       {
         "id": "z0xzINtS3EohZNaKosBz",
@@ -305,6 +307,8 @@
         "publicSlug": "ati-rn-exams",
         "publicUrl": "/ati-rn-exams",
         "status": "Draft",
+        "questionCount": 44005,
+        "quizCount": 835,
         "topicCount": 18
       },
       {
@@ -327,6 +331,8 @@
         "publicSlug": "hesi-rn-exams",
         "publicUrl": "/hesi-rn-exams",
         "status": "Draft",
+        "questionCount": 7827,
+        "quizCount": 150,
         "topicCount": 21
       },
       {
@@ -382,5 +388,5 @@
       }
     ]
   },
-  "generatedAt": "2026-08-21T14:58:58.963Z"
+  "generatedAt": "2026-08-21T17:42:03.974Z"
 }

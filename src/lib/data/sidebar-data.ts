@@ -1,5 +1,5 @@
 // This file is auto-generated at build time. Do not edit manually.
-// Generated at: 2026-08-21T14:58:58.966Z
+// Generated at: 2026-08-21T17:42:03.976Z
 
 export const sidebarData = {
   "pillarPages": [
@@ -67,7 +67,9 @@ export const sidebarData = {
         "servicePageId": "SuT1noZoNGEjKGR1vTbi",
         "pageName": "RN Exams",
         "slug": "rn-exams",
-        "status": "Published"
+        "status": "Published",
+        "questionCount": 69956,
+        "quizCount": 1321
       },
       {
         "id": "z0xzINtS3EohZNaKosBz",
@@ -308,6 +310,8 @@ export const sidebarData = {
         "publicSlug": "ati-rn-exams",
         "publicUrl": "/ati-rn-exams",
         "status": "Draft",
+        "questionCount": 44005,
+        "quizCount": 835,
         "topicCount": 18
       },
       {
@@ -330,6 +334,8 @@ export const sidebarData = {
         "publicSlug": "hesi-rn-exams",
         "publicUrl": "/hesi-rn-exams",
         "status": "Draft",
+        "questionCount": 7827,
+        "quizCount": 150,
         "topicCount": 21
       },
       {
@@ -385,7 +391,7 @@ export const sidebarData = {
       }
     ]
   },
-  "generatedAt": "2026-08-21T14:58:58.963Z"
+  "generatedAt": "2026-08-21T17:42:03.974Z"
 } as const;
 
 export type SidebarData = typeof sidebarData;
