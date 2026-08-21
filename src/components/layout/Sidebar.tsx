@@ -156,6 +156,57 @@ interface Category {
   [key: string]: any;
 }
 
+const normalizeSidebarPath = (value?: string | null) => {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) {
+    return "";
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed.replace(/^\/+/, "")}`;
+};
+
+const stripLegacyTestBankSuffix = (slug: string, parentSlug?: string | null) => {
+  const cleanSlug = slug.replace(/^\/+/, "");
+  const cleanParentSlug = typeof parentSlug === "string" ? parentSlug.trim() : "";
+
+  if (!cleanParentSlug) {
+    return cleanSlug;
+  }
+
+  const legacySuffix = `-${cleanParentSlug}-test-bank`;
+  return cleanSlug.endsWith(legacySuffix)
+    ? cleanSlug.slice(0, -legacySuffix.length)
+    : cleanSlug;
+};
+
+const getNestedPagePath = (
+  nestedSubPage: any,
+  nestedPageId: string,
+  isTestBank: boolean,
+  parentSlug?: string | null
+) => {
+  const publicUrl = normalizeSidebarPath(nestedSubPage.publicUrl);
+  if (publicUrl) {
+    return publicUrl;
+  }
+
+  const publicSlug = normalizeSidebarPath(nestedSubPage.publicSlug);
+  if (publicSlug) {
+    return publicSlug;
+  }
+
+  const rawSlug =
+    nestedSubPage.slug ||
+    nestedSubPage.id ||
+    nestedSubPage.nestedSubPageId ||
+    nestedPageId;
+  const nestedSlug = isTestBank
+    ? stripLegacyTestBankSuffix(rawSlug, parentSlug)
+    : rawSlug;
+
+  return normalizeSidebarPath(nestedSlug);
+};
+
 export default function Sidebar({
   className = "",
   initialData = null,
@@ -723,53 +774,45 @@ export default function Sidebar({
     const parentSlug =
       selectedSubPage?.slug || selectedSubPage?.id || parentSubPageId;
 
-    // Check if this is for exit exam, test bank, or entrance exam
-    const isExitExam = selectedSubPage?.parentPillarId === "nursing-exit-exam";
     const isTestBank = selectedSubPage?.parentPillarId === "nursing-test-bank";
     const pillarId = selectedSubPage?.parentPillarId || "nursing-entrance-exam";
 
-    // Try to get route mapping slug for the nested sub-page (most reliable)
-    let nestedSubPageUrl: string | null = null;
     const nestedPageId = nestedSubPage.id || nestedSubPage.nestedSubPageId;
+    let nestedSubPageUrl: string | null = getNestedPagePath(
+      nestedSubPage,
+      nestedPageId,
+      isTestBank,
+      parentSlug
+    );
 
-    try {
-      const { getRouteMappingById } = await import(
-        "@/lib/firestore-operations"
-      );
-      const routeMappingResult = await getRouteMappingById({
-        pillarId: pillarId,
-        type: "nested",
-        id: nestedPageId,
-        subPageId: parentSubPageId,
-      });
+    if (!nestedSubPageUrl) {
+      try {
+        const { getRouteMappingById } = await import(
+          "@/lib/firestore-operations"
+        );
+        const routeMappingResult = await getRouteMappingById({
+          pillarId: pillarId,
+          type: "nested",
+          id: nestedPageId,
+          subPageId: parentSubPageId,
+        });
 
-      if (routeMappingResult.success && routeMappingResult.data) {
-        const mapping = routeMappingResult.data as any;
-        if (mapping.slug) {
-          // Use the route mapping slug directly (this is the final URL slug)
-          nestedSubPageUrl = `/${mapping.slug}`;
+        if (routeMappingResult.success && routeMappingResult.data) {
+          const mapping = routeMappingResult.data as any;
+          if (mapping.slug) {
+            const mappedSlug = isTestBank
+              ? stripLegacyTestBankSuffix(mapping.slug, parentSlug)
+              : mapping.slug;
+            nestedSubPageUrl = normalizeSidebarPath(mappedSlug);
+          }
         }
+      } catch (error) {
+        console.warn("Error getting route mapping for nested sub-page:", error);
       }
-    } catch (error) {
-      console.warn("Error getting route mapping for nested sub-page:", error);
     }
 
-    // If route mapping not found, construct URL based on pillar page type
     if (!nestedSubPageUrl) {
-      const nestedPageSlug =
-        nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
-
-      if (isTestBank) {
-        // Test bank nested pages store their public route slug directly.
-        nestedSubPageUrl = `/${nestedPageSlug}`;
-      } else if (isExitExam) {
-        // Exit exam: nested slug already contains parent prefix, so just use the nested slug
-        nestedSubPageUrl = `/${nestedPageSlug}`;
-      } else {
-        // Entrance nested pages store their public slug directly
-        // (for example, teas-math-practice-test).
-        nestedSubPageUrl = `/${nestedPageSlug}`;
-      }
+      nestedSubPageUrl = "#";
     }
 
     router.push(nestedSubPageUrl);
@@ -1562,7 +1605,6 @@ export default function Sidebar({
                   // For Link href, we'll use the constructed URL (route mapping lookup is async)
                   const pillarId =
                     selectedSubPage?.parentPillarId || "nursing-entrance-exam";
-                  const isExitExam = pillarId === "nursing-exit-exam";
                   const isTestBank = pillarId === "nursing-test-bank";
                   const hasQuestionCount =
                     typeof nestedSubPage.questionCount === "number";
@@ -1593,28 +1635,12 @@ export default function Sidebar({
                     : "Practice";
                   const parentSlug =
                     selectedSubPage?.slug || selectedSubPage?.id || "";
-                  const nestedPageSlug =
-                    nestedSubPage.slug || nestedSubPage.id || nestedPageId;
-                  const routeMappedUrl =
-                    typeof nestedSubPage.publicUrl === "string" &&
-                    nestedSubPage.publicUrl.trim()
-                      ? nestedSubPage.publicUrl.trim()
-                      : "";
-
-                  let nestedPageUrl = routeMappedUrl || "#";
-                  if (routeMappedUrl) {
-                    nestedPageUrl = routeMappedUrl.startsWith("/")
-                      ? routeMappedUrl
-                      : `/${routeMappedUrl}`;
-                  } else if (isTestBank) {
-                    nestedPageUrl = `/${nestedPageSlug}`;
-                  } else if (isExitExam) {
-                    nestedPageUrl = `/${nestedPageSlug}`;
-                  } else {
-                    // Entrance nested pages store their public slug directly
-                    // (for example, teas-math-practice-test).
-                    nestedPageUrl = `/${nestedPageSlug}`;
-                  }
+                  let nestedPageUrl = getNestedPagePath(
+                    nestedSubPage,
+                    nestedPageId,
+                    isTestBank,
+                    parentSlug
+                  );
 
                   // Ensure we have a valid URL
                   if (!nestedPageUrl || nestedPageUrl === "/") {
