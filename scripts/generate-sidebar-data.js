@@ -3,23 +3,10 @@
  * This prevents loading states when navigating between pages
  */
 
-const { initializeApp } = require("firebase/app");
-const {
-  getFirestore,
-  collection,
-  getDocs,
-} = require("firebase/firestore");
+const { getApps, initializeApp, applicationDefault, cert } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
 const fs = require("fs");
 const path = require("path");
-
-const REQUIRED_FIREBASE_ENV = [
-  "NEXT_PUBLIC_FIREBASE_API_KEY",
-  "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
-  "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
-  "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
-  "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
-  "NEXT_PUBLIC_FIREBASE_APP_ID",
-];
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -56,42 +43,52 @@ function loadLocalEnvironment() {
   loadEnvFile(path.join(root, ".env.local"));
 }
 
-function requireEnv(name) {
-  const value = process.env[name];
-  if (!value || !value.trim()) {
-    throw new Error(`Missing required Firebase environment variable: ${name}`);
-  }
-  return value;
-}
-
-function validateFirebaseEnvironment() {
-  const missingFirebaseEnv = REQUIRED_FIREBASE_ENV.filter(
-    (key) => !process.env[key] || !process.env[key].trim()
-  );
-  if (missingFirebaseEnv.length > 0) {
-    throw new Error(
-      `Missing required Firebase environment variables: ${missingFirebaseEnv.join(", ")}`
-    );
-  }
-}
 
 loadLocalEnvironment();
 
-// Firebase configuration - matches src/lib/firebase.ts.
-// Values must come from the NursingMocks environment. Do not add
-// project-specific fallbacks here; stale defaults can connect builds to the
-// wrong Firebase project.
-function getFirebaseConfig() {
-  validateFirebaseEnvironment();
-  return {
-    apiKey: requireEnv("NEXT_PUBLIC_FIREBASE_API_KEY"),
-    authDomain: requireEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
-    projectId: requireEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
-    storageBucket: requireEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
-    messagingSenderId: requireEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
-    appId: requireEnv("NEXT_PUBLIC_FIREBASE_APP_ID"),
-  };
+function getServiceAccountCredential() {
+  const json = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_JSON;
+  if (json) {
+    return cert(JSON.parse(json.replace(/\\n/g, "\n")));
+  }
+
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
+  if (projectId && clientEmail && privateKey) {
+    return cert({ projectId, clientEmail, privateKey });
+  }
+
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    return applicationDefault();
+  }
+
+  return null;
 }
+
+function getSidebarAdminDb() {
+  const existing = getApps()[0];
+  if (existing) {
+    return getFirestore(existing);
+  }
+
+  const credential = getServiceAccountCredential();
+  if (!credential) {
+    throw new Error("Firebase Admin is not configured for sidebar generation.");
+  }
+
+  return getFirestore(initializeApp({ credential }));
+}
+
+function collection(db, ...segments) {
+  return db.collection(segments.join("/"));
+}
+
+function getDocs(ref) {
+  return ref.get();
+}
+
 
 async function getAllPillarPages(db) {
   try {
@@ -444,16 +441,14 @@ function toSidebarNestedPage(page) {
 
 async function generateSidebarData() {
   try {
-    const firebaseConfig = getFirebaseConfig();
     console.log("Starting sidebar data generation.");
 
-    // Initialize Firebase
-    let app, db;
+    // Initialize trusted Admin SDK access for build-time Firestore reads.
+    let db;
     try {
-      app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
+      db = getSidebarAdminDb();
     } catch (firebaseError) {
-      console.error("Failed to initialize Firebase for sidebar generation.");
+      console.error("Failed to initialize Firebase Admin for sidebar generation.");
       console.error(firebaseError?.message || firebaseError);
       throw firebaseError;
     }
@@ -737,4 +732,7 @@ if (require.main === module) {
 }
 
 module.exports = { generateSidebarData };
+
+
+
 

@@ -1,5 +1,5 @@
 // This file is auto-generated at build time. Do not edit manually.
-// Generated at: 2026-08-21T14:44:02.246Z
+// Generated at: 2026-08-21T14:58:58.966Z
 
 export const sidebarData = {
   "pillarPages": [
@@ -385,7 +385,7 @@ export const sidebarData = {
       }
     ]
   },
-  "generatedAt": "2026-08-21T14:44:02.245Z"
+  "generatedAt": "2026-08-21T14:58:58.963Z"
 } as const;
 
 export type SidebarData = typeof sidebarData;

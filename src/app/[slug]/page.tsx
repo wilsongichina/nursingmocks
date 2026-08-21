@@ -15,9 +15,11 @@ import PublicSubPageGuide, {
 } from "@/components/sections/PublicSubPageGuide";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
 import {
+  getKbArticleBySlug,
+} from "@/lib/firestore-operations";
+import {
   getRouteMappingBySlugOnly as getRouteMappingBySlugOnlyRaw,
   getPageByContentPath as getPageByContentPathRaw,
-  getKbArticleBySlug,
   getNursingEntranceExamQuizQuestions,
   getNursingExitExamQuizQuestions,
   getNursingTestBankQuizQuestions,
@@ -31,7 +33,8 @@ import {
   getAllQuestionTypes as getAllQuestionTypesRaw,
   getRouteMappingSlugsByIds,
   getRouteMappingById,
-} from "@/lib/firestore-operations";
+  getAllRouteMappings,
+} from "@/lib/firestore-build-operations";
 const getRouteMappingBySlugOnly = cache(getRouteMappingBySlugOnlyRaw);
 const getPageByContentPath = cache(getPageByContentPathRaw);
 const getNestedSubPages = cache(getNestedSubPagesRaw);
@@ -957,7 +960,6 @@ export async function generateStaticParams() {
   ]);
 
   try {
-    const { getAllRouteMappings } = await import("@/lib/firestore-operations");
     const result = await getAllRouteMappings();
 
     if (result.success && result.data) {

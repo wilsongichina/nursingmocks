@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 import { getCanonicalSiteUrl } from "@/lib/config";
-import { getAllRouteMappings } from "@/lib/firestore-operations";
+import { getAllRouteMappings } from "@/lib/firestore-build-operations";
 
 const STATIC_INDEXABLE_PAGES = [
   { path: "/", changeFrequency: "weekly" as const, priority: 1 },
