@@ -200,7 +200,9 @@ export default function Sidebar({
     }
 
     Object.entries(modalNestedPages).forEach(([key, pages]) => {
-      modalDataCacheRef.current.set(key, pages);
+      if (Array.isArray(pages) && pages.length > 0) {
+        modalDataCacheRef.current.set(key, pages);
+      }
     });
   };
 
@@ -758,9 +760,8 @@ export default function Sidebar({
         nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
 
       if (isTestBank) {
-        // Test bank URL pattern: /{nestedPageSlug}-{parentSlug}-test-bank
-        // Note: nestedPageSlug might already contain parent prefix, but we need the full format
-        nestedSubPageUrl = `/${nestedPageSlug}-${parentSlug}-test-bank`;
+        // Test bank nested pages store their public route slug directly.
+        nestedSubPageUrl = `/${nestedPageSlug}`;
       } else if (isExitExam) {
         // Exit exam: nested slug already contains parent prefix, so just use the nested slug
         nestedSubPageUrl = `/${nestedPageSlug}`;
@@ -829,12 +830,16 @@ export default function Sidebar({
     categorySlug?: string
   ) => {
     e.preventDefault();
-    const { requestId, cacheKey } = openNestedModal(
+    const { requestId, cacheKey, cachedPages } = openNestedModal(
       categoryId,
       categoryName,
       "nursing-test-bank",
       categorySlug
     );
+
+    if (cachedPages && cachedPages.length > 0) {
+      return;
+    }
 
     try {
       const result = await getNursingTestBankNestedSubPages(categoryId);
@@ -1602,7 +1607,7 @@ export default function Sidebar({
                       ? routeMappedUrl
                       : `/${routeMappedUrl}`;
                   } else if (isTestBank) {
-                    nestedPageUrl = `/${nestedPageSlug}-${parentSlug}-test-bank`;
+                    nestedPageUrl = `/${nestedPageSlug}`;
                   } else if (isExitExam) {
                     nestedPageUrl = `/${nestedPageSlug}`;
                   } else {
@@ -1692,3 +1697,4 @@ export default function Sidebar({
     </>
   );
 }
+
