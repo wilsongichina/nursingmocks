@@ -356,6 +356,38 @@ async function getTestBankTopicCountForModal(db, parentSubPageId, nestedSubPageI
   }
 }
 
+
+function hasUsableExistingSidebarData() {
+  const jsonOutputPath = path.join(process.cwd(), "public", "data", "sidebar-data.json");
+  const tsOutputPath = path.join(process.cwd(), "src", "lib", "data", "sidebar-data.ts");
+
+  if (!fs.existsSync(jsonOutputPath) || !fs.existsSync(tsOutputPath)) {
+    return false;
+  }
+
+  try {
+    const existing = JSON.parse(fs.readFileSync(jsonOutputPath, "utf8"));
+    const categories = existing.pillarCategories || {};
+    const categoryCount = Object.values(categories).reduce(
+      (total, value) => total + (Array.isArray(value) ? value.length : 0),
+      0
+    );
+    return categoryCount > 0;
+  } catch {
+    return false;
+  }
+}
+
+function keepExistingSidebarData(reason) {
+  if (!hasUsableExistingSidebarData()) {
+    return false;
+  }
+
+  console.warn("WARNING: " + reason);
+  console.warn("Keeping existing generated sidebar data instead of writing placeholders.");
+  return true;
+}
+
 function getModalCacheKey(pillarPageId, parentSubPageId) {
   return `${pillarPageId}:${parentSubPageId}`;
 }

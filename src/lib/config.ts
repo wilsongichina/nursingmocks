@@ -64,7 +64,7 @@ export const getSiteName = (): string => {
  * @returns Full URL with site domain
  */
 export const getImageUrl = (imagePath: string): string => {
-  const siteUrl = getSiteUrl();
+  const siteUrl = getSafeSiteUrl();
   // Remove leading slash if present to avoid double slashes
   const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
   return `${siteUrl}${cleanPath}`;
