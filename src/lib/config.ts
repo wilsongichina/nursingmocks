@@ -7,6 +7,16 @@ export const getSiteUrl = (): string => {
   return process.env.NEXT_PUBLIC_SITE_URL || "https://www.nursingmocks.com";
 };
 
+export const getSafeSiteUrl = (): string => {
+  const configuredUrl = getSiteUrl();
+
+  try {
+    return new URL(configuredUrl).origin.replace(/\/$/, "");
+  } catch {
+    return "https://www.nursingmocks.com";
+  }
+};
+
 export const getCanonicalSiteUrl = (): string => {
   const configuredUrl =
     process.env.NEXT_PUBLIC_CANONICAL_SITE_URL ||

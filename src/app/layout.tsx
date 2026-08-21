@@ -4,7 +4,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import AuthProviderWrapper from "@/components/providers/AuthProviderWrapper";
 import TawkToChat from "@/components/ui/TawkToChat";
-import { getSiteUrl, getSiteName, getImageUrl } from "@/lib/config";
+import { getSafeSiteUrl, getSiteName, getImageUrl } from "@/lib/config";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -14,7 +14,7 @@ const outfit = Outfit({
 });
 
 const siteName = getSiteName();
-const siteUrl = getSiteUrl();
+const siteUrl = getSafeSiteUrl();
 const logoImageUrl = getImageUrl("/nursing-mocks-logo.png");
 const tiktokPixelId = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
 

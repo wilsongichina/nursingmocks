@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 import NewHomePageClient from "./NewHomePageClient";
-import { getSiteUrl, getSiteName, getImageUrl } from "@/lib/config";
+import { getSafeSiteUrl, getSiteName, getImageUrl } from "@/lib/config";
 
 const siteName = getSiteName();
-const siteUrl = getSiteUrl();
+const siteUrl = getSafeSiteUrl();
 const logoImageUrl = getImageUrl("/nursing-mocks-logo.png");
 
 export const metadata: Metadata = {
