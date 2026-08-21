@@ -39,6 +39,14 @@ import { buildQuizSchemaMarkup } from "@/lib/seo/structured-data";
 
 const ATI_TEAS_PARENT_CANONICAL_SLUG = "ati-teas-practice-test";
 const ATI_TEAS_PARENT_CANONICAL_PATH = `/${ATI_TEAS_PARENT_CANONICAL_SLUG}`;
+const noindexMetadata = (slug: string): Metadata => ({
+  title: `${slug} | NursingMocks`,
+  description: `Content for ${slug}`,
+  robots: {
+    index: false,
+    follow: false,
+  },
+});
 
 const getCanonicalUrlForSlug = (
   slug: string,
@@ -1024,6 +1032,12 @@ export async function generateMetadata({
 
   const routeMappingResult = await getRouteMappingBySlugOnly(slug);
   if (!routeMappingResult.success || !routeMappingResult.data) {
+    const kbArticleResult = await getKbArticleBySlug(slug);
+
+    if (kbArticleResult.success && kbArticleResult.data) {
+      return noindexMetadata(slug);
+    }
+
     return {
       title: `${slug} | NursingMocks`,
       description: `Content for ${slug}`,
@@ -1031,6 +1045,11 @@ export async function generateMetadata({
   }
 
   const mapping = routeMappingResult.data as any;
+
+  if (mapping.refPath && String(mapping.refPath).startsWith("knowledgeBase/")) {
+    return noindexMetadata(slug);
+  }
+
   const contentResult = await getPageByContentPath(mapping.refPath);
 
   if (contentResult.success && contentResult.data) {

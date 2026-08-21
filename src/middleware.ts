@@ -1,7 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const ATI_TEAS_INDEXABLE_SETS = [1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-const ATI_TEAS_SUBJECT_SLUGS = ["english", "reading", "science", "math"];
 const ATI_TEAS_PARENT_CANONICAL_PATH = "/ati-teas-practice-test";
 const ATI_TEAS_PARENT_LEGACY_PATHS = new Set([
   "/teas-7-practice",
@@ -14,38 +12,37 @@ const ATI_TEAS_SUBJECT_LEGACY_PATHS: Record<string, string> = {
   "/teas-english-practice-test": "/ati-teas-english-practice-test",
 };
 
-const ATI_TEAS_QUIZ_PATHS = ATI_TEAS_SUBJECT_SLUGS.flatMap((subject) =>
-  ATI_TEAS_INDEXABLE_SETS.map((setNumber) => `/teas-${subject}-practice-test-set-${setNumber}`)
-);
-
-const INDEXABLE_PATHS = new Set([
-  "/",
-  "/about",
-  "/contact",
-  "/guarantees",
-  "/prices",
-  "/money-back-guarantee",
-  "/terms-and-conditions",
-  "/privacy-policy",
-  "/cookie-policy",
-  "/register",
-  "/login",
-  "/forgot-password",
-  "/reset-password",
-  "/onboarding",
-  "/thank-you",
-  ATI_TEAS_PARENT_CANONICAL_PATH,
-  "/ati-teas-reading-practice-test",
-  "/ati-teas-math-practice-test",
-  "/ati-teas-science-practice-test",
-  "/ati-teas-english-practice-test",
-  ...ATI_TEAS_QUIZ_PATHS,
+const NOINDEX_EXACT_PATHS = new Set([
+  "/dashboard",
+  "/profile",
+  "/payments",
+  "/progress-reports",
+  "/referrals",
+  "/documentation",
+  "/tiptap",
+  "/typography",
+  "/serviceIdTest",
 ]);
+
+const NOINDEX_PREFIXES = [
+  "/admin",
+  "/dashboard/",
+  "/profile/",
+  "/payments/",
+  "/progress-reports/",
+  "/referrals/",
+  "/knowledge-base/",
+  "/serviceIdTest/",
+];
 
 const normalizePathname = (pathname: string) => {
   if (pathname === "/") return pathname;
   return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
 };
+
+const shouldNoindex = (pathname: string) =>
+  NOINDEX_EXACT_PATHS.has(pathname) ||
+  NOINDEX_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
 export function middleware(request: NextRequest) {
   const pathname = normalizePathname(request.nextUrl.pathname.replace(/\/{2,}/g, "/"));
@@ -62,9 +59,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(canonicalSubjectPath, request.url), 308);
   }
 
-  // Google must be allowed to crawl a page before it can see this noindex signal.
   const response = NextResponse.next();
-  if (!INDEXABLE_PATHS.has(pathname)) {
+  if (shouldNoindex(pathname)) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Editor } from "@tiptap/react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Bold,
   Italic,
@@ -54,13 +54,13 @@ export default function Toolbar({ editor }: ToolbarProps) {
     { label: "Red", value: "#b91c1c", swatch: "#b91c1c" },
   ];
 
-  const getDocumentStats = () => {
+  const getDocumentStats = useCallback(() => {
     const text = editor.getText().trim();
     return {
       words: text ? text.split(/\s+/).filter(Boolean).length : 0,
       characters: text.replace(/\s/g, "").length,
     };
-  };
+  }, [editor]);
 
   const cleanPastedContent = () => {
     const parser = new DOMParser();
@@ -138,7 +138,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
     return () => {
       editor.off("update", updateStats);
     };
-  }, [editor]);
+  }, [editor, getDocumentStats]);
 
   if (!editor) {
     return null;
@@ -747,4 +747,3 @@ export default function Toolbar({ editor }: ToolbarProps) {
     </>
   );
 }
-

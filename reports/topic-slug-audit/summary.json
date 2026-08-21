@@ -1,0 +1,24 @@
+{
+  "topicDocuments": 88,
+  "topicRouteMappings": 87,
+  "duplicateTopicDocumentSlugGroups": 0,
+  "duplicateTopicRouteSlugGroups": 0,
+  "topicsMissingSlug": 0,
+  "topicRoutesMissingSlug": 0,
+  "topicDocsWithoutRoute": 1,
+  "topicRoutesWithoutTopic": [],
+  "duplicateTopicDocumentSlugs": [],
+  "duplicateTopicRouteSlugs": [],
+  "topicsWithoutRoute": [
+    {
+      "subPage": "RN Exams",
+      "nestedPage": "HESI RN Exams",
+      "topicId": "70YsvvAfpEoWkJ2zO8Vy",
+      "topicName": "Fundamentals",
+      "slug": "hesi-rn-fundamentals-practice-questions",
+      "quizCount": 16,
+      "questionCount": 838,
+      "path": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/70YsvvAfpEoWkJ2zO8Vy"
+    }
+  ]
+}

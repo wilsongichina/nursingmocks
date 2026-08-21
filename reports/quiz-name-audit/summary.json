@@ -1,0 +1,560 @@
+{
+  "generatedAt": "2026-08-21T01:50:06.373Z",
+  "totalQuizzes": 903,
+  "exactTitleDuplicateGroups": 0,
+  "exactTitleDuplicateRows": 0,
+  "exactSlugDuplicateGroups": 0,
+  "exactSlugDuplicateRows": 0,
+  "normalizedTitleDuplicateGroups": 75,
+  "normalizedTitleDuplicateRows": 307,
+  "similarTitleCandidatePairs": 1150,
+  "outputRoot": "C:\\Users\\wilso\\OneDrive\\Desktop\\nursingmocks\\NursingMocksProject\\reports\\quiz-name-audit",
+  "topExactTitleGroups": [],
+  "topNormalizedGroups": [
+    {
+      "key": "teas reading",
+      "count": 14,
+      "titles": [
+        "TEAS Reading Practice Test Set 2",
+        "TEAS Reading Practice Test Set 10",
+        "TEAS Reading Practice Test Set 12",
+        "TEAS Reading Practice Test Set 6",
+        "TEAS Reading Practice Test Set 13",
+        "TEAS Reading Practice Test Set 8",
+        "TEAS Reading Practice Test Set 15",
+        "TEAS Reading Practice Test Set 7",
+        "TEAS Reading Practice Test Set 9",
+        "TEAS Reading Practice Test Set 1"
+      ]
+    },
+    {
+      "key": "teas math",
+      "count": 14,
+      "titles": [
+        "TEAS Math Practice Test Set 13",
+        "TEAS Math Practice Test Set 1",
+        "TEAS Math Practice Test Set 2",
+        "TEAS Math Practice Test Set 3",
+        "TEAS Math Practice Test Set 16",
+        "TEAS Math Practice Test Set 14",
+        "TEAS Math Practice Test Set 9",
+        "TEAS Math Practice Test Set 15",
+        "TEAS Math Practice Test Set 12",
+        "TEAS Math Practice Test Set 7"
+      ]
+    },
+    {
+      "key": "teas science",
+      "count": 14,
+      "titles": [
+        "TEAS Science Practice Test Set 13",
+        "TEAS Science Practice Test Set 9",
+        "TEAS Science Practice Test Set 10",
+        "TEAS Science Practice Test Set 11",
+        "TEAS Science Practice Test Set 3",
+        "TEAS Science Practice Test Set 1",
+        "TEAS Science Practice Test Set 6",
+        "TEAS Science Practice Test Set 16",
+        "TEAS Science Practice Test Set 12",
+        "TEAS Science Practice Test Set 7"
+      ]
+    },
+    {
+      "key": "teas english",
+      "count": 14,
+      "titles": [
+        "TEAS English Practice Test Set 15",
+        "TEAS English Practice Test Set 6",
+        "TEAS English Practice Test Set 2",
+        "TEAS English Practice Test Set 14",
+        "TEAS English Practice Test Set 8",
+        "TEAS English Practice Test Set 12",
+        "TEAS English Practice Test Set 1",
+        "TEAS English Practice Test Set 7",
+        "TEAS English Practice Test Set 3",
+        "TEAS English Practice Test Set 9"
+      ]
+    },
+    {
+      "key": "rn comprehensive predictor",
+      "count": 2,
+      "titles": [
+        "RN Comprehensive Predictor Proctored Exam",
+        "RN Comprehensive Predictor 2023 Proctored Exam"
+      ]
+    },
+    {
+      "key": "ati rn comprehensive predictor",
+      "count": 2,
+      "titles": [
+        "ATI RN Comprehensive Predictor 2023 Retake 1 Proctored Exam",
+        "ATI RN Comprehensive Predictor 2023 Proctored Exam"
+      ]
+    },
+    {
+      "key": "hesi pn exit",
+      "count": 2,
+      "titles": [
+        "HESI PN Exit Proctored Exam",
+        "HESI PN Exit 2023 Proctored Exam"
+      ]
+    },
+    {
+      "key": "ati lpn comprehensive predictor",
+      "count": 2,
+      "titles": [
+        "ATI LPN Comprehensive Predictor 2023 Proctored Exam",
+        "ATI LPN Comprehensive Predictor Proctored Exam"
+      ]
+    },
+    {
+      "key": "hesi rn health assessment",
+      "count": 8,
+      "titles": [
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 3",
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 12",
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 4",
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 15",
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 10",
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 9",
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 13",
+        "HESI RN Health Assessment Proctored Exam Practice Questions - Set 7"
+      ]
+    },
+    {
+      "key": "hesi rn nursing research",
+      "count": 3,
+      "titles": [
+        "HESI RN Nursing Research Proctored Exam Practice Questions - Set 1",
+        "HESI RN Nursing Research Proctored Exam Practice Questions - Set 2",
+        "HESI RN Nursing Research Proctored Exam Practice Questions - Set 4"
+      ]
+    },
+    {
+      "key": "hesi rn fundamentals",
+      "count": 5,
+      "titles": [
+        "HESI RN Fundamentals Proctored Exam Practice Questions - Set 1",
+        "HESI RN Fundamentals Proctored Exam Practice Questions - Set 4",
+        "HESI RN Fundamentals Practice Questions",
+        "HESI RN Fundamentals Proctored Exam Practice Questions - Set 6",
+        "HESI RN Fundamentals Proctored Exam Practice Questions - Set 5"
+      ]
+    },
+    {
+      "key": "hesi rn foundation of nursing",
+      "count": 3,
+      "titles": [
+        "HESI RN Foundation of Nursing Proctored Exam Practice Questions - Set 1",
+        "HESI RN Foundation of Nursing Proctored Exam Practice Questions - Set 2",
+        "HESI RN Foundation of Nursing Proctored Exam Practice Questions - Set 5"
+      ]
+    },
+    {
+      "key": "hesi rn maternal newborn",
+      "count": 2,
+      "titles": [
+        "HESI RN Maternal Newborn Proctored Exam Practice Questions - Set 4",
+        "HESI RN Maternal Newborn Proctored Exam Practice Questions - Set 3"
+      ]
+    },
+    {
+      "key": "hesi rn med surg 3",
+      "count": 2,
+      "titles": [
+        "HESI RN Med Surg Proctored Exam 3 Practice Questions",
+        "HESI RN Med-Surg 3 Proctored Exam Practice Questions"
+      ]
+    },
+    {
+      "key": "hesi rn medical surgical",
+      "count": 4,
+      "titles": [
+        "HESI RN Medical Surgical Proctored Exam Practice Questions - Set 20",
+        "HESI RN Medical Surgical Proctored Exam Practice Questions - Set 15",
+        "HESI RN Medical Surgical Proctored Exam Practice Questions - Set 10",
+        "HESI RN Medical Surgical Proctored Exam Practice Questions - Set 19"
+      ]
+    },
+    {
+      "key": "hesi rn med surg 2",
+      "count": 2,
+      "titles": [
+        "HESI RN Med Surg Proctored Exam 2 Practice Questions",
+        "HESI RN Med Surg 2 Proctored Exam Practice Questions"
+      ]
+    },
+    {
+      "key": "hesi rn med surg",
+      "count": 3,
+      "titles": [
+        "HESI RN Med Surg Proctored Exam Practice Questions - Set 17",
+        "HESI RN Med Surg Proctored Exam Practice Questions - Set 11",
+        "HESI RN Med Surg Proctored Exam Practice Questions - Set 18"
+      ]
+    },
+    {
+      "key": "hesi rn dosage calculation",
+      "count": 5,
+      "titles": [
+        "HESI RN Dosage Calculation Proctored Exam Practice Questions - Set 11",
+        "HESI RN Dosage Calculation Proctored Exam Practice Questions - Set 1",
+        "HESI RN Dosage Calculation Proctored Exam Practice Questions - Set 4",
+        "HESI RN Dosage Calculation Proctored Exam Practice Questions - Set 6",
+        "HESI RN Dosage Calculation Proctored Exam Practice Questions - Set 2"
+      ]
+    },
+    {
+      "key": "hesi rn dosage calculations",
+      "count": 2,
+      "titles": [
+        "HESI RN Dosage Calculations Proctored Exam Practice Questions - Set 3",
+        "HESI RN Dosage Calculations Proctored Exam Practice Questions - Set 15"
+      ]
+    },
+    {
+      "key": "hesi rn pharmacology",
+      "count": 6,
+      "titles": [
+        "HESI RN Pharmacology Proctored Exam Practice Questions - Set 18",
+        "HESI RN Pharmacology Proctored Exam Practice Questions - Set 14",
+        "HESI RN Pharmacology Proctored Exam Practice Questions - Set 4",
+        "HESI RN Pharmacology Proctored Exam Practice Questions - Set 21",
+        "HESI RN Pharmacology Proctored Exam Practice Questions - Set 11",
+        "HESI RN Pharmacology Proctored Exam Practice Questions - Set 1"
+      ]
+    }
+  ],
+  "topSimilarCandidates": [
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 13",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-13",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/KwnwfkaWsIjiJvvIGfci"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 6",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-6",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/Px3PmFCkzXu2KYNRos9R"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 2",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-2",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/SO2IjWgQx9QmtSofyYfP"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "LPN Anatomy and Physiology Proctored Exam Practice Questions",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "lpn-anatomy-and-physiology-proctored-exam-practice-questions",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/obLgG1dl2HKxhBWFu5sv"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 5",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-5",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/shHudszIJhQYLSh7McFo"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 2",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-2",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/BQt862kmRN23DCkh3PyI"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 3",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-3",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/BjFkdXJGYGg1TurUdCIg"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 7",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-7",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/M9QU2W6AbvrmWM9FUtnK"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 4",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-4",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/SPRE7aJa8YoN3Rvy1hGn"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 1",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-1",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/vEV3Ov1JMHdvu8tEE8Fx"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy & Physiology Proctored Exam Practice Questions",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 6",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-6",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/3HV99peZlDL74vJR9KKW",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/wnLgyB05a8GIdCTdb6rd"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 2",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-2",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/BQt862kmRN23DCkh3PyI"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 3",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-3",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/BjFkdXJGYGg1TurUdCIg"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 7",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-7",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/M9QU2W6AbvrmWM9FUtnK"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 4",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-4",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/SPRE7aJa8YoN3Rvy1hGn"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 1",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-1",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/vEV3Ov1JMHdvu8tEE8Fx"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 6",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-6",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/wnLgyB05a8GIdCTdb6rd"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 13",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-13",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/KwnwfkaWsIjiJvvIGfci"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 6",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-6",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/Px3PmFCkzXu2KYNRos9R"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 2",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-2",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/SO2IjWgQx9QmtSofyYfP"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "LPN Anatomy and Physiology Proctored Exam Practice Questions",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "lpn-anatomy-and-physiology-proctored-exam-practice-questions",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/obLgG1dl2HKxhBWFu5sv"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 5",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-5",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/shHudszIJhQYLSh7McFo"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "Anatomy and Physiology Proctored Exam Practice Questions - Set 10",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "anatomy-and-physiology-proctored-exam-practice-questions-set-10",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/xgzVBGqVgEjv1E2j4904"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 2",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-2",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/BQt862kmRN23DCkh3PyI"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 3",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-3",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/BjFkdXJGYGg1TurUdCIg"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 7",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-7",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/M9QU2W6AbvrmWM9FUtnK"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 4",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-4",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/SPRE7aJa8YoN3Rvy1hGn"
+    },
+    {
+      "similarity": "1.000",
+      "quizTitleA": "Anatomy and Physiology Proctored Exam Practice Questions - Set 12",
+      "quizTitleB": "ATI PN Anatomy and Physiology Proctored Exam Practice Questions - Set 1",
+      "slugA": "anatomy-and-physiology-proctored-exam-practice-questions-set-12",
+      "slugB": "ati-pn-anatomy-and-physiology-proctored-exam-practice-questions-set-1",
+      "locationA": "RN Exams > RN Nursing Course Exams > Anatomy and Physiology",
+      "locationB": "LPN Exams > ATI LPN Exams > Anatomy and Physiology",
+      "pathA": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/zMFBI0XMiRsJnnXWhL5S/topics/PavJlfHXwXRUhopKAOO9/quizzes/6Bcl2LsmOPp4H20jNiDO",
+      "pathB": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/j5H2Ra9IgckkioC7vNSj/quizzes/vEV3Ov1JMHdvu8tEE8Fx"
+    }
+  ]
+}

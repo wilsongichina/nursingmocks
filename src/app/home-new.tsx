@@ -153,11 +153,11 @@ export default function NewHomePage() {
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">LPN</div>
                   <div>
-                    <Link href="/nursing-test-bank/lpn/ati" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/ati-lpn-exams" className="block py-0.5 text-[13px] text-[#4f46e5]">
                       <strong>ATI – LPN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">Fundamentals, med-surg, pharm &amp; more</small>
                     </Link>
-                    <Link href="/nursing-test-bank/lpn/hesi" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/hesi-lpn-exams" className="block py-0.5 text-[13px] text-[#4f46e5]">
                       <strong>HESI – LPN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">Core modules &amp; practice sets</small>
                     </Link>
@@ -166,11 +166,11 @@ export default function NewHomePage() {
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">RN</div>
                   <div>
-                    <Link href="/nursing-test-bank/rn/ati" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/ati-rn-exams" className="block py-0.5 text-[13px] text-[#4f46e5]">
                       <strong>ATI – RN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">Predictor-style question groups</small>
                     </Link>
-                    <Link href="/nursing-test-bank/rn/hesi" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/hesi-rn-exams" className="block py-0.5 text-[13px] text-[#4f46e5]">
                       <strong>HESI – RN Test Bank</strong>
                       <small className="block text-[11px] text-[#6b7280]">RN modules &amp; review sets</small>
                     </Link>
@@ -196,11 +196,11 @@ export default function NewHomePage() {
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">LPN</div>
                   <div>
-                    <Link href="/nursing-exit-exams/ati-lpn" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/ati-lpn-comprehensive-predictor" className="block py-0.5 text-[13px] text-[#4f46e5]">
                         <strong>ATI – LPN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">End-of-program blueprints</small>
                     </Link>
-                    <Link href="/nursing-exit-exams/hesi-lpn" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/hesi-lpn-exit-exam" className="block py-0.5 text-[13px] text-[#4f46e5]">
                         <strong>HESI – LPN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">Exit-style mock exams</small>
                     </Link>
@@ -209,11 +209,11 @@ export default function NewHomePage() {
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">RN</div>
                   <div>
-                    <Link href="/nursing-exit-exams/ati-rn" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/ati-rn-comprehensive-predictor" className="block py-0.5 text-[13px] text-[#4f46e5]">
                         <strong>ATI – RN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">Comprehensive predictor-style sets</small>
                     </Link>
-                    <Link href="/nursing-exit-exams/hesi-rn" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/hesi-rn-exit-exam" className="block py-0.5 text-[13px] text-[#4f46e5]">
                         <strong>HESI – RN Exit Exams</strong>
                       <small className="block text-[11px] text-[#6b7280]">Exit readiness practice</small>
                     </Link>
@@ -222,7 +222,7 @@ export default function NewHomePage() {
               </div>
               <div className="flex items-center justify-between mt-1 text-xs text-[#6b7280]">
                 <span><strong className="text-[#111827]">Use this for:</strong> final semester &amp; graduation</span>
-                <Link href="/nursing-exit-exams" className="rounded-full px-2.5 py-1 text-[11px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
+                <Link href="/nursing-exit-exam" className="rounded-full px-2.5 py-1 text-[11px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
                   View Nursing Exit Exam Prep
                 </Link>
               </div>
@@ -239,7 +239,7 @@ export default function NewHomePage() {
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">ATI</div>
                   <div>
-                    <Link href="/ati-teas" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/ati-teas-practice-test" className="block py-0.5 text-[13px] text-[#4f46e5]">
                       <strong>ATI TEAS</strong>
                       <small className="block text-[11px] text-[#6b7280]">Reading, math, science, English</small>
                     </Link>
@@ -248,7 +248,7 @@ export default function NewHomePage() {
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">HESI A2</div>
                   <div>
-                    <Link href="/hesi-a2" className="block py-0.5 text-[13px] text-[#4f46e5]">
+                    <Link href="/hesi-a2-practice-test" className="block py-0.5 text-[13px] text-[#4f46e5]">
                       <strong>HESI A2</strong>
                       <small className="block text-[11px] text-[#6b7280]">Vocab, math, A&amp;P, grammar, biology</small>
                     </Link>
@@ -257,7 +257,7 @@ export default function NewHomePage() {
               </div>
               <div className="flex items-center justify-between mt-1 text-xs text-[#6b7280]">
                 <span><strong className="text-[#111827]">Use this for:</strong> nursing school admission</span>
-                <Link href="/nursing-entrance-exams" className="rounded-full px-2.5 py-1 text-[11px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
+                <Link href="/nursing-entrance-exam" className="rounded-full px-2.5 py-1 text-[11px] border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center">
                   Start Nursing Entrance Exam Prep
                 </Link>
               </div>
@@ -395,7 +395,7 @@ export default function NewHomePage() {
                       <span className="px-2 py-1 rounded-full bg-[#e0e7ff] text-[#312e81]">English · 37 questions</span>
                     </div>
                     <Link
-                      href="/ati-teas/practice-test-free"
+                      href="/ati-teas-practice-test"
                       className="mb-1 rounded-full px-4 py-2.5 text-sm border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center"
                     >
                       Start free ATI TEAS practice test
@@ -443,7 +443,7 @@ export default function NewHomePage() {
                       <span className="px-2 py-1 rounded-full bg-[#e0e7ff] text-[#312e81]">A&amp;P / biology · 40 questions</span>
                     </div>
                     <Link
-                      href="/hesi-a2/diagnostic-practice-test"
+                      href="/hesi-a2-practice-test"
                       className="mb-1 rounded-full px-4 py-2.5 text-sm border border-[#d1d5db] bg-transparent text-[#374151] hover:bg-[#111827] hover:border-[#111827] hover:text-[#f9fafb] transition-all inline-flex items-center justify-center"
                     >
                       Start HESI A2 diagnostic

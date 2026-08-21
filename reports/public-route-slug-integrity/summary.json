@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-08-21T12:25:32.211Z",
+  "routeMappings": 1055,
+  "targetDocs": 1050,
+  "slugCollisionRows": 0,
+  "slugCollisionGroups": 0,
+  "targetSlugCollisionRows": 0,
+  "targetSlugCollisionGroups": 0,
+  "staleRoutes": 0,
+  "missingRoutes": 0,
+  "typeMismatches": 0,
+  "targetSlugMismatches": 0,
+  "missingRouteSlugs": 0,
+  "outputDir": "C:\\Users\\wilso\\OneDrive\\Desktop\\nursingmocks\\NursingMocksProject\\reports\\public-route-slug-integrity"
+}

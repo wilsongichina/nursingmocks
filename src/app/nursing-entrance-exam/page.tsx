@@ -59,18 +59,18 @@ export default function NursingEntranceExamPage() {
 
                 <div className="flex flex-wrap gap-3 mb-5">
                   <Link
-                    href="/register"
+                    href="/ati-teas-practice-test"
                     className="rounded-full px-6 py-3 text-sm border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/50 flex items-center gap-2 hover:brightness-105 transition-all"
                   >
                     <span className="text-[1.05rem] translate-y-[1px]">➤</span>
-                    Start ATI TEAS Prep
+                    Start ATI TEAS 7 Practice Test
                   </Link>
                   <Link
-                    href="/register"
+                    href="/hesi-a2-practice-test"
                     className="rounded-full px-5 py-3 text-sm border border-slate-300 bg-white/95 text-gray-900 font-medium flex items-center gap-2 hover:bg-white transition-all"
                   >
                     <span className="text-base opacity-75">⟲</span>
-                    Explore HESI A2 Practice
+                    Browse HESI A2 Practice Tests
                   </Link>
                 </div>
 
@@ -245,18 +245,18 @@ export default function NursingEntranceExamPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        href="/register"
+                        href="/ati-teas-practice-test"
                         className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
                       >
-                        <span>Start TEAS Practice</span>
+                        <span>Open ATI TEAS Practice Test Hub</span>
                         <span>➜</span>
                       </Link>
                       <Link
-                        href="/register"
+                        href="/ati-teas-reading-practice-test"
                         className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
                       >
                         <span className="opacity-70">👁</span>
-                        View TEAS Question Sets
+                        View ATI TEAS Reading Question Sets
                       </Link>
                     </div>
                   </div>
@@ -336,18 +336,18 @@ export default function NursingEntranceExamPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        href="/register"
+                        href="/hesi-a2-practice-test"
                         className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
                       >
-                        <span>Start HESI A2 Practice</span>
+                        <span>Open HESI A2 Practice Test Hub</span>
                         <span>➜</span>
                       </Link>
                       <Link
-                        href="/register"
+                        href="/hesi-a2-reading-comprehension-practice-test"
                         className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
                       >
                         <span className="opacity-70">📁</span>
-                        View HESI Question Sets
+                        View HESI A2 Reading Question Sets
                       </Link>
                     </div>
                   </div>

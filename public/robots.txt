@@ -1,44 +1,18 @@
 User-agent: *
 
-# Public SEO pages
-Allow: /$
-Allow: /about$
-Allow: /contact$
-Allow: /guarantees$
-Allow: /prices$
-Allow: /money-back-guarantee$
-Allow: /terms-and-conditions$
-Allow: /privacy-policy$
-Allow: /cookie-policy$
+# Public pages are crawlable by default.
+Allow: /
 
-# Public practice-test pages
-Allow: /ati-teas-practice-test$
-Allow: /ati-teas-reading-practice-test$
-Allow: /ati-teas-math-practice-test$
-Allow: /ati-teas-science-practice-test$
-Allow: /ati-teas-english-practice-test$
-Allow: /teas-7-practice$
-Allow: /teas-7-practice-test$
-Allow: /teas-reading-practice-test$
-Allow: /teas-math-practice-test$
-Allow: /teas-science-practice-test$
-Allow: /teas-english-practice-test$
-Allow: /teas-english-practice-test-set-
-Allow: /teas-reading-practice-test-set-
-Allow: /teas-science-practice-test-set-
-Allow: /teas-math-practice-test-set-
+# Keep private/admin application areas out of search.
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /payments/
+Disallow: /progress-reports/
+Disallow: /referrals/
+Disallow: /serviceIdTest/
 
-# Files needed for crawling and rendering
-Allow: /robots.txt$
-Allow: /llms.txt$
-Allow: /sitemap.xml$
-Allow: /_next/static/
-Allow: /_next/image
-Allow: /favicon.ico$
-Allow: /favicon.png$
-Allow: /nursing-mocks-logo.png$
-
-# Block everything not explicitly allowed
-Disallow: /
+# KB article pages are noindexed in page metadata / X-Robots where applicable.
+# Do not block them here, because crawlers need access to see the noindex directive.
 
 Sitemap: https://www.nursingmocks.com/sitemap.xml

@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-08-21T12:24:28.405Z",
+  "auditedRoutes": 1055,
+  "issueRows": 0,
+  "missingTitle": 0,
+  "missingDescription": 0,
+  "missingCanonical": 0,
+  "canonicalMismatch": 0,
+  "missingSchema": 0,
+  "invalidSchema": 0,
+  "outputDir": "C:\\Users\\wilso\\OneDrive\\Desktop\\nursingmocks\\NursingMocksProject\\reports\\sitewide-meta-schema-audit",
+  "note": "Quiz pages without stored schema are treated as valid because [slug] generates quiz schema at render time."
+}

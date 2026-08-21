@@ -1,0 +1,126 @@
+{
+  "startedAt": "2026-08-21T02:13:28.454Z",
+  "deletedStaleRoutes": [
+    {
+      "id": "0n7vosKgXdCBLJAHLKw8",
+      "slug": "hesi-rn-mental-health-2023-proctored-exam-practice-questions-set-2",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/nWHmcLCOYFPkjaWIHcVu/quizzes/ZMkrDGLtgwa2laIGKBot"
+    },
+    {
+      "id": "6O3du8rPwk0QEmMnsrPe",
+      "slug": "hesi-rn-fundamentals-practice-questions-set-10",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/70YsvvAfpEoWkJ2zO8Vy/quizzes/lX1xSsrFKcqRfb32Pgfd"
+    },
+    {
+      "id": "IJfr8ER7Qq4s8vkYEe7m",
+      "slug": "hesi-rn-med-surg-proctored-exam-2-practice-questions-set-8",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/aS23yuUD7OS39aVVutYn/quizzes/SInpQCk5s8Amn587o8h5"
+    },
+    {
+      "id": "KR7cdemIQ1ui0eOP7iEG",
+      "slug": "hesi-rn-medical-surgical-hesi-proctored-exam-practice-questions-set-20",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/aS23yuUD7OS39aVVutYn/quizzes/okuJtuVXfZCTn74SQ0Ae"
+    },
+    {
+      "id": "ZLpT1DKwRqh0lFhzVCIp",
+      "slug": "hesi-rn-med-surg-2-proctored-exam-practice-questions-set-4",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/aS23yuUD7OS39aVVutYn/quizzes/vYKaltvA2lRIm5sVvEho"
+    },
+    {
+      "id": "ZMWV6K0lPvK1hmxUPQ5d",
+      "slug": "nightdale-college-hesi-rn-exam-fundamental-of-nursing-proctored-exam-1-practice-questions",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/70YsvvAfpEoWkJ2zO8Vy/quizzes/BuNYK3GE8iovCayFNzaZ"
+    },
+    {
+      "id": "ezERS504bbIu9v5v2U1d",
+      "slug": "hesi-rn-medical-surgical-hesi-proctored-exam-practice-questions-set-19",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/aS23yuUD7OS39aVVutYn/quizzes/eJyIOY2BD8ndUJ41j7qp"
+    },
+    {
+      "id": "xKX5FMbpmRv2BFK0v4qQ",
+      "slug": "hesi-rn-care-hope-mental-health-hesi-proctored-exam-practice-questions",
+      "refPath": "pillarPages/nursing-test-bank/subPages/SuT1noZoNGEjKGR1vTbi/nestedSubPages/iT55qp9NAFOvZLBAiQzC/topics/nWHmcLCOYFPkjaWIHcVu/quizzes/ImjfJgG7pylDXEo3LCMG"
+    }
+  ],
+  "deletedOrphanQuizzes": [
+    {
+      "path": "pillarPages/nursing-entrance-exam/subPages/d4jvIv2oBRfTfVpfWsRs/nestedSubPages/VlN6w0p5IaKfukWMqYjB/quizzes/BMHjXN4x9HcqIxAeYtxF",
+      "slug": "ati-teas-nested-sub-page-exam",
+      "title": "ATI TEAS Nested Sub Page Exam",
+      "questionCount": 0
+    },
+    {
+      "path": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu",
+      "slug": "set-1",
+      "title": "Set 1",
+      "questionCount": ""
+    },
+    {
+      "path": "pillarPages/nursing-entrance-exam/subPages/zJycvVhmofAy1ETc14ax/nestedSubPages/wAWyM6UOhxmKEU6bbSaL/quizzes/JAfPIoFFUqT2ziqtrjD8",
+      "slug": "teas-reading-test-test-1",
+      "title": "TEAS Reading Test Test 1",
+      "questionCount": 0
+    }
+  ],
+  "deletedQuestionDocs": [
+    {
+      "label": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu",
+      "id": "59253723",
+      "path": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu/questions/59253723"
+    },
+    {
+      "label": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu",
+      "id": "59266747",
+      "path": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu/questions/59266747"
+    },
+    {
+      "label": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu",
+      "id": "59275467",
+      "path": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu/questions/59275467"
+    },
+    {
+      "label": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu",
+      "id": "59275636",
+      "path": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu/questions/59275636"
+    },
+    {
+      "label": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu",
+      "id": "59276030",
+      "path": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu/questions/59276030"
+    },
+    {
+      "label": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu",
+      "id": "59276061",
+      "path": "pillarPages/nursing-entrance-exam/subPages/tcmOHf0FbAz3ppBAl8hv/nestedSubPages/fxKSy8SJqwL5CvG3kOHx/quizzes/GIYuDBO2AxhHRdnM58mu/questions/59276061"
+    }
+  ],
+  "movedQuizzes": [
+    {
+      "from": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/84LuQWRglNeaT6Etsokn/quizzes/3ctCY4m4antViEUTRNZA",
+      "to": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/NHgx9LFXpsLVcFjsOujF/quizzes/3ctCY4m4antViEUTRNZA",
+      "slug": "ati-pn-med-math-proctored-exam",
+      "title": "Ati pn med math proctored exam",
+      "questionDocs": 50
+    }
+  ],
+  "createdRoutes": [
+    {
+      "id": "jpfzAql1vyjcyG4EaSDw",
+      "slug": "ati-pn-med-math-proctored-exam",
+      "refPath": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/NHgx9LFXpsLVcFjsOujF/quizzes/3ctCY4m4antViEUTRNZA"
+    }
+  ],
+  "updatedCounts": [
+    {
+      "path": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT/topics/NHgx9LFXpsLVcFjsOujF",
+      "quizCountIncrement": 1,
+      "questionCountIncrement": 50
+    },
+    {
+      "path": "pillarPages/nursing-test-bank/subPages/z0xzINtS3EohZNaKosBz/nestedSubPages/lyrHg4RBzN6UafuymMFT",
+      "quizCountIncrement": 1,
+      "questionCountIncrement": 50
+    }
+  ],
+  "finishedAt": "2026-08-21T02:13:42.817Z"
+}

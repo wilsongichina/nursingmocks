@@ -51,18 +51,18 @@ export default function NursingTestBankPage() {
 
                 <div className="flex flex-wrap gap-3 mb-5">
                   <Link
-                    href="/register"
+                    href="/rn-exams"
                     className="rounded-full px-6 py-3 text-sm border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/50 flex items-center gap-2 hover:brightness-105 transition-all"
                   >
                     <span className="text-[1.05rem] translate-y-[1px]">➤</span>
-                    Explore RN Nursing Test Bank
+                    Browse RN Nursing Test Bank Exams
                   </Link>
                   <Link
-                    href="/register"
+                    href="/lpn-exams"
                     className="rounded-full px-5 py-3 text-sm border border-slate-300 bg-white/95 text-gray-900 font-medium flex items-center gap-2 hover:bg-white transition-all"
                   >
                     <span className="text-base opacity-75">⟲</span>
-                    View LPN Nursing Test Bank
+                    Browse LPN Nursing Test Bank Exams
                   </Link>
                 </div>
 
@@ -233,18 +233,18 @@ export default function NursingTestBankPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        href="/register"
+                        href="/rn-exams"
                         className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
                       >
-                        <span>Open RN Nursing Test Bank</span>
+                        <span>Open RN Nursing Test Bank Hub</span>
                         <span>➜</span>
                       </Link>
                       <Link
-                        href="/register"
+                        href="/ati-rn-exams"
                         className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
                       >
                         <span className="opacity-70">📁</span>
-                        View RN Subjects And Sets
+                        View ATI RN Exam Topics
                       </Link>
                     </div>
                   </div>
@@ -320,18 +320,18 @@ export default function NursingTestBankPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        href="/register"
+                        href="/lpn-exams"
                         className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
                       >
-                        <span>Open LPN Nursing Test Bank</span>
+                        <span>Open LPN Nursing Test Bank Hub</span>
                         <span>➜</span>
                       </Link>
                       <Link
-                        href="/register"
+                        href="/ati-lpn-exams"
                         className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
                       >
                         <span className="opacity-70">👁</span>
-                        View LPN Subjects And Sets
+                        View ATI LPN Exam Topics
                       </Link>
                     </div>
                   </div>

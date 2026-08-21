@@ -61,7 +61,7 @@ export default function NewHeader() {
                 onMouseLeave={() => setHoveredDropdown(null)}
               >
                 <Link
-                  href="#"
+                  href="/nursing-entrance-exam"
                   className="inline-flex items-center gap-1 py-[0.35rem] font-medium text-[#111827] no-underline uppercase tracking-[0.08em] hover:text-[#4f46e5] transition-colors"
                   style={{ fontSize: "0.8rem", padding: "0.35rem 0" }}
                 >
@@ -99,7 +99,7 @@ export default function NewHeader() {
                           <ul className="list-none">
                             <li>
                               <Link
-                                href="/ati-teas/reading"
+                                href="/ati-teas-reading-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -111,7 +111,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/ati-teas/math"
+                                href="/ati-teas-math-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -123,7 +123,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/ati-teas/science"
+                                href="/ati-teas-science-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -135,7 +135,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/ati-teas/english-and-language-usage"
+                                href="/ati-teas-english-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -159,7 +159,7 @@ export default function NewHeader() {
                           <ul className="list-none">
                             <li>
                               <Link
-                                href="/hesi-a2/reading-comprehension"
+                                href="/hesi-a2-reading-comprehension-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -171,7 +171,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/hesi-a2/vocabulary-and-general-knowledge"
+                                href="/hesi-a2-vocabulary-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -183,7 +183,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/hesi-a2/grammar"
+                                href="/hesi-a2-grammar-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -195,7 +195,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/hesi-a2/basic-math-skills"
+                                href="/hesi-a2-math-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -207,7 +207,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/hesi-a2/biology"
+                                href="/hesi-a2-biology-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -219,7 +219,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/hesi-a2/anatomy-and-physiology"
+                                href="/hesi-a2-anatomy-and-physiology-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -231,7 +231,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/hesi-a2/chemistry"
+                                href="/hesi-a2-chemistry-practice-test"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -256,7 +256,7 @@ export default function NewHeader() {
                 onMouseLeave={() => setHoveredDropdown(null)}
               >
                 <Link
-                  href="#"
+                  href="/nursing-test-bank"
                   className="inline-flex items-center gap-1 text-[#111827] no-underline uppercase tracking-[0.08em] hover:text-[#4f46e5] transition-colors"
                   style={{
                     fontSize: "0.8rem",
@@ -285,7 +285,7 @@ export default function NewHeader() {
                           <ul className="list-none">
                             <li>
                               <Link
-                                href="/nursing-test-bank/rn/ati"
+                                href="/ati-rn-exams"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -297,7 +297,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/nursing-test-bank/rn/hesi"
+                                href="/hesi-rn-exams"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -316,7 +316,7 @@ export default function NewHeader() {
                           <ul className="list-none">
                             <li>
                               <Link
-                                href="/nursing-test-bank/lpn/ati"
+                                href="/ati-lpn-exams"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -328,7 +328,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/nursing-test-bank/lpn/hesi"
+                                href="/hesi-lpn-exams"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -353,7 +353,7 @@ export default function NewHeader() {
                 onMouseLeave={() => setHoveredDropdown(null)}
               >
                 <Link
-                  href="#"
+                  href="/nursing-exit-exam"
                   className="inline-flex items-center gap-1 text-[#111827] no-underline uppercase tracking-[0.08em] hover:text-[#4f46e5] transition-colors"
                   style={{
                     fontSize: "0.8rem",
@@ -382,7 +382,7 @@ export default function NewHeader() {
                           <ul className="list-none">
                             <li>
                               <Link
-                                href="/nursing-exit-exams/ati-comprehensive-predictor"
+                                href="/ati-rn-comprehensive-predictor"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -394,7 +394,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/nursing-exit-exams/hesi-exit-exam"
+                                href="/hesi-rn-exit-exam"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -413,7 +413,7 @@ export default function NewHeader() {
                           <ul className="list-none">
                             <li>
                               <Link
-                                href="/nursing-exit-exams/ati-lpn"
+                                href="/ati-lpn-comprehensive-predictor"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -425,7 +425,7 @@ export default function NewHeader() {
                             </li>
                             <li>
                               <Link
-                                href="/nursing-exit-exams/hesi-lpn"
+                                href="/hesi-lpn-exit-exam"
                                 className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors"
                                 style={{
                                   padding: "0.28rem 0.3rem",
@@ -450,7 +450,7 @@ export default function NewHeader() {
                 onMouseLeave={() => setHoveredDropdown(null)}
               >
                 <Link
-                  href="#"
+                  href="/pricing"
                   className="inline-flex items-center gap-1 text-[#111827] no-underline uppercase tracking-[0.08em] hover:text-[#4f46e5] transition-colors"
                   style={{
                     fontSize: "0.8rem",
@@ -682,7 +682,7 @@ export default function NewHeader() {
                   <ul className="space-y-0.5">
                     <li>
                       <Link
-                        href="/ati-teas/reading"
+                        href="/ati-teas-reading-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -692,7 +692,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/ati-teas/math"
+                        href="/ati-teas-math-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -702,7 +702,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/ati-teas/science"
+                        href="/ati-teas-science-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -712,7 +712,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/ati-teas/english-and-language-usage"
+                        href="/ati-teas-english-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -727,7 +727,7 @@ export default function NewHeader() {
                   <ul className="space-y-0.5">
                     <li>
                       <Link
-                        href="/hesi-a2/reading-comprehension"
+                        href="/hesi-a2-reading-comprehension-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -737,7 +737,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/hesi-a2/vocabulary-and-general-knowledge"
+                        href="/hesi-a2-vocabulary-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -747,7 +747,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/hesi-a2/grammar"
+                        href="/hesi-a2-grammar-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -757,7 +757,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/hesi-a2/basic-math-skills"
+                        href="/hesi-a2-math-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -767,7 +767,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/hesi-a2/biology"
+                        href="/hesi-a2-biology-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -777,7 +777,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/hesi-a2/anatomy-and-physiology"
+                        href="/hesi-a2-anatomy-and-physiology-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -787,7 +787,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/hesi-a2/chemistry"
+                        href="/hesi-a2-chemistry-practice-test"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -811,7 +811,7 @@ export default function NewHeader() {
                   <ul className="space-y-0.5">
                     <li>
                       <Link
-                        href="/nursing-test-bank/rn/ati"
+                        href="/ati-rn-exams"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -821,7 +821,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/nursing-test-bank/rn/hesi"
+                        href="/hesi-rn-exams"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -836,7 +836,7 @@ export default function NewHeader() {
                   <ul className="space-y-0.5">
                     <li>
                       <Link
-                        href="/nursing-test-bank/lpn/ati"
+                        href="/ati-lpn-exams"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -846,7 +846,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/nursing-test-bank/lpn/hesi"
+                        href="/hesi-lpn-exams"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -870,7 +870,7 @@ export default function NewHeader() {
                   <ul className="space-y-0.5">
                     <li>
                       <Link
-                        href="/nursing-exit-exams/ati-comprehensive-predictor"
+                        href="/ati-rn-comprehensive-predictor"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -880,7 +880,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/nursing-exit-exams/hesi-exit-exam"
+                        href="/hesi-rn-exit-exam"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -895,7 +895,7 @@ export default function NewHeader() {
                   <ul className="space-y-0.5">
                     <li>
                       <Link
-                        href="/nursing-exit-exams/ati-lpn"
+                        href="/ati-lpn-comprehensive-predictor"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}
@@ -905,7 +905,7 @@ export default function NewHeader() {
                     </li>
                     <li>
                       <Link
-                        href="/nursing-exit-exams/hesi-lpn"
+                        href="/hesi-lpn-exit-exam"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block text-[#0f172a] no-underline rounded-[0.4rem] hover:bg-[#f3f4ff] hover:text-[#4338ca] transition-colors py-1.5 px-2"
                         style={{ fontSize: "0.83rem" }}

@@ -1,0 +1,58 @@
+{
+  "deleted": [
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/EogBH0eX9WLvFkFpU1n4/nestedSubPages/0RSanjbv2MqeyIUAkl7h"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/EogBH0eX9WLvFkFpU1n4/nestedSubPages/R1HHibMtjzBfwcztLTPc"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/LsfDVskhqPlrSYseqVyP/nestedSubPages/hC77n8SO8v9yjsPrlfwN"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/d4jvIv2oBRfTfVpfWsRs/nestedSubPages/VlN6w0p5IaKfukWMqYjB"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/d4jvIv2oBRfTfVpfWsRs/nestedSubPages/cNDlIHpqk5puZJQBdIkT"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/h5b8LmVI5fQor9CQDvVz/nestedSubPages/9UlppS9ChwqZVg60ZYGb"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/h5b8LmVI5fQor9CQDvVz/nestedSubPages/FXf0nefeLuVTU6RUw9yw"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/h5b8LmVI5fQor9CQDvVz/nestedSubPages/JA2i2E9j6tKrEDgjUpxC"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/h5b8LmVI5fQor9CQDvVz/nestedSubPages/gQKiM0nYJmhN6Qcg5lKT"
+    },
+    {
+      "type": "nestedPage",
+      "refPath": "pillarPages/nursing-entrance-exam/subPages/zJycvVhmofAy1ETc14ax/nestedSubPages/wAWyM6UOhxmKEU6bbSaL"
+    },
+    {
+      "type": "routeMapping",
+      "routeId": "Qo0wRnrpb0q9u4PscVPY",
+      "slug": "test-r"
+    },
+    {
+      "type": "routeMapping",
+      "routeId": "qTulZvSmQqjgnpY7YgLO",
+      "slug": "test-o"
+    }
+  ],
+  "skipped": [],
+  "deletedCount": 12,
+  "skippedCount": 0,
+  "cleanedAt": "2026-08-21T02:53:22.835Z"
+}

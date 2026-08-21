@@ -1,5 +1,5 @@
 // This file is auto-generated at build time. Do not edit manually.
-// Generated at: 2026-08-21T01:42:19.086Z
+// Generated at: 2026-08-21T13:35:32.849Z
 
 export const sidebarData = {
   "pillarPages": [
@@ -29,7 +29,9 @@ export const sidebarData = {
         "servicePageId": "rdYGUZ9DzFvAmo6EsrVe",
         "pageName": "HESI A2",
         "slug": "hesi-a2-practice-test",
-        "status": "Published"
+        "status": "Published",
+        "questionCount": 979,
+        "quizCount": 25
       },
       {
         "id": "yrdSf0KpOcuybL1SLnw7",
@@ -133,8 +135,8 @@ export const sidebarData = {
         "publicSlug": "hesi-a2-biology-practice-test",
         "publicUrl": "/hesi-a2-biology-practice-test",
         "status": "Draft",
-        "questionCount": 0,
-        "quizCount": 0
+        "questionCount": 100,
+        "quizCount": 4
       },
       {
         "id": "WCMWPi3ol4wwpJaHF6DH",
@@ -144,8 +146,8 @@ export const sidebarData = {
         "publicSlug": "hesi-a2-math-practice-test",
         "publicUrl": "/hesi-a2-math-practice-test",
         "status": "Draft",
-        "questionCount": 0,
-        "quizCount": 0
+        "questionCount": 152,
+        "quizCount": 4
       },
       {
         "id": "XYJ11eHtMbIhQnTYPS6j",
@@ -155,8 +157,8 @@ export const sidebarData = {
         "publicSlug": "hesi-a2-grammar-practice-test",
         "publicUrl": "/hesi-a2-grammar-practice-test",
         "status": "Draft",
-        "questionCount": 0,
-        "quizCount": 0
+        "questionCount": 200,
+        "quizCount": 4
       },
       {
         "id": "gGyVK8Up2mhnWjvQONJo",
@@ -166,8 +168,8 @@ export const sidebarData = {
         "publicSlug": "hesi-a2-reading-comprehension-practice-test",
         "publicUrl": "/hesi-a2-reading-comprehension-practice-test",
         "status": "Draft",
-        "questionCount": 0,
-        "quizCount": 0
+        "questionCount": 231,
+        "quizCount": 4
       },
       {
         "id": "i7Rzaozenx3Czccmf5HD",
@@ -177,8 +179,8 @@ export const sidebarData = {
         "publicSlug": "hesi-a2-vocabulary-practice-test",
         "publicUrl": "/hesi-a2-vocabulary-practice-test",
         "status": "Draft",
-        "questionCount": 0,
-        "quizCount": 0
+        "questionCount": 181,
+        "quizCount": 4
       },
       {
         "id": "lOJHdJ4lr3plcJkz2yfp",
@@ -188,8 +190,19 @@ export const sidebarData = {
         "publicSlug": "hesi-a2-chemistry-practice-test",
         "publicUrl": "/hesi-a2-chemistry-practice-test",
         "status": "Draft",
-        "questionCount": 0,
-        "quizCount": 0
+        "questionCount": 63,
+        "quizCount": 3
+      },
+      {
+        "id": "qwOa8KIVJed4vQNWENTI",
+        "nestedSubPageId": "qwOa8KIVJed4vQNWENTI",
+        "pageName": "Hesi A2 Anatomy and Physiology Practice Test",
+        "slug": "hesi-a2-anatomy-and-physiology-practice-test",
+        "publicSlug": "hesi-a2-anatomy-and-physiology-practice-test",
+        "publicUrl": "/hesi-a2-anatomy-and-physiology-practice-test",
+        "status": "Draft",
+        "questionCount": 52,
+        "quizCount": 2
       }
     ],
     "nursing-entrance-exam:yrdSf0KpOcuybL1SLnw7": [
@@ -366,13 +379,13 @@ export const sidebarData = {
         "publicSlug": "ati-lpn-exams",
         "publicUrl": "/ati-lpn-exams",
         "status": "Draft",
-        "questionCount": 13370,
-        "quizCount": 266,
+        "questionCount": 13420,
+        "quizCount": 267,
         "topicCount": 14
       }
     ]
   },
-  "generatedAt": "2026-08-21T01:42:19.083Z"
+  "generatedAt": "2026-08-21T13:35:32.847Z"
 } as const;
 
 export type SidebarData = typeof sidebarData;

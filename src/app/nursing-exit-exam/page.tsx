@@ -59,18 +59,18 @@ export default function NursingExitExamPage() {
 
                 <div className="flex flex-wrap gap-3 mb-5">
                   <Link
-                    href="/register"
+                    href="/ati-rn-comprehensive-predictor"
                     className="rounded-full px-6 py-3 text-sm border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/50 flex items-center gap-2 hover:brightness-105 transition-all"
                   >
                     <span className="text-[1.05rem] translate-y-[1px]">➤</span>
-                    Start ATI Comprehensive Predictor Practice
+                    Practice ATI RN Comprehensive Predictor
                   </Link>
                   <Link
-                    href="/register"
+                    href="/hesi-rn-exit-exam"
                     className="rounded-full px-5 py-3 text-sm border border-slate-300 bg-white/95 text-gray-900 font-medium flex items-center gap-2 hover:bg-white transition-all"
                   >
                     <span className="text-base opacity-75">⟲</span>
-                    Explore HESI Exit Exam Sets
+                    Browse HESI RN Exit Exam Sets
                   </Link>
                 </div>
 
@@ -247,18 +247,18 @@ export default function NursingExitExamPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        href="/register"
+                        href="/ati-rn-comprehensive-predictor"
                         className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
                       >
-                        <span>Start ATI Predictor Practice</span>
+                        <span>Open ATI RN Predictor Practice</span>
                         <span>➜</span>
                       </Link>
                       <Link
-                        href="/register"
+                        href="/ati-lpn-comprehensive-predictor"
                         className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
                       >
                         <span className="opacity-70">👁</span>
-                        View ATI Predictor Question Sets
+                        View ATI LPN Predictor Question Sets
                       </Link>
                     </div>
                   </div>
@@ -339,18 +339,18 @@ export default function NursingExitExamPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        href="/register"
+                        href="/hesi-rn-exit-exam"
                         className="text-xs px-4 py-2 rounded-full border-none bg-gradient-to-br from-indigo-600 to-purple-600 text-gray-50 font-semibold shadow-lg shadow-indigo-500/45 flex items-center gap-2"
                       >
-                        <span>Start HESI Exit Practice</span>
+                        <span>Open HESI RN Exit Practice</span>
                         <span>➜</span>
                       </Link>
                       <Link
-                        href="/register"
+                        href="/hesi-lpn-exit-exam"
                         className="text-xs px-4 py-2 rounded-full border border-slate-300 bg-white text-gray-900 flex items-center gap-2"
                       >
                         <span className="opacity-70">📁</span>
-                        View HESI Exit Question Sets
+                        View HESI LPN Exit Question Sets
                       </Link>
                     </div>
                   </div>
