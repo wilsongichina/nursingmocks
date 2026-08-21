@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
@@ -14,23 +15,34 @@ import PublicSubPageGuide, {
 } from "@/components/sections/PublicSubPageGuide";
 import { getSiteUrl, getImageUrl } from "@/lib/config";
 import {
-  getRouteMappingBySlugOnly,
-  getPageByContentPath,
+  getRouteMappingBySlugOnly as getRouteMappingBySlugOnlyRaw,
+  getPageByContentPath as getPageByContentPathRaw,
   getKbArticleBySlug,
   getNursingEntranceExamQuizQuestions,
   getNursingExitExamQuizQuestions,
   getNursingTestBankQuizQuestions,
-  getNestedSubPages,
-  getNursingExitExamNestedSubPages,
-  getNursingTestBankNestedSubPages,
-  getNursingTestBankTopics,
-  getNursingTestBankQuizzes,
-  getNursingEntranceExamQuizzes,
-  getNursingExitExamQuizzes,
-  getAllQuestionTypes,
+  getNestedSubPages as getNestedSubPagesRaw,
+  getNursingExitExamNestedSubPages as getNursingExitExamNestedSubPagesRaw,
+  getNursingTestBankNestedSubPages as getNursingTestBankNestedSubPagesRaw,
+  getNursingTestBankTopics as getNursingTestBankTopicsRaw,
+  getNursingTestBankQuizzes as getNursingTestBankQuizzesRaw,
+  getNursingEntranceExamQuizzes as getNursingEntranceExamQuizzesRaw,
+  getNursingExitExamQuizzes as getNursingExitExamQuizzesRaw,
+  getAllQuestionTypes as getAllQuestionTypesRaw,
   getRouteMappingSlugsByIds,
   getRouteMappingById,
 } from "@/lib/firestore-operations";
+const getRouteMappingBySlugOnly = cache(getRouteMappingBySlugOnlyRaw);
+const getPageByContentPath = cache(getPageByContentPathRaw);
+const getNestedSubPages = cache(getNestedSubPagesRaw);
+const getNursingExitExamNestedSubPages = cache(getNursingExitExamNestedSubPagesRaw);
+const getNursingTestBankNestedSubPages = cache(getNursingTestBankNestedSubPagesRaw);
+const getNursingTestBankTopics = cache(getNursingTestBankTopicsRaw);
+const getNursingTestBankQuizzes = cache(getNursingTestBankQuizzesRaw);
+const getNursingEntranceExamQuizzes = cache(getNursingEntranceExamQuizzesRaw);
+const getNursingExitExamQuizzes = cache(getNursingExitExamQuizzesRaw);
+const getAllQuestionTypes = cache(getAllQuestionTypesRaw);
+
 import {
   buildQuizPreviewState,
   resolveRequiredExamAccessProduct,

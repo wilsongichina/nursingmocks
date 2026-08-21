@@ -4,6 +4,7 @@ const firebaseStorageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
 const nextConfig: NextConfig = {
   /* config options here */
+  staticPageGenerationTimeout: 180,
   serverExternalPackages: ["firebase"],
   async redirects() {
     return [
