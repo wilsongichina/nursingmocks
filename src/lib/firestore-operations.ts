@@ -10,6 +10,8 @@ import {
   addDoc,
   query,
   where,
+  orderBy,
+  limit as firestoreLimit,
 } from "firebase/firestore";
 import {
   ref,
@@ -7589,7 +7591,8 @@ export const getNursingTestBankQuizQuestions = async (
   parentSubPageId: string,
   nestedSubPageId: string,
   topicId: string,
-  quizId: string
+  quizId: string,
+  options: { limitCount?: number } = {}
 ) => {
   try {
     const pillarId = "nursing-test-bank";
@@ -7747,8 +7750,7 @@ export const getNursingTestBankQuizQuestions = async (
       };
     }
 
-    const querySnapshot = await getDocs(
-      collection(
+    const questionsCollection = collection(
         db,
         "pillarPages",
         pillarId,
@@ -7761,7 +7763,12 @@ export const getNursingTestBankQuizQuestions = async (
         "quizzes",
         actualQuizId,
         "questions"
-      )
+    );
+    const questionLimit = Number(options.limitCount || 0);
+    const querySnapshot = await getDocs(
+      questionLimit > 0
+        ? query(questionsCollection, orderBy("questionNumber", "asc"), firestoreLimit(questionLimit))
+        : questionsCollection
     );
     const questions: any[] = [];
 
@@ -8710,7 +8717,8 @@ export const bulkUploadNursingTestBankQuizQuestions = async (
 export const getNursingEntranceExamQuizQuestions = async (
   parentSubPageId: string,
   nestedSubPageId: string,
-  quizId: string
+  quizId: string,
+  options: { limitCount?: number } = {}
 ) => {
   try {
     const pillarId = "nursing-entrance-exam";
@@ -8820,8 +8828,7 @@ export const getNursingEntranceExamQuizQuestions = async (
       };
     }
 
-    const querySnapshot = await getDocs(
-      collection(
+    const questionsCollection = collection(
         db,
         "pillarPages",
         pillarId,
@@ -8832,7 +8839,12 @@ export const getNursingEntranceExamQuizQuestions = async (
         "quizzes",
         actualQuizId,
         "questions"
-      )
+    );
+    const questionLimit = Number(options.limitCount || 0);
+    const querySnapshot = await getDocs(
+      questionLimit > 0
+        ? query(questionsCollection, orderBy("questionNumber", "asc"), firestoreLimit(questionLimit))
+        : questionsCollection
     );
     const questions: any[] = [];
 
@@ -10465,7 +10477,8 @@ export const deleteNursingExitExamQuiz = async (
 export const getNursingExitExamQuizQuestions = async (
   parentSubPageId: string,
   nestedSubPageId: string,
-  quizId: string
+  quizId: string,
+  options: { limitCount?: number } = {}
 ) => {
   try {
     const pillarId = "nursing-exit-exam";
@@ -10573,8 +10586,7 @@ export const getNursingExitExamQuizQuestions = async (
       };
     }
 
-    const querySnapshot = await getDocs(
-      collection(
+    const questionsCollection = collection(
         db,
         "pillarPages",
         pillarId,
@@ -10585,7 +10597,12 @@ export const getNursingExitExamQuizQuestions = async (
         "quizzes",
         actualQuizId,
         "questions"
-      )
+    );
+    const questionLimit = Number(options.limitCount || 0);
+    const querySnapshot = await getDocs(
+      questionLimit > 0
+        ? query(questionsCollection, orderBy("questionNumber", "asc"), firestoreLimit(questionLimit))
+        : questionsCollection
     );
     const questions: any[] = [];
 

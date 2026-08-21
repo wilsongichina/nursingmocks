@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RN HESI Test Bank Cleanup Plan</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #e5e7eb;
+      --soft: #f8fafc;
+      --accent: #4f46e5;
+      --ok: #047857;
+      --pending: #92400e;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: #fff;
+      line-height: 1.65;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    aside {
+      border-right: 1px solid var(--line);
+      background: var(--soft);
+      padding: 28px 22px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+    aside h2 {
+      font-size: 16px;
+      margin: 0 0 16px;
+    }
+    aside a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 7px 0;
+      font-size: 14px;
+    }
+    aside a:hover {
+      color: var(--accent);
+    }
+    main {
+      max-width: 1080px;
+      padding: 38px 44px 80px;
+    }
+    h1 {
+      font-size: 34px;
+      line-height: 1.15;
+      margin: 0 0 10px;
+    }
+    h2 {
+      border-top: 1px solid var(--line);
+      padding-top: 28px;
+      margin-top: 34px;
+      font-size: 24px;
+    }
+    h3 {
+      margin-top: 28px;
+      font-size: 18px;
+    }
+    p, li {
+      color: var(--muted);
+    }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+    }
+    pre {
+      background: #f3f4f6;
+      border: 1px solid var(--line);
+      padding: 14px;
+      overflow: auto;
+      border-radius: 6px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 16px 0 26px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #f9fafb;
+      color: #1f2937;
+    }
+    .status-ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+    .status-pending {
+      color: var(--pending);
+      font-weight: 700;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      background: #eef2ff;
+      color: #312e81;
+    }
+    @media (max-width: 860px) {
+      .layout {
+        display: block;
+      }
+      aside {
+        position: static;
+        height: auto;
+      }
+      main {
+        padding: 28px 20px 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>RN HESI Cleanup</h2>
+      <a href="#purpose">Purpose</a>
+      <a href="#status">Current Status</a>
+      <a href="#stages">Ten Stages</a>
+      <a href="#inventory">Step 1 Inventory</a>
+      <a href="#summary">Source Folder Summary</a>
+      <a href="#flags">Review Flags</a>
+      <a href="#next">Step 2 Next</a>
+      <a href="#mapping">Step 2 Mapping</a>
+      <a href="#step3">Step 3 Next</a>
+    </aside>
+    <main>
+      <h1>RN HESI Test Bank Cleanup Plan</h1>
+      <p class="note">Import is the final step. This page documents the staged cleanup process before any final overwrite/upload.</p>
+
+      <h2 id="purpose">Purpose</h2>
+      <p>Clean the RN HESI source folders before final Nursing Test Bank import. This follows the same staged workflow used for ATI RN and LPN ATI: preserve the original source, create clean staged files, generate manifests, review topic names, audit question quality, document the result, and only import at the final stage.</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex\Nursing Test Bank\RN\HESI</pre>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\RN\HESI</pre>
+
+      <h2 id="status">Current Status</h2>
+      <p><span class="status-ok">Step 1, source inventory, is complete.</span></p>
+      <p><span class="status-pending">Current step: Step 2 - Identify Correct Public Topic Names.</span></p>
+
+      <h2 id="stages">Ten-Stage Cleanup Process</h2>
+      <table>
+        <thead><tr><th>Step</th><th>Stage</th><th>Purpose</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Source Inventory</td><td>Count folders, JSON files, questions, root artifacts, and parse errors.</td><td>Complete</td></tr>
+          <tr><td>2</td><td>Official Topic Mapping</td><td>Map every source folder to a topic, exclusion, or duplicate bucket.</td><td>Next</td></tr>
+          <tr><td>3</td><td>Stage Clean Folder</td><td>Copy files into clean destination folders and generate manifest/summary files.</td><td>Pending</td></tr>
+          <tr><td>4</td><td>Review Needed</td><td>Resolve unmatched, ambiguous, duplicate, or collision files.</td><td>Pending</td></tr>
+          <tr><td>5</td><td>Normalized Quiz Names</td><td>Generate public quiz titles, slugs, card labels, and collision reports.</td><td>Pending</td></tr>
+          <tr><td>6</td><td>Blocking Question Audit</td><td>Check missing question text, empty options, and missing answers.</td><td>Pending</td></tr>
+          <tr><td>7</td><td>Topic Metadata / Page Consistency</td><td>Normalize topic display names, routes, counts, and page templates.</td><td>Pending</td></tr>
+          <tr><td>8</td><td>Documentation</td><td>Record final counts, mappings, exclusions, audits, and decisions.</td><td>Pending</td></tr>
+          <tr><td>9</td><td>Dry Run Import</td><td>Validate import plan without writing data.</td><td>Pending</td></tr>
+          <tr><td>10</td><td>Final Import</td><td>Import/overwrite only after explicit approval.</td><td>Pending</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="inventory">Step 1 Inventory Results</h2>
+      <table>
+        <tbody>
+          <tr><th>Source folders</th><td>23</td></tr>
+          <tr><th>JSON exam files</th><td>148</td></tr>
+          <tr><th>Root JSON artifacts</th><td>0</td></tr>
+          <tr><th>JSON parse errors</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <pre>rn-hesi-source-inventory.csv
+rn-hesi-source-inventory.json
+rn-hesi-source-folder-summary.csv
+rn-hesi-root-json-artifacts.csv
+rn-hesi-parse-errors.csv</pre>
+
+      <h2 id="summary">Source Folder Summary</h2>
+      <table>
+        <thead><tr><th>Source Folder</th><th>Files</th><th>Questions</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>1 - Hesi Medical Surgical</td><td>24</td><td>1,234</td><td>Largest med-surg source folder; one dosage-calculation file must be reviewed for mapping.</td></tr>
+          <tr><td>2 - Hesi Biology</td><td>1</td><td>24</td><td>Biology support topic.</td></tr>
+          <tr><td>3 - HESI Pediatric</td><td>10</td><td>478</td><td>Pediatric Nursing topic.</td></tr>
+          <tr><td>4 - HESI Pharmacology</td><td>21</td><td>1,003</td><td>Pharmacology topic.</td></tr>
+          <tr><td>5 - Nursing Specialty</td><td>1</td><td>78</td><td>Specialty source bucket.</td></tr>
+          <tr><td>6 - Nursing Research</td><td>4</td><td>203</td><td>Nursing Research topic.</td></tr>
+          <tr><td>7 - Nutrition</td><td>3</td><td>150</td><td>Nutrition topic.</td></tr>
+          <tr><td>8 - Hesi Dosage Calculations</td><td>16</td><td>819</td><td>Dosage Calculations topic.</td></tr>
+          <tr><td>9 - HESI Leadership</td><td>2</td><td>96</td><td>Leadership topic.</td></tr>
+          <tr><td>10 - RN HESI Mental Health</td><td>7</td><td>316</td><td>Mental Health topic; Psychiatric Exam may merge here.</td></tr>
+          <tr><td>11 - Hesi Cat</td><td>1</td><td>79</td><td>CAT topic.</td></tr>
+          <tr><td>12 - Nursing Fundamentals</td><td>10</td><td>500</td><td>Fundamentals topic.</td></tr>
+          <tr><td>13 - HESI Maternity</td><td>7</td><td>376</td><td>Maternity topic.</td></tr>
+          <tr><td>14 - HESI Management</td><td>1</td><td>48</td><td>Management topic.</td></tr>
+          <tr><td>15 - HESI Adult Health</td><td>9</td><td>449</td><td>Adult Health topic; supplemental ATI-excluded HESI files need review.</td></tr>
+          <tr><td>16 - HESI Community Health</td><td>4</td><td>226</td><td>Community Health topic.</td></tr>
+          <tr><td>17 - RN HESI HEALTH ASSESSMENT</td><td>15</td><td>867</td><td>Health Assessment topic.</td></tr>
+          <tr><td>18 - Foundations of Nursing</td><td>6</td><td>338</td><td>Alias/source wording; likely merge into Fundamentals.</td></tr>
+          <tr><td>19 - Capstone</td><td>1</td><td>124</td><td>Capstone topic.</td></tr>
+          <tr><td>20 - Milestones</td><td>2</td><td>129</td><td>Milestones/development topic.</td></tr>
+          <tr><td>21 - Psychiatric Exam</td><td>1</td><td>40</td><td>Alias/source wording; likely merge into Mental Health.</td></tr>
+          <tr><td>22 - Information Technology in Nursing</td><td>1</td><td>60</td><td>Information Technology in Nursing topic.</td></tr>
+          <tr><td>23 - Pathophysiology</td><td>1</td><td>49</td><td>Pathophysiology topic.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="flags">Immediate Review Flags For Step 2</h2>
+      <table>
+        <thead><tr><th>Source</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>1 - Hesi Medical Surgical</td><td>Dosage-calculation title inside med-surg folder should map to Dosage Calculations if title/content confirms medication math.</td></tr>
+          <tr><td>18 - Foundations of Nursing</td><td>Source alias should likely merge into Fundamentals.</td></tr>
+          <tr><td>21 - Psychiatric Exam</td><td>Source alias should likely merge into Mental Health.</td></tr>
+          <tr><td>ATI RN excluded HESI folder</td><td>HESI-branded files found during ATI RN cleanup must be classified as RN HESI import, duplicate, or do-not-import.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="next">Step 2 - Mapping Requirements</h2>
+      <p>Step 2 should produce the official RN HESI public-topic mapping table. Required fields are final public topic name, public URL slug, source folder or source-file inputs, classification, and import readiness.</p>
+      <p class="note">Do not import or overwrite Firestore quiz/question data until Steps 1-9 are complete and final import is explicitly approved.</p>
+
+      <h2 id="mapping">Step 2 - Official Public Topic Mapping</h2>
+      <p><span class="status-ok">Stage 2 completed on 2026-08-18.</span></p>
+      <p>The RN HESI public topic layer uses concise topic names. Do not use long topic card labels such as <code>HESI RN Fundamentals Practice Questions</code> on the nested topic grid. The vendor/program is supplied by the parent page, <code>HESI RN Exams</code>.</p>
+      <table>
+        <thead><tr><th>Public Topic</th><th>URL Slug</th><th>Source Inputs</th><th>Files</th><th>Questions</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td>Adult Health</td><td>hesi-rn-adult-health-practice-questions</td><td>15 - HESI Adult Health; supplemental adult-health files</td><td>11</td><td>590</td><td>Import to Adult Health.</td></tr>
+          <tr><td>Biology</td><td>hesi-rn-biology-practice-questions</td><td>2 - Hesi Biology</td><td>1</td><td>24</td><td>Import to Biology.</td></tr>
+          <tr><td>Capstone</td><td>hesi-rn-capstone-practice-questions</td><td>19 - Capstone</td><td>1</td><td>124</td><td>Import to Capstone.</td></tr>
+          <tr><td>CAT</td><td>hesi-rn-cat-practice-questions</td><td>11 - Hesi Cat</td><td>1</td><td>79</td><td>Import to CAT.</td></tr>
+          <tr><td>Community Health</td><td>hesi-rn-community-health-practice-questions</td><td>16 - HESI Community Health</td><td>4</td><td>226</td><td>Import to Community Health.</td></tr>
+          <tr><td>Dosage Calculations</td><td>hesi-rn-dosage-calculations-practice-questions</td><td>8 - Hesi Dosage Calculations; dosage file from Medical Surgical</td><td>17</td><td>874</td><td>Move dosage/math file here even if source folder was Medical Surgical.</td></tr>
+          <tr><td>Fundamentals</td><td>hesi-rn-fundamentals-practice-questions</td><td>12 - Nursing Fundamentals; 18 - Foundations of Nursing</td><td>16</td><td>838</td><td>Merge Foundations of Nursing into Fundamentals.</td></tr>
+          <tr><td>Health Assessment</td><td>hesi-rn-health-assessment-practice-questions</td><td>17 - RN HESI HEALTH ASSESSMENT</td><td>15</td><td>867</td><td>Import to Health Assessment.</td></tr>
+          <tr><td>Information Technology in Nursing</td><td>hesi-rn-information-technology-in-nursing-practice-questions</td><td>22 - Information Technology in Nursing</td><td>1</td><td>60</td><td>Import to Information Technology in Nursing.</td></tr>
+          <tr><td>Leadership</td><td>hesi-rn-leadership-practice-questions</td><td>9 - HESI Leadership</td><td>2</td><td>96</td><td>Import to Leadership.</td></tr>
+          <tr><td>Management</td><td>hesi-rn-management-practice-questions</td><td>14 - HESI Management</td><td>1</td><td>48</td><td>Import to Management.</td></tr>
+          <tr><td>Maternity</td><td>hesi-rn-maternity-practice-questions</td><td>13 - HESI Maternity</td><td>7</td><td>376</td><td>Import to Maternity.</td></tr>
+          <tr><td>Medical Surgical</td><td>hesi-rn-medical-surgical-practice-questions</td><td>1 - Hesi Medical Surgical excluding dosage-calculation file</td><td>23</td><td>1,179</td><td>Import med-surg files here.</td></tr>
+          <tr><td>Mental Health</td><td>hesi-rn-mental-health-practice-questions</td><td>10 - RN HESI Mental Health; 21 - Psychiatric Exam</td><td>8</td><td>356</td><td>Merge Psychiatric Exam into Mental Health.</td></tr>
+          <tr><td>Milestones</td><td>hesi-rn-milestones-practice-questions</td><td>20 - Milestones</td><td>2</td><td>129</td><td>Import to Milestones.</td></tr>
+          <tr><td>Nursing Research</td><td>hesi-rn-nursing-research-practice-questions</td><td>6 - Nursing Research</td><td>4</td><td>203</td><td>Import to Nursing Research.</td></tr>
+          <tr><td>Nutrition</td><td>hesi-rn-nutrition-practice-questions</td><td>7 - Nutrition</td><td>3</td><td>150</td><td>Import to Nutrition.</td></tr>
+          <tr><td>Pathophysiology</td><td>hesi-rn-pathophysiology-practice-questions</td><td>23 - Pathophysiology</td><td>1</td><td>49</td><td>Import to Pathophysiology.</td></tr>
+          <tr><td>Pediatric Nursing</td><td>hesi-rn-pediatric-nursing-practice-questions</td><td>3 - HESI Pediatric</td><td>10</td><td>478</td><td>Use the clearer public nursing topic name.</td></tr>
+          <tr><td>Pharmacology</td><td>hesi-rn-pharmacology-practice-questions</td><td>4 - HESI Pharmacology</td><td>21</td><td>1,003</td><td>Import to Pharmacology.</td></tr>
+          <tr><td>Specialty</td><td>hesi-rn-specialty-practice-questions</td><td>5 - Nursing Specialty</td><td>1</td><td>78</td><td>Import to Specialty.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Supplemental ATI RN Excluded HESI Files</h3>
+      <table>
+        <thead><tr><th>File</th><th>Destination</th><th>Action</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>2-HESI RN Adult Health 1 Proctored Exam (WGU).json</td><td>Adult Health</td><td>Import</td><td>Low overlap with existing Adult Health content.</td></tr>
+          <tr><td>5-Wgu hesi rn adult health proctored exam.json</td><td>Adult Health</td><td>Import</td><td>No text-overlap match found in existing RN HESI cleanup set.</td></tr>
+          <tr><td>2-Hesi rn foundation of nursing proctored exam.json</td><td>Duplicate Source - Do Not Import</td><td>Duplicate</td><td>Same filename as existing Fundamentals file and high text overlap with already staged content.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Step 2 Result</h3>
+      <table>
+        <tbody>
+          <tr><th>Public topics</th><td>21</td></tr>
+          <tr><th>Original source folders mapped</th><td>23</td></tr>
+          <tr><th>Supplemental ATI-excluded HESI files classified</th><td>3</td></tr>
+          <tr><th>Import-ready files expected after staging</th><td>150</td></tr>
+          <tr><th>Duplicate/do-not-import files expected after staging</th><td>1</td></tr>
+          <tr><th>Review-needed files expected after staging</th><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step3">Step 3 - Clean Folder Staging</h2>
+      <p>Stage clean folder creation should use <code>scripts/stage-rn-hesi-cleanup.ps1</code>.</p>
+      <p><span class="status-ok">Stage 3 completed on 2026-08-18.</span></p>
+      <pre>rn-hesi-cleanup-manifest.csv
+rn-hesi-cleanup-manifest.json
+rn-hesi-cleanup-summary.csv
+rn-hesi-root-json-artifacts.csv</pre>
+      <p>Expected and actual folder-level result: 21 public topic folders, 1 duplicate source folder, and 0 Review Needed folders.</p>
+      <table>
+        <thead><tr><th>Action</th><th>Files</th><th>Questions</th></tr></thead>
+        <tbody>
+          <tr><td>Import-ready</td><td>150</td><td>7,827</td></tr>
+          <tr><td>Duplicate / do not import</td><td>1</td><td>55</td></tr>
+        </tbody>
+      </table>
+      <p>The stale <code>import-dry-run</code> folder from the interrupted early import attempt was removed because it is not part of the approved staged source structure.</p>
+
+      <h2 id="step4">Step 4 - Normalized Filename Preview</h2>
+      <p>Run the normalized-name preview against the staged RN HESI folders and confirm that public-facing exam filenames follow the ATI RN / LPN ATI pattern.</p>
+      <p><span class="status-ok">Stage 4 completed on 2026-08-18.</span></p>
+      <pre>rn-hesi-normalized-name-preview.csv
+rn-hesi-normalized-name-review.csv
+rn-hesi-normalized-name-review-simple.csv
+rn-hesi-normalized-name-summary.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Preview rows</th><td>151</td></tr>
+          <tr><th>Review rows</th><td>0</td></tr>
+          <tr><th>Duplicate slugs found</th><td>0</td></tr>
+          <tr><th>Duplicate wording cases fixed</th><td>3</td></tr>
+        </tbody>
+      </table>
+      <p>The normalizer was tightened for HESI RN titles so source titles such as <code>RN Medical Surgical HESI Proctored Exam</code> become clean public titles such as <code>HESI RN Medical Surgical Proctored Exam Practice Questions - Set 19</code>.</p>
+
+      <h2 id="step5">Step 5 - Question Quality Audit</h2>
+      <p>Audit question quality inside the staged RN HESI files. Focus first on structural issues that can break display or quiz behavior.</p>
+      <p><span class="status-ok">Stage 5 completed on 2026-08-18.</span></p>
+      <pre>rn-hesi-question-quality-issues.csv
+rn-hesi-question-quality-file-summary.csv
+rn-hesi-question-quality-summary.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Audited files</th><td>151</td></tr>
+          <tr><th>Import-ready files</th><td>150</td></tr>
+          <tr><th>Audited questions</th><td>7,882</td></tr>
+          <tr><th>Import-ready questions</th><td>7,827</td></tr>
+          <tr><th>Duplicate/do-not-import questions</th><td>55</td></tr>
+          <tr><th>Import-ready structural issues</th><td>460</td></tr>
+          <tr><th>Total structural issues including duplicate file</th><td>462</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Issue</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td>Empty option text</td><td>278</td></tr>
+          <tr><td>Missing explanation</td><td>107</td></tr>
+          <tr><td>Missing correct answer</td><td>75</td></tr>
+        </tbody>
+      </table>
+      <p>Many missing-correct-answer examples are NGN-style diagram/exhibit questions, so they need careful handling because the answer may be represented differently from ordinary multiple-choice questions.</p>
+
+      <h2 id="step6">Step 6 - Blocking Structural Repair</h2>
+      <p>Repair blocking structural issues before import: missing correct answers, empty option text, missing question text if later audits find any, and malformed option payloads.</p>
+      <p><span class="status-ok">Stage 6 completed on 2026-08-18.</span></p>
+      <pre>rn-hesi-structural-repair-report.json</pre>
+      <table>
+        <tbody>
+          <tr><th>Import files changed</th><td>100</td></tr>
+          <tr><th>Blank/null top-level option entries removed</th><td>549</td></tr>
+          <tr><th>Blank/null subquestion option entries removed</th><td>92</td></tr>
+        </tbody>
+      </table>
+      <p>Ordinary type 1 questions with blank E/F placeholders were repaired by removing only the blank option entries. Type 12 NGN diagram/exhibit questions were not assigned invented parent answers; their answer data already exists inside <code>subquestions[].answer</code>.</p>
+      <table>
+        <thead><tr><th>Issue</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Empty option text</td><td>278</td><td>0</td></tr>
+          <tr><td>Missing correct answer</td><td>75</td><td>0</td></tr>
+          <tr><td>Missing explanation</td><td>107</td><td>107</td></tr>
+        </tbody>
+      </table>
+      <p>Remaining issues are explanation-only: Nursing Research 40, Pediatric Nursing 36, Fundamentals 21, Pharmacology 5, Health Assessment 4, Nutrition 1.</p>
+
+      <h2 id="step7">Step 7 - Duplicate And Content-Overlap Audit</h2>
+      <p>Run duplicate/content-overlap auditing after the structural repairs. Confirm whether any import-ready files are exact duplicates, clean-name duplicates, or question-signature duplicates.</p>
+      <p><span class="status-ok">Stage 7 completed on 2026-08-18.</span></p>
+      <pre>rn-hesi-duplicate-audit-rows.csv
+rn-hesi-exact-content-duplicates.csv
+rn-hesi-clean-name-duplicates.csv
+rn-hesi-question-signature-duplicates.csv
+rn-hesi-duplicate-audit-summary.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Audited rows</th><td>151</td></tr>
+          <tr><th>Exact duplicate groups</th><td>0</td></tr>
+          <tr><th>Exact duplicate files</th><td>0</td></tr>
+          <tr><th>Clean-name duplicate groups</th><td>16</td></tr>
+          <tr><th>Clean-name duplicate files</th><td>53</td></tr>
+          <tr><th>Question-signature duplicate groups</th><td>0</td></tr>
+          <tr><th>Question-signature duplicate files</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>No additional import-ready files should be removed. Clean-name duplicates are classified as <code>same_clean_name_different_content</code>, meaning they share broad source names but have different content/signatures. The only duplicate public title pair is the known Foundation of Nursing supplemental duplicate, already marked <code>duplicate</code>.</p>
+
+      <h2 id="step8">Step 8 - Metadata Readiness Check</h2>
+      <p>Run final metadata readiness checks for the RN HESI public topic layer and import payload.</p>
+      <p><span class="status-ok">Stage 8 completed on 2026-08-18.</span></p>
+      <pre>rn-hesi-metadata-readiness-summary.json
+rn-hesi-metadata-readiness-topics.csv</pre>
+      <p><strong>readyForImportPreparation = true</strong></p>
+      <table>
+        <tbody>
+          <tr><th>Expected public topics present</th><td>21 / pass</td></tr>
+          <tr><th>Import-ready quizzes</th><td>150 / pass</td></tr>
+          <tr><th>Import-ready questions</th><td>7,827 / pass</td></tr>
+          <tr><th>Duplicate/do-not-import rows excluded</th><td>1 / pass</td></tr>
+          <tr><th>Duplicate import slugs</th><td>0 / pass</td></tr>
+          <tr><th>Duplicate import public titles</th><td>0 / pass</td></tr>
+          <tr><th>Exact duplicate content groups</th><td>0 / pass</td></tr>
+          <tr><th>Question-signature duplicate groups</th><td>0 / pass</td></tr>
+          <tr><th>Blocking question issues</th><td>0 / pass</td></tr>
+          <tr><th>Remaining quality issues</th><td>107 explanation-only / pass</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step9">Step 9 - Import Dry-Run</h2>
+      <p>Prepare and run an import dry-run only. The dry-run validates the final import payload, topic metadata, quiz metadata, question normalization, and remaining non-blocking explanation gaps without writing Firestore quiz/question data.</p>
+      <p><span class="status-ok">Stage 9 completed on 2026-08-18.</span></p>
+      <pre>import-dry-run\rn-hesi-real-import-dry-run-summary.json</pre>
+      <p><strong><code>--apply</code> was not passed, so this was a dry-run.</strong></p>
+      <table>
+        <tbody>
+          <tr><th>Planned topics</th><td>21</td></tr>
+          <tr><th>Planned quizzes</th><td>150</td></tr>
+          <tr><th>Planned questions</th><td>7,827</td></tr>
+          <tr><th>Blocking question issues</th><td>0</td></tr>
+          <tr><th>Missing explanation rows</th><td>107</td></tr>
+          <tr><th>Imported rows</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>All planned topic actions were <code>update</code>, meaning the RN HESI topic documents already exist and the dry-run would update their metadata/counts during apply. The importer validation was aligned with the quality audit so blank/HTML-only explanations are counted consistently.</p>
+
+      <h2 id="step10">Step 10 - Final Import / Apply</h2>
+      <p>Final import/apply writes Firestore topic metadata, quiz documents, quiz questions, and routing metadata.</p>
+      <p><span class="status-ok">Stage 10 completed on 2026-08-18.</span></p>
+      <pre>import-dry-run\rn-hesi-real-import-apply-summary.json
+rn-hesi-extra-live-quizzes.json
+rn-hesi-extra-live-quizzes-delete-report.json</pre>
+      <table>
+        <tbody>
+          <tr><th>Planned quizzes</th><td>150</td></tr>
+          <tr><th>Planned questions</th><td>7,827</td></tr>
+          <tr><th>Missing explanation rows</th><td>107</td></tr>
+          <tr><th>Blocking question issues</th><td>0</td></tr>
+          <tr><th>Created during completed apply</th><td>4</td></tr>
+          <tr><th>Updated during completed apply</th><td>146</td></tr>
+        </tbody>
+      </table>
+      <p>The first apply attempt timed out before completion and did not write an apply summary. The apply was rerun with a longer timeout and completed successfully.</p>
+      <table>
+        <tbody>
+          <tr><th>Stale quiz docs deleted</th><td>8</td></tr>
+          <tr><th>Stale question docs deleted</th><td>333</td></tr>
+          <tr><th>Extra live quizzes after cleanup</th><td>0</td></tr>
+          <tr><th>Final quiz audit</th><td>150 expected / 150 actual</td></tr>
+          <tr><th>Final question audit</th><td>7,827 expected / 7,827 actual</td></tr>
+        </tbody>
+      </table>
+      <p>Final state: RN HESI live Firestore data now matches the validated cleanup payload exactly.</p>
+    </main>
+  </div>
+</body>
+</html>

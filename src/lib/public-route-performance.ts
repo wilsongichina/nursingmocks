@@ -42,3 +42,7 @@ export function shouldSkipChatForPublicPath(pathname: string) {
     shouldLazyLoadAuthForPublicPath(pathname)
   );
 }
+
+export function shouldSkipSupportWidgetForPublicPath(pathname: string) {
+  return shouldSkipChatForPublicPath(pathname);
+}

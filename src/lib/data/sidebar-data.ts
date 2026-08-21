@@ -1,5 +1,5 @@
 // This file is auto-generated at build time. Do not edit manually.
-// Generated at: 2026-08-18T15:34:52.205Z
+// Generated at: 2026-08-21T01:42:19.086Z
 
 export const sidebarData = {
   "pillarPages": [
@@ -298,6 +298,18 @@ export const sidebarData = {
         "topicCount": 18
       },
       {
+        "id": "Xm9CE6gN7AB8T4YZKMNa",
+        "nestedSubPageId": "Xm9CE6gN7AB8T4YZKMNa",
+        "pageName": "RN Certifications",
+        "title": "RN Certifications",
+        "slug": "rn-certifications",
+        "publicSlug": "rn-certifications",
+        "publicUrl": "/rn-certifications",
+        "questionCount": 287,
+        "quizCount": 2,
+        "topicCount": 2
+      },
+      {
         "id": "iT55qp9NAFOvZLBAiQzC",
         "nestedSubPageId": "iT55qp9NAFOvZLBAiQzC",
         "pageName": "HESI RN Exams",
@@ -306,9 +318,33 @@ export const sidebarData = {
         "publicUrl": "/hesi-rn-exams",
         "status": "Draft",
         "topicCount": 21
+      },
+      {
+        "id": "zMFBI0XMiRsJnnXWhL5S",
+        "nestedSubPageId": "zMFBI0XMiRsJnnXWhL5S",
+        "pageName": "RN Nursing Course Exams",
+        "title": "RN Nursing Course Exams",
+        "slug": "rn-nursing-course-exams",
+        "publicSlug": "rn-nursing-course-exams",
+        "publicUrl": "/rn-nursing-course-exams",
+        "questionCount": 17837,
+        "quizCount": 334,
+        "topicCount": 23
       }
     ],
     "nursing-test-bank:z0xzINtS3EohZNaKosBz": [
+      {
+        "id": "3K3wv7IGcDcXvSNM9Kxm",
+        "nestedSubPageId": "3K3wv7IGcDcXvSNM9Kxm",
+        "pageName": "LPN Nursing Course Exams",
+        "title": "LPN Nursing Course Exams",
+        "slug": "lpn-nursing-course-exams",
+        "publicSlug": "lpn-nursing-course-exams",
+        "publicUrl": "/lpn-nursing-course-exams",
+        "questionCount": 949,
+        "quizCount": 18,
+        "topicCount": 5
+      },
       {
         "id": "ToLSmb6DG83NTZWXEJxt",
         "nestedSubPageId": "ToLSmb6DG83NTZWXEJxt",
@@ -317,9 +353,9 @@ export const sidebarData = {
         "publicSlug": "hesi-lpn-exams",
         "publicUrl": "/hesi-lpn-exams",
         "status": "Draft",
-        "questionCount": 0,
-        "quizCount": 0,
-        "topicCount": 0
+        "questionCount": 328,
+        "quizCount": 6,
+        "topicCount": 5
       },
       {
         "id": "lyrHg4RBzN6UafuymMFT",
@@ -336,7 +372,7 @@ export const sidebarData = {
       }
     ]
   },
-  "generatedAt": "2026-08-18T15:34:51.987Z"
+  "generatedAt": "2026-08-21T01:42:19.083Z"
 } as const;
 
 export type SidebarData = typeof sidebarData;

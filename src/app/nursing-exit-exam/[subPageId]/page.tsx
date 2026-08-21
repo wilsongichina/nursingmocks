@@ -9,8 +9,6 @@ import {
   getNursingExitExamNestedSubPage,
   getNursingExitExamNestedSubPages,
   getNursingExitExamQuizzes,
-  countNestedPageQuestions,
-  countSubPageQuestions,
 } from "@/lib/firestore-operations";
 
 // Enable static generation at build time
@@ -635,26 +633,18 @@ export default async function SubPage({
   let nestedSubPages: any[] = [];
   let subPageQuestionCount = 0;
   if (!isNestedSubPage) {
-    // Fetch question count for the sub-page
-    subPageQuestionCount = await countSubPageQuestions("nursing-exit-exam", lookupId);
-    
     const nestedSubPagesResult = await getNursingExitExamNestedSubPages(lookupId);
     if (nestedSubPagesResult.success && nestedSubPagesResult.data) {
       nestedSubPages = nestedSubPagesResult.data;
-      // Fetch question counts for nested pages
-      nestedSubPages = await Promise.all(
-        nestedSubPages.map(async (nestedSubPage: any) => {
-          const nestedPageSlug = nestedSubPage.slug || nestedSubPage.id || nestedSubPage.nestedSubPageId;
-          const questionCount = await countNestedPageQuestions(
-            "nursing-exit-exam",
-            lookupId,
-            nestedPageSlug
-          );
-          return {
-            ...nestedSubPage,
-            questionCount,
-          };
-        })
+      // Use saved nested-page totals only; live aggregation is too expensive
+      // for static generation of high-level Nursing Exit selector pages.
+      subPageQuestionCount = nestedSubPages.reduce(
+        (total: number, nestedSubPage: any) =>
+          total +
+          (typeof nestedSubPage.questionCount === "number"
+            ? nestedSubPage.questionCount
+            : 0),
+        0
       );
     }
   }

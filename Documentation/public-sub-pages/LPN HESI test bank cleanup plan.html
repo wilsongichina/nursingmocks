@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LPN HESI Test Bank Cleanup Plan</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --text: #172033;
+      --muted: #5d6678;
+      --line: #d9dee8;
+      --soft: #f6f8fb;
+      --accent: #2457a6;
+      --ok: #207245;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.55;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    aside {
+      border-right: 1px solid var(--line);
+      background: var(--soft);
+      padding: 24px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+    aside h1 {
+      font-size: 18px;
+      margin: 0 0 18px;
+    }
+    aside a {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 7px 0;
+      font-size: 14px;
+    }
+    main {
+      max-width: 980px;
+      padding: 36px 48px 72px;
+    }
+    h1 {
+      font-size: 34px;
+      margin: 0 0 8px;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      font-size: 24px;
+    }
+    p {
+      margin: 12px 0;
+    }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+    }
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 14px 16px;
+      overflow: auto;
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--soft);
+      font-weight: 700;
+    }
+    .status-ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      background: #eef4ff;
+    }
+    @media (max-width: 800px) {
+      .layout {
+        display: block;
+      }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      main {
+        padding: 28px 20px 56px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>LPN HESI Cleanup</h1>
+      <a href="#process">Process</a>
+      <a href="#step1">Step 1 - Inventory</a>
+      <a href="#step2">Step 2 - Mapping</a>
+      <a href="#step3">Step 3 - Staging</a>
+      <a href="#step4">Step 4 - Names</a>
+      <a href="#step5">Step 5 - Quality</a>
+      <a href="#step6">Step 6 - Repair</a>
+      <a href="#step7">Step 7 - Duplicates</a>
+      <a href="#step8">Step 8 - Readiness</a>
+      <a href="#step9">Step 9 - Dry-Run</a>
+      <a href="#step10">Step 10 - Import</a>
+    </aside>
+    <main>
+      <h1>LPN HESI Test Bank Cleanup Plan</h1>
+      <p>This document tracks the staged cleanup for the LPN HESI Nursing Test Bank. Import is the final phase only.</p>
+
+      <h2 id="process">Process</h2>
+      <ol>
+        <li>Source inventory</li>
+        <li>Official/recommended public topic mapping</li>
+        <li>Clean folder staging</li>
+        <li>Normalized filename preview</li>
+        <li>Question quality audit</li>
+        <li>Blocking structural repair</li>
+        <li>Duplicate/content-overlap audit</li>
+        <li>Metadata readiness check</li>
+        <li>Import dry-run only</li>
+        <li>Final import/apply after approval</li>
+      </ol>
+
+      <h2 id="step1">Step 1 - Source Inventory Results</h2>
+      <p><span class="status-ok">Stage 1 completed on 2026-08-18.</span></p>
+      <pre>lpn-hesi-source-inventory.csv
+lpn-hesi-source-inventory.json
+lpn-hesi-source-folder-summary.csv
+lpn-hesi-root-json-artifacts.csv
+lpn-hesi-parse-errors.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Source folders</th><td>4</td></tr>
+          <tr><th>JSON files</th><td>5</td></tr>
+          <tr><th>Root JSON artifacts</th><td>0</td></tr>
+          <tr><th>Parse errors</th><td>0</td></tr>
+          <tr><th>Total questions</th><td>282</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Source Folder</th><th>Files</th><th>Questions</th><th>Detected Terms</th></tr></thead>
+        <tbody>
+          <tr><td>1 - HESI Capstone</td><td>1</td><td>40</td><td>HESI; PN</td></tr>
+          <tr><td>2 - Medical Surgical</td><td>1</td><td>61</td><td>HESI; LPN</td></tr>
+          <tr><td>3 - Maternal Newborn</td><td>1</td><td>61</td><td>HESI; LPN</td></tr>
+          <tr><td>4 - Fundamentals</td><td>2</td><td>120</td><td>HESI; LPN; PN</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step2">Step 2 - Official Public Topic Mapping</h2>
+      <p><span class="status-ok">Stage 2 completed on 2026-08-18.</span></p>
+      <p>Use <strong>HESI LPN EXAMS</strong> as the public parent page context.</p>
+      <pre>Parent page: lpn-exams
+Nested page: hesi-lpn-exams
+Page name: HESI LPN EXAMS</pre>
+      <p>Topic card names should remain concise and should not repeat HESI LPN, matching the ATI RN/LPN pattern.</p>
+      <p class="note">These are recommended public topic names mapped from the source files and current app structure. They are not being treated as independently verified exact Elsevier/HESI official topic titles.</p>
+      <table>
+        <thead><tr><th>Public Topic</th><th>URL Slug</th><th>Classification</th><th>Source Inputs</th><th>Files</th><th>Questions</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>hesi-lpn-capstone-practice-questions</code></td><td>HESI LPN source topic</td><td><code>1 - HESI Capstone</code></td><td>1</td><td>40</td><td>Import to Capstone.</td></tr>
+          <tr><td>Medical Surgical</td><td><code>hesi-lpn-medical-surgical-practice-questions</code></td><td>HESI LPN source topic</td><td><code>2 - Medical Surgical</code></td><td>1</td><td>61</td><td>Import to Medical Surgical.</td></tr>
+          <tr><td>Maternal Newborn</td><td><code>hesi-lpn-maternal-newborn-practice-questions</code></td><td>HESI LPN source topic</td><td><code>3 - Maternal Newborn</code></td><td>1</td><td>61</td><td>Import to Maternal Newborn.</td></tr>
+          <tr><td>Fundamentals</td><td><code>hesi-lpn-fundamentals-practice-questions</code></td><td>HESI LPN source topic</td><td><code>4 - Fundamentals</code></td><td>2</td><td>120</td><td>Import both Fundamentals files here.</td></tr>
+          <tr><td>Pharmacology</td><td><code>hesi-lpn-pharmacology-practice-questions</code></td><td>Supplemental HESI LPN topic</td><td>LPN ATI <code>Excluded - HESI</code> file</td><td>1</td><td>46</td><td>Move/import HESI-branded pharmacology file here, not ATI.</td></tr>
+        </tbody>
+      </table>
+      <h3>Supplemental HESI File From LPN ATI Review</h3>
+      <table>
+        <thead><tr><th>File</th><th>Destination</th><th>Action</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><code>5-HESI LPN phamacology proctored exam.json</code></td><td>Pharmacology</td><td>Import with LPN HESI</td><td>The title and metadata are HESI LPN; it was excluded from ATI because it is HESI-branded.</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <tbody>
+          <tr><th>Public topics</th><td>5</td></tr>
+          <tr><th>Original source folders mapped</th><td>4</td></tr>
+          <tr><th>Supplemental ATI-excluded HESI files classified</th><td>1</td></tr>
+          <tr><th>Import-ready files expected after staging</th><td>6</td></tr>
+          <tr><th>Import-ready questions expected after staging</th><td>328</td></tr>
+          <tr><th>Duplicate/do-not-import files expected</th><td>0</td></tr>
+          <tr><th>Review-needed files expected</th><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step3">Step 3 - Clean Folder Staging</h2>
+      <p><span class="status-ok">Stage 3 completed on 2026-08-18.</span></p>
+      <p>Command used:</p>
+      <pre>.\scripts\stage-lpn-hesi-cleanup.ps1</pre>
+      <p>Generated script:</p>
+      <pre>scripts\stage-lpn-hesi-cleanup.ps1</pre>
+      <p>The script copies source files into clean public-topic folders and writes a manifest, JSON manifest, summary, and root-artifact report.</p>
+      <table>
+        <thead><tr><th>Destination Topic</th><th>Action</th><th>Exams</th><th>Questions</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td>import</td><td>1</td><td>40</td></tr>
+          <tr><td>Fundamentals</td><td>import</td><td>2</td><td>120</td></tr>
+          <tr><td>Maternal Newborn</td><td>import</td><td>1</td><td>61</td></tr>
+          <tr><td>Medical Surgical</td><td>import</td><td>1</td><td>61</td></tr>
+          <tr><td>Pharmacology</td><td>import</td><td>1</td><td>46</td></tr>
+        </tbody>
+      </table>
+      <p>Staged folders:</p>
+      <pre>Capstone
+Fundamentals
+Maternal Newborn
+Medical Surgical
+Pharmacology</pre>
+      <table>
+        <tbody>
+          <tr><th>Source folders processed</th><td>4</td></tr>
+          <tr><th>Staged JSON files</th><td>6</td></tr>
+          <tr><th>Staged questions</th><td>328</td></tr>
+          <tr><th>Root JSON artifacts</th><td>0</td></tr>
+          <tr><th>Review-needed staged files</th><td>0</td></tr>
+          <tr><th>Duplicate/do-not-import staged files</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>Generated Phase 3 files:</p>
+      <pre>lpn-hesi-cleanup-manifest.csv
+lpn-hesi-cleanup-manifest.json
+lpn-hesi-cleanup-summary.csv
+lpn-hesi-root-json-artifacts.csv</pre>
+      <table>
+        <thead><tr><th>Destination Topic</th><th>Source File</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>1-Hesi capstone pn proctored exam.json</code></td></tr>
+          <tr><td>Medical Surgical</td><td><code>1-HESI Speciality LPN Med Surg Proctored Exam.json</code></td></tr>
+          <tr><td>Maternal Newborn</td><td><code>1-Hesi speciality lpn maternal newborn proctored exam.json</code></td></tr>
+          <tr><td>Fundamentals</td><td><code>1-Lpn hesi fundamentals proctored exam (wgu).json</code></td></tr>
+          <tr><td>Fundamentals</td><td><code>2-HESI PN fundamentals proctored exam.json</code></td></tr>
+          <tr><td>Pharmacology</td><td><code>5-HESI LPN phamacology proctored exam.json</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step4">Step 4 - Normalized Filename Preview</h2>
+      <p><span class="status-ok">Stage 4 completed on 2026-08-18.</span></p>
+      <p>Command used:</p>
+      <pre>.\scripts\preview-nursing-test-bank-normalized-names.ps1 `
+  -CleanupRoot "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\HESI" `
+  -ManifestPath "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\HESI\lpn-hesi-cleanup-manifest.csv" `
+  -GroupSlug "lpn-hesi" `
+  -Vendor "HESI" `
+  -Program "LPN" `
+  -PublicProgramLabel "LPN"</pre>
+      <p>The shared preview script was tightened for HESI naming so LPN output removes redundant PN/LPN wording after the public prefix and corrects Speciality to Specialty.</p>
+      <p>Generated files:</p>
+      <pre>lpn-hesi-normalized-name-preview.csv
+lpn-hesi-normalized-name-review.csv
+lpn-hesi-normalized-name-review-simple.csv
+lpn-hesi-normalized-name-summary.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Preview rows</th><td>6</td></tr>
+          <tr><th>Review rows</th><td>0</td></tr>
+          <tr><th>Duplicate public titles</th><td>0</td></tr>
+          <tr><th>Duplicate slugs</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Destination Topic</th><th>Public Quiz Title</th><th>Slug</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>HESI LPN Capstone Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-capstone-proctored-exam-practice-questions</code></td></tr>
+          <tr><td>Medical Surgical</td><td><code>HESI LPN Specialty Med Surg Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-specialty-med-surg-proctored-exam-practice-questions</code></td></tr>
+          <tr><td>Maternal Newborn</td><td><code>HESI LPN Specialty Maternal Newborn Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-specialty-maternal-newborn-proctored-exam-practice-questions</code></td></tr>
+          <tr><td>Fundamentals</td><td><code>HESI LPN Fundamentals Proctored Exam (WGU) Practice Questions</code></td><td><code>hesi-lpn-fundamentals-proctored-exam-wgu-practice-questions</code></td></tr>
+          <tr><td>Fundamentals</td><td><code>HESI LPN Fundamentals Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-fundamentals-proctored-exam-practice-questions</code></td></tr>
+          <tr><td>Pharmacology</td><td><code>HESI LPN Pharmacology Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-pharmacology-proctored-exam-practice-questions</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step5">Step 5 - Question Quality Audit</h2>
+      <p><span class="status-ok">Stage 5 completed on 2026-08-18.</span></p>
+      <p>Command used:</p>
+      <pre>node scripts/audit-nursing-test-bank-question-quality.js `
+  --cleanupRoot "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\HESI" `
+  --manifestPath "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\HESI\lpn-hesi-cleanup-manifest.csv" `
+  --groupSlug lpn-hesi</pre>
+      <p>Generated files:</p>
+      <pre>lpn-hesi-question-quality-issues.csv
+lpn-hesi-question-quality-file-summary.csv
+lpn-hesi-question-quality-summary.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Audited files</th><td>6</td></tr>
+          <tr><th>Import-ready files audited</th><td>6</td></tr>
+          <tr><th>Audited questions</th><td>328</td></tr>
+          <tr><th>Total issues</th><td>10</td></tr>
+          <tr><th>Import-ready issues</th><td>10</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Issue</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td><code>empty_option_text</code></td><td>10</td></tr>
+        </tbody>
+      </table>
+      <p>No missing question text, missing clean question text, missing correct answer, invalid question type, or parse errors were reported by the audit.</p>
+      <table>
+        <thead><tr><th>Destination Topic</th><th>Source File</th><th>Issues</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>1-Hesi capstone pn proctored exam.json</code></td><td>6</td></tr>
+          <tr><td>Medical Surgical</td><td><code>1-HESI Speciality LPN Med Surg Proctored Exam.json</code></td><td>2</td></tr>
+          <tr><td>Maternal Newborn</td><td><code>1-Hesi speciality lpn maternal newborn proctored exam.json</code></td><td>1</td></tr>
+          <tr><td>Fundamentals</td><td><code>2-HESI PN fundamentals proctored exam.json</code></td><td>1</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Destination Topic</th><th>Source File</th><th>Question Numbers</th><th>Issue</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>1-Hesi capstone pn proctored exam.json</code></td><td>1, 2, 10, 15, 19, 26</td><td><code>empty_option_text</code></td></tr>
+          <tr><td>Medical Surgical</td><td><code>1-HESI Speciality LPN Med Surg Proctored Exam.json</code></td><td>10, 29</td><td><code>empty_option_text</code></td></tr>
+          <tr><td>Maternal Newborn</td><td><code>1-Hesi speciality lpn maternal newborn proctored exam.json</code></td><td>9</td><td><code>empty_option_text</code></td></tr>
+          <tr><td>Fundamentals</td><td><code>2-HESI PN fundamentals proctored exam.json</code></td><td>9</td><td><code>empty_option_text</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step6">Step 6 - Blocking Structural Repair</h2>
+      <p><span class="status-ok">Stage 6 completed on 2026-08-18.</span></p>
+      <p>Generated script:</p>
+      <pre>scripts\repair-lpn-hesi-blocking-structural-issues.js</pre>
+      <p>Command used:</p>
+      <pre>node scripts/repair-lpn-hesi-blocking-structural-issues.js</pre>
+      <p>Repair method:</p>
+      <ul>
+        <li>Removed only blank option entries from affected multiple-choice questions.</li>
+        <li>Blank keys removed were <code>E</code> and <code>F</code>.</li>
+        <li>No invented answer choices were added.</li>
+        <li>Every repaired question retained four valid options: <code>A</code>, <code>B</code>, <code>C</code>, and <code>D</code>.</li>
+        <li>Correct answers were validated after repair and none were removed.</li>
+      </ul>
+      <p>Generated repair report:</p>
+      <pre>lpn-hesi-structural-repair-report.json</pre>
+      <table>
+        <tbody>
+          <tr><th>Repaired files</th><td>4</td></tr>
+          <tr><th>Repaired questions</th><td>10</td></tr>
+          <tr><th>Removed blank option entries</th><td>20</td></tr>
+          <tr><th>Validation issues</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Destination Topic</th><th>Source File</th><th>Question Numbers</th><th>Removed Blank Keys</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>1-Hesi capstone pn proctored exam.json</code></td><td>1, 2, 10, 15, 19, 26</td><td><code>E</code>, <code>F</code></td></tr>
+          <tr><td>Medical Surgical</td><td><code>1-HESI Speciality LPN Med Surg Proctored Exam.json</code></td><td>10, 29</td><td><code>E</code>, <code>F</code></td></tr>
+          <tr><td>Maternal Newborn</td><td><code>1-Hesi speciality lpn maternal newborn proctored exam.json</code></td><td>9</td><td><code>E</code>, <code>F</code></td></tr>
+          <tr><td>Fundamentals</td><td><code>2-HESI PN fundamentals proctored exam.json</code></td><td>9</td><td><code>E</code>, <code>F</code></td></tr>
+        </tbody>
+      </table>
+      <p>Post-repair quality audit:</p>
+      <table>
+        <tbody>
+          <tr><th>Audited files</th><td>6</td></tr>
+          <tr><th>Audited questions</th><td>328</td></tr>
+          <tr><th>Total issues</th><td>0</td></tr>
+          <tr><th>Import-ready issues</th><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step7">Step 7 - Duplicate / Content-Overlap Audit</h2>
+      <p><span class="status-ok">Stage 7 completed on 2026-08-18.</span></p>
+      <p>Command used:</p>
+      <pre>.\scripts\audit-nursing-test-bank-cleanup-duplicates.ps1 `
+  -CleanupRoot "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\HESI" `
+  -ManifestPath "C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\HESI\lpn-hesi-cleanup-manifest.csv" `
+  -GroupSlug "lpn-hesi"</pre>
+      <p>Generated files:</p>
+      <pre>lpn-hesi-duplicate-audit-rows.csv
+lpn-hesi-exact-content-duplicates.csv
+lpn-hesi-clean-name-duplicates.csv
+lpn-hesi-question-signature-duplicates.csv
+lpn-hesi-duplicate-audit-summary.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Audited rows</th><td>6</td></tr>
+          <tr><th>Exact duplicate groups</th><td>0</td></tr>
+          <tr><th>Exact duplicate files</th><td>0</td></tr>
+          <tr><th>Clean-name duplicate groups</th><td>0</td></tr>
+          <tr><th>Clean-name duplicate files</th><td>0</td></tr>
+          <tr><th>Question-signature duplicate groups</th><td>0</td></tr>
+          <tr><th>Question-signature duplicate files</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>No LPN HESI staged file needs to be excluded based on duplicate/content-overlap audit results.</p>
+
+      <h2 id="step8">Step 8 - Metadata Readiness Check</h2>
+      <p><span class="status-ok">Stage 8 completed on 2026-08-18.</span></p>
+      <p>Generated script:</p>
+      <pre>scripts\audit-lpn-hesi-metadata-readiness.js</pre>
+      <p>Command used:</p>
+      <pre>node scripts/audit-lpn-hesi-metadata-readiness.js</pre>
+      <p>Generated files:</p>
+      <pre>lpn-hesi-metadata-readiness-summary.json
+lpn-hesi-metadata-readiness-topics.csv</pre>
+      <table>
+        <tbody>
+          <tr><th>Ready for import preparation</th><td>true</td></tr>
+          <tr><th>Public topics</th><td>5</td></tr>
+          <tr><th>Import-ready quizzes</th><td>6</td></tr>
+          <tr><th>Import-ready questions</th><td>328</td></tr>
+          <tr><th>Duplicate public titles</th><td>0</td></tr>
+          <tr><th>Duplicate import slugs</th><td>0</td></tr>
+          <tr><th>Quality issue types</th><td>0</td></tr>
+          <tr><th>Missing expected topics</th><td>0</td></tr>
+          <tr><th>Unexpected topics</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Topic</th><th>Slug</th><th>Files</th><th>Questions</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>hesi-lpn-capstone-practice-questions</code></td><td>1</td><td>40</td></tr>
+          <tr><td>Fundamentals</td><td><code>hesi-lpn-fundamentals-practice-questions</code></td><td>2</td><td>120</td></tr>
+          <tr><td>Maternal Newborn</td><td><code>hesi-lpn-maternal-newborn-practice-questions</code></td><td>1</td><td>61</td></tr>
+          <tr><td>Medical Surgical</td><td><code>hesi-lpn-medical-surgical-practice-questions</code></td><td>1</td><td>61</td></tr>
+          <tr><td>Pharmacology</td><td><code>hesi-lpn-pharmacology-practice-questions</code></td><td>1</td><td>46</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Check</th><th>Pass</th></tr></thead>
+        <tbody>
+          <tr><td>5 expected public topics present</td><td>true</td></tr>
+          <tr><td>6 import-ready quizzes</td><td>true</td></tr>
+          <tr><td>328 import-ready questions</td><td>true</td></tr>
+          <tr><td>No duplicate import slugs</td><td>true</td></tr>
+          <tr><td>No duplicate import public titles</td><td>true</td></tr>
+          <tr><td>No exact duplicate content groups</td><td>true</td></tr>
+          <tr><td>No question-signature duplicate groups</td><td>true</td></tr>
+          <tr><td>No blocking question issues remain</td><td>true</td></tr>
+          <tr><td>Remaining quality issues are explanation-only</td><td>true</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step9">Step 9 - Import Dry-Run Only</h2>
+      <p><span class="status-ok">Stage 9 completed on 2026-08-18.</span></p>
+      <p>Generated script:</p>
+      <pre>scripts\import-lpn-hesi-test-bank-dry-run.js</pre>
+      <p>Command used:</p>
+      <pre>node scripts/import-lpn-hesi-test-bank-dry-run.js</pre>
+      <p class="note">Important: this was a dry-run only. It produced local payload/report files and did not write to Firestore.</p>
+      <p>Generated files:</p>
+      <pre>import-dry-run\lpn-hesi-import-dry-run-summary.json
+import-dry-run\lpn-hesi-import-dry-run-quizzes.csv
+import-dry-run\lpn-hesi-import-dry-run-topic-summary.csv
+import-dry-run\lpn-hesi-import-dry-run-question-issues.csv
+import-dry-run\lpn-hesi-import-dry-run-missing.csv
+import-dry-run\lpn-hesi-import-dry-run-payload-samples.json</pre>
+      <table>
+        <tbody>
+          <tr><th>Preview rows</th><td>6</td></tr>
+          <tr><th>Manifest rows</th><td>6</td></tr>
+          <tr><th>Planned import rows</th><td>6</td></tr>
+          <tr><th>Excluded rows</th><td>0</td></tr>
+          <tr><th>Missing or parse-error rows</th><td>0</td></tr>
+          <tr><th>Question issue rows</th><td>0</td></tr>
+          <tr><th>Duplicate slug count</th><td>0</td></tr>
+          <tr><th>Duplicate title count</th><td>0</td></tr>
+          <tr><th>Total questions</th><td>328</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Topic</th><th>Topic Slug</th><th>Quizzes</th><th>Questions</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>hesi-lpn-capstone-practice-questions</code></td><td>1</td><td>40</td></tr>
+          <tr><td>Fundamentals</td><td><code>hesi-lpn-fundamentals-practice-questions</code></td><td>2</td><td>120</td></tr>
+          <tr><td>Maternal Newborn</td><td><code>hesi-lpn-maternal-newborn-practice-questions</code></td><td>1</td><td>61</td></tr>
+          <tr><td>Medical Surgical</td><td><code>hesi-lpn-medical-surgical-practice-questions</code></td><td>1</td><td>61</td></tr>
+          <tr><td>Pharmacology</td><td><code>hesi-lpn-pharmacology-practice-questions</code></td><td>1</td><td>46</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="step10">Step 10 - Final Import / Apply</h2>
+      <p><span class="status-ok">Stage 10 completed on 2026-08-18 after explicit approval.</span></p>
+      <p>Generated script:</p>
+      <pre>scripts\import-lpn-hesi-test-bank.js</pre>
+      <p>Commands used:</p>
+      <pre>node scripts/import-lpn-hesi-test-bank.js
+node scripts/import-lpn-hesi-test-bank.js --apply
+node scripts/import-lpn-hesi-test-bank.js --audit</pre>
+      <p>Generated import files:</p>
+      <pre>import-dry-run\lpn-hesi-real-import-dry-run-summary.json
+import-dry-run\lpn-hesi-real-import-apply-summary.json</pre>
+      <table>
+        <tbody>
+          <tr><th>Parent slug</th><td><code>lpn-exams</code></td></tr>
+          <tr><th>Parent id</th><td><code>z0xzINtS3EohZNaKosBz</code></td></tr>
+          <tr><th>Nested slug</th><td><code>hesi-lpn-exams</code></td></tr>
+          <tr><th>Nested id</th><td><code>ToLSmb6DG83NTZWXEJxt</code></td></tr>
+          <tr><th>Nested page name</th><td><code>HESI LPN EXAMS</code></td></tr>
+        </tbody>
+      </table>
+      <table>
+        <tbody>
+          <tr><th>Created topics</th><td>5</td></tr>
+          <tr><th>Created quizzes</th><td>6</td></tr>
+          <tr><th>Imported questions</th><td>328</td></tr>
+          <tr><th>Missing explanation rows</th><td>0</td></tr>
+          <tr><th>Blocking question issues</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Topic</th><th>Topic Id</th><th>Slug</th><th>Quizzes</th><th>Questions</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>XsTO5lZeaMwktqDEY8yE</code></td><td><code>hesi-lpn-capstone-practice-questions</code></td><td>1</td><td>40</td></tr>
+          <tr><td>Fundamentals</td><td><code>HQnTsUWAQtikNnY47O7a</code></td><td><code>hesi-lpn-fundamentals-practice-questions</code></td><td>2</td><td>120</td></tr>
+          <tr><td>Maternal Newborn</td><td><code>5QNQ1kHttmDRA6VJ1KfS</code></td><td><code>hesi-lpn-maternal-newborn-practice-questions</code></td><td>1</td><td>61</td></tr>
+          <tr><td>Medical Surgical</td><td><code>jD7wUAqBY3cn5ZMToJOK</code></td><td><code>hesi-lpn-medical-surgical-practice-questions</code></td><td>1</td><td>61</td></tr>
+          <tr><td>Pharmacology</td><td><code>kd7EysTYYyAv51SSo8Xd</code></td><td><code>hesi-lpn-pharmacology-practice-questions</code></td><td>1</td><td>46</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Topic</th><th>Quiz Title</th><th>Slug</th><th>Questions</th></tr></thead>
+        <tbody>
+          <tr><td>Capstone</td><td><code>HESI LPN Capstone Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-capstone-proctored-exam-practice-questions</code></td><td>40</td></tr>
+          <tr><td>Medical Surgical</td><td><code>HESI LPN Specialty Med Surg Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-specialty-med-surg-proctored-exam-practice-questions</code></td><td>61</td></tr>
+          <tr><td>Maternal Newborn</td><td><code>HESI LPN Specialty Maternal Newborn Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-specialty-maternal-newborn-proctored-exam-practice-questions</code></td><td>61</td></tr>
+          <tr><td>Fundamentals</td><td><code>HESI LPN Fundamentals Proctored Exam (WGU) Practice Questions</code></td><td><code>hesi-lpn-fundamentals-proctored-exam-wgu-practice-questions</code></td><td>60</td></tr>
+          <tr><td>Fundamentals</td><td><code>HESI LPN Fundamentals Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-fundamentals-proctored-exam-practice-questions</code></td><td>60</td></tr>
+          <tr><td>Pharmacology</td><td><code>HESI LPN Pharmacology Proctored Exam Practice Questions</code></td><td><code>hesi-lpn-pharmacology-proctored-exam-practice-questions</code></td><td>46</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Metric</th><th>Expected</th><th>Actual</th></tr></thead>
+        <tbody>
+          <tr><td>Quizzes</td><td>6</td><td>6</td></tr>
+          <tr><td>Questions</td><td>328</td><td>328</td></tr>
+        </tbody>
+      </table>
+      <p>All five topics exist and all five topic route mappings are present.</p>
+      <h3>Count Backfill and Static Sidebar Update</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Topic count</td><td>1</td><td>5</td></tr>
+          <tr><td>Quiz count</td><td>0</td><td>6</td></tr>
+          <tr><td>Question count</td><td>0</td><td>328</td></tr>
+        </tbody>
+      </table>
+      <p>Commands used:</p>
+      <pre>node scripts/backfill-sidebar-nested-question-counts.js --pillar nursing-test-bank --sub lpn-exams --nested hesi-lpn-exams --apply
+node scripts/generate-sidebar-data.js
+node scripts/audit-test-bank-topics.js --parent lpn-exams --nested hesi-lpn-exams</pre>
+      <p>Regenerated static files:</p>
+      <pre>public\data\sidebar-data.json
+src\lib\data\sidebar-data.ts</pre>
+      <p class="note">LPN HESI has completed all 10 cleanup and import phases.</p>
+    </main>
+  </div>
+</body>
+</html>

@@ -492,7 +492,9 @@ export default function Sidebar({
     // Try to load from static JSON file first
     const loadStaticData = async () => {
       try {
-        const response = await fetch("/data/sidebar-data.json");
+        const response = await fetch("/data/sidebar-data.json", {
+          cache: "no-store",
+        });
         if (response.ok) {
           const staticData = await response.json();
           if (staticData.pillarPages && staticData.pillarCategories) {
@@ -827,16 +829,12 @@ export default function Sidebar({
     categorySlug?: string
   ) => {
     e.preventDefault();
-    const { requestId, cacheKey, cachedPages } = openNestedModal(
+    const { requestId, cacheKey } = openNestedModal(
       categoryId,
       categoryName,
       "nursing-test-bank",
       categorySlug
     );
-
-    if (cachedPages) {
-      return;
-    }
 
     try {
       const result = await getNursingTestBankNestedSubPages(categoryId);

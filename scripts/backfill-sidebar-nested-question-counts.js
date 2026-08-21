@@ -9,6 +9,24 @@ const PILLAR_IDS = [
   "nursing-test-bank",
 ];
 
+function parseArgs(argv) {
+  const args = { pillar: null, sub: null, nested: null };
+  for (let index = 2; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--pillar") {
+      args.pillar = argv[index + 1];
+      index += 1;
+    } else if (arg === "--sub") {
+      args.sub = argv[index + 1];
+      index += 1;
+    } else if (arg === "--nested") {
+      args.nested = argv[index + 1];
+      index += 1;
+    }
+  }
+  return args;
+}
+
 function loadLocalEnv() {
   for (const filename of [".env.local", ".env"]) {
     const filePath = path.join(process.cwd(), filename);
@@ -57,7 +75,8 @@ async function collectionSize(collectionRef) {
 }
 
 async function countQuizQuestions(quizRef) {
-  return collectionSize(quizRef.collection("questions"));
+  const snapshot = await quizRef.collection("questions").count().get();
+  return snapshot.data().count;
 }
 
 async function countEntranceOrExitNestedQuestions(nestedRef) {
@@ -104,6 +123,7 @@ function changedFields(current, next) {
 async function main() {
   loadLocalEnv();
 
+  const args = parseArgs(process.argv);
   const apply = process.argv.includes("--apply");
   const db = getDb();
   const report = {
@@ -128,7 +148,7 @@ async function main() {
     batchSize = 0;
   }
 
-  for (const pillarId of PILLAR_IDS) {
+  for (const pillarId of PILLAR_IDS.filter((id) => !args.pillar || id === args.pillar)) {
     report.scannedPillars += 1;
     const subPagesSnapshot = await db
       .collection("pillarPages")
@@ -139,11 +159,16 @@ async function main() {
     report.scannedSubPages += subPagesSnapshot.size;
 
     for (const subPageDoc of subPagesSnapshot.docs) {
+      const subPageData = subPageDoc.data();
+      if (args.sub && subPageDoc.id !== args.sub && subPageData.slug !== args.sub) continue;
+
       const nestedSnapshot = await subPageDoc.ref.collection("nestedSubPages").get();
       report.scannedNestedPages += nestedSnapshot.size;
 
       for (const nestedDoc of nestedSnapshot.docs) {
         const current = nestedDoc.data();
+        if (args.nested && nestedDoc.id !== args.nested && current.slug !== args.nested) continue;
+
         const counts =
           pillarId === "nursing-test-bank"
             ? await countTestBankNestedQuestions(nestedDoc.ref)

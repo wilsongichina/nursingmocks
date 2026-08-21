@@ -30,6 +30,8 @@ interface PublicSubPageHeroProps {
   primaryActionHref?: string;
   secondaryActionHref?: string;
   totalChildQuestions: number;
+  hideSummaryBadges?: boolean;
+  hideActions?: boolean;
 }
 
 const decodeHeadingText = (value: string) =>
@@ -121,6 +123,8 @@ export default function PublicSubPageHero({
   primaryActionHref,
   secondaryActionHref,
   totalChildQuestions,
+  hideSummaryBadges = false,
+  hideActions = false,
 }: PublicSubPageHeroProps) {
   const formattedQuestionCount = totalChildQuestions.toLocaleString("en-US");
   const primaryHref = primaryActionHref || firstChildHref;
@@ -156,30 +160,34 @@ export default function PublicSubPageHero({
               <ContentRenderer content={pageDescription} />
             </div>
 
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              <span className="user-pill user-pill-purple">Exam: {examBadge}</span>
-              <span className="user-pill">Category: {pillarLabel}</span>
-              <span className="user-badge user-badge-green">Preview: Free</span>
-              {childCards.length > 0 && (
-                <span className="user-badge">
-                  {childSummaryLabel}: {childCards.length}
-                </span>
-              )}
-              {totalChildQuestions > 0 && (
-                <span className="user-badge user-badge-green">
-                  Questions: {formattedQuestionCount}
-                </span>
-              )}
-            </div>
+            {!hideSummaryBadges && (
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                <span className="user-pill user-pill-purple">Exam: {examBadge}</span>
+                <span className="user-pill">Category: {pillarLabel}</span>
+                <span className="user-badge user-badge-green">Preview: Free</span>
+                {childCards.length > 0 && (
+                  <span className="user-badge">
+                    {childSummaryLabel}: {childCards.length}
+                  </span>
+                )}
+                {totalChildQuestions > 0 && (
+                  <span className="user-badge user-badge-green">
+                    Questions: {formattedQuestionCount}
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div className="mt-7 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
-              <a href={primaryHref} className="user-button-primary w-full max-w-[20rem] sm:w-auto">
-                {actionLabels.primary}
-              </a>
-              <a href={secondaryHref} className="user-button-secondary w-full max-w-[20rem] sm:w-auto">
-                {actionLabels.secondary}
-              </a>
-            </div>
+            {!hideActions && (
+              <div className="mt-7 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+                <a href={primaryHref} className="user-button-primary w-full max-w-[20rem] sm:w-auto">
+                  {actionLabels.primary}
+                </a>
+                <a href={secondaryHref} className="user-button-secondary w-full max-w-[20rem] sm:w-auto">
+                  {actionLabels.secondary}
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>

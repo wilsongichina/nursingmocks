@@ -13,6 +13,7 @@ import UserProfileBadge from "./UserProfileBadge";
 import FloatingWhatsAppButton from "../ui/FloatingWhatsAppButton";
 import MobileBreadcrumb from "../ui/MobileBreadcrumb";
 import OnboardingRouteGuard from "@/components/onboarding/OnboardingRouteGuard";
+import { shouldSkipSupportWidgetForPublicPath } from "@/lib/public-route-performance";
 
 interface LayoutProps {
   children: ReactNode;
@@ -46,6 +47,7 @@ function LayoutWithSidebar({
   const { currentUser, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const showFloatingWhatsApp = !shouldSkipSupportWidgetForPublicPath(pathname);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const [pillarPages, setPillarPages] = useState<any[]>([]);
@@ -1239,7 +1241,7 @@ function LayoutWithSidebar({
         <main className="md:pt-0 pt-16">{children}</main>
         <NewFooter showSidebar={true} isCollapsed={isCollapsed} />
       </div>
-      <FloatingWhatsAppButton />
+      {showFloatingWhatsApp && <FloatingWhatsAppButton />}
     </div>
   );
 }
@@ -1254,6 +1256,7 @@ function LayoutWithoutSidebar({
   initialBreadcrumbItems?: BreadcrumbItem[];
 }) {
   const pathname = usePathname();
+  const showFloatingWhatsApp = !shouldSkipSupportWidgetForPublicPath(pathname);
 
   // Generate breadcrumb items for static pages
   const getMobileBreadcrumbItems = (): BreadcrumbItem[] => {
@@ -1332,7 +1335,7 @@ function LayoutWithoutSidebar({
       )}
       <main>{children}</main>
       <NewFooter />
-      <FloatingWhatsAppButton />
+      {showFloatingWhatsApp && <FloatingWhatsAppButton />}
     </div>
   );
 }

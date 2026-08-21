@@ -1,4 +1,4 @@
-# Nursing Test Bank Cleanup Master Plan
+﻿# Nursing Test Bank Cleanup Master Plan
 
 ## Purpose
 
@@ -68,6 +68,50 @@ Nested page
 ```
 
 When checking whether a page such as `ati-lpn-exams` matches `ati-rn-exams`, start by confirming the topic documents and topic route mappings. Do not jump straight to quiz/question counts until the topic layer is correct.
+
+## Important Slug Namespace Rule
+
+Public routes are flat:
+
+```text
+/{slug}
+```
+
+Because of that, topic and quiz slugs must be globally safe, not only unique inside one nested page.
+
+For regular course-exam folders, do not use generic program slugs such as:
+
+```text
+rn-medical-surgical-practice-questions
+lpn-medical-surgical-practice-questions
+```
+
+Use nested-page-aware namespace slugs instead.
+
+For RN REGULAR:
+
+```text
+rn-nursing-course-medical-surgical-practice-questions
+rn-nursing-course-fundamentals-practice-questions
+rn-nursing-course-pharmacology-practice-questions
+```
+
+For LPN REGULAR, use the same pattern:
+
+```text
+lpn-nursing-course-medical-surgical-practice-questions
+lpn-nursing-course-fundamentals-practice-questions
+lpn-nursing-course-pharmacology-practice-questions
+```
+
+Reason:
+
+```text
+ATI, HESI, Regular Course Exams, Certifications, and future RN/LPN groups can share display topic names.
+Their public slugs must still remain distinct.
+```
+
+Before import, run a route/slug collision check against existing `routeMappings`, not only against the current CSV.
 
 ### 1. Inventory The Source
 
@@ -295,9 +339,9 @@ Current status:
 |---|---|---|
 | `RN\ATI` | staged | Reference workflow completed. |
 | `LPN\ATI` | imported | Inventory, mapping, staging, duplicate audit, normalized-name preview, `Review Needed` placement, content-based review, final title cleanup, import dry run, blocking question repairs, Firestore import, count audit, and sidebar regeneration completed on 2026-08-18. Imported and verified 14 topics, 266 quizzes, and 13,370 questions; only 22 missing-explanation rows remain for a later explanation pass. |
-| `RN\HESI` | pending | Requires HESI-specific public topic naming. |
-| `LPN\HESI` | pending | Requires LPN HESI topic mapping. |
-| `RN\REGULAR` | pending | Likely needs heavier manual mapping. |
+| `RN\HESI` | cleanup documented | Inventory, mapping, staging, review, repairs, metadata readiness, and import preparation work completed earlier. |
+| `LPN\HESI` | cleanup documented | Inventory, mapping, staging, review, repairs, metadata readiness, and import preparation work completed earlier. |
+| `RN\REGULAR` | imported | Steps 1-10 completed on 2026-08-20 for RN Nursing Course Exams. Imported and audited 23 topics, 334 quizzes, and 17,837 questions under `rn-exams > rn-nursing-course-exams`; route slug conflicts were 0, sidebar counts were backfilled, and static sidebar data was regenerated. Missing explanations are deferred for a later explanation pass. |
 | `LPN\REGULAR` | pending | Likely needs heavier manual mapping. |
 | `RN\CERTIFICATIONS` | pending | Keep certification content separate from RN test bank topics. |
 
@@ -333,3 +377,70 @@ SEO metadata is correct
 For every major cleanup plan, create an HTML review page as well as markdown when the content includes mapping tables, file-placement decisions, or import summaries.
 
 The HTML pages are for easier visual review before import. They should be text-focused, simple, and documentation-style.
+
+## LPN REGULAR Current Status
+
+Updated on 2026-08-21.
+
+Status:
+
+```text
+Steps 1 through 10 complete.
+Status: Imported, audited, and sidebar counts backfilled.
+```
+
+Final pre-import baseline:
+
+| Metric | Count |
+|---|---:|
+| Topics | 5 |
+| Imported quizzes | 18 |
+| Imported questions | 949 |
+| Excluded ATI-branded files | 1 |
+| Blocking structural issues remaining | 0 |
+| Deferred missing explanations | 2 |
+
+Documentation:
+
+```text
+Documentation/public-sub-pages/LPN REGULAR test bank cleanup plan.md
+Documentation/public-sub-pages/LPN REGULAR test bank cleanup plan.html
+```
+
+
+## RN CERTIFICATIONS Status
+
+Current status as of 2026-08-21:
+
+| Phase | Status |
+|---:|---|
+| 1 Source Inventory | Complete |
+| 2 Official Topic Mapping | Complete |
+| 3 Stage Clean Folder | Complete |
+| 4 Review Needed | Complete |
+| 5 Normalized Quiz Names | Complete |
+| 6 Blocking Question Audit | Complete |
+| 7 Topic Metadata / Page Consistency | Complete |
+| 8 Documentation | Complete |
+| 9 Dry Run Import | Complete |
+| 10 Final Import | Complete |
+
+Current expected import target:
+
+```text
+RN Exams
+  RN Certifications
+    CNA Certification
+    Phlebotomy Certification
+```
+
+Status: Imported, audited, and sidebar counts backfilled. Final counts:
+
+| Metric | Count |
+|---|---:|
+| Topics | 2 |
+| Quizzes | 2 |
+| Questions | 287 |
+
+
+

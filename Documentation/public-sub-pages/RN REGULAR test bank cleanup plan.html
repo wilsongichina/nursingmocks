@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RN Nursing Course Exams Cleanup Plan</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; color: #1f2937; background: #f8fafc; }
+    main { max-width: 1120px; margin: 0 auto; padding: 32px 20px 56px; }
+    h1 { margin: 0 0 8px; font-size: 32px; color: #111827; }
+    h2 { margin-top: 34px; padding-top: 18px; border-top: 1px solid #dbe3ef; color: #111827; }
+    h3 { margin-top: 24px; color: #111827; }
+    p { line-height: 1.6; }
+    code, pre { background: #eef2f7; border-radius: 6px; }
+    code { padding: 2px 5px; }
+    pre { padding: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin: 14px 0 24px; background: #fff; }
+    th, td { padding: 10px 12px; border: 1px solid #dbe3ef; vertical-align: top; text-align: left; }
+    th { background: #e8eef7; color: #111827; }
+    .status { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 13px; font-weight: 700; }
+    .next { background: #fef3c7; color: #92400e; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>RN Nursing Course Exams Cleanup Plan</h1>
+  <p><span class="status">Step 1 Complete</span> <span class="status">Step 2 Complete</span> <span class="status">Step 3 Complete</span> <span class="status">Step 4 Complete</span> <span class="status">Step 5 Complete</span> <span class="status">Step 6 Complete</span> <span class="status">Step 7 Complete</span> <span class="status">Step 8 Complete</span> <span class="status">Step 9 Complete</span> <span class="status">Step 10 Complete</span></p>
+
+  <h2>Purpose</h2>
+  <p>Clean the RN REGULAR source folders before final Nursing Test Bank import. This group will become <strong>RN Nursing Course Exams</strong> under RN Exams.</p>
+
+  <pre><code>Source:
+C:\Users\wilso\OneDrive\Desktop\Naxlex\Nursing Test Bank\RN\REGULAR
+
+Cleanup:
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\RN\REGULAR</code></pre>
+
+  <h2>Ten-Stage Cleanup Process</h2>
+  <table>
+    <thead><tr><th>Step</th><th>Stage</th><th>Purpose</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Source Inventory</td><td>Count folders, JSON files, questions, support artifacts, and parse errors.</td><td>Complete</td></tr>
+      <tr><td>2</td><td>Official Topic Mapping</td><td>Decide final public topic names and map every source folder/file.</td><td>Complete</td></tr>
+      <tr><td>3</td><td>Stage Clean Folder</td><td>Copy files into clean destination folders and generate manifest files.</td><td>Complete</td></tr>
+      <tr><td>4</td><td>Review Needed</td><td>Resolve ambiguous, duplicate, or collision files.</td><td>Complete</td></tr>
+      <tr><td>5</td><td>Normalized Quiz Names</td><td>Generate public quiz titles, slugs, labels, and collision reports.</td><td>Complete</td></tr>
+      <tr><td>6</td><td>Blocking Question Audit</td><td>Check missing question text, empty options, and missing answers.</td><td>Complete</td></tr>
+      <tr><td>7</td><td>Topic Metadata / Page Consistency</td><td>Normalize Firestore topic display names, routes, counts, and shared templates.</td><td>Complete</td></tr>
+      <tr><td>8</td><td>Documentation</td><td>Record final counts, mappings, exclusions, audits, and decisions.</td><td>Complete</td></tr>
+      <tr><td>9</td><td>Dry Run Import</td><td>Validate import plan without writing data.</td><td>Complete</td></tr>
+      <tr><td>10</td><td>Final Import</td><td>Import only after explicit approval.</td><td>Complete</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Step 1 Results</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>Source folders</td><td>32</td></tr>
+      <tr><td>JSON exam files</td><td>351</td></tr>
+      <tr><td>Total questions counted</td><td>18,478</td></tr>
+      <tr><td>Root/support artifacts</td><td>32</td></tr>
+      <tr><td>JSON parse errors</td><td>0</td></tr>
+      <tr><td>Zero-question JSON files</td><td>2</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Generated Inventory Files</h2>
+  <pre><code>rn-regular-source-inventory.csv
+rn-regular-source-inventory.json
+rn-regular-source-folder-summary.csv
+rn-regular-root-json-artifacts.csv
+rn-regular-parse-errors.csv</code></pre>
+
+  <h2>Largest Source Folders</h2>
+  <table>
+    <thead><tr><th>Source Folder</th><th>Files</th><th>Questions</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>10 - Medical-Surgical</td><td>79</td><td>4,462</td><td>Largest folder; includes one zero-question file and at least one ATI-titled file.</td></tr>
+      <tr><td>15 - Pediatrics</td><td>34</td><td>1,831</td><td>Includes pediatric and OB/pediatric mixed titles.</td></tr>
+      <tr><td>12 - Fundamentals</td><td>34</td><td>1,670</td><td>Includes a Kaplan-titled fundamentals file.</td></tr>
+      <tr><td>9 - Pharmacology</td><td>29</td><td>1,317</td><td>Includes pathopharmacology and medication safety titles.</td></tr>
+      <tr><td>18 - Mental Health</td><td>26</td><td>1,564</td><td>Mental-health source bucket.</td></tr>
+      <tr><td>13 - Maternal Newborn</td><td>25</td><td>1,281</td><td>Includes NACE and medication-safety titles that need classification.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Immediate Review Flags For Step 2</h2>
+  <table>
+    <thead><tr><th>Source / File</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>8 - Kaplan Admission Tests</td><td>Looks like Nursing Entrance Exam content, not RN Nursing Course Exams.</td></tr>
+      <tr><td>17 - Promoting Health across the lifespan ATI Exams</td><td>ATI appears in the source folder name.</td></tr>
+      <tr><td>21 - Foundations of Nursing</td><td>Likely merge into Fundamentals.</td></tr>
+      <tr><td>7 - Gastro Urinary Systems Medication</td><td>Appears to duplicate Gastrointestinal System files.</td></tr>
+      <tr><td>14 - Anatomy and Physiology / LPN-titled file</td><td>LPN-titled file inside RN source.</td></tr>
+      <tr><td>Kaplan, NACE, CLEP-titled files</td><td>Need classification before import.</td></tr>
+      <tr><td>Zero-question files</td><td>Should not be imported unless repairable content is found.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Zero-Question Files</h2>
+  <table>
+    <thead><tr><th>Source Folder</th><th>File</th></tr></thead>
+    <tbody>
+      <tr><td>10 - Medical-Surgical</td><td>74-Med Surg Proctored Exam 4.json</td></tr>
+      <tr><td>19 - Dosage Calculations</td><td>14-WGU CTO1 Dosage Calculations Proctored Exam.json</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Current Status</h2>
+  <p>Step 10 is complete. RN REGULAR has been imported and verified under RN Exams &gt; RN Nursing Course Exams.</p>
+
+  <h2>Step 2 Results</h2>
+  <p>Step 2 created the official source-folder topic mapping file:</p>
+  <pre><code>rn-regular-topic-mapping.csv</code></pre>
+
+  <table>
+    <thead><tr><th>Action</th><th>Source Folders</th><th>Files</th><th>Questions</th></tr></thead>
+    <tbody>
+      <tr><td>Import</td><td>22</td><td>323</td><td>16,894</td></tr>
+      <tr><td>Merge</td><td>3</td><td>11</td><td>763</td></tr>
+      <tr><td>Review</td><td>5</td><td>10</td><td>638</td></tr>
+      <tr><td>Review duplicate</td><td>1</td><td>3</td><td>82</td></tr>
+      <tr><td>Exclude</td><td>1</td><td>4</td><td>101</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Approved Mapping Rules</h2>
+  <table>
+    <thead><tr><th>Rule</th><th>Decision</th></tr></thead>
+    <tbody>
+      <tr><td>Kaplan Admission Tests</td><td>Exclude from RN Nursing Course Exams; already uploaded elsewhere.</td></tr>
+      <tr><td>Foundations of Nursing</td><td>Merge into Fundamentals.</td></tr>
+      <tr><td>Nursing of Women and Childbearing</td><td>Merge into Maternal Newborn.</td></tr>
+      <tr><td>Management of Care for Adults</td><td>Merge into Adult Health unless file-level review changes it.</td></tr>
+      <tr><td>ICU Cardiac, Respiratory, Neuro, Renal, Shock Skills</td><td>Merge into Critical Care.</td></tr>
+      <tr><td>Gastro Urinary Systems Medication</td><td>Send to review/duplicate until duplicate checks confirm import or exclusion.</td></tr>
+      <tr><td>Zero-question files</td><td>Exclude unless repairable content is found.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Core Public Topics</h2>
+  <p>The mapping keeps regular RN course content under <strong>RN Nursing Course Exams</strong>. Core public topics include Medical Surgical, Fundamentals, Pharmacology, Mental Health, Maternal Newborn, Pediatrics, Health Assessment, Dosage Calculations, Adult Health, Community Health, Leadership, Pathophysiology, Anatomy and Physiology, Nutrition, Critical Care, and related support topics.</p>
+
+  <h2>Step 3 Results</h2>
+  <p>Step 3 staged the clean folders and generated the RN REGULAR manifest and summary files.</p>
+  <pre><code>scripts/stage-rn-regular-cleanup.ps1
+
+rn-regular-cleanup-manifest.csv
+rn-regular-cleanup-manifest.json
+rn-regular-cleanup-summary.csv
+rn-regular-root-json-artifacts.csv</code></pre>
+
+  <table>
+    <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>JSON files staged/classified</td><td>351</td></tr>
+      <tr><td>Import files</td><td>322</td></tr>
+      <tr><td>Review files</td><td>21</td></tr>
+      <tr><td>Excluded files</td><td>8</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Step 3 Exclusions</h2>
+  <table>
+    <thead><tr><th>Destination</th><th>Files</th><th>Questions</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>Excluded - Already Uploaded / Kaplan</td><td>6</td><td>175</td><td>Kaplan content has already been uploaded.</td></tr>
+      <tr><td>Excluded - Empty Files</td><td>2</td><td>0</td><td>Zero-question JSON files.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Step 4 Review Groups</h2>
+  <table>
+    <thead><tr><th>Review Group</th><th>Files</th><th>Questions</th></tr></thead>
+    <tbody>
+      <tr><td>Credential or Support Review</td><td>5</td><td>555</td></tr>
+      <tr><td>Duplicate Review - Gastrointestinal System</td><td>3</td><td>82</td></tr>
+      <tr><td>Nursing Process and Alterations in Health</td><td>2</td><td>123</td></tr>
+      <tr><td>Program Review - LPN or PN Titled</td><td>1</td><td>50</td></tr>
+      <tr><td>Support Development - Growth and Development</td><td>1</td><td>55</td></tr>
+      <tr><td>Support Science - Life Science</td><td>1</td><td>46</td></tr>
+      <tr><td>Support Science - Microbiology</td><td>3</td><td>124</td></tr>
+      <tr><td>Vendor Review - ATI Titled</td><td>5</td><td>338</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Step 4 Results</h2>
+  <p>All 21 review files were resolved. No review rows remain in the manifest.</p>
+  <pre><code>scripts/apply-rn-regular-review-placements.ps1
+rn-regular-review-placements.csv</code></pre>
+
+  <table>
+    <thead><tr><th>Decision</th><th>Files</th><th>Questions</th></tr></thead>
+    <tbody>
+      <tr><td>Import to Pediatrics</td><td>1</td><td>101</td></tr>
+      <tr><td>Import to Maternal Newborn</td><td>1</td><td>95</td></tr>
+      <tr><td>Import to Fundamentals</td><td>3</td><td>318</td></tr>
+      <tr><td>Import to Medical Surgical</td><td>1</td><td>75</td></tr>
+      <tr><td>Import to Anatomy and Physiology</td><td>1</td><td>50</td></tr>
+      <tr><td>Import to Growth and Development</td><td>2</td><td>144</td></tr>
+      <tr><td>Import to Microbiology</td><td>3</td><td>124</td></tr>
+      <tr><td>Duplicate - Do Not Import</td><td>3</td><td>82</td></tr>
+      <tr><td>Exclude - Non Nursing Support Science</td><td>1</td><td>46</td></tr>
+      <tr><td>Exclude - Wrong Vendor ATI</td><td>5</td><td>338</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Final State After Step 4</h2>
+  <table>
+    <thead><tr><th>Action</th><th>Files</th><th>Questions</th></tr></thead>
+    <tbody>
+      <tr><td>Import</td><td>334</td><td>17,837</td></tr>
+      <tr><td>Duplicate - Do Not Import</td><td>3</td><td>82</td></tr>
+      <tr><td>Exclude - Already Uploaded Kaplan</td><td>6</td><td>175</td></tr>
+      <tr><td>Exclude - Empty Files</td><td>2</td><td>0</td></tr>
+      <tr><td>Exclude - Non Nursing Support Science</td><td>1</td><td>46</td></tr>
+      <tr><td>Exclude - Wrong Vendor ATI</td><td>5</td><td>338</td></tr>
+      <tr><td>Review</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Step 5 Results</h2>
+  <p>Step 5 generated normalized public quiz titles, slugs, card labels, and collision reports from import rows only.</p>
+  <pre><code>scripts/preview-rn-regular-normalized-names.ps1
+
+rn-regular-normalized-name-preview.csv
+rn-regular-normalized-name-review.csv
+rn-regular-normalized-name-review-simple.csv
+rn-regular-normalized-name-summary.csv
+rn-regular-normalized-slug-collisions.csv
+rn-regular-normalized-title-collisions.csv</code></pre>
+
+  <table>
+    <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>Import rows normalized</td><td>334</td></tr>
+      <tr><td>Review rows</td><td>0</td></tr>
+      <tr><td>Slug collision rows</td><td>0</td></tr>
+      <tr><td>Title collision rows</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p>The normalized title preview uses RN Nursing Course Exam names only. It does not force ATI, HESI, LPN, or Practice Test wording into the public quiz titles.</p>
+
+  <h2>Normalized Topic Totals</h2>
+  <table>
+    <thead><tr><th>Topic</th><th>Files</th><th>Questions</th></tr></thead>
+    <tbody>
+      <tr><td>Adult Health</td><td>10</td><td>536</td></tr>
+      <tr><td>Anatomy and Physiology</td><td>18</td><td>1,156</td></tr>
+      <tr><td>Community Health</td><td>6</td><td>336</td></tr>
+      <tr><td>Critical Care</td><td>2</td><td>138</td></tr>
+      <tr><td>Dimensions of Nursing Practice</td><td>1</td><td>50</td></tr>
+      <tr><td>Dosage Calculations</td><td>17</td><td>694</td></tr>
+      <tr><td>Endocrinology</td><td>1</td><td>42</td></tr>
+      <tr><td>Fundamentals</td><td>41</td><td>2,240</td></tr>
+      <tr><td>Gastrointestinal System</td><td>3</td><td>82</td></tr>
+      <tr><td>Growth and Development</td><td>2</td><td>144</td></tr>
+      <tr><td>Health Assessment</td><td>7</td><td>355</td></tr>
+      <tr><td>Leadership</td><td>5</td><td>255</td></tr>
+      <tr><td>Maternal Newborn</td><td>25</td><td>1,226</td></tr>
+      <tr><td>Medical Surgical</td><td>78</td><td>4,480</td></tr>
+      <tr><td>Mental Health</td><td>26</td><td>1,564</td></tr>
+      <tr><td>Microbiology</td><td>3</td><td>124</td></tr>
+      <tr><td>Multidimensional Care</td><td>3</td><td>187</td></tr>
+      <tr><td>Nursing Specialty</td><td>2</td><td>82</td></tr>
+      <tr><td>Nutrition</td><td>2</td><td>65</td></tr>
+      <tr><td>Pathophysiology</td><td>18</td><td>825</td></tr>
+      <tr><td>Pediatrics</td><td>34</td><td>1,890</td></tr>
+      <tr><td>Perfusion</td><td>1</td><td>49</td></tr>
+      <tr><td>Pharmacology</td><td>29</td><td>1,317</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Step 6 Results</h2>
+  <p>Step 6 audited blocking question quality issues in the RN REGULAR import rows and repaired structural blank-option entries.</p>
+
+  <pre><code>scripts/repair-rn-regular-blocking-structural-issues.js
+
+rn-regular-question-quality-issues.csv
+rn-regular-question-quality-file-summary.csv
+rn-regular-question-quality-summary.csv
+rn-regular-structural-repair-report.json</code></pre>
+
+  <h3>Initial Audit Result</h3>
+  <table>
+    <thead><tr><th>Issue</th><th>Import Rows</th><th>Duplicate Rows</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Empty option text</td><td>286</td><td>3</td><td>Blocking for import rows.</td></tr>
+      <tr><td>Missing explanation</td><td>222</td><td>26</td><td>Deferred; explanations will be handled later.</td></tr>
+    </tbody>
+  </table>
+
+  <p>No missing question text, missing correct answers, parse errors, invalid question-type IDs, or declared-count mismatches were found in import rows.</p>
+
+  <h3>Structural Repair Applied</h3>
+  <p>The repair removed blank option entries only. It did not invent answer choices, explanations, or question text.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>Import files repaired</td><td>112</td></tr>
+      <tr><td>Blank question options removed</td><td>547</td></tr>
+      <tr><td>Blank subquestion options removed</td><td>8</td></tr>
+      <tr><td>Repair warnings</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Final Audit Result After Repair</h3>
+  <table>
+    <thead><tr><th>Issue</th><th>Import Rows</th><th>Duplicate Rows</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Empty option text</td><td>0</td><td>3</td><td>Import blockers cleared. Remaining rows are duplicate/do-not-import files.</td></tr>
+      <tr><td>Missing explanation</td><td>222</td><td>26</td><td>Deferred; not a blocker for this phase.</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Phase 6 blocking import issues: 0.</strong> Explanation-only import issues deferred: 222.</p>
+
+  <h2>Step 7 Results</h2>
+  <p>Step 7 prepared the RN Nursing Course Exams topic metadata and verified page consistency before import preparation.</p>
+
+  <pre><code>scripts/audit-rn-regular-metadata-readiness.js
+
+rn-regular-metadata-readiness-summary.json
+rn-regular-metadata-readiness-topics.csv
+rn-regular-duplicate-audit-rows.csv
+rn-regular-exact-content-duplicates.csv
+rn-regular-clean-name-duplicates.csv
+rn-regular-question-signature-duplicates.csv
+rn-regular-duplicate-audit-summary.csv</code></pre>
+
+  <h3>Readiness Checks</h3>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>23 expected RN Nursing Course Exam topics present</td><td>Pass</td></tr>
+      <tr><td>334 import-ready quizzes</td><td>Pass</td></tr>
+      <tr><td>17,837 import-ready questions</td><td>Pass</td></tr>
+      <tr><td>Duplicate import slugs</td><td>0</td></tr>
+      <tr><td>Duplicate import public titles</td><td>0</td></tr>
+      <tr><td>Exact duplicate content inside import set</td><td>0 blocking groups</td></tr>
+      <tr><td>Question-signature duplicates inside import set</td><td>0 blocking groups</td></tr>
+      <tr><td>Blocking question issues</td><td>0</td></tr>
+      <tr><td>Remaining quality issues</td><td>Explanation-only</td></tr>
+      <tr><td>RN Nursing Course Exams nested page exists locally</td><td>Pass</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>readyForImportPreparation: true</strong></p>
+
+  <h3>Topic Metadata Prepared</h3>
+  <table>
+    <thead><tr><th>Topic</th><th>Slug</th><th>Files</th><th>Questions</th></tr></thead>
+    <tbody>
+      <tr><td>Adult Health</td><td>rn-nursing-course-adult-health-practice-questions</td><td>10</td><td>536</td></tr>
+      <tr><td>Anatomy and Physiology</td><td>rn-nursing-course-anatomy-and-physiology-practice-questions</td><td>18</td><td>1,156</td></tr>
+      <tr><td>Community Health</td><td>rn-nursing-course-community-health-practice-questions</td><td>6</td><td>336</td></tr>
+      <tr><td>Critical Care</td><td>rn-nursing-course-critical-care-practice-questions</td><td>2</td><td>138</td></tr>
+      <tr><td>Dimensions of Nursing Practice</td><td>rn-nursing-course-dimensions-of-nursing-practice-questions</td><td>1</td><td>50</td></tr>
+      <tr><td>Dosage Calculations</td><td>rn-nursing-course-dosage-calculations-practice-questions</td><td>17</td><td>694</td></tr>
+      <tr><td>Endocrinology</td><td>rn-nursing-course-endocrinology-practice-questions</td><td>1</td><td>42</td></tr>
+      <tr><td>Fundamentals</td><td>rn-nursing-course-fundamentals-practice-questions</td><td>41</td><td>2,240</td></tr>
+      <tr><td>Gastrointestinal System</td><td>rn-nursing-course-gastrointestinal-system-practice-questions</td><td>3</td><td>82</td></tr>
+      <tr><td>Growth and Development</td><td>rn-nursing-course-growth-and-development-practice-questions</td><td>2</td><td>144</td></tr>
+      <tr><td>Health Assessment</td><td>rn-nursing-course-health-assessment-practice-questions</td><td>7</td><td>355</td></tr>
+      <tr><td>Leadership</td><td>rn-nursing-course-leadership-practice-questions</td><td>5</td><td>255</td></tr>
+      <tr><td>Maternal Newborn</td><td>rn-nursing-course-maternal-newborn-practice-questions</td><td>25</td><td>1,226</td></tr>
+      <tr><td>Medical Surgical</td><td>rn-nursing-course-medical-surgical-practice-questions</td><td>78</td><td>4,480</td></tr>
+      <tr><td>Mental Health</td><td>rn-nursing-course-mental-health-practice-questions</td><td>26</td><td>1,564</td></tr>
+      <tr><td>Microbiology</td><td>rn-nursing-course-microbiology-practice-questions</td><td>3</td><td>124</td></tr>
+      <tr><td>Multidimensional Care</td><td>rn-nursing-course-multidimensional-care-practice-questions</td><td>3</td><td>187</td></tr>
+      <tr><td>Nursing Specialty</td><td>rn-nursing-course-nursing-specialty-practice-questions</td><td>2</td><td>82</td></tr>
+      <tr><td>Nutrition</td><td>rn-nursing-course-nutrition-practice-questions</td><td>2</td><td>65</td></tr>
+      <tr><td>Pathophysiology</td><td>rn-nursing-course-pathophysiology-practice-questions</td><td>18</td><td>825</td></tr>
+      <tr><td>Pediatrics</td><td>rn-nursing-course-pediatrics-practice-questions</td><td>34</td><td>1,890</td></tr>
+      <tr><td>Perfusion</td><td>rn-nursing-course-perfusion-practice-questions</td><td>1</td><td>49</td></tr>
+      <tr><td>Pharmacology</td><td>rn-nursing-course-pharmacology-practice-questions</td><td>29</td><td>1,317</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Local Page Consistency Note</h3>
+  <p>The local sidebar data already contains RN Nursing Course Exams at slug <code>rn-nursing-course-exams</code> with nestedSubPageId <code>zMFBI0XMiRsJnnXWhL5S</code>.</p>
+  <p>Current local sidebar counts after final import/backfill are topicCount 23, quizCount 334, and questionCount 17,837.</p>
+
+  <h2>Step 8 Results</h2>
+  <p>Step 8 finalized the Markdown and HTML documentation for RN REGULAR cleanup. This page now records the source inventory, topic mapping, clean-folder staging, review resolutions, normalized names, question-quality audit, structural repair, duplicate audit, topic metadata readiness, page consistency notes, and final import-ready counts.</p>
+
+  <pre><code>Documentation/public-sub-pages/RN REGULAR test bank cleanup plan.md
+Documentation/public-sub-pages/RN REGULAR test bank cleanup plan.html</code></pre>
+
+  <h3>Final Import-Ready Summary</h3>
+  <table>
+    <thead><tr><th>Item</th><th>Count / Status</th></tr></thead>
+    <tbody>
+      <tr><td>Source JSON files reviewed</td><td>351</td></tr>
+      <tr><td>Import-ready files</td><td>334</td></tr>
+      <tr><td>Import-ready questions</td><td>17,837</td></tr>
+      <tr><td>Public topics prepared</td><td>23</td></tr>
+      <tr><td>Review rows remaining</td><td>0</td></tr>
+      <tr><td>Duplicate import slugs</td><td>0</td></tr>
+      <tr><td>Duplicate import public titles</td><td>0</td></tr>
+      <tr><td>Blocking question issues</td><td>0</td></tr>
+      <tr><td>Explanation-only deferred rows</td><td>222</td></tr>
+      <tr><td>Duplicate/do-not-import files</td><td>3</td></tr>
+      <tr><td>Excluded files</td><td>14</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Final Placement Summary</h3>
+  <table>
+    <thead><tr><th>Placement</th><th>Files</th><th>Questions</th><th>Import?</th></tr></thead>
+    <tbody>
+      <tr><td>RN Nursing Course Exams topics</td><td>334</td><td>17,837</td><td>Yes</td></tr>
+      <tr><td>Duplicate Source - Do Not Import</td><td>3</td><td>82</td><td>No</td></tr>
+      <tr><td>Excluded - Already Uploaded Kaplan</td><td>6</td><td>175</td><td>No</td></tr>
+      <tr><td>Excluded - Empty Files</td><td>2</td><td>0</td><td>No</td></tr>
+      <tr><td>Excluded - Non Nursing Support Science</td><td>1</td><td>46</td><td>No</td></tr>
+      <tr><td>Excluded - Wrong Vendor ATI</td><td>5</td><td>338</td><td>No</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Import Target</h3>
+  <pre><code>Pillar: Nursing Test Bank
+Parent page: RN Exams
+Nested page: RN Nursing Course Exams
+Nested slug: rn-nursing-course-exams
+Nested page ID: zMFBI0XMiRsJnnXWhL5S</code></pre>
+
+  <h3>Deferred Work</h3>
+  <p>The only known deferred content-quality item is missing explanations: 222 import questions are missing explanations. This was intentionally left for the later explanation pass.</p>
+
+  <p><strong>Step 8 result:</strong> RN REGULAR cleanup documentation is now import-preparation ready.</p>
+
+  <h2>Step 9 Results</h2>
+  <p>Step 9 created and ran the RN REGULAR dry-run import plan without writing Firestore data.</p>
+
+  <pre><code>scripts/import-rn-regular-test-bank-dry-run.js
+
+C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\RN\REGULAR\import-dry-run
+
+rn-regular-import-dry-run-summary.json
+rn-regular-import-dry-run-quizzes.csv
+rn-regular-import-dry-run-topic-summary.csv
+rn-regular-import-dry-run-question-issues.csv
+rn-regular-import-dry-run-missing.csv
+rn-regular-import-dry-run-payload-samples.json</code></pre>
+
+  <h3>Dry Run Summary</h3>
+  <table>
+    <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>Preview rows</td><td>334</td></tr>
+      <tr><td>Manifest rows</td><td>351</td></tr>
+      <tr><td>Planned import rows</td><td>334</td></tr>
+      <tr><td>Excluded rows</td><td>14</td></tr>
+      <tr><td>Missing or parse-error rows</td><td>0</td></tr>
+      <tr><td>Duplicate quiz slugs</td><td>0</td></tr>
+      <tr><td>Duplicate quiz titles</td><td>0</td></tr>
+      <tr><td>Planned questions</td><td>17,837</td></tr>
+      <tr><td>Dry-run question issues</td><td>193</td></tr>
+    </tbody>
+  </table>
+
+  <p>The dry-run question issues are all <code>missing_explanation</code>. No missing files, JSON parse errors, slug collisions, title collisions, missing question text, missing correct answers, or too-few-option errors were reported by the dry run.</p>
+
+  <h3>Global Route Slug Conflict Check</h3>
+  <p>Before final import, the planned RN REGULAR topic and quiz slugs were checked against existing global route mappings.</p>
+  <pre><code>scripts/audit-rn-regular-route-slug-conflicts.js
+
+rn-regular-route-slug-conflicts.csv
+rn-regular-route-slug-conflicts-summary.json</code></pre>
+  <table>
+    <thead><tr><th>Metric</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>Planned topic slugs checked</td><td>23</td></tr>
+      <tr><td>Planned quiz slugs checked</td><td>334</td></tr>
+      <tr><td>Planned total slugs checked</td><td>357</td></tr>
+      <tr><td>Existing route mappings checked</td><td>653</td></tr>
+      <tr><td>Topic slug conflicts</td><td>0</td></tr>
+      <tr><td>Quiz slug conflicts</td><td>0</td></tr>
+      <tr><td>Total conflict rows</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The planned quiz slugs do not currently conflict with existing global route mappings.</p>
+
+  <h3>Dry Run Topic Summary</h3>
+  <table>
+    <thead><tr><th>Topic</th><th>Quizzes</th><th>Questions</th></tr></thead>
+    <tbody>
+      <tr><td>Adult Health</td><td>10</td><td>536</td></tr>
+      <tr><td>Anatomy and Physiology</td><td>18</td><td>1,156</td></tr>
+      <tr><td>Community Health</td><td>6</td><td>336</td></tr>
+      <tr><td>Critical Care</td><td>2</td><td>138</td></tr>
+      <tr><td>Dimensions of Nursing Practice</td><td>1</td><td>50</td></tr>
+      <tr><td>Dosage Calculations</td><td>17</td><td>694</td></tr>
+      <tr><td>Endocrinology</td><td>1</td><td>42</td></tr>
+      <tr><td>Fundamentals</td><td>41</td><td>2,240</td></tr>
+      <tr><td>Gastrointestinal System</td><td>3</td><td>82</td></tr>
+      <tr><td>Growth and Development</td><td>2</td><td>144</td></tr>
+      <tr><td>Health Assessment</td><td>7</td><td>355</td></tr>
+      <tr><td>Leadership</td><td>5</td><td>255</td></tr>
+      <tr><td>Maternal Newborn</td><td>25</td><td>1,226</td></tr>
+      <tr><td>Medical Surgical</td><td>78</td><td>4,480</td></tr>
+      <tr><td>Mental Health</td><td>26</td><td>1,564</td></tr>
+      <tr><td>Microbiology</td><td>3</td><td>124</td></tr>
+      <tr><td>Multidimensional Care</td><td>3</td><td>187</td></tr>
+      <tr><td>Nursing Specialty</td><td>2</td><td>82</td></tr>
+      <tr><td>Nutrition</td><td>2</td><td>65</td></tr>
+      <tr><td>Pathophysiology</td><td>18</td><td>825</td></tr>
+      <tr><td>Pediatrics</td><td>34</td><td>1,890</td></tr>
+      <tr><td>Perfusion</td><td>1</td><td>49</td></tr>
+      <tr><td>Pharmacology</td><td>29</td><td>1,317</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Step 9 result:</strong> RN REGULAR dry-run import plan is structurally clean.</p>
+
+  <h2>Step 10 Results</h2>
+  <p>Step 10 completed the final RN REGULAR import on 2026-08-20.</p>
+
+  <h3>Final Importer</h3>
+  <pre><code>scripts/import-rn-regular-test-bank.js</code></pre>
+
+  <p>The final importer targets RN REGULAR content under the existing Nursing Test Bank hierarchy.</p>
+  <pre><code>Pillar: Nursing Test Bank
+Parent page: RN Exams
+Nested page: RN Nursing Course Exams
+Parent slug: rn-exams
+Nested slug: rn-nursing-course-exams
+Parent ID: SuT1noZoNGEjKGR1vTbi
+Nested ID: zMFBI0XMiRsJnnXWhL5S
+Group slug: rn-regular</code></pre>
+
+  <h3>Final Import Audit</h3>
+  <table>
+    <thead><tr><th>Metric</th><th>Expected</th><th>Imported / Audited</th></tr></thead>
+    <tbody>
+      <tr><td>Topics</td><td>23</td><td>23</td></tr>
+      <tr><td>Quizzes</td><td>334</td><td>334</td></tr>
+      <tr><td>Questions</td><td>17,837</td><td>17,837</td></tr>
+      <tr><td>Blocking question issues</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p>The first apply run exceeded the command timeout after a partial import. The importer was updated with a resume-safe <code>--skip-complete</code> mode, then rerun so already-complete quizzes were skipped and only missing/incomplete quizzes were written.</p>
+
+  <pre><code>node scripts\import-rn-regular-test-bank.js --audit
+
+expectedQuizzes: 334
+actualQuizzes: 334
+expectedQuestions: 17837
+actualQuestions: 17837</code></pre>
+
+  <h3>Sidebar Count Backfill</h3>
+  <p>After import, the RN Nursing Course Exams nested page counts were backfilled.</p>
+  <pre><code>node scripts\backfill-sidebar-nested-question-counts.js --pillar nursing-test-bank --sub rn-exams --nested rn-nursing-course-exams --apply</code></pre>
+
+  <table>
+    <thead><tr><th>Field</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>topicCount</td><td>23</td></tr>
+      <tr><td>quizCount</td><td>334</td></tr>
+      <tr><td>questionCount</td><td>17,837</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Static Sidebar Regeneration</h3>
+  <pre><code>node scripts\generate-sidebar-data.js
+
+public\data\sidebar-data.json
+src\lib\data\sidebar-data.ts</code></pre>
+
+  <p><strong>Step 10 result:</strong> RN REGULAR has been imported under RN Exams &gt; RN Nursing Course Exams and verified against the cleaned source counts.</p>
+
+  <p><strong>Deferred item:</strong> 222 import questions are missing explanations. These do not block the import and remain for a later explanation pass.</p>
+</main>
+</body>
+</html>

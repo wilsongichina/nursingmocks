@@ -1,0 +1,322 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LPN Regular Test Bank Cleanup Plan</title>
+  <style>
+    :root { --bg:#f8fafc; --panel:#ffffff; --text:#111827; --muted:#6b7280; --line:#d1d5db; --accent:#2563eb; }
+    body { margin:0; font-family: Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+    .layout { display:grid; grid-template-columns: 280px 1fr; min-height:100vh; }
+    aside { border-right:1px solid var(--line); background:#fff; padding:28px 20px; position:sticky; top:0; height:100vh; box-sizing:border-box; }
+    aside h1 { font-size:18px; margin:0 0 16px; }
+    aside a { display:block; color:#374151; text-decoration:none; padding:7px 0; font-size:14px; }
+    aside a:hover { color:var(--accent); }
+    main { max-width:980px; padding:40px 56px 80px; }
+    h1 { font-size:34px; line-height:1.2; margin:0 0 8px; }
+    h2 { margin-top:38px; padding-top:8px; border-top:1px solid var(--line); font-size:23px; }
+    h3 { margin-top:26px; font-size:18px; }
+    .status { color:#065f46; font-weight:700; }
+    code, pre { background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; }
+    code { padding:2px 5px; }
+    pre { padding:14px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; margin:16px 0 24px; background:#fff; }
+    th, td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#f3f4f6; }
+    .muted { color:var(--muted); }
+    @media (max-width: 860px) { .layout { display:block; } aside { position:static; height:auto; } main { padding:28px 20px 60px; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>LPN Regular Cleanup</h1>
+      <a href="#purpose">Purpose</a>
+      <a href="#status">Current Status</a>
+      <a href="#stages">Ten-Stage Process</a>
+      <a href="#inventory">Step 1 Inventory</a>
+      <a href="#summary">Source Folder Summary</a>
+      <a href="#notes">Phase 1 Notes</a>
+      <a href="#mapping">Step 2 Mapping</a>
+      <a href="#stage-clean">Step 3 Stage</a>
+      <a href="#review-needed">Step 4 Review</a>
+      <a href="#normalized-names">Step 5 Names</a>
+      <a href="#question-audit">Step 6 Audit</a>
+      <a href="#metadata-readiness">Step 7 Metadata</a>
+      <a href="#documentation-final">Step 8 Docs</a>
+      <a href="#dry-run">Step 9 Dry Run</a>
+      <a href="#final-import">Step 10 Import</a>
+    </aside>
+    <main>
+      <h1>LPN Nursing Course Exams Cleanup Plan</h1>
+      <p class="muted">Text-focused cleanup documentation for the LPN REGULAR Nursing Test Bank folder.</p>
+
+      <h2 id="purpose">Purpose</h2>
+      <p>Clean the LPN REGULAR source folders before final Nursing Test Bank import.</p>
+      <p>This group will become:</p>
+      <pre>LPN Exams
+  LPN Nursing Course Exams</pre>
+      <p>Source folder:</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex\Nursing Test Bank\LPN\REGULAR</pre>
+      <p>Cleanup folder:</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\REGULAR</pre>
+
+      <h2 id="status">Current Status</h2>
+      <p class="status">Steps 1 through 10 are complete.</p>
+      <p>Current next step:</p>
+      <pre>Complete</pre>
+
+      <h2 id="stages">Ten-Stage Cleanup Process</h2>
+      <table>
+        <thead><tr><th>Step</th><th>Stage</th><th>Purpose</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Source Inventory</td><td>Count folders, JSON files, questions, root/support artifacts, and parse errors.</td><td>Complete</td></tr>
+          <tr><td>2</td><td>Official Topic Mapping</td><td>Decide final public topic names and map every source folder/file to a topic, exclusion, duplicate, or review bucket.</td><td>Complete</td></tr>
+          <tr><td>3</td><td>Stage Clean Folder</td><td>Copy files into clean destination folders and generate manifest/summary files.</td><td>Complete</td></tr>
+          <tr><td>4</td><td>Review Needed</td><td>Resolve unmatched, ambiguous, duplicate, or collision files until review rows are zero.</td><td>Complete</td></tr>
+          <tr><td>5</td><td>Normalized Quiz Names</td><td>Generate public quiz titles, slugs, card labels, and collision reports.</td><td>Complete</td></tr>
+          <tr><td>6</td><td>Blocking Question Audit</td><td>Check missing question text, empty options, missing answers, and other blocking issues.</td><td>Complete</td></tr>
+          <tr><td>7</td><td>Topic Metadata / Page Consistency</td><td>Normalize Firestore topic display names, route mappings, counts, and shared template behavior.</td><td>Complete</td></tr>
+          <tr><td>8</td><td>Documentation</td><td>Record final counts, mappings, exclusions, audits, and decisions in Markdown and HTML.</td><td>Complete</td></tr>
+          <tr><td>9</td><td>Dry Run Import</td><td>Validate import plan without writing data.</td><td>Complete</td></tr>
+          <tr><td>10</td><td>Final Import</td><td>Import/overwrite only after explicit approval.</td><td>Complete</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="inventory">Step 1 - Source Inventory Results</h2>
+      <p>Inventory generated on 2026-08-21.</p>
+      <table>
+        <tbody>
+          <tr><th>Source folders</th><td>5</td></tr>
+          <tr><th>JSON exam files</th><td>19</td></tr>
+          <tr><th>Total questions counted</th><td>1,002</td></tr>
+          <tr><th>Root/support artifacts</th><td>0</td></tr>
+          <tr><th>JSON parse errors</th><td>0</td></tr>
+          <tr><th>Zero-question JSON files</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>Generated files:</p>
+      <pre>lpn-regular-source-inventory.csv
+lpn-regular-source-inventory.json
+lpn-regular-source-folder-summary.csv
+lpn-regular-root-json-artifacts.csv
+lpn-regular-parse-errors.csv</pre>
+
+      <h2 id="summary">Source Folder Summary</h2>
+      <table>
+        <thead><tr><th>Source Folder</th><th>Files</th><th>Questions</th><th>Parse Errors</th><th>Zero-Question Files</th></tr></thead>
+        <tbody>
+          <tr><td><code>1 - Dosage Calculations</code></td><td>3</td><td>88</td><td>0</td><td>0</td></tr>
+          <tr><td><code>2 - Medical Surgical</code></td><td>3</td><td>201</td><td>0</td><td>0</td></tr>
+          <tr><td><code>3 - Health assessment</code></td><td>1</td><td>50</td><td>0</td><td>0</td></tr>
+          <tr><td><code>4 - Fundamentals</code></td><td>11</td><td>623</td><td>0</td><td>0</td></tr>
+          <tr><td><code>5 - Leadership</code></td><td>1</td><td>40</td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="notes">Phase 1 Notes</h2>
+      <p>The raw LPN REGULAR folder is clean at the parsing level. No empty JSON files, root-level artifacts, or parse errors were found. The largest source folder is <code>4 - Fundamentals</code> with 11 files and 623 questions.</p>
+      <p>The next step is to confirm recommended public topic names and map each source folder into the final LPN Nursing Course Exams structure.</p>
+      <h2 id="mapping">Step 2 - Official Topic Mapping Results</h2>
+      <p>Mapping generated on 2026-08-21. All five LPN REGULAR source folders map cleanly into the final <code>LPN Nursing Course Exams</code> nested page.</p>
+      <p>Generated files:</p>
+      <pre>lpn-regular-topic-mapping.csv
+lpn-regular-file-placement-preview.csv
+lpn-regular-topic-summary.csv</pre>
+      <h3>Final Topic Mapping</h3>
+      <table>
+        <thead><tr><th>Source Folder</th><th>Final Topic</th><th>Public Slug</th><th>Files</th><th>Questions</th><th>Review Flags</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>1 - Dosage Calculations</code></td><td>Dosage Calculations</td><td><code>lpn-nursing-course-dosage-calculations-practice-questions</code></td><td>3</td><td>88</td><td>0</td><td>LPN medication math/course dosage calculation content.</td></tr>
+          <tr><td><code>2 - Medical Surgical</code></td><td>Medical Surgical</td><td><code>lpn-nursing-course-medical-surgical-practice-questions</code></td><td>3</td><td>201</td><td>0</td><td>LPN medical-surgical nursing course content.</td></tr>
+          <tr><td><code>3 - Health assessment</code></td><td>Health Assessment</td><td><code>lpn-nursing-course-health-assessment-practice-questions</code></td><td>1</td><td>50</td><td>0</td><td>Normalize casing from source folder.</td></tr>
+          <tr><td><code>4 - Fundamentals</code></td><td>Fundamentals</td><td><code>lpn-nursing-course-fundamentals-practice-questions</code></td><td>11</td><td>623</td><td>1</td><td>One ATI-branded title is flagged for review before import.</td></tr>
+          <tr><td><code>5 - Leadership</code></td><td>Leadership</td><td><code>lpn-nursing-course-leadership-practice-questions</code></td><td>1</td><td>40</td><td>0</td><td>LPN nursing leadership course content.</td></tr>
+        </tbody>
+      </table>
+      <h3>Slug Namespace Rule Applied</h3>
+      <p>Regular course topics use nested-page-aware slugs to avoid conflicts with ATI, HESI, and future LPN/RN groups.</p>
+      <pre>lpn-nursing-course-fundamentals-practice-questions</pre>
+      <p>instead of:</p>
+      <pre>lpn-fundamentals-practice-questions</pre>
+      <h3>Phase 2 Review Flag</h3>
+      <p>The following file remains course-relevant but needs title/vendor review during later normalization:</p>
+      <pre>4 - Fundamentals\11-LPN ATI fundamental proctored exam.json</pre>
+      <p>Reason: vendor-branded title appears inside the Regular LPN source. Keep the content for now, but normalize/review before import.</p>
+      <h2 id="stage-clean">Step 3 - Stage Clean Folder Results</h2>
+      <p>Clean staging completed on 2026-08-21.</p>
+      <p>Cleaned folder:</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\REGULAR\Cleaned</pre>
+      <p>Generated files:</p>
+      <pre>lpn-regular-cleaned-manifest.csv
+lpn-regular-cleaned-topic-summary.csv</pre>
+      <table>
+        <thead><tr><th>Destination Topic</th><th>Public Slug</th><th>Files</th><th>Questions</th><th>Review Flags</th></tr></thead>
+        <tbody>
+          <tr><td>Dosage Calculations</td><td><code>lpn-nursing-course-dosage-calculations-practice-questions</code></td><td>3</td><td>88</td><td>0</td></tr>
+          <tr><td>Fundamentals</td><td><code>lpn-nursing-course-fundamentals-practice-questions</code></td><td>10</td><td>570</td><td>0</td></tr>
+          <tr><td>Health Assessment</td><td><code>lpn-nursing-course-health-assessment-practice-questions</code></td><td>1</td><td>50</td><td>0</td></tr>
+          <tr><td>Leadership</td><td><code>lpn-nursing-course-leadership-practice-questions</code></td><td>1</td><td>40</td><td>0</td></tr>
+          <tr><td>Medical Surgical</td><td><code>lpn-nursing-course-medical-surgical-practice-questions</code></td><td>3</td><td>201</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <h3>Phase 3 Notes</h3>
+      <p>All 19 JSON files were copied into final clean topic folders. Total question count remained 1,002 after staging. No destination filename collisions occurred. The ATI-branded Fundamentals file remains flagged for review/title normalization.</p>
+      <h2 id="review-needed">Step 4 - Review Needed Resolution</h2>
+      <p>Review completed on 2026-08-21.</p>
+      <p>Generated files:</p>
+      <pre>lpn-regular-review-resolution.csv
+lpn-regular-excluded-files.csv</pre>
+      <h3>Resolved Review Item</h3>
+      <table>
+        <thead><tr><th>File</th><th>Original Placement</th><th>Resolution</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><code>4 - Fundamentals\11-LPN ATI fundamental proctored exam.json</code></td><td><code>Cleaned\Fundamentals</code></td><td>Excluded from LPN Regular import</td><td>Content is ATI-branded. The JSON subtopic is <code>LPN ATI fundamental proctored exam</code>, the source slug is <code>lpn-ati-fundamental-exam-1693220327</code>, and embedded image paths include <code>LPNATI</code>.</td></tr>
+        </tbody>
+      </table>
+      <p>Moved to:</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\REGULAR\Excluded - ATI Already Uploaded\Fundamentals\11-LPN ATI fundamental proctored exam.json</pre>
+      <h3>Post-Review Import Set</h3>
+      <table>
+        <thead><tr><th>Topic</th><th>Files</th><th>Questions</th><th>Review Flags</th></tr></thead>
+        <tbody>
+          <tr><td>Dosage Calculations</td><td>3</td><td>88</td><td>0</td></tr>
+          <tr><td>Fundamentals</td><td>10</td><td>570</td><td>0</td></tr>
+          <tr><td>Health Assessment</td><td>1</td><td>50</td><td>0</td></tr>
+          <tr><td>Leadership</td><td>1</td><td>40</td><td>0</td></tr>
+          <tr><td>Medical Surgical</td><td>3</td><td>201</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>The excluded file is preserved for traceability, but it will not be included in the Regular LPN import set.</p>
+      <h2 id="normalized-names">Step 5 - Normalized Quiz Names Results</h2>
+      <p>Normalized-name preview generated on 2026-08-21.</p>
+      <p>Generated files:</p>
+      <pre>lpn-regular-normalized-name-preview.csv
+lpn-regular-normalized-name-collisions.csv</pre>
+      <p>Normalization approach: preserve source exam identity, clean casing/spelling/spacing, append <code>Practice Questions</code>, and generate public slugs from the cleaned title.</p>
+      <h3>Collision Resolution</h3>
+      <p>One duplicate cleaned title was found in Fundamentals and resolved by appending the source set number.</p>
+      <table>
+        <thead><tr><th>Source File</th><th>Public Quiz Title</th><th>Public Slug</th></tr></thead>
+        <tbody>
+          <tr><td><code>2-Lpn fundamentals proctored exam (basic nursing).json</code></td><td>LPN Fundamentals Proctored Exam (Basic Nursing) - Set 2 Practice Questions</td><td><code>lpn-fundamentals-proctored-exam-basic-nursing-set-2-practice-questions</code></td></tr>
+          <tr><td><code>4-Lpn fundamentals proctored exam (basic nursing).json</code></td><td>LPN Fundamentals Proctored Exam (Basic Nursing) - Set 4 Practice Questions</td><td><code>lpn-fundamentals-proctored-exam-basic-nursing-set-4-practice-questions</code></td></tr>
+        </tbody>
+      </table>
+      <h3>Phase 5 Totals</h3>
+      <table>
+        <tbody>
+          <tr><th>Normalized quiz rows</th><td>18</td></tr>
+          <tr><th>Duplicate slugs before resolution</th><td>1</td></tr>
+          <tr><th>Duplicate slugs after resolution</th><td>0</td></tr>
+          <tr><th>Collision rows after resolution</th><td>0</td></tr>
+        </tbody>
+      </table>
+      <h2 id="question-audit">Step 6 - Blocking Question Audit Results</h2>
+      <p>Audit completed on 2026-08-21.</p>
+      <p>Generated files:</p>
+      <pre>lpn-regular-audit-manifest.json
+lpn-regular-audit-manifest.csv
+lpn-regular-question-quality-issues.csv
+lpn-regular-question-quality-file-summary.csv
+lpn-regular-question-quality-summary.csv
+lpn-regular-structural-repair-report.json</pre>
+      <h3>Initial Audit Result</h3>
+      <table><tbody><tr><th>Audited files</th><td>18</td></tr><tr><th>Audited questions</th><td>949</td></tr><tr><th>Initial issues</th><td>9</td></tr><tr><th>Empty option text issues</th><td>7</td></tr><tr><th>Missing explanation issues</th><td>2</td></tr></tbody></table>
+      <h3>Structural Repair</h3>
+      <p>The empty option text issues were repaired by removing blank option entries from the affected questions.</p>
+      <table><tbody><tr><th>Repaired files</th><td>4</td></tr><tr><th>Blank option entries removed</th><td>14</td></tr><tr><th>Repair warnings</th><td>0</td></tr></tbody></table>
+      <pre>10-PN FUNDAMENTALS PROCTORED EXAM.json
+6-Lpn Fundamental Proctored Exam (basic nursing).json
+7-Pn fundamentals 2023 proctored exam.json
+8-Lpn fundamentals exam evolve ( Illinois college) proctored exam.json</pre>
+      <h3>Post-Repair Audit Result</h3>
+      <table><tbody><tr><th>Import-ready files</th><td>18</td></tr><tr><th>Audited questions</th><td>949</td></tr><tr><th>Blocking structural issues remaining</th><td>0</td></tr><tr><th>Missing explanation issues deferred</th><td>2</td></tr></tbody></table>
+      <h3>Deferred Explanation Rows</h3>
+      <table><thead><tr><th>Topic</th><th>Source File</th><th>Question #</th><th>Source Question ID</th></tr></thead><tbody><tr><td>Medical Surgical</td><td><code>3-Medical surgical nursing proctored exam (lpn).json</code></td><td>92</td><td><code>59253196</code></td></tr><tr><td>Fundamentals</td><td><code>10-PN FUNDAMENTALS PROCTORED EXAM.json</code></td><td>19</td><td><code>26360</code></td></tr></tbody></table>
+      <p>The Regular LPN import set is structurally clean. Missing explanations are documented and deferred for a later explanation-writing pass.</p>
+      <h2 id="metadata-readiness">Step 7 - Topic Metadata / Page Consistency Results</h2>
+      <p>Metadata readiness completed on 2026-08-21.</p>
+      <p>Generated files:</p>
+      <pre>lpn-regular-metadata-readiness-summary.json
+lpn-regular-metadata-readiness-topics.csv</pre>
+      <h3>Readiness Summary</h3>
+      <table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody><tr><td>5 expected LPN Nursing Course Exam topics present</td><td>Pass</td></tr><tr><td>18 import-ready quizzes</td><td>Pass</td></tr><tr><td>949 import-ready questions</td><td>Pass</td></tr><tr><td>No duplicate import slugs</td><td>Pass</td></tr><tr><td>No duplicate import public titles</td><td>Pass</td></tr><tr><td>No blocking question issues remain</td><td>Pass</td></tr><tr><td>Remaining quality issues are explanation-only</td><td>Pass</td></tr><tr><td>LPN Nursing Course Exams nested page exists locally</td><td>Pass</td></tr></tbody></table>
+      <h3>Topic Metadata</h3>
+      <table><thead><tr><th>Topic</th><th>Public Slug</th><th>Files</th><th>Questions</th></tr></thead><tbody><tr><td>Dosage Calculations</td><td><code>lpn-nursing-course-dosage-calculations-practice-questions</code></td><td>3</td><td>88</td></tr><tr><td>Fundamentals</td><td><code>lpn-nursing-course-fundamentals-practice-questions</code></td><td>10</td><td>570</td></tr><tr><td>Health Assessment</td><td><code>lpn-nursing-course-health-assessment-practice-questions</code></td><td>1</td><td>50</td></tr><tr><td>Leadership</td><td><code>lpn-nursing-course-leadership-practice-questions</code></td><td>1</td><td>40</td></tr><tr><td>Medical Surgical</td><td><code>lpn-nursing-course-medical-surgical-practice-questions</code></td><td>3</td><td>201</td></tr></tbody></table>
+      <h3>Local Sidebar Status</h3>
+      <p><code>LPN Nursing Course Exams</code> exists locally with slug <code>lpn-nursing-course-exams</code>. Current local sidebar counts are zero because Regular LPN has not been imported/backfilled yet.</p>
+      <table><thead><tr><th>Count</th><th>Current</th><th>Expected After Import/Backfill</th></tr></thead><tbody><tr><td>Topics</td><td>0</td><td>5</td></tr><tr><td>Quizzes</td><td>0</td><td>18</td></tr><tr><td>Questions</td><td>0</td><td>949</td></tr></tbody></table>
+      <h3>Shared Template Check</h3>
+      <p>The public <code>[slug]</code> page already treats Nursing Test Bank topic pages as public sub-pages and uses published quizzes as child exam cards. This keeps LPN Regular topic pages aligned with the RN/ATI/HESI topic-page template behavior.</p>
+      <h2 id="documentation-final">Step 8 - Documentation Results</h2>
+      <p>Documentation finalized on 2026-08-21 for the completed cleanup stages before import preparation.</p>
+      <p>Updated documentation files:</p>
+      <pre>Documentation/public-sub-pages/LPN REGULAR test bank cleanup plan.md
+Documentation/public-sub-pages/LPN REGULAR test bank cleanup plan.html
+Documentation/public-sub-pages/Nursing Test Bank cleanup master plan.md</pre>
+      <h3>Artifact Index</h3>
+      <p>Generated cleanup artifacts are stored in:</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\REGULAR</pre>
+      <table><thead><tr><th>Stage</th><th>Artifact</th></tr></thead><tbody>
+        <tr><td>Phase 1</td><td><code>lpn-regular-source-inventory.csv</code></td></tr>
+        <tr><td>Phase 1</td><td><code>lpn-regular-source-inventory.json</code></td></tr>
+        <tr><td>Phase 1</td><td><code>lpn-regular-source-folder-summary.csv</code></td></tr>
+        <tr><td>Phase 2</td><td><code>lpn-regular-topic-mapping.csv</code></td></tr>
+        <tr><td>Phase 3</td><td><code>lpn-regular-cleaned-manifest.csv</code></td></tr>
+        <tr><td>Phase 4</td><td><code>lpn-regular-review-resolution.csv</code></td></tr>
+        <tr><td>Phase 5</td><td><code>lpn-regular-normalized-name-preview.csv</code></td></tr>
+        <tr><td>Phase 6</td><td><code>lpn-regular-question-quality-summary.csv</code></td></tr>
+        <tr><td>Phase 6</td><td><code>lpn-regular-structural-repair-report.json</code></td></tr>
+        <tr><td>Phase 7</td><td><code>lpn-regular-metadata-readiness-summary.json</code></td></tr>
+        <tr><td>Phase 7</td><td><code>lpn-regular-metadata-readiness-topics.csv</code></td></tr>
+      </tbody></table>
+      <h3>Import-Preparation Baseline</h3>
+      <table><tbody><tr><th>Final topics</th><td>5</td></tr><tr><th>Import-ready quizzes</th><td>18</td></tr><tr><th>Import-ready questions</th><td>949</td></tr><tr><th>Excluded ATI-branded files</th><td>1</td></tr><tr><th>Blocking structural issues remaining</th><td>0</td></tr><tr><th>Deferred missing explanations</th><td>2</td></tr><tr><th>Duplicate public quiz slugs</th><td>0</td></tr><tr><th>Duplicate public quiz titles</th><td>0</td></tr></tbody></table>
+      <p>Next step: Complete.</p>
+      <h2 id="dry-run">Step 9 - Dry Run Import Results</h2>
+      <p>Dry run completed on 2026-08-21.</p>
+      <p>Output folder:</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\REGULAR\import-dry-run</pre>
+      <p>Generated files:</p>
+      <pre>lpn-regular-import-dry-run-summary.json
+lpn-regular-import-dry-run-quizzes.csv
+lpn-regular-import-dry-run-topic-summary.csv
+lpn-regular-import-dry-run-question-issues.csv
+lpn-regular-import-dry-run-missing.csv
+lpn-regular-import-dry-run-payload-samples.json</pre>
+      <h3>Dry Run Summary</h3>
+      <table><tbody><tr><th>Preview rows</th><td>18</td></tr><tr><th>Manifest rows</th><td>18</td></tr><tr><th>Planned import rows</th><td>18</td></tr><tr><th>Excluded rows</th><td>1</td></tr><tr><th>Missing or parse-error rows</th><td>0</td></tr><tr><th>Question issue rows</th><td>2</td></tr><tr><th>Duplicate quiz slugs</th><td>0</td></tr><tr><th>Duplicate quiz titles</th><td>0</td></tr><tr><th>Total planned questions</th><td>949</td></tr></tbody></table>
+      <p>The 2 question issue rows are the already-documented missing explanations. They are not structural blockers for the import plan.</p>
+      <h3>Dry Run Topic Summary</h3>
+      <table><thead><tr><th>Topic</th><th>Public Slug</th><th>Planned Quizzes</th><th>Planned Questions</th></tr></thead><tbody><tr><td>Dosage Calculations</td><td><code>lpn-nursing-course-dosage-calculations-practice-questions</code></td><td>3</td><td>88</td></tr><tr><td>Fundamentals</td><td><code>lpn-nursing-course-fundamentals-practice-questions</code></td><td>10</td><td>570</td></tr><tr><td>Health Assessment</td><td><code>lpn-nursing-course-health-assessment-practice-questions</code></td><td>1</td><td>50</td></tr><tr><td>Leadership</td><td><code>lpn-nursing-course-leadership-practice-questions</code></td><td>1</td><td>40</td></tr><tr><td>Medical Surgical</td><td><code>lpn-nursing-course-medical-surgical-practice-questions</code></td><td>3</td><td>201</td></tr></tbody></table>
+      <p>The dry run is clean for import preparation: no missing JSON files, no parse errors, no duplicate public quiz slugs, no duplicate public quiz titles, and all planned question counts match the cleaned files.</p>
+      <h2 id="final-import">Step 10 - Final Import Results</h2>
+      <p>Final import completed on 2026-08-21.</p>
+      <p>Import script:</p>
+      <pre>scripts/import-lpn-regular-test-bank.js</pre>
+      <p>Final import summary file:</p>
+      <pre>C:\Users\wilso\OneDrive\Desktop\Naxlex cleanup\Nursing Test Bank\LPN\REGULAR\import-dry-run\lpn-regular-real-import-apply-summary.json</pre>
+      <h3>Firestore Import Result</h3>
+      <table><tbody><tr><th>Parent page</th><td><code>lpn-exams</code></td></tr><tr><th>Nested page</th><td><code>lpn-nursing-course-exams</code></td></tr><tr><th>Topics created</th><td>5</td></tr><tr><th>Quizzes created</th><td>18</td></tr><tr><th>Questions imported</th><td>949</td></tr><tr><th>Blocking question issues</th><td>0</td></tr><tr><th>Missing explanations carried forward</th><td>2</td></tr></tbody></table>
+      <h3>Imported Topic IDs</h3>
+      <table><thead><tr><th>Topic</th><th>Topic ID</th><th>Public Slug</th><th>Quizzes</th><th>Questions</th></tr></thead><tbody><tr><td>Dosage Calculations</td><td><code>0HON8THyW0E7BoW1rSm1</code></td><td><code>lpn-nursing-course-dosage-calculations-practice-questions</code></td><td>3</td><td>88</td></tr><tr><td>Medical Surgical</td><td><code>AlR3KvZbCSZXo21jeLnT</code></td><td><code>lpn-nursing-course-medical-surgical-practice-questions</code></td><td>3</td><td>201</td></tr><tr><td>Health Assessment</td><td><code>ZZkcjv41bafusCBaLafv</code></td><td><code>lpn-nursing-course-health-assessment-practice-questions</code></td><td>1</td><td>50</td></tr><tr><td>Fundamentals</td><td><code>XKenRdlHMVfdY4Dl99G2</code></td><td><code>lpn-nursing-course-fundamentals-practice-questions</code></td><td>10</td><td>570</td></tr><tr><td>Leadership</td><td><code>Qs5JkdFNyVs8OJ4DIUvf</code></td><td><code>lpn-nursing-course-leadership-practice-questions</code></td><td>1</td><td>40</td></tr></tbody></table>
+      <h3>Post-Import Audit</h3>
+      <table><thead><tr><th>Metric</th><th>Expected</th><th>Actual</th></tr></thead><tbody><tr><td>Quizzes</td><td>18</td><td>18</td></tr><tr><td>Questions</td><td>949</td><td>949</td></tr></tbody></table>
+      <h3>Sidebar / Local Data Update</h3>
+      <p>Sidebar counts were backfilled for <code>nursing-test-bank / lpn-exams / lpn-nursing-course-exams</code> and local sidebar files were regenerated.</p>
+      <table><tbody><tr><th>Topics</th><td>5</td></tr><tr><th>Quizzes</th><td>18</td></tr><tr><th>Questions</th><td>949</td></tr></tbody></table>
+      <p>LPN Regular is fully cleaned, imported, audited, and reflected in local sidebar data. The only content items intentionally carried forward are the 2 documented missing explanations.</p>
+    </main>
+  </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

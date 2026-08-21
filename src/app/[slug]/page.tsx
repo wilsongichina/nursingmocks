@@ -30,8 +30,6 @@ import {
   getAllQuestionTypes,
   getRouteMappingSlugsByIds,
   getRouteMappingById,
-  countQuizQuestions,
-  countExitEntranceQuizQuestions,
 } from "@/lib/firestore-operations";
 import {
   buildQuizPreviewState,
@@ -943,7 +941,7 @@ export async function generateStaticParams() {
     const result = await getAllRouteMappings();
 
     if (result.success && result.data) {
-      // Extract all unique slugs from route mappings
+      // Extract all unique slugs from route mappings.
       const slugs = new Set<string>();
       result.data.forEach((mapping: any) => {
         if (mapping.slug && !pillarPageSlugs.has(mapping.slug)) {
@@ -1148,26 +1146,40 @@ export default async function DynamicPage({
 
   // Handle quiz pages separately
   if (pageType === "quiz") {
+    const requiredProductId = resolveRequiredExamAccessProduct({ ...mapping, slug }, pageData);
+    const totalQuestionCount = Number(
+      pageData.questionCount || pageData.totalQuestions || pageData.questionsToShow || 0
+    );
+    const previewState = buildQuizPreviewState(totalQuestionCount, requiredProductId);
+    const staticPreviewLimit = previewState.previewEnabled
+      ? Math.max(previewState.previewLimit, 1)
+      : 0;
+
     // Load quiz questions
     let questionsResult: any = null;
-    if (pillarId === "nursing-entrance-exam") {
+    if (staticPreviewLimit <= 0) {
+      questionsResult = { success: true, data: [] };
+    } else if (pillarId === "nursing-entrance-exam") {
       questionsResult = await getNursingEntranceExamQuizQuestions(
         mapping.subPageId!,
         mapping.nestedPageId!,
-        mapping.quizId!
+        mapping.quizId!,
+        { limitCount: staticPreviewLimit }
       );
     } else if (pillarId === "nursing-exit-exam") {
       questionsResult = await getNursingExitExamQuizQuestions(
         mapping.subPageId!,
         mapping.nestedPageId!,
-        mapping.quizId!
+        mapping.quizId!,
+        { limitCount: staticPreviewLimit }
       );
     } else if (pillarId === "nursing-test-bank") {
       questionsResult = await getNursingTestBankQuizQuestions(
         mapping.subPageId!,
         mapping.nestedPageId!,
         mapping.topicId!,
-        mapping.quizId!
+        mapping.quizId!,
+        { limitCount: staticPreviewLimit }
       );
     }
 
@@ -1191,8 +1203,6 @@ export default async function DynamicPage({
       return allowedQuestionTypes.includes(questionTypeId);
     });
 
-    const requiredProductId = resolveRequiredExamAccessProduct({ ...mapping, slug }, pageData);
-    const previewState = buildQuizPreviewState(filteredQuestions.length, requiredProductId);
     // Public dynamic quiz pages are statically generated, so they render the configured free preview.
     // Full paid access is loaded after hydration through the authenticated quiz API.
     const questions = previewState.previewEnabled
@@ -1238,9 +1248,9 @@ export default async function DynamicPage({
         mapping.nestedPageId
       );
       if (quizzesResult.success && quizzesResult.data) {
-        relatedQuizzes = quizzesResult.data.filter(
-          (quiz: any) => quiz.id !== mapping.quizId
-        );
+        relatedQuizzes = quizzesResult.data
+          .filter((quiz: any) => quiz.id !== mapping.quizId)
+          .slice(0, 12);
         // Get slug mappings for related quizzes
         const quizIds = relatedQuizzes.map((q: any) => q.id);
         if (quizIds.length > 0) {
@@ -1262,9 +1272,9 @@ export default async function DynamicPage({
         mapping.nestedPageId
       );
       if (quizzesResult.success && quizzesResult.data) {
-        relatedQuizzes = quizzesResult.data.filter(
-          (quiz: any) => quiz.id !== mapping.quizId
-        );
+        relatedQuizzes = quizzesResult.data
+          .filter((quiz: any) => quiz.id !== mapping.quizId)
+          .slice(0, 12);
         // Get slug mappings for related quizzes
         const quizIds = relatedQuizzes.map((q: any) => q.id);
         if (quizIds.length > 0) {
@@ -1287,9 +1297,9 @@ export default async function DynamicPage({
         mapping.topicId
       );
       if (quizzesResult.success && quizzesResult.data) {
-        relatedQuizzes = quizzesResult.data.filter(
-          (quiz: any) => quiz.id !== mapping.quizId
-        );
+        relatedQuizzes = quizzesResult.data
+          .filter((quiz: any) => quiz.id !== mapping.quizId)
+          .slice(0, 12);
         // Get slug mappings for related quizzes
         const quizIds = relatedQuizzes.map((q: any) => q.id);
         if (quizIds.length > 0) {
@@ -1349,7 +1359,7 @@ export default async function DynamicPage({
       /^content for\b/i.test(rawQuizDescription.trim())
         ? `Practice questions for ${setLabel}. Review each answer with explanations when you are ready.`
         : rawQuizDescription;
-    const totalAvailableQuestions = filteredQuestions.length;
+    const totalAvailableQuestions = totalQuestionCount || filteredQuestions.length;
     const previewQuestionCount = questions.length;
     const lockedQuestionCount = previewState.hiddenQuestionCount;
     const relatedSectionTitle = `More ${subjectLabel} Practice Sets`;
@@ -1565,22 +1575,10 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           _quizSlugMap = slugMapResult.slugMap;
         }
-        // Fetch question counts for quizzes
-        quizzes = await Promise.all(
-          quizzes.map(async (quiz: any) => {
-            const quizSlug = quiz.slug || quiz.id;
-            const questionCount = await countExitEntranceQuizQuestions(
-              pillarId as "nursing-entrance-exam",
-              mapping.subPageId!,
-              mapping.nestedPageId!,
-              quizSlug
-            );
-            return {
-              ...quiz,
-              questionCount,
-            };
-          })
-        );
+        quizzes = quizzes.map((quiz: any) => ({
+          ...quiz,
+          questionCount: Number(quiz.questionCount || quiz.totalQuestions || quiz.questionsToShow || 0),
+        }));
       }
     } else if (pillarId === "nursing-exit-exam") {
       const quizzesResult = await getNursingExitExamQuizzes(
@@ -1601,22 +1599,10 @@ export default async function DynamicPage({
         if (slugMapResult.success) {
           _quizSlugMap = slugMapResult.slugMap;
         }
-        // Fetch question counts for quizzes
-        quizzes = await Promise.all(
-          quizzes.map(async (quiz: any) => {
-            const quizSlug = quiz.slug || quiz.id;
-            const questionCount = await countExitEntranceQuizQuestions(
-              pillarId as "nursing-exit-exam",
-              mapping.subPageId!,
-              mapping.nestedPageId!,
-              quizSlug
-            );
-            return {
-              ...quiz,
-              questionCount,
-            };
-          })
-        );
+        quizzes = quizzes.map((quiz: any) => ({
+          ...quiz,
+          questionCount: Number(quiz.questionCount || quiz.totalQuestions || quiz.questionsToShow || 0),
+        }));
       }
     } else if (pillarId === "nursing-test-bank") {
       const topicsResult = await getNursingTestBankTopics(
@@ -1663,22 +1649,10 @@ export default async function DynamicPage({
       if (slugMapResult.success) {
         _quizSlugMap = slugMapResult.slugMap;
       }
-      // Fetch question counts for quizzes
-      quizzes = await Promise.all(
-        quizzes.map(async (quiz: any) => {
-          const quizSlug = quiz.slug || quiz.id;
-          const questionCount = await countQuizQuestions(
-            mapping.subPageId!,
-            mapping.nestedPageId!,
-            mapping.topicId!,
-            quizSlug
-          );
-          return {
-            ...quiz,
-            questionCount,
-          };
-        })
-      );
+      quizzes = quizzes.map((quiz: any) => ({
+        ...quiz,
+        questionCount: Number(quiz.questionCount || quiz.totalQuestions || quiz.questionsToShow || 0),
+      }));
     }
   } else if (pageType === "sub") {
     // Load nested sub-pages
@@ -1790,7 +1764,10 @@ export default async function DynamicPage({
   const pageDescription = pageData.description || pageData.content || "";
   const bodyContent = pageData.bodyContent || "";
   const { tocItems, contentWithHeadingIds } = buildTocAndBodyContent(bodyContent);
-  const isPublicSubPage = pageType === "sub" || pageType === "nested";
+  const isPublicSubPage =
+    pageType === "sub" ||
+    pageType === "nested" ||
+    (pillarId === "nursing-test-bank" && pageType === "topic");
   const isAtiTeasPracticeParent =
     pageType === "sub" && slug === ATI_TEAS_PARENT_CANONICAL_SLUG;
   const pillarLabel = getPublicPillarLabel(pillarId);
@@ -1799,11 +1776,13 @@ export default async function DynamicPage({
   const actionLabels = getSubPageActionLabels(examBadge);
   const displayCopy = pageData.displayCopy || {};
   const childItemLabel =
-    pageType === "nested"
-      ? pillarId === "nursing-test-bank"
-        ? "Topic"
-        : "Exam"
-      : "Subject";
+    pageType === "topic" && pillarId === "nursing-test-bank"
+      ? "Exam"
+      : pageType === "nested"
+        ? pillarId === "nursing-test-bank"
+          ? "Topic"
+          : "Exam"
+        : "Subject";
   const childItemPlural =
     childItemLabel === "Topic"
       ? "topics"
@@ -1878,7 +1857,9 @@ export default async function DynamicPage({
     return quiz.active !== false && status !== "archived";
   });
   const childSource =
-    pageType === "nested"
+    pageType === "topic" && pillarId === "nursing-test-bank"
+      ? publishedQuizzes
+      : pageType === "nested"
       ? pillarId === "nursing-test-bank"
         ? publishedTopics
         : publishedQuizzes
@@ -1954,6 +1935,8 @@ export default async function DynamicPage({
     const slugValue =
       pageType === "nested" && pillarId === "nursing-test-bank"
         ? _topicSlugMap[child.id] || child.slug || child.seoSlug || child.id
+        : pageType === "topic" && pillarId === "nursing-test-bank"
+          ? _quizSlugMap[child.id] || child.slug || child.seoSlug || child.id
         : pageType === "nested"
           ? _quizSlugMap[child.id] || child.slug || child.seoSlug || child.id
           : _nestedPageSlugMap[child.id] || child.slug || child.seoSlug || child.id;

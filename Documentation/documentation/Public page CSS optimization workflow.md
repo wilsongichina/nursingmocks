@@ -572,3 +572,22 @@ Next measurement:
   - `/ati-teas-science-practice-test`
   - `/ati-teas-english-practice-test`
 - Check whether the unused JavaScript report still includes Tiptap/editor chunks on those public pages.
+
+### 2026-08-01: Phase 5 Public Support Widget Deferral
+
+Completed:
+
+- Added `shouldSkipSupportWidgetForPublicPath` in `src/lib/public-route-performance.ts`.
+- Updated `src/components/layout/Layout.tsx` so the shared sidebar and non-sidebar layouts skip `FloatingWhatsAppButton` on the same PageSpeed-targeted public SEO paths that already skip Tawk chat and defer Firebase Auth.
+
+Reason:
+
+- PageSpeed screenshots for the ATI TEAS public pages still showed the floating green support button even after Tawk was skipped.
+- The button is useful on conversion/support pages, but it is nonessential for first paint on indexable public SEO pages.
+- This keeps the page template, sidebar, breadcrumbs, public content, and footer unchanged while removing one floating client support widget from those public measurements.
+
+Validation:
+
+```text
+.\node_modules\.bin\tsc.cmd --noEmit
+```
