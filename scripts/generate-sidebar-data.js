@@ -466,8 +466,11 @@ async function generateSidebarData() {
     ]);
 
     if (!pillarPagesResult.success || !allPagesResult.success) {
-      console.error("❌ Failed to load data from Firestore");
-      process.exit(1);
+      console.error("Failed to load sidebar data from Firestore.");
+      if (keepExistingSidebarData("Firestore sidebar query failed.")) {
+        return;
+      }
+      throw new Error("Sidebar generation failed because Firestore could not be read and no usable existing sidebar cache exists.");
     }
 
     const routeMappings =
@@ -476,6 +479,13 @@ async function generateSidebarData() {
         : { byRefPath: {}, byNestedKey: {} };
 
     let allPillarPages = pillarPagesResult.data || [];
+
+    if (allPillarPages.length === 0) {
+      if (keepExistingSidebarData("Firestore returned zero pillar pages.")) {
+        return;
+      }
+      throw new Error("Sidebar generation refused to write placeholder pillar pages because Firestore returned zero pillar pages.");
+    }
     
     // Ensure all 3 required pillar pages are included
     // Order: 1. Entrance Exam, 2. Test Bank, 3. Exit Exam
@@ -650,6 +660,18 @@ async function generateSidebarData() {
       modalNestedPages,
       generatedAt: new Date().toISOString(),
     };
+
+    const totalCategoryCount = Object.values(categoriesByPillar).reduce(
+      (total, value) => total + (Array.isArray(value) ? value.length : 0),
+      0
+    );
+
+    if (totalCategoryCount === 0) {
+      if (keepExistingSidebarData("Generated sidebar data contains zero sub-pages.")) {
+        return;
+      }
+      throw new Error("Sidebar generation refused to write empty category data.");
+    }
 
     // Ensure the data directory exists
     const dataDir = path.join(process.cwd(), "public", "data");
