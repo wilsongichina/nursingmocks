@@ -5,6 +5,9 @@ const firebaseStorageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 const nextConfig: NextConfig = {
   /* config options here */
   staticPageGenerationTimeout: 180,
+  // Resolve route metadata before sending headers so missing content returns
+  // HTTP 404 instead of a streamed 200 response containing a not-found screen.
+  htmlLimitedBots: /.*/,
   serverExternalPackages: ["firebase"],
   async redirects() {
     return [

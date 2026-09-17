@@ -9,6 +9,7 @@ import {
   getNursingTestBankKbArticles,
   getNursingExitExamKbArticles,
 } from "@/lib/firestore-operations";
+import { isPublicKnowledgeBaseArticle } from "@/lib/public-route-canonicalization";
 
 export interface KnowledgeHubSubPage {
   id: string;
@@ -61,11 +62,11 @@ export async function loadKnowledgeBaseHubSubPages(): Promise<KnowledgeHubSubPag
     ]);
 
     const entranceKbArticles =
-      entranceKbResult.success && entranceKbResult.data ? entranceKbResult.data : [];
+      entranceKbResult.success && entranceKbResult.data ? entranceKbResult.data.filter(isPublicKnowledgeBaseArticle) : [];
     const testBankKbArticles =
-      testBankKbResult.success && testBankKbResult.data ? testBankKbResult.data : [];
+      testBankKbResult.success && testBankKbResult.data ? testBankKbResult.data.filter(isPublicKnowledgeBaseArticle) : [];
     const exitKbArticles =
-      exitKbResult.success && exitKbResult.data ? exitKbResult.data : [];
+      exitKbResult.success && exitKbResult.data ? exitKbResult.data.filter(isPublicKnowledgeBaseArticle) : [];
 
     if (entranceResult.success && entranceResult.data) {
       for (const subPage of entranceResult.data) {

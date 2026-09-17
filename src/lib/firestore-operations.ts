@@ -1,4 +1,5 @@
 import { db, storage } from "./firebase";
+import { getPublicRouteLookupSlugs } from "./public-route-canonicalization";
 import {
   doc,
   setDoc,
@@ -12520,23 +12521,21 @@ export const getRouteMappingBySlug = async (pillarId: string, slug: string) => {
 // Get route mapping by slug only (searches across all pillar pages)
 export const getRouteMappingBySlugOnly = async (slug: string) => {
   try {
-    const normalizedSlug = slug.toLowerCase().replace(/\s+/g, "-").trim();
     const routeMappingsRef = collection(db, "routeMappings");
-    const mappingQuery = query(
-      routeMappingsRef,
-      where("slug", "==", normalizedSlug)
-    );
-    const mappingSnapshot = await getDocs(mappingQuery);
+    for (const candidate of getPublicRouteLookupSlugs(slug)) {
+      const mappingQuery = query(routeMappingsRef, where("slug", "==", candidate));
+      const mappingSnapshot = await getDocs(mappingQuery);
 
-    if (!mappingSnapshot.empty) {
-      const doc = mappingSnapshot.docs[0];
-      return {
-        success: true,
-        data: {
-          id: doc.id,
-          ...doc.data(),
-        },
-      };
+      if (!mappingSnapshot.empty) {
+        const doc = mappingSnapshot.docs[0];
+        return {
+          success: true,
+          data: {
+            id: doc.id,
+            ...doc.data(),
+          },
+        };
+      }
     }
 
     return {

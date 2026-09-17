@@ -1,16 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-
-const ATI_TEAS_PARENT_CANONICAL_PATH = "/ati-teas-practice-test";
-const ATI_TEAS_PARENT_LEGACY_PATHS = new Set([
-  "/teas-7-practice",
-  "/teas-7-practice-test",
-]);
-const ATI_TEAS_SUBJECT_LEGACY_PATHS: Record<string, string> = {
-  "/teas-reading-practice-test": "/ati-teas-reading-practice-test",
-  "/teas-math-practice-test": "/ati-teas-math-practice-test",
-  "/teas-science-practice-test": "/ati-teas-science-practice-test",
-  "/teas-english-practice-test": "/ati-teas-english-practice-test",
-};
+import { canonicalizePublicPath } from "@/lib/public-route-canonicalization";
 
 const NOINDEX_EXACT_PATHS = new Set([
   "/dashboard",
@@ -46,17 +35,12 @@ const shouldNoindex = (pathname: string) =>
 
 export function middleware(request: NextRequest) {
   const pathname = normalizePathname(request.nextUrl.pathname.replace(/\/{2,}/g, "/"));
+  const canonicalPath = canonicalizePublicPath(pathname);
 
-  if (ATI_TEAS_PARENT_LEGACY_PATHS.has(pathname)) {
-    return NextResponse.redirect(
-      new URL(ATI_TEAS_PARENT_CANONICAL_PATH, request.url),
-      308
-    );
-  }
-
-  const canonicalSubjectPath = ATI_TEAS_SUBJECT_LEGACY_PATHS[pathname];
-  if (canonicalSubjectPath) {
-    return NextResponse.redirect(new URL(canonicalSubjectPath, request.url), 308);
+  if (canonicalPath !== pathname) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = canonicalPath;
+    return NextResponse.redirect(destination, 308);
   }
 
   const response = NextResponse.next();

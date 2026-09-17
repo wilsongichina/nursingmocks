@@ -139,10 +139,10 @@ Behavior:
 - Home and contact metadata already had current NursingMocks titles and descriptions.
 - About, guarantees, prices, register, login, cookie policy, and thank-you metadata now use current NursingMocks branding and page-specific descriptions.
 - Terms, privacy, and onboarding now use server page wrappers with static metadata while their interactive bodies remain client components.
-- `/robots.txt` is served from `public/robots.txt` and uses an explicit allowlist for public SEO pages, ATI TEAS quiz URL prefixes, sitemap/robots, and render assets while blocking everything else.
-- Non-sitemap pages outside the indexable allowlist receive an `X-Robots-Tag: noindex, nofollow` header from `src/middleware.ts` so Google can crawl the page and see the noindex signal instead of failing live inspection as blocked by robots.
-- The indexable middleware allowlist covers home, company, legal, registration/account setup, and existing ATI TEAS quiz pages for Sets 1-3 and 6-16 across English, Reading, Science, and Math. Sets 4 and 5 are intentionally omitted because those quiz records do not exist.
-- `/sitemap.xml` now lists the same indexable page set and no longer includes unrelated placeholder routes.
+- `/robots.txt` is served from `public/robots.txt`; public pages are crawlable by default and private/admin areas are excluded.
+- Middleware adds `X-Robots-Tag: noindex, nofollow` to private/application paths and knowledge-base category paths. KB articles retain their page-level noindex metadata.
+- Existing ATI TEAS quiz pages cover Sets 1-3 and 6-16 across English, Reading, Science, and Math. Sets 4 and 5 are intentionally omitted because those quiz records do not exist.
+- Following the September 17 routing repairs, `/sitemap.xml` derives public canonical URLs from route mappings and publication metadata, plus core static pages and published blogs. The verified sitemap contained 1,873 URLs, including all 56 ATI TEAS sets; draft, missing, retired and noindexed KB records are excluded.
 - Sitemap and robots generation use the canonical URL helper, which falls back to `https://www.nursingmocks.com` for localhost and Vercel preview domains.
 
 Files changed:
@@ -228,19 +228,18 @@ The dynamic public renderer also normalizes saved TEAS parent JSON-LD URLs and m
 
 Search crawling rule:
 
-- Canonical public ATI TEAS hub pages are listed in `src/app/sitemap.ts`.
-- Canonical public ATI TEAS hub pages are explicitly allowed in `public/robots.txt`.
+- Canonical ATI TEAS set pages are listed in `src/app/sitemap.ts`.
+- Canonical public ATI TEAS hub pages are crawlable under `public/robots.txt`.
 - Legacy redirect URLs are excluded from the sitemap but allowed in `public/robots.txt` so Google can crawl them, receive the permanent redirect, and consolidate signals to `/ati-teas-practice-test`.
-- Middleware indexability must match sitemap/robots intent. Any canonical page added to the sitemap must also be included in `INDEXABLE_PATHS` in `src/middleware.ts`, otherwise the route can receive an `X-Robots-Tag: noindex, nofollow`.
+- Legacy TEAS subject and published set URLs are normalized through the shared public route canonicalizer. Set URLs such as `/teas-reading-practice-test-set-1` permanently redirect to `/ati-teas-reading-practice-test-set-1`, while nonexistent Sets 4 and 5 remain unavailable.
+- The sitemap contains published exam hubs, subjects, topics and quizzes, including the 56 canonical ATI TEAS sets. Account, onboarding, fulfillment and deliberately noindexed KB pages are excluded.
+- Middleware noindex rules and page metadata must agree with sitemap eligibility. The old `INDEXABLE_PATHS` allowlist has been replaced by explicit private/application exclusions.
+- `/ati-teas` is retired and must return 404; `/ati-teas-practice-test` remains the main hub.
 
-Current ATI TEAS hub sitemap entries:
+ATI TEAS set sitemap entries (in addition to the published hubs):
 
 ```text
-/ati-teas-practice-test
-/ati-teas-reading-practice-test
-/ati-teas-math-practice-test
-/ati-teas-science-practice-test
-/ati-teas-english-practice-test
+/ati-teas-{english|math|reading|science}-practice-test-set-{1,2,3,6,7,8,9,10,11,12,13,14,15,16}
 ```
 
 Current allowed legacy redirect URLs:

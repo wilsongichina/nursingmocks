@@ -13,7 +13,14 @@ import PublicSubPageHero from "@/components/sections/PublicSubPageHero";
 import PublicSubPageGuide, {
   PublicSubPageGuideSection,
 } from "@/components/sections/PublicSubPageGuide";
-import { getSiteUrl, getImageUrl } from "@/lib/config";
+import { getSiteUrl, getImageUrl, getCanonicalSiteUrl } from "@/lib/config";
+import { sidebarData } from "@/lib/data/sidebar-data";
+import {
+  getAtiTeasPathParts,
+  canonicalizePublicPath,
+  isRetiredPublicPath,
+  isPublicKnowledgeBaseArticle,
+} from "@/lib/public-route-canonicalization";
 import {
   getKbArticleBySlug,
 } from "@/lib/firestore-operations";
@@ -46,6 +53,170 @@ const getNursingEntranceExamQuizzes = cache(getNursingEntranceExamQuizzesRaw);
 const getNursingExitExamQuizzes = cache(getNursingExitExamQuizzesRaw);
 const getAllQuestionTypes = cache(getAllQuestionTypesRaw);
 
+type SidebarRouteMapping = {
+  type: "sub" | "nested";
+  pillarId: "nursing-entrance-exam";
+  refPath: string;
+  subPageId: string;
+  nestedPageId?: string;
+};
+
+function getSidebarRouteMapping(slug: string): SidebarRouteMapping | null {
+  const categories = (sidebarData as any).pillarCategories?.["nursing-entrance-exam"];
+  if (!Array.isArray(categories)) return null;
+
+  const matchingCategory = categories.find(
+    (category: any) => category?.slug === slug || category?.publicSlug === slug
+  );
+  if (matchingCategory) {
+    const subPageId = matchingCategory.subPageId || matchingCategory.id;
+    if (subPageId) {
+      return {
+        type: "sub",
+        pillarId: "nursing-entrance-exam",
+        subPageId,
+        refPath: `pillarPages/nursing-entrance-exam/subPages/${subPageId}`,
+      };
+    }
+  }
+
+  for (const category of categories) {
+    const subPageId = category?.subPageId || category?.id;
+    if (!subPageId) continue;
+
+    const nestedPages = (sidebarData as any).modalNestedPages?.[
+      `nursing-entrance-exam:${subPageId}`
+    ];
+    if (!Array.isArray(nestedPages)) continue;
+
+    const matchingNestedPage = nestedPages.find(
+      (nestedPage: any) =>
+        nestedPage?.slug === slug ||
+        nestedPage?.publicSlug === slug ||
+        nestedPage?.publicUrl === `/${slug}`
+    );
+    const nestedPageId = matchingNestedPage?.nestedSubPageId || matchingNestedPage?.id;
+    if (!nestedPageId) continue;
+
+    return {
+      type: "nested",
+      pillarId: "nursing-entrance-exam",
+      subPageId,
+      nestedPageId,
+      refPath: `pillarPages/nursing-entrance-exam/subPages/${subPageId}/nestedSubPages/${nestedPageId}`,
+    };
+  }
+
+  return null;
+}
+
+function getAtiTeasFallbackRoute(slug: string) {
+  const pathParts = getAtiTeasPathParts(slug);
+  if (!pathParts) return null;
+  // A set needs its real quiz mapping and questions. A synthetic subject page
+  // would hide a failed lookup behind a successful response with no questions.
+  if (pathParts.kind === "subject" && pathParts.setNumber) return null;
+
+  const subjectSlug =
+    pathParts.kind === "subject"
+      ? `/ati-teas-${pathParts.subject}-practice-test`
+      : null;
+  const sidebarMapping = getSidebarRouteMapping(slug);
+  const subjectMapping = subjectSlug
+    ? getSidebarRouteMapping(subjectSlug.slice(1))
+    : null;
+
+  let mapping: SidebarRouteMapping;
+  if (sidebarMapping) {
+    mapping = sidebarMapping;
+  } else if (pathParts.kind === "parent") {
+    mapping = {
+      type: "sub",
+      pillarId: "nursing-entrance-exam",
+      subPageId: "nursing-entrance-exam",
+      refPath: "pillarPages/nursing-entrance-exam/subPages/nursing-entrance-exam",
+    };
+  } else {
+    const subPageId = subjectMapping?.subPageId || subjectSlug!.slice(1);
+    mapping = {
+      type: "nested",
+      pillarId: "nursing-entrance-exam",
+      subPageId,
+      nestedPageId: slug,
+      refPath: `pillarPages/nursing-entrance-exam/subPages/${subPageId}/nestedSubPages/${slug}`,
+    };
+  }
+
+  const subjectLabel =
+    pathParts.kind === "subject"
+      ? `${pathParts.subject.charAt(0).toUpperCase()}${pathParts.subject.slice(1)}`
+      : "";
+  const pageName =
+    pathParts.kind === "parent"
+      ? "ATI TEAS 7 Practice Test"
+      : `TEAS ${subjectLabel} Practice Test${
+          pathParts.setNumber ? ` Set ${pathParts.setNumber}` : ""
+        }`;
+  const description =
+    pathParts.kind === "parent"
+      ? "Practice ATI TEAS 7 questions by subject with NursingMocks."
+      : `Practice ATI TEAS 7 ${subjectLabel} questions${
+          pathParts.setNumber ? ` in Set ${pathParts.setNumber}` : ""
+        }.`;
+
+  return {
+    mapping: { ...mapping, __fallback: true },
+    pageData: {
+      pageName,
+      heading: pageName,
+      description,
+      meta: {
+        title: `${pageName} | NursingMocks`,
+        description,
+        canonicalUrl: `${getSiteUrl()}/${slug}`,
+      },
+    },
+  };
+}
+
+const resolvePublicRoute = cache(
+  async (slug: string): Promise<{ mapping: any; pageData: any } | null> => {
+    if (isRetiredPublicPath(slug)) return null;
+    const fallbackRoute = getAtiTeasFallbackRoute(slug);
+    const routeMappingResult = fallbackRoute
+      ? await Promise.race([
+          getRouteMappingBySlugOnly(slug),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+        ])
+      : await getRouteMappingBySlugOnly(slug);
+    const candidateMappings: any[] = [];
+
+    if (routeMappingResult?.success && routeMappingResult.data) {
+      candidateMappings.push(routeMappingResult.data);
+    }
+
+    const sidebarMapping = getSidebarRouteMapping(slug);
+    if (sidebarMapping) {
+      candidateMappings.push(sidebarMapping);
+    }
+
+    for (const mapping of candidateMappings) {
+      if (!mapping?.refPath) continue;
+      const contentResult = fallbackRoute
+        ? await Promise.race([
+            getPageByContentPath(mapping.refPath),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+          ])
+        : await getPageByContentPath(mapping.refPath);
+      if (contentResult?.success && contentResult.data) {
+        return { mapping, pageData: contentResult.data };
+      }
+    }
+
+    return fallbackRoute;
+  }
+);
+
 import {
   buildQuizPreviewState,
   resolveRequiredExamAccessProduct,
@@ -57,6 +228,7 @@ const ATI_TEAS_PARENT_CANONICAL_PATH = `/${ATI_TEAS_PARENT_CANONICAL_SLUG}`;
 const noindexMetadata = (slug: string): Metadata => ({
   title: `${slug} | NursingMocks`,
   description: `Content for ${slug}`,
+  alternates: { canonical: getCanonicalUrlForSlug(slug) },
   robots: {
     index: false,
     follow: false,
@@ -64,14 +236,11 @@ const noindexMetadata = (slug: string): Metadata => ({
 });
 
 const getCanonicalUrlForSlug = (
-  slug: string,
-  savedCanonicalUrl?: string
+  slug: string
 ) => {
-  if (slug === ATI_TEAS_PARENT_CANONICAL_SLUG) {
-    return `${getSiteUrl()}${ATI_TEAS_PARENT_CANONICAL_PATH}`;
-  }
-
-  return savedCanonicalUrl || `${getSiteUrl()}/${slug}`;
+  // Stored metadata can contain a copied homepage URL. The resolved route is
+  // authoritative for this page's canonical, including legacy TEAS aliases.
+  return `${getCanonicalSiteUrl()}${canonicalizePublicPath(`/${slug}`)}`;
 };
 
 const normalizeSchemaCanonicalUrls = (schema: string, slug: string) => {
@@ -570,6 +739,21 @@ const buildGeneratedPageBreadcrumbItems = async ({
     },
   ];
 
+  if (String(mapping?.refPath || "").startsWith("knowledgeBase/")) {
+    // KB mappings use subPageId for the article itself, not its parent.
+    const parentId = pageData?.parentId || pageData?.parentSubPageId;
+    if (parentId) {
+      const parent = await getPageByContentPath(`pillarPages/${pillarId}/subPages/${parentId}`);
+      const route = await getRouteMappingById({ pillarId, type: "sub", id: parentId });
+      const parentMapping = route.data as { slug?: string } | undefined;
+      if (parent.success && parent.data && route.success && parentMapping?.slug) {
+        items.push({ name: getPublicContentLabel(parent.data, parentMapping.slug), url: canonicalizePublicPath(`/${parentMapping.slug}`) });
+      }
+    }
+    items.push({ name: getPublicContentLabel(pageData, slug) });
+    return items;
+  }
+
   if (mapping?.subPageId && mapping.type !== "sub") {
     const parentRefPath = `pillarPages/${pillarId}/subPages/${mapping.subPageId}`;
     const parentResult = await getPageByContentPath(parentRefPath);
@@ -998,7 +1182,7 @@ export async function generateStaticParams() {
         console.warn("[Static Generation] Could not load sidebar data:", error);
       }
 
-      params.push(...Array.from(slugs).map((slug) => ({ slug })));
+      params.push(...Array.from(slugs).filter((slug) => !isRetiredPublicPath(slug)).map((slug) => ({ slug })));
       console.log(
         `[Static Generation] Generated ${params.length} static params for [slug] route (excluded pillar pages)`
       );
@@ -1029,6 +1213,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  if (isRetiredPublicPath(slug)) notFound();
 
   // Pillar pages are handled by dedicated route files, not this dynamic route
   const pillarPageSlugs = [
@@ -1044,32 +1229,28 @@ export async function generateMetadata({
     };
   }
 
-  const routeMappingResult = await getRouteMappingBySlugOnly(slug);
-  if (!routeMappingResult.success || !routeMappingResult.data) {
+  const resolvedRoute = await resolvePublicRoute(slug);
+  if (!resolvedRoute) {
     const kbArticleResult = await getKbArticleBySlug(slug);
 
-    if (kbArticleResult.success && kbArticleResult.data) {
+    if (kbArticleResult.success && kbArticleResult.data && isPublicKnowledgeBaseArticle(kbArticleResult.data)) {
       return noindexMetadata(slug);
     }
 
-    return {
-      title: `${slug} | NursingMocks`,
-      description: `Content for ${slug}`,
-    };
+    notFound();
   }
 
-  const mapping = routeMappingResult.data as any;
+  const { mapping, pageData } = resolvedRoute;
 
   if (mapping.refPath && String(mapping.refPath).startsWith("knowledgeBase/")) {
+    if (!isPublicKnowledgeBaseArticle(pageData)) notFound();
     return noindexMetadata(slug);
   }
 
-  const contentResult = await getPageByContentPath(mapping.refPath);
-
-  if (contentResult.success && contentResult.data) {
-    const data = contentResult.data as any;
+  if (pageData?.meta) {
+    const data = pageData as any;
     if (data.meta) {
-      const canonicalUrl = getCanonicalUrlForSlug(slug, data.meta.canonicalUrl);
+      const canonicalUrl = getCanonicalUrlForSlug(slug);
 
       return {
         title: data.meta.title || `${slug} | NursingMocks`,
@@ -1098,6 +1279,7 @@ export async function generateMetadata({
   return {
     title: `${slug} | NursingMocks`,
     description: `Content for ${slug}`,
+    alternates: { canonical: getCanonicalUrlForSlug(slug) },
   };
 }
 
@@ -1107,6 +1289,7 @@ export default async function DynamicPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  if (isRetiredPublicPath(slug)) notFound();
 
   // Pillar pages are handled by dedicated route files, not this dynamic route
   const pillarPageSlugs = [
@@ -1119,27 +1302,21 @@ export default async function DynamicPage({
     notFound(); // Let Next.js fall back to the dedicated route files
   }
 
-  // Get route mapping
-  const routeMappingResult = await getRouteMappingBySlugOnly(slug);
-  
-  // If no route mapping found, try to find KB article directly by slug
-  if (!routeMappingResult.success || !routeMappingResult.data) {
+  const resolvedRoute = await resolvePublicRoute(slug);
+
+  // If no route mapping or cached public mapping is found, try KB directly by slug.
+  if (!resolvedRoute) {
     // Fallback: Check if it's a KB article by searching knowledgeBase collection
     const kbArticleResult = await getKbArticleBySlug(slug);
     
-    if (kbArticleResult.success && kbArticleResult.data) {
+    if (kbArticleResult.success && kbArticleResult.data && isPublicKnowledgeBaseArticle(kbArticleResult.data)) {
       const pageData = kbArticleResult.data;
       const pillarId = (pageData as any).pillarId || "nursing-entrance-exam";
-      const initialBreadcrumbItems: PublicBreadcrumbItem[] = [
-        { name: "Home", url: "/" },
-        {
-          name: getPublicPillarBreadcrumbLabel(pillarId),
-          url: `/${pillarId}`,
-        },
-        {
-          name: getPublicContentLabel(pageData, slug),
-        },
-      ];
+      const initialBreadcrumbItems = await buildGeneratedPageBreadcrumbItems({
+        slug,
+        mapping: { pillarId, refPath: `knowledgeBase/${pageData.id}` },
+        pageData,
+      });
       
       return (
         <Layout showSidebar={true} initialBreadcrumbItems={initialBreadcrumbItems}>
@@ -1151,15 +1328,7 @@ export default async function DynamicPage({
     notFound();
   }
 
-  const mapping = routeMappingResult.data as any;
-
-  // Load content using refPath
-  const contentResult = await getPageByContentPath(mapping.refPath);
-  if (!contentResult.success || !contentResult.data) {
-    notFound();
-  }
-
-  const pageData = contentResult.data as any;
+  const { mapping, pageData } = resolvedRoute;
   const pageType = mapping.type;
   const pillarId = mapping.pillarId;
   const initialBreadcrumbItems = await buildGeneratedPageBreadcrumbItems({
@@ -1170,6 +1339,7 @@ export default async function DynamicPage({
 
   // Handle knowledge base articles
   if (mapping.refPath && mapping.refPath.startsWith("knowledgeBase/")) {
+    if (!isPublicKnowledgeBaseArticle(pageData)) notFound();
     return (
       <Layout showSidebar={true} initialBreadcrumbItems={initialBreadcrumbItems}>
         <KbArticleViewer article={pageData} pillarId={pillarId} />
@@ -1981,7 +2151,7 @@ export default async function DynamicPage({
     return {
       id: child.id || slugValue,
       title,
-      href: `/${String(slugValue).replace(/^\/+/, "")}`,
+      href: canonicalizePublicPath(`/${String(slugValue).replace(/^\/+/, "")}`),
       questionCount,
       topicBadgeCount: Number.isFinite(plannedExamCount) ? plannedExamCount : null,
       description,
@@ -2149,14 +2319,12 @@ export default async function DynamicPage({
                           </Link>
                         ) : (
                           <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
-                            <form action={card.href} method="get">
-                              <button
-                                type="submit"
+                              <Link
+                                href={`${card.href}${pageType === "topic" || pillarId !== "nursing-test-bank" ? "#questions-start" : ""}`}
                                 className="inline-flex min-h-[40px] w-full cursor-pointer items-center justify-center rounded-full border border-[#d8d5ff] bg-white px-3 py-2 text-xs font-extrabold text-[#5548e0] transition hover:border-[#b8b1ff] hover:bg-[#f7f6ff]"
                               >
                                 Review Mode
-                              </button>
-                            </form>
+                              </Link>
                             <form action={card.href} method="get">
                               <input type="hidden" name="mode" value="exam" />
                               <button

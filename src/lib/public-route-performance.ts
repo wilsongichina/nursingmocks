@@ -2,6 +2,9 @@ const AUTH_DEFERRED_PUBLIC_PATHS = new Set([
   "/",
   "/about",
   "/contact",
+  "/how-it-works",
+  "/faqs",
+  "/ati-teas",
   "/guarantees",
   "/prices",
   "/money-back-guarantee",
@@ -20,7 +23,7 @@ const AUTH_DEFERRED_PUBLIC_PATHS = new Set([
 ]);
 
 const TEAS_SET_PAGE_PATTERN =
-  /^\/teas-(english|reading|science|math)-practice-test-set-\d+$/;
+  /^\/(?:ati-)?teas-(english|reading|science|math)-practice-test-set-\d+$/;
 
 function cleanPublicPath(pathname: string) {
   return pathname.split("?")[0]?.replace(/\/+$/, "") || "/";
@@ -33,13 +36,17 @@ export function shouldDeferAuthForPublicPath(pathname: string) {
 
 export function shouldLazyLoadAuthForPublicPath(pathname: string) {
   const cleanPath = cleanPublicPath(pathname);
-  return TEAS_SET_PAGE_PATTERN.test(cleanPath);
+  // Public articles and category pages (including their not-found screens)
+  // must render before the browser-only Firebase provider initialises.
+  return TEAS_SET_PAGE_PATTERN.test(cleanPath) ||
+    cleanPath === "/blog" || cleanPath.startsWith("/blog/") ||
+    cleanPath === "/knowledge-base" || cleanPath.startsWith("/knowledge-base/");
 }
 
 export function shouldSkipChatForPublicPath(pathname: string) {
   return (
     shouldDeferAuthForPublicPath(pathname) ||
-    shouldLazyLoadAuthForPublicPath(pathname)
+    TEAS_SET_PAGE_PATTERN.test(cleanPublicPath(pathname))
   );
 }
 

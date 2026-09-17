@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { getAdminDb } from "@/lib/server/firebase-admin";
+import { getPublicRouteLookupSlugs } from "@/lib/public-route-canonicalization";
 
 type Result<T> = { success: true; data: T; message?: string } | { success: false; data?: T; message: string; slugMap?: Record<string, string> };
 
@@ -63,9 +64,11 @@ export const getAllRouteMappings = cache(async (): Promise<Result<RouteMappingRe
 
 export const getRouteMappingBySlugOnly = cache(async (slug: string) => {
   try {
-    const snap = await getAdminDb().collection("routeMappings").where("slug", "==", normalizeSlug(slug)).limit(1).get();
-    if (snap.empty) return fail(`No route mapping found for slug: ${slug}`);
-    return ok(withId(snap.docs[0]));
+    for (const candidate of getPublicRouteLookupSlugs(slug)) {
+      const snap = await getAdminDb().collection("routeMappings").where("slug", "==", candidate).limit(1).get();
+      if (!snap.empty) return ok(withId(snap.docs[0]));
+    }
+    return fail(`No route mapping found for slug: ${slug}`);
   } catch (error) {
     return fail(`Failed to retrieve route mapping: ${error instanceof Error ? error.message : "Unknown error"}`);
   }

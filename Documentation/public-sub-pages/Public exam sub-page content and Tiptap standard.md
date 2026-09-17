@@ -1374,3 +1374,74 @@ Primary test routes:
 - Confirm `npm run generate:sidebar` still works after content edits when needed.
 - Confirm `.\node_modules\.bin\tsc.cmd --noEmit` passes.
 - Run lint/build before final commit if practical.
+
+## ATI TEAS Review Mode routing repair — 17 September 2026
+
+The Reading subject page linked to saved `teas-reading-practice-test-set-*` routes. Middleware redirected those URLs to `ati-teas-reading-practice-test-set-*`, but the saved quiz mappings still used the older names. The canonical lookup missed the quiz and a synthetic subject-page fallback returned a page without its questions.
+
+Changes:
+
+- `src/lib/public-route-canonicalization.ts` supplies canonical and legacy lookup candidates for the existing ATI TEAS subject/set routes. IDs and question sources still come from Firestore.
+- `src/lib/firestore-build-operations.ts` and `src/lib/firestore-operations.ts` use the same lookup candidates for public rendering and the authenticated full-quiz API.
+- `src/app/[slug]/page.tsx` no longer manufactures a subject-page fallback for a quiz set. Child links use canonical paths, and Review Mode links to the selected quiz's `#questions-start` section.
+- `src/middleware.ts` preserves query parameters during canonical redirects.
+- `src/lib/public-route-performance.ts` recognizes both URL spellings, retaining immediate public previews and subsequent authentication loading for full access.
+- `src/lib/__tests__/public-quiz-route-lookup.test.ts` exercises both actual lookup functions, all published subject/set combinations, canonical preference, missing quiz behavior, unrelated routes, redirect parameters, and preview/auth loading classification.
+
+Validation:
+
+- 21 targeted tests passed across the new regression suite and existing canonicalization suite.
+- `.\node_modules\.bin\tsc.cmd --noEmit` passed.
+- Read-only database audit: 56 expected ATI TEAS sets, 56 quiz mappings with existing target documents, no missing quiz records.
+- Local HTTP checks: Reading Sets 1 and 16 and Math Set 16 returned 200 with the rendered question-list section. The Reading subject page exposed all 14 canonical Review Mode links with the matching question-list anchor.
+- No database records, access rules, billing logic, or preview limits were changed. No signed-in browser walkthrough was available. Changes are local; no NursingMocks commit or production deployment was performed in this repair.
+
+## Site-wide routing and breadcrumb audit — 17 September 2026
+
+Report: `reports/routing-and-breadcrumbs-2026-09-17/index.html`, with `REPORT.md`, a searchable per-URL inventory, CSV and JSON evidence alongside it.
+
+- Audited all 1,889 saved route mappings against 1,890 content metadata records; requested 1,940 public page URLs and checked 64 legacy redirects separately.
+- Executed the current breadcrumb builder against the read-only content snapshot and compared production breadcrumb data with the expected hierarchy. 1,828 mapped pages passed routing and breadcrumb checks; SEO canonical warnings are tracked separately.
+- Confirmed 56 ATI TEAS set failures still live, five invalid knowledge-base breadcrumb parent links, four dead navigation destinations, and a published 34-question quiz with no route mapping.
+- Also recorded 62 redirects losing query strings, two failing generated exit-exam aliases, 30 mapped pages with homepage canonical metadata, the 56-entry TEAS-only sitemap, and invalid blog/knowledge-base URL handling.
+- Checked all 33 generated sidebar links. Inventoried 104 page route files and 50 API route files; private authenticated flows and API operations were not executed.
+- Added read-only audit script `scripts/audit-routing-and-breadcrumbs.cjs` and standalone report generator `scripts/render-routing-audit.cjs`. Validated the report JavaScript, search/filter behavior and attachment paths. No browser was connected for interactive visual validation.
+- This phase produced an audit report only. It did not change application behavior, Firebase data, permissions or production deployment. The prior local ATI TEAS repair remains undeployed.
+
+## Routing audit repairs and retirement of `/ati-teas` — 17 September 2026
+
+The user authorized repairing the audit findings before committing/deploying and explicitly requested that `/ati-teas` not exist. The main `/ati-teas-practice-test` hub remains available.
+
+### Application changes
+
+- `src/app/[slug]/page.tsx`: knowledge-base breadcrumbs resolve the article's actual `parentId`/`parentSubPageId`, verify the parent document and route, and never expose a missing parent ID as a link. The direct article fallback uses the same builder. Canonicals use the actual canonical route and production origin, including pages without saved SEO metadata; KB noindex is preserved. Retired routes are excluded from generation and return `notFound()` in both metadata and page rendering.
+- `src/lib/public-route-canonicalization.ts`: explicitly retires `/ati-teas`, filters unpublished/retired KB articles for public lists, and maps old HESI, Nursing and exit-exam navigation paths to their existing destinations. Middleware continues to preserve all query parameters.
+- `src/components/layout/Header.tsx` and `src/components/sections/AdditionalContentSection.tsx`: use the real HESI A2 and Nursing Test Bank destinations. Added public `/how-it-works` and `/faqs` pages with valid breadcrumbs and links.
+- `src/app/blog/[blogSlug]/page.tsx`: missing articles produce a proper not-found response, lookup failures remain errors, and real articles receive their own canonical. Added canonical metadata layouts for the blog index and three exam pillar pages.
+- `src/app/knowledge-base/[subPage]/page.tsx`: resolves only real top-level exam categories from the route registry, rejects quiz/article slugs, validates missing categories in metadata and rendering, supplies server breadcrumbs, and filters unpublished articles. The hub loader uses the same publication filter.
+- `src/lib/public-route-performance.ts`: public blog/KB content and their 404 screens render before browser-only Firebase auth loads. Authentication still initializes after hydration. Existing support-widget visibility on blog/KB pages is preserved; private-route classification and access controls are unchanged.
+- `next.config.ts`: blocks metadata streaming so route validation can set HTTP status before headers are sent. This can increase uncached metadata wait time; normal page caching remains enabled. Combined with public article rendering, missing blog/KB/retired pages return an actual HTTP 404.
+- `src/app/sitemap.ts` and `src/lib/public-sitemap.ts`: rebuild the sitemap from route mappings and current publication metadata, plus core static pages and published blogs. Draft, absent, retired, private and deliberately noindexed KB records are omitted; canonical aliases are deduplicated. At verification it contained 1,873 unique URLs. Last-modified dates are not fabricated from request time.
+
+### Database repair already applied
+
+`scripts/repair-public-route-records.cjs` defaults to dry run; `--apply` performs a single transaction after identity, ancestry, missing-parent, uniqueness and concurrent-edit checks. Six targeted writes were applied and verified:
+
+1. Reattached `rn-test-kb-df` to the existing RN Exit Exams parent.
+2. Reattached `lpn-kb-article` to the existing LPN Exams test-bank parent.
+3. Reattached `teas-test-4-knowledge-base` to the existing ATI TEAS Practice Test parent.
+4. Preserved the `/ati-teas` article as Draft and cleared its public slug.
+5. Removed its public route mapping.
+6. Added the missing mental-health ATI RN quiz mapping, retaining its original hierarchy and Nursing Test Bank access package.
+
+Matching parent selection used each article's pillar and exam identity, checked against the existing parent slug. The old parent records were confirmed absent. The retired fourth orphaned article was unpublished rather than reattached. Complete original affected records and verified results are in `reports/routing-repairs-2026-09-17/`. Questions, user data, purchases, assignments and entitlement records were not changed; the restored quiz still has 34 questions. These corrections affect the shared database even though the application changes have not been deployed.
+
+### Validation and report
+
+- `reports/routing-repairs-2026-09-17/index.html` and `REPORT.md` describe the repairs; the original audit is preserved separately.
+- Fresh snapshot: 1,889 mappings and 1,889 target records, zero mapping/breadcrumb findings, all 33 sidebar links and 575 literal source links resolved.
+- `.\node_modules\.bin\tsc.cmd --noEmit` passed; 245 automated tests passed, including retirement, public rendering, real KB parent selection, sitemap eligibility, redirects and the earlier ATI TEAS lookup regressions.
+- Optimized Next.js production compilation passed using `next build --experimental-build-mode compile`. This is not a complete static-generation deployment build.
+- 29 HTTP checks against the local compiled production server passed, including three concurrent requests, genuine 404s, four ATI TEAS subject set previews, exact question payloads for the restored quiz/HESI, all remaining KB article breadcrumbs, query-preserving redirects, and the sitemap. The Reading subject page has all 14 canonical Review Mode links.
+- An intermittent AuthContext error was observed during dev-server recompilation. It was not reproduced in the local production-server checks. The verifier writes artifacts only after requests complete to avoid triggering development rebuilds mid-check.
+- No connected browser was available: interactive, signed-in, payment and visual checks remain outside this validation. No commit or Vercel deployment was performed.

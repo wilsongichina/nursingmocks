@@ -1,4 +1,5 @@
 import { getCanonicalSiteUrl, getSiteName } from "@/lib/config";
+import { canonicalizePublicPath } from "@/lib/public-route-canonicalization";
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
@@ -76,7 +77,9 @@ function numericValue(value: unknown): number | undefined {
 
 function absoluteUrl(slug?: string) {
   const siteUrl = getCanonicalSiteUrl().replace(/\/$/, "");
-  const cleanSlug = String(slug || "").replace(/^\/+/, "").replace(/\/+$/, "");
+  const cleanSlug = canonicalizePublicPath(String(slug || ""))
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
   return cleanSlug ? `${siteUrl}/${cleanSlug}` : siteUrl;
 }
 

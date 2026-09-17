@@ -137,13 +137,13 @@ export default function Header({
 
             {/* Hesi A2 */}
             <Link
-              href="/hesi-a2"
+              href="/hesi-a2-practice-test"
               className="relative font-bold transition-all duration-300 group text-gray-700"
             >
               Hesi A2
               <div
                 className={`absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-blue-700 transform transition-transform duration-300 ${
-                  isActive("/hesi-a2")
+                  isActive("/hesi-a2-practice-test")
                     ? "scale-x-100"
                     : "scale-x-0 group-hover:scale-x-100"
                 }`}
@@ -152,13 +152,13 @@ export default function Header({
 
             {/* Nursing */}
             <Link
-              href="/nursing"
+              href="/nursing-test-bank"
               className="relative font-bold transition-all duration-300 group text-gray-700"
             >
               Nursing
               <div
                 className={`absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-blue-700 transform transition-transform duration-300 ${
-                  isActive("/nursing")
+                  isActive("/nursing-test-bank")
                     ? "scale-x-100"
                     : "scale-x-0 group-hover:scale-x-100"
                 }`}
@@ -383,10 +383,10 @@ export default function Header({
 
               {/* Hesi A2 */}
               <Link
-                href="/hesi-a2"
+                href="/hesi-a2-practice-test"
                 onClick={() => setIsMenuOpen(false)}
                 className={`block w-full text-left px-3 py-2 font-medium transition-colors ${
-                  isActive("/hesi-a2")
+                  isActive("/hesi-a2-practice-test")
                     ? "text-blue-600 bg-blue-50 rounded-lg"
                     : "text-gray-700 hover:text-blue-600"
                 }`}
@@ -396,10 +396,10 @@ export default function Header({
 
               {/* Nursing */}
               <Link
-                href="/nursing"
+                href="/nursing-test-bank"
                 onClick={() => setIsMenuOpen(false)}
                 className={`block w-full text-left px-3 py-2 font-medium transition-colors ${
-                  isActive("/nursing")
+                  isActive("/nursing-test-bank")
                     ? "text-blue-600 bg-blue-50 rounded-lg"
                     : "text-gray-700 hover:text-blue-600"
                 }`}

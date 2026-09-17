@@ -32,7 +32,7 @@ describe("structured data builders", () => {
 
     const serialized = JSON.stringify(schema);
 
-    expect(serialized).toContain("https://nursingmocks.com/teas-math-practice-test-set-1");
+    expect(serialized).toContain("https://www.nursingmocks.com/ati-teas-math-practice-test-set-1");
     expect(serialized).not.toContain("localhost");
     expect(serialized).not.toContain("acceptedAnswer");
     expect(serialized).not.toContain("suggestedAnswer");
@@ -87,7 +87,7 @@ describe("structured data builders", () => {
 
     const serialized = JSON.stringify(schema);
 
-    expect(serialized).toContain("https://nursingmocks.com/teas-practice-test");
+    expect(serialized).toContain("https://www.nursingmocks.com/ati-teas-practice-test");
     expect(serialized).not.toContain("localhost");
     expect(serialized).toContain('"@type":"CollectionPage"');
     expect(serialized).toContain('"@type":"ItemList"');
