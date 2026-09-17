@@ -1445,3 +1445,14 @@ Matching parent selection used each article's pillar and exam identity, checked 
 - 29 HTTP checks against the local compiled production server passed, including three concurrent requests, genuine 404s, four ATI TEAS subject set previews, exact question payloads for the restored quiz/HESI, all remaining KB article breadcrumbs, query-preserving redirects, and the sitemap. The Reading subject page has all 14 canonical Review Mode links.
 - An intermittent AuthContext error was observed during dev-server recompilation. It was not reproduced in the local production-server checks. The verifier writes artifacts only after requests complete to avoid triggering development rebuilds mid-check.
 - No connected browser was available: interactive, signed-in, payment and visual checks remain outside this validation. No commit or Vercel deployment was performed.
+
+## Restricted sitemap scope — 17 September 2026
+
+The requested sitemap now submits only the main public information pages and the ATI TEAS practice catalog. This supersedes the broad sitemap coverage from the routing repair above.
+
+- `src/lib/public-sitemap.ts`: the static allowlist contains Home, About, Contact, Prices, How It Works, FAQs, Privacy Policy and Terms and Conditions. Saved route mappings qualify only for the canonical ATI TEAS parent, four subjects and supported practice sets under the entrance-exam hierarchy. Legacy URLs are canonicalized; invalid, missing, archived and noindexed records are omitted, as are draft quizzes.
+- The four existing ATI TEAS subjects have legacy Draft status but are publicly rendered and linked by the hub. Sitemap eligibility follows the existing public hub rule for mapped Draft subjects, while respecting explicit noindex. No publication records were changed.
+- `src/app/sitemap.ts`: filters the mapping registry before fetching publication metadata and no longer queries or submits blog articles. Blog index, general exam pillars, HESI, Kaplan, test-bank, exit-exam and knowledge-base URLs are outside this sitemap scope. The existing blog URL helper is retained because the blog detail route uses it.
+- Page routes, internal links, robots.txt, page metadata and permissions are unchanged. This is a sitemap submission change only.
+- `src/app/__tests__/sitemap.test.ts`: executes the sitemap handler against mixed catalog fixtures, checking exact permitted output, canonical deduplication, legacy subject visibility, exclusions and absence of unnecessary content reads.
+- Validation before deployment: TypeScript passed; 18 targeted sitemap/routing tests passed. Executing the actual sitemap function with fresh, read-only Firestore data produced exactly 69 URLs: 8 core pages, 1 ATI TEAS hub, 4 subjects and 56 practice sets, with zero missing or unexpected paths. Evidence is stored locally in `reports/restricted-sitemap-2026-09-17/`.
